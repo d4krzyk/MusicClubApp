@@ -1,0 +1,16 @@
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\config\I18nConfig.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\config\SecurityConfig.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\controller\AuthController.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\controller\UserController.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\dto\AuthResponse.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\dto\LoginRequest.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\dto\RegisterRequest.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\entity\Artist.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\entity\Match.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\entity\Playlist.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\entity\User.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\error\ErrorResponse.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\error\GlobalExceptionHandler.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\MusicClubAppApplication.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\repository\UserRepository.java
+C:\Users\danie\Documents\repos\MusicClubApp\src\main\java\com\musicclubapp\service\UserService.java
