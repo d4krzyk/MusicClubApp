@@ -1,8 +1,28 @@
 package com.musicclubapp.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class RegisterRequest {
+    public RegisterRequest() {
+    }
+
+    public RegisterRequest(String username, String email, String password) {
+        this.username = username;
+        this.email = email;
+        this.password = password;
+    }
+
+    @NotBlank
     private String username;
+
+    @NotBlank
+    @Email
     private String email;
+
+    @NotBlank
+    @Size(min = 6, max = 100)
     private String password;
 
     public String getUsername() {
@@ -29,4 +49,3 @@ public class RegisterRequest {
         this.password = password;
     }
 }
-

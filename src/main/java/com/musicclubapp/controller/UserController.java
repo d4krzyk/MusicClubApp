@@ -1,6 +1,6 @@
 package com.musicclubapp.controller;
 
-import com.musicclubapp.entity.User;
+import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,8 +30,8 @@ public class UserController {
         @ApiResponse(responseCode = "404", description = "User not found")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getById(id));
+    public ResponseEntity<UserResponse> getById(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(UserResponse.from(userService.getById(id)));
     }
 
     @Operation(summary = "Get users with pagination")
@@ -39,8 +39,9 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Page of users")
     })
     @GetMapping
-    public ResponseEntity<Page<User>> getAll(Pageable pageable) {
-        return ResponseEntity.ok(userRepository.findAll(pageable));
+    public ResponseEntity<Page<UserResponse>> getAll(Pageable pageable) {
+        Page<UserResponse> page = userRepository.findAll(pageable).map(UserResponse::from);
+        return ResponseEntity.ok(page);
     }
 
     @Operation(summary = "Find users with similar artists")
@@ -48,8 +49,8 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Matched users page")
     })
     @GetMapping("/{id}/similar")
-    public ResponseEntity<Page<User>> getSimilar(@PathVariable Long id, Pageable pageable) {
-        return ResponseEntity.ok(userRepository.findUsersWithSimilarArtists(id, pageable));
+    public ResponseEntity<Page<UserResponse>> getSimilar(@PathVariable("id") Long id, Pageable pageable) {
+        Page<UserResponse> page = userRepository.findUsersWithSimilarArtists(id, pageable).map(UserResponse::from);
+        return ResponseEntity.ok(page);
     }
 }
-

@@ -4,7 +4,9 @@ import com.musicclubapp.dto.AuthResponse;
 import com.musicclubapp.dto.LoginRequest;
 import com.musicclubapp.dto.RegisterRequest;
 import com.musicclubapp.entity.User;
+import com.musicclubapp.security.JwtService;
 import com.musicclubapp.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,14 +18,16 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public AuthController(UserService userService, AuthenticationManager authenticationManager) {
+    public AuthController(UserService userService, AuthenticationManager authenticationManager, JwtService jwtService) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
@@ -33,11 +37,11 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         Authentication auth = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        return ResponseEntity.ok(new AuthResponse("Authenticated: " + auth.isAuthenticated()));
+        String token = jwtService.generateToken(request.getUsername());
+        return ResponseEntity.ok(new AuthResponse("Authenticated: " + auth.isAuthenticated(), token));
     }
 }
-
