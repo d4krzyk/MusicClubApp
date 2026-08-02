@@ -1,54 +1,88 @@
 package com.musicclubapp.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
+/**
+ * Uzytkownik aplikacji - jedna encja = jedna tabela w bazie.
+ *
+ * <p><b>Realizuje wymagania z listy:</b></p>
+ * <ul>
+ *   <li>nr 1 - uzycie JPA (adnotacje {@code @Entity}, {@code @Id}, {@code @Column}),</li>
+ *   <li>nr 4 - encja przechowujaca date/czas ({@code createdAt}).</li>
+ * </ul>
+ *
+ * <p>Na tym etapie (KROK 2) encja jest celowo "chuda" - bez relacji do artystow,
+ * postow i dopasowan. Relacje dochodza w kolejnych krokach, zeby na kazdym etapie
+ * bylo widac dokladnie, co doszlo do bazy.</p>
+ */
 @Entity
+// "user" jest slowem zarezerwowanym w PostgreSQL, dlatego tabela nazywa sie "users".
 @Table(name = "users")
-public class User implements UserDetails {
+public class User {
+
+    /**
+     * Klucz glowny. IDENTITY = numerowanie zalatwia baza (kolumna BIGSERIAL
+     * w PostgreSQL), my nie musimy sami wymyslac ID.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    /** Login. {@code unique = true} zaklada w bazie indeks unikalny - dwoch takich samych nie bedzie. */
+    @Column(nullable = false, unique = true, length = 50)
     private String username;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
-    @Column(nullable = false)
-    @JsonIgnore
-    private String password;
+    /**
+     * Hash hasla (BCrypt), NIGDY haslo jawnym tekstem.
+     * Hashowanie dojdzie w KROKU 3 razem ze Spring Security.
+     */
+    @Column(name = "password_hash", nullable = false, length = 100)
+    private String passwordHash;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Playlist> playlists = new HashSet<>();
+    /**
+     * Data i godzina zalozenia konta - wymaganie nr 4 z listy.
+     * Wykorzystamy ja pozniej do sortowania uzytkownikow "od najnowszych"
+     * (wymaganie nr 5) i do wyswietlania "czlonek od ...".
+     */
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    @ManyToMany
-    @JoinTable(
-        name = "user_artist",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "artist_id")
-    )
-    private Set<Artist> artists = new HashSet<>();
+    /**
+     * Metoda oznaczona {@code @PrePersist} uruchamia sie automatycznie tuz przed
+     * pierwszym zapisem encji do bazy. Dzieki temu nie musimy pamietac o ustawianiu
+     * daty w kazdym miejscu, gdzie tworzymy uzytkownika.
+     */
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 
-    @OneToMany(mappedBy = "userA", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Match> matchesAsUserA = new HashSet<>();
+    /** Konstruktor bezargumentowy jest WYMAGANY przez JPA (Hibernate tworzy nim obiekty). */
+    protected User() {
+    }
 
-    @OneToMany(mappedBy = "userB", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Match> matchesAsUserB = new HashSet<>();
+    public User(String username, String email, String passwordHash) {
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+    }
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getUsername() {
@@ -67,69 +101,40 @@ public class User implements UserDetails {
         this.email = email;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    /**
+     * equals/hashCode po ID. Wazne przy encjach - domyslne porownywanie po
+     * referencji potrafi psuc dzialanie kolekcji (Set) i cache'u Hibernate'a.
+     */
     @Override
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Set<Playlist> getPlaylists() {
-        return playlists;
-    }
-
-    public void setPlaylists(Set<Playlist> playlists) {
-        this.playlists = playlists;
-    }
-
-    public Set<Artist> getArtists() {
-        return artists;
-    }
-
-    public void setArtists(Set<Artist> artists) {
-        this.artists = artists;
-    }
-
-    public Set<Match> getMatchesAsUserA() {
-        return matchesAsUserA;
-    }
-
-    public void setMatchesAsUserA(Set<Match> matchesAsUserA) {
-        this.matchesAsUserA = matchesAsUserA;
-    }
-
-    public Set<Match> getMatchesAsUserB() {
-        return matchesAsUserB;
-    }
-
-    public void setMatchesAsUserB(Set<Match> matchesAsUserB) {
-        this.matchesAsUserB = matchesAsUserB;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof User other)) {
+            return false;
+        }
+        return id != null && id.equals(other.id);
     }
 
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Set.of();
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
+    public String toString() {
+        return "User{id=" + id + ", username='" + username + "', createdAt=" + createdAt + "}";
     }
 }

@@ -1,10 +1,17 @@
-### IntelliJ IDEA ###
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-.kotlin
+# --- Maven / build ---
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-### Eclipse ###
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# --- Eclipse / STS ---
 .apt_generated
 .classpath
 .factorypath
@@ -13,18 +20,30 @@ out/
 .springBeans
 .sts4-cache
 bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
 
-### NetBeans ###
+# --- NetBeans ---
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+# --- VS Code ---
 .vscode/
 
-### Mac OS ###
+# --- Node / React (frontend) ---
+node_modules/
+frontend/dist/
+frontend/build/
+npm-debug.log*
+yarn-error.log*
+
+# --- Sekrety i lokalna konfiguracja ---
+# .env trzyma hasla do bazy i klucze Spotify - NIGDY nie commitujemy
+.env
+*.env.local
+application-local.properties
+
+# --- System ---
 .DS_Store
+Thumbs.db

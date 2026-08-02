@@ -1,0 +1,10 @@
+# Nie wysylamy tego do Dockera przy budowaniu obrazu - build jest szybszy
+target/
+.git/
+.idea/
+*.iml
+docs/
+node_modules/
+frontend/dist/
+frontend/build/
+.env

@@ -1,0 +1,52 @@
+# =============================================================================
+#  KROK 1 planu: baza danych PostgreSQL na Dockerze
+# =============================================================================
+#  Uruchomienie:   docker compose up -d
+#  Zatrzymanie:    docker compose down
+#  Kasowanie bazy: docker compose down -v   (-v usuwa tez wolumen = dane!)
+#  Podglad logow:  docker compose logs -f db
+#
+#  Na tym etapie odpalamy TYLKO baze. Backend uruchamiasz z IntelliJ / `mvn
+#  spring-boot:run`, zeby moc go debugowac. Backend i frontend dojda do
+#  compose'a w KROKU 6.
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: musicclub-db
+    restart: unless-stopped
+    environment:
+      # Te trzy zmienne czyta obraz postgresa przy PIERWSZYM starcie
+      # i na ich podstawie zaklada baze oraz uzytkownika.
+      POSTGRES_DB: ${POSTGRES_DB:-musicclub}
+      POSTGRES_USER: ${POSTGRES_USER:-musicclub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicclub}
+    ports:
+      # host:kontener - dzieki temu z IntelliJ laczysz sie na localhost:5432
+      - "5432:5432"
+    volumes:
+      # Nazwany wolumen = dane przezywaja `docker compose down`
+      - musicclub-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Sprawdza czy baza faktycznie przyjmuje polaczenia (nie tylko czy kontener zyje)
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-musicclub} -d ${POSTGRES_DB:-musicclub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Klikalna przegladarka bazy - wchodzisz na http://localhost:8081
+  # i widzisz tabele, ktore stworzylo JPA. Bardzo pomaga zrozumiec co sie dzieje.
+  # Nie jest wymagana do dzialania aplikacji - mozesz ja wylaczyc.
+  adminer:
+    image: adminer:latest
+    container_name: musicclub-adminer
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+
+volumes:
+  musicclub-db-data:
