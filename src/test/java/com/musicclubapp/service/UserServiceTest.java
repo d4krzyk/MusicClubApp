@@ -1,0 +1,154 @@
+package com.musicclubapp.service;
+
+import com.musicclubapp.dto.RegisterRequest;
+import com.musicclubapp.dto.UserResponse;
+import com.musicclubapp.entity.Role;
+import com.musicclubapp.entity.User;
+import com.musicclubapp.error.DuplicateResourceException;
+import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.mapper.UserMapper;
+import com.musicclubapp.repository.UserRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+/**
+ * Testy jednostkowe serwisu - wymaganie nr 13.
+ *
+ * <p>Wyklad 5 (slajd 8): testy jednostkowe "powinny testowac jeden byt",
+ * "powinny dotyczyc serwisow i klas pomocniczych" i powinno byc ich najwiecej,
+ * bo sa szybkie.</p>
+ *
+ * <p>Zaleznosci serwisu (repozytorium, encoder, mapper) sa atrapami -
+ * {@code @Mock} z Mockito (wyklad 5, slajdy 17-18). Dzieki temu test nie
+ * dotyka bazy danych i sprawdza wylacznie logike samego serwisu.</p>
+ *
+ * <p>{@code @ExtendWith(MockitoExtension.class)} inicjalizuje atrapy -
+ * to nowszy odpowiednik {@code MockitoAnnotations.openMocks(this)} ze slajdu 17.
+ * {@code @InjectMocks} tworzy testowany obiekt i wstrzykuje mu atrapy.</p>
+ */
+@ExtendWith(MockitoExtension.class)
+@DisplayName("UserService - logika rejestracji i wyszukiwania")
+class UserServiceTest {
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private UserMapper userMapper;
+
+    @InjectMocks
+    private UserService userService;
+
+    private RegisterRequest poprawneZgloszenie() {
+        return new RegisterRequest("anna", "anna@example.com", "tajneHaslo1", "tajneHaslo1");
+    }
+
+    @Test
+    @DisplayName("rejestracja zapisuje uzytkownika z ZAHASHOWANYM haslem")
+    void rejestracjaHashujeHaslo() {
+        given(userRepository.existsByUsername("anna")).willReturn(false);
+        given(userRepository.existsByEmail("anna@example.com")).willReturn(false);
+        given(passwordEncoder.encode("tajneHaslo1")).willReturn("$2a$10$zahashowane");
+        given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
+        given(userMapper.toResponse(any(User.class))).willReturn(
+            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now()));
+
+        userService.register(poprawneZgloszenie());
+
+        // Sprawdzamy, CO dokladnie poszlo do repozytorium
+        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(zapisany.capture());
+
+        assertThat(zapisany.getValue().getUsername()).isEqualTo("anna");
+        assertThat(zapisany.getValue().getPasswordHash()).isEqualTo("$2a$10$zahashowane");
+        // najwazniejsze: jawne haslo NIE trafia do bazy
+        assertThat(zapisany.getValue().getPasswordHash()).isNotEqualTo("tajneHaslo1");
+    }
+
+    @Test
+    @DisplayName("nowy uzytkownik dostaje role USER")
+    void nowyUzytkownikMaRoleUser() {
+        given(userRepository.existsByUsername(anyString())).willReturn(false);
+        given(userRepository.existsByEmail(anyString())).willReturn(false);
+        given(passwordEncoder.encode(anyString())).willReturn("hash");
+        given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
+        given(userMapper.toResponse(any(User.class))).willReturn(
+            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now()));
+
+        userService.register(poprawneZgloszenie());
+
+        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(zapisany.capture());
+        assertThat(zapisany.getValue().getRole()).isEqualTo(Role.USER);
+    }
+
+    @Test
+    @DisplayName("zajety login przerywa rejestracje i nic nie zapisuje")
+    void zajetyLoginRzucaWyjatek() {
+        given(userRepository.existsByUsername("anna")).willReturn(true);
+
+        assertThatThrownBy(() -> userService.register(poprawneZgloszenie()))
+            .isInstanceOf(DuplicateResourceException.class)
+            .hasMessageContaining("anna");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("zajety e-mail przerywa rejestracje i nic nie zapisuje")
+    void zajetyEmailRzucaWyjatek() {
+        given(userRepository.existsByUsername("anna")).willReturn(false);
+        given(userRepository.existsByEmail("anna@example.com")).willReturn(true);
+
+        assertThatThrownBy(() -> userService.register(poprawneZgloszenie()))
+            .isInstanceOf(DuplicateResourceException.class);
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("szukanie nieistniejacego uzytkownika rzuca wyjatek 'nie znaleziono'")
+    void brakUzytkownikaRzucaWyjatek() {
+        given(userRepository.findByUsername("duch")).willReturn(Optional.empty());
+
+        // wymaganie nr 11 - wyjatek przy braku elementu w bazie
+        assertThatThrownBy(() -> userService.getByUsername("duch"))
+            .isInstanceOf(NoSuchElementFoundException.class);
+    }
+
+    @Test
+    @DisplayName("istniejacy uzytkownik jest zwracany jako DTO, bez hasha hasla")
+    void istniejacyUzytkownikJestMapowanyNaDto() {
+        User user = new User("anna", "anna@example.com", "$2a$10$hash");
+        UserResponse oczekiwany =
+            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now());
+
+        given(userRepository.findByUsername("anna")).willReturn(Optional.of(user));
+        given(userMapper.toResponse(user)).willReturn(oczekiwany);
+
+        UserResponse wynik = userService.getByUsername("anna");
+
+        assertThat(wynik).isEqualTo(oczekiwany);
+        assertThat(wynik.username()).isEqualTo("anna");
+    }
+}

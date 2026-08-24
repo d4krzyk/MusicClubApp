@@ -1,0 +1,6 @@
+# Normalizacja koncowek linii - zeby commity z Windowsa i Linuksa nie
+# pokazywaly "zmian" tam, gdzie zmienil sie tylko znak konca linii.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+mvnw text eol=lf

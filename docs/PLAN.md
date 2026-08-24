@@ -16,9 +16,9 @@ Nie zaczynamy kolejnego kroku, dopóki poprzedni się nie uruchamia i nie rozumi
 | 0 | Sprzątanie repo | ✅ zrobione |
 | 1 | PostgreSQL na Docker Compose | ✅ zrobione |
 | 2 | Spring Boot ↔ baza (JPA, repozytorium, testy) | ✅ zrobione |
-| 3 | Spring Security — rejestracja i logowanie | ⬜ następny |
-| 4 | Połączenie logowania/rejestracji z bazą | ⬜ |
-| 5 | Frontend React (logowanie, rejestracja, homepage) | ⬜ |
+| 3 | Spring Security — rejestracja i logowanie | ✅ zrobione |
+| 4 | Połączenie logowania/rejestracji z bazą | ✅ zrobione |
+| 5 | Frontend React (logowanie, rejestracja, homepage) | ⬜ następny |
 | 6 | Całość (backend + frontend + baza) na Docker Compose | ⬜ |
 | 7 | Domena: artyści, gatunki, posty, algorytm dopasowań | ⬜ |
 
@@ -115,8 +115,9 @@ Repozytorium daje trzy sposoby zadawania pytań bazie:
 mvn test
 ```
 
-Testy chodzą na bazie **H2 w pamięci** (`src/test/resources/application.properties`),
-więc działają nawet przy wyłączonym Dockerze i każdy startuje na czystej bazie.
+Testy chodzą na bazie **H2 w pamięci** (`src/test/resources/application-test.properties`
+włączany przez `@ActiveProfiles("test")`), więc działają nawet przy wyłączonym
+Dockerze i każdy startuje na czystej bazie.
 
 - `MusicClubAppApplicationTests` — `@SpringBootTest`, sprawdza czy kontekst wstaje.
   To pierwszy test, który padnie, jak coś zepsujesz w konfiguracji.
@@ -128,35 +129,85 @@ PostgreSQL 16 i zakłada tabelę `users` z poprawnymi ograniczeniami `UNIQUE`.
 
 ---
 
-## KROK 3 — Spring Security (następny)
+## KROKI 3 i 4 — Spring Security + logowanie z bazy (zrobione)
 
-Do zrobienia:
+Wyszły razem, bo mocno się zazębiają. Wybraliśmy **sesję z ciasteczkiem**,
+nie JWT — wykład 7 (slajd 31) wymienia oba podejścia dla REST API i sesja
+jest prostsza do wytłumaczenia. Bonus: „zapamiętaj mnie" (wymaganie nr 17)
+to przy sesji prawie darmowy punkt.
 
-1. `SecurityConfig` z **`SecurityFilterChain` i lambda DSL** — wymaganie nr 15
-   mówi wprost: konfiguracja **nie może być** `deprecated`. Czyli żadnego
-   `WebSecurityConfigurerAdapter` (to stare podejście, którego pełno w tutorialach).
-2. `PasswordEncoder` → `BCryptPasswordEncoder`. Hasła **tylko** jako hash.
-3. DTO `RegisterRequest` / `LoginRequest` z Bean Validation (wymaganie nr 9).
-4. Własna adnotacja walidacyjna, np. `@UniqueUsername` (wymaganie nr 10).
-5. `GlobalExceptionHandler` z `@RestControllerAdvice` (wymaganie nr 11).
-6. `messages.properties` + `messages_pl.properties` — komunikaty błędów po PL i EN
-   (wymaganie nr 2), wybierane po nagłówku `Accept-Language`.
-7. Kontrolery zwracające `ResponseEntity` (wymaganie nr 22) + Swagger (nr 24).
-8. Testy: `@WebMvcTest` na kontrolery, Mockito na serwisy (wymagania nr 13 i 25).
+### Jak działa logowanie
 
-**Do ustalenia przed startem:** sesja z ciasteczkiem czy JWT?
-Przy osobnym froncie React zwykle wybiera się JWT, ale sesja jest prostsza
-i wystarcza na zaliczenie. Zdecydujemy po przejrzeniu wykładów.
+```
+POST /api/auth/login  {"username":"anna","password":"...","rememberMe":true}
+   │
+   ├─ AuthenticationManager sprawdza hasło (BCrypt vs hash z bazy)
+   ├─ wynik ląduje w SecurityContext i zostaje ZAPISANY w sesji
+   └─ przeglądarka dostaje ciasteczko JSESSIONID
+        └─ odsyła je przy każdym kolejnym zapytaniu → serwer wie, kto to
+```
 
-## KROK 4 — logowanie ↔ baza
+### Nowe pliki i za co odpowiadają
 
-`UserDetailsService`, który wyciąga użytkownika przez `UserRepository`,
-`AuthenticationManager`, rejestracja zapisująca użytkownika z zahashowanym hasłem.
+| Plik | Rola |
+|------|------|
+| `config/SecurityConfig` | kto ma gdzie dostęp, CORS, CSRF, hashowanie haseł |
+| `config/I18nConfig` | wybór języka + podpięcie tłumaczeń pod walidację |
+| `service/AppUserDetailsService` | tłumacz między naszą encją `User` a Spring Security |
+| `service/UserService` | rejestracja, wyszukiwanie — cała logika, testowana jednostkowo |
+| `controller/AuthController` | `/register`, `/login`, `/logout`, `/me`, `/csrf` |
+| `controller/UserController` | lista użytkowników ze stronicowaniem i sortowaniem |
+| `error/GlobalExceptionHandler` | jedno miejsce na wszystkie błędy (wg wykładu 3) |
+| `validation/UniqueUsername` + `PasswordsMatch` | dwie własne adnotacje |
+| `security/JsonRememberMeServices` | „zapamiętaj mnie" dla logowania JSON-em |
+| `mapper/UserMapper` | encja → DTO (wykład 4, slajd 23) |
 
-## KROK 5 — frontend React
+### Pięć pułapek, na które się nadzialiśmy
+
+Warto je znać — każda kosztowała trochę czasu i każda może wrócić.
+
+1. **Plik `application.properties` w `src/test/resources` nie dokłada się do
+   tego z `main` — on go zastępuje.** Zniknęła ścieżka do tłumaczeń i testy
+   waliły „No message found under code". Rozwiązanie: profil
+   `application-test.properties` + `@ActiveProfiles("test")` (wykład 2, slajd 40).
+   Profil jest **dokładany** na wierzch, więc nadpisuje tylko to, co wypiszemy.
+
+2. **Sam `SecurityContextHolder.setAuthentication()` nie zapisuje logowania
+   w sesji** (tak jest na slajdzie 33). Od Spring Security 6 trzeba jeszcze
+   `securityContextRepository.saveContext(...)` — inaczej użytkownik jest
+   zalogowany tylko na czas jednego zapytania.
+
+3. **Token CSRF generuje się leniwie.** Endpoint `/api/auth/csrf` musi
+   *dotknąć* tokenu (`csrfToken.getToken()`), inaczej ciasteczko w ogóle
+   nie powstaje i każdy POST kończy się odmową.
+
+4. **Domyślny handler CSRF maskuje token operacją XOR**, a w ciasteczku jest
+   wersja surowa — frontend odsyła ciasteczko i dostaje odmowę. Trzeba podstawić
+   zwykły `CsrfTokenRequestAttributeHandler`.
+
+5. **`AcceptHeaderLocaleResolver` nie współpracuje z `LocaleChangeInterceptor`** —
+   każde `?lang=pl` kończyło się błędem 500. Zamieniony na `CookieLocaleResolver`,
+   który obsługuje i nagłówek, i parametr.
+
+### Sprawdzone na działającej aplikacji
+
+Rejestracja (201 + `Location`), zajęty login (422 ze wskazaniem pola),
+złe hasło (401), poprawne logowanie (sesja + ciasteczko na 14 dni),
+`/me` przed i po zalogowaniu (401 → dane), wylogowanie (204),
+stronicowanie i sortowanie, błąd 404, oba języki, Swagger z 6 endpointami.
+**23 testy przechodzą.**
+
+## KROK 5 — frontend React (następny)
 
 `frontend/` (Vite + React), strony: rejestracja, logowanie, homepage.
-Przełącznik języka PL/EN — po stronie frontu `react-i18next`.
+Przełącznik języka PL/EN — po stronie frontu `react-i18next` (domyka wymaganie nr 2).
+
+**Ważne dla logowania sesyjnego** — frontend musi:
+- wysyłać wszystkie zapytania z `credentials: "include"` (inaczej przeglądarka
+  nie dołączy ciasteczka sesji na inny port),
+- przed pierwszym POST-em zawołać `GET /api/auth/csrf`,
+- odczytać ciasteczko `XSRF-TOKEN` i wysyłać je w nagłówku `X-XSRF-TOKEN`
+  (axios robi to sam po ustawieniu `withCredentials: true`).
 
 ## KROK 6 — całość na Docker Compose
 

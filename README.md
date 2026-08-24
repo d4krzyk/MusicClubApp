@@ -45,20 +45,47 @@ pom.xml                       # zależności Mavena
 docs/                         # plan pracy i checklista wymagań
 src/main/java/com/musicclubapp/
 ├── MusicClubAppApplication.java   # punkt wejścia
+├── config/                        # SecurityConfig, I18nConfig
+├── controller/                    # REST API (zwraca ResponseEntity)
+├── dto/                           # dane wejściowe/wyjściowe + walidacja
 ├── entity/                        # encje JPA (klasa = tabela)
-└── repository/                    # dostęp do bazy (interfejsy Spring Data)
+├── error/                         # GlobalExceptionHandler i wyjątki
+├── mapper/                        # encja → DTO
+├── repository/                    # dostęp do bazy (interfejsy Spring Data)
+├── security/                      # "zapamiętaj mnie" dla logowania JSON-em
+├── service/                       # logika biznesowa
+└── validation/                    # własne adnotacje walidacyjne
 src/main/resources/
-└── application.properties         # konfiguracja połączenia z bazą
+├── application.properties         # konfiguracja (baza, języki, Security)
+└── lang/messages*.properties      # teksty PL i EN
 src/test/
-├── java/                          # testy (@SpringBootTest, @DataJpaTest)
-└── resources/application.properties  # konfiguracja testowa (H2 w pamięci)
+├── java/                          # @SpringBootTest, @DataJpaTest, @WebMvcTest, Mockito
+└── resources/application-test.properties  # profil testowy (H2 w pamięci)
 ```
 
-Katalogi `service/`, `controller/`, `dto/`, `config/`, `error/` i `frontend/`
-dojdą w kolejnych krokach — patrz `docs/PLAN.md`.
+Katalog `frontend/` dojdzie w KROKU 5 — patrz `docs/PLAN.md`.
+
+## API
+
+| Metoda | Ścieżka | Opis |
+|--------|---------|------|
+| GET | `/api/auth/csrf` | ustawia ciasteczko CSRF (zawołaj przed pierwszym POST) |
+| POST | `/api/auth/register` | rejestracja |
+| POST | `/api/auth/login` | logowanie (zakłada sesję) |
+| POST | `/api/auth/logout` | wylogowanie |
+| GET | `/api/auth/me` | dane zalogowanego użytkownika |
+| GET | `/api/users` | lista ze stronicowaniem i sortowaniem |
+| GET | `/api/users/{id}` | pojedynczy użytkownik |
+
+Dokumentacja: http://localhost:8080/swagger-ui.html
+
+Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 
 ## Stan projektu
 
-Kroki 0–2 gotowe: repo posprzątane, baza na Dockerze, Spring Boot połączony
-z PostgreSQL-em przez JPA, 9 testów przechodzi.
-Następny krok: Spring Security (rejestracja i logowanie).
+Kroki 0–4 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
+(rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
+obsługa błędów, Swagger. **23 testy przechodzą.**
+
+Zaliczone 15 z 17 wymagań potrzebnych na piątkę — szczegóły w `docs/WYMAGANIA.md`.
+Następny krok: frontend w React.

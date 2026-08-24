@@ -2,6 +2,8 @@ package com.musicclubapp.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -60,6 +62,22 @@ public class User {
     private LocalDateTime createdAt;
 
     /**
+     * Rola uzytkownika. {@code EnumType.STRING} zapisuje w bazie tekst
+     * ("USER"), a nie numer pozycji w enumie - dzieki temu dodanie nowej roli
+     * w srodku listy nie popsuje istniejacych danych.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Role role = Role.USER;
+
+    /**
+     * Czy konto jest aktywne. Przyda sie przy wymaganiu nr 16
+     * (potwierdzenie maila) - do tego czasu zawsze {@code true}.
+     */
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    /**
      * Metoda oznaczona {@code @PrePersist} uruchamia sie automatycznie tuz przed
      * pierwszym zapisem encji do bazy. Dzieki temu nie musimy pamietac o ustawianiu
      * daty w kazdym miejscu, gdzie tworzymy uzytkownika.
@@ -111,6 +129,22 @@ public class User {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 
     /**

@@ -51,10 +51,34 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- KROK 3: Spring Security - logowanie, rejestracja, hashowanie hasel (wymaganie nr 15) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!--
+            Swagger / OpenAPI (wymaganie nr 24). Wyklad 4 (slajd 19-20) mowi, ze
+            do API w stylu RPC powinna powstac dokumentacja - np. wlasnie Swagger.
+            Po uruchomieniu aplikacji: http://localhost:8080/swagger-ui.html
+        -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
+        </dependency>
+
         <!-- Testy: JUnit 5 + AssertJ + MockMvc (wymagania nr 13, 14, 25) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Pozwala udawac zalogowanego uzytkownika w testach (@WithMockUser) -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
 
