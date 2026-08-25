@@ -1,0 +1,77 @@
+{
+  "app": {
+    "name": "MusicClub",
+    "tagline": "Poznawaj ludzi o podobnym guście muzycznym"
+  },
+  "menu": {
+    "home": "Strona główna",
+    "users": "Użytkownicy",
+    "login": "Zaloguj się",
+    "register": "Załóż konto",
+    "logout": "Wyloguj",
+    "language": "Język"
+  },
+  "common": {
+    "loading": "Ładowanie…",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "required": "pole wymagane"
+  },
+  "login": {
+    "title": "Logowanie",
+    "username": "Login",
+    "password": "Hasło",
+    "rememberMe": "Zapamiętaj mnie na tym urządzeniu",
+    "submit": "Zaloguj się",
+    "submitting": "Logowanie…",
+    "noAccount": "Nie masz konta?",
+    "goToRegister": "Załóż konto",
+    "registered": "Konto założone. Możesz się teraz zalogować."
+  },
+  "register": {
+    "title": "Zakładanie konta",
+    "username": "Login",
+    "usernameHint": "3–50 znaków: litery, cyfry oraz _ . -",
+    "email": "Adres e-mail",
+    "password": "Hasło",
+    "passwordHint": "co najmniej 8 znaków",
+    "confirmPassword": "Powtórz hasło",
+    "submit": "Załóż konto",
+    "submitting": "Zakładanie konta…",
+    "haveAccount": "Masz już konto?",
+    "goToLogin": "Zaloguj się"
+  },
+  "home": {
+    "welcome": "Cześć, {{username}}!",
+    "yourAccount": "Twoje konto",
+    "email": "E-mail",
+    "role": "Rola",
+    "memberSince": "Członek od",
+    "nextSteps": "Kolejne kroki",
+    "nextStepsText": "Ulubieni artyści, posty i propozycje znajomych dojdą w następnym etapie."
+  },
+  "users": {
+    "title": "Użytkownicy",
+    "search": "Szukaj po loginie lub e-mailu",
+    "searchPlaceholder": "np. anna",
+    "pageSize": "Na stronie",
+    "sortBy": "Sortuj po",
+    "sortUsername": "loginie",
+    "sortEmail": "e-mailu",
+    "sortCreatedAt": "dacie dołączenia",
+    "direction": "Kolejność",
+    "asc": "rosnąco",
+    "desc": "malejąco",
+    "colUsername": "Login",
+    "colEmail": "E-mail",
+    "colCreatedAt": "Dołączył",
+    "empty": "Nikogo nie znaleziono.",
+    "summary": "Strona {{page}} z {{totalPages}} · znaleziono {{total}}",
+    "previous": "Poprzednia",
+    "next": "Następna"
+  },
+  "errors": {
+    "network": "Nie można połączyć się z serwerem. Sprawdź, czy backend jest uruchomiony.",
+    "unknown": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie."
+  }
+}

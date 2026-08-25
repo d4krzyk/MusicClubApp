@@ -23,10 +23,10 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | # | Wymaganie | Gdzie u nas | Status |
 |---|-----------|-------------|--------|
 | 1 | Użycie JPA | `entity/User.java`, `repository/UserRepository.java` | ✅ KROK 2 |
-| 2 | Wsparcie min. 2 języków (PL/EN) | `lang/messages*.properties` + `I18nConfig` (`Accept-Language`, `?lang=pl`) | 🟡 backend ✅ / front KROK 5 |
+| 2 | Wsparcie min. 2 języków (PL/EN) | backend: `lang/messages*.properties` + `I18nConfig`; front: `i18next` + przełącznik PL/EN w menu | ✅ KROK 5 |
 | 6 | OneToMany + ManyToOne między min. 2 encjami | `User` 1—N `Post` (posty użytkownika) | ⬜ KROK 7 |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
-| 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` | ⬜ KROK 5 |
+| 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — logowanie, rejestracja, homepage, lista | ✅ KROK 5 |
 | 13 | Testy jednostkowe serwisów | `service/UserServiceTest` (Mockito, 6 testów) | ✅ KROK 3 |
 | 15 | Rejestracja + logowanie, Spring Security (config NIE deprecated) | `config/SecurityConfig` — `SecurityFilterChain` + lambda DSL, sesja + BCrypt | ✅ KROK 3 |
 
@@ -34,9 +34,9 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 
 | # | Wymaganie | Gdzie u nas | Status |
 |---|-----------|-------------|--------|
-| 3 | Stronicowanie + wybór liczby elementów (backend) | `Pageable` w `searchByUsernameOrEmail`, feed postów | ✅ KROK 2 (repo) |
+| 3 | Stronicowanie + wybór liczby elementów (backend) | `Pageable` + widoczne sterowanie na `/users` (5/10/20) | ✅ KROK 2 + 5 |
 | 4 | Encja z datą/czasem i jej wykorzystanie | `User.createdAt`, `Post.createdAt`, `Match.matchedAt` | ✅ KROK 2 (User) |
-| 5 | Sortowanie (backend) | `Sort` w `Pageable` — np. `?sort=createdAt,desc` | ✅ KROK 2 (repo) |
+| 5 | Sortowanie (backend) | `Sort` w `Pageable` + wybór pola i kierunku na `/users` | ✅ KROK 2 + 5 |
 | 7 | OneToOne **lub** ManyToMany | `User` N—N `Artist` (ulubieni), `Artist` N—N `Genre` | ⬜ KROK 7 |
 | 8 | Własne zapytania `@Query` / natywne | `UserRepository.searchByUsernameOrEmail`, później algorytm dopasowań | ✅ KROK 2 |
 | 10 | **Własna** adnotacja walidacyjna | `@UniqueUsername` (pole) + `@PasswordsMatch` (klasa) | ✅ KROK 3 |
@@ -59,17 +59,17 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 
 ## Podsumowanie na dziś
 
-**Zaliczone w całości: 15 z 17** potrzebnych na piątkę —
-punkty 1, 3, 4, 5, 8, 9, 10, 11, 13, 14, 15, 17, 22, 24, 25.
+**Zaliczone w całości: 17 z 17** potrzebnych na piątkę —
+punkty 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 17, 22, 24, 25.
 
-Czerwone (obowiązkowe na 3): zrobione 4 z 7 — **1, 9, 13, 15**.
-Zostały trzy: **2** (dokończyć na froncie), **6** (OneToMany), **12** (frontend).
+Czerwone (obowiązkowe na każdą ocenę): zrobione 6 z 7 — **1, 2, 9, 12, 13, 15**.
+Został jeden: **6** (OneToMany) — dojdzie w KROKU 7.
 
-**Częściowo: 2**
-- nr 2 — backend gotowy (komunikaty walidacji PL/EN), zostaje menu na froncie
-- nr 18 — baza na Dockerze działa, całość dojdzie w KROKU 6
+**Częściowo: 1**
+- nr 18 — baza na Dockerze działa, całość jednym `docker compose up` w KROKU 6
 
-Do piątki brakuje **2 punktów**, a w zapasie zostają jeszcze 6, 7, 12, 16, 23 —
-czyli margines jest spory.
+Licznik osiągnął wymagane 17, ale **projekt nadal nie przechodzi bez punktu 6** —
+czerwone są obowiązkowe niezależnie od liczby. Po KROKU 7 (relacje) będzie 19,
+po KROKU 6 (Docker) 20.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

@@ -24,11 +24,17 @@ Potrzebne: **JDK 17+**, **Docker Desktop**, Maven (albo IntelliJ, który ma go w
 # 1. Baza danych
 docker compose up -d
 
-# 2. Aplikacja
+# 2. Backend
 mvn spring-boot:run
+
+# 3. Frontend (w drugim terminalu)
+cd frontend
+npm install     # tylko za pierwszym razem
+npm run dev
 ```
 
-Aplikacja: http://localhost:8080
+Aplikacja: http://localhost:5173
+Backend (API): http://localhost:8080
 Przeglądarka bazy (Adminer): http://localhost:8081 — system `PostgreSQL`,
 serwer `db`, użytkownik / hasło / baza: `musicclub`
 
@@ -61,9 +67,16 @@ src/main/resources/
 src/test/
 ├── java/                          # @SpringBootTest, @DataJpaTest, @WebMvcTest, Mockito
 └── resources/application-test.properties  # profil testowy (H2 w pamięci)
-```
 
-Katalog `frontend/` dojdzie w KROKU 5 — patrz `docs/PLAN.md`.
+frontend/                        # KROK 5: React + Vite (szczegóły w frontend/README.md)
+├── vite.config.js               # proxy /api → localhost:8080 (bez CORS-a)
+└── src/
+    ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy
+    ├── auth/                    # kto zalogowany + ochrona tras
+    ├── i18n/                    # pl.json i en.json
+    ├── components/              # Layout z menu i przełącznikiem PL/EN
+    └── pages/                   # Login, Register, Home, Users
+```
 
 ## API
 
@@ -83,9 +96,11 @@ Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 
 ## Stan projektu
 
-Kroki 0–4 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
+Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
-obsługa błędów, Swagger. **23 testy przechodzą.**
+obsługa błędów, Swagger oraz frontend w React.
+**23 testy backendu przechodzą**, przepływy frontendu sprawdzone w przeglądarce.
 
-Zaliczone 15 z 17 wymagań potrzebnych na piątkę — szczegóły w `docs/WYMAGANIA.md`.
-Następny krok: frontend w React.
+Zaliczone 17 z 17 wymagań potrzebnych na piątkę, ale zostaje jeszcze czerwony
+punkt nr 6 (relacja OneToMany) — obowiązkowy niezależnie od licznika.
+Szczegóły w `docs/WYMAGANIA.md`. Następny krok: całość na Docker Compose.

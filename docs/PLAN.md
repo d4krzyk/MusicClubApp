@@ -18,8 +18,8 @@ Nie zaczynamy kolejnego kroku, dopóki poprzedni się nie uruchamia i nie rozumi
 | 2 | Spring Boot ↔ baza (JPA, repozytorium, testy) | ✅ zrobione |
 | 3 | Spring Security — rejestracja i logowanie | ✅ zrobione |
 | 4 | Połączenie logowania/rejestracji z bazą | ✅ zrobione |
-| 5 | Frontend React (logowanie, rejestracja, homepage) | ⬜ następny |
-| 6 | Całość (backend + frontend + baza) na Docker Compose | ⬜ |
+| 5 | Frontend React (logowanie, rejestracja, homepage) | ✅ zrobione |
+| 6 | Całość (backend + frontend + baza) na Docker Compose | ⬜ następny |
 | 7 | Domena: artyści, gatunki, posty, algorytm dopasowań | ⬜ |
 
 Kroki 1–6 to plan od kolegi. Krok 7 dokłada właściwy pomysł na aplikację —
@@ -197,7 +197,7 @@ złe hasło (401), poprawne logowanie (sesja + ciasteczko na 14 dni),
 stronicowanie i sortowanie, błąd 404, oba języki, Swagger z 6 endpointami.
 **23 testy przechodzą.**
 
-## KROK 5 — frontend React (następny)
+## KROK 5 — frontend React (zrobione)
 
 `frontend/` (Vite + React), strony: rejestracja, logowanie, homepage.
 Przełącznik języka PL/EN — po stronie frontu `react-i18next` (domyka wymaganie nr 2).

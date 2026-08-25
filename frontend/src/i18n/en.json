@@ -1,0 +1,77 @@
+{
+  "app": {
+    "name": "MusicClub",
+    "tagline": "Meet people who share your taste in music"
+  },
+  "menu": {
+    "home": "Home",
+    "users": "Users",
+    "login": "Sign in",
+    "register": "Sign up",
+    "logout": "Sign out",
+    "language": "Language"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "required": "required"
+  },
+  "login": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "rememberMe": "Remember me on this device",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "noAccount": "No account yet?",
+    "goToRegister": "Create one",
+    "registered": "Account created. You can sign in now."
+  },
+  "register": {
+    "title": "Create an account",
+    "username": "Username",
+    "usernameHint": "3–50 characters: letters, digits and _ . -",
+    "email": "Email address",
+    "password": "Password",
+    "passwordHint": "at least 8 characters",
+    "confirmPassword": "Repeat password",
+    "submit": "Create account",
+    "submitting": "Creating account…",
+    "haveAccount": "Already have an account?",
+    "goToLogin": "Sign in"
+  },
+  "home": {
+    "welcome": "Hi, {{username}}!",
+    "yourAccount": "Your account",
+    "email": "Email",
+    "role": "Role",
+    "memberSince": "Member since",
+    "nextSteps": "Coming next",
+    "nextStepsText": "Favourite artists, posts and friend suggestions arrive in the next stage."
+  },
+  "users": {
+    "title": "Users",
+    "search": "Search by username or email",
+    "searchPlaceholder": "e.g. anna",
+    "pageSize": "Per page",
+    "sortBy": "Sort by",
+    "sortUsername": "username",
+    "sortEmail": "email",
+    "sortCreatedAt": "join date",
+    "direction": "Order",
+    "asc": "ascending",
+    "desc": "descending",
+    "colUsername": "Username",
+    "colEmail": "Email",
+    "colCreatedAt": "Joined",
+    "empty": "No users found.",
+    "summary": "Page {{page}} of {{totalPages}} · {{total}} found",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "errors": {
+    "network": "Cannot reach the server. Check whether the backend is running.",
+    "unknown": "Something went wrong. Please try again."
+  }
+}
