@@ -23,6 +23,19 @@ public record PostResponse(
     Integer spotifyStartSeconds,
     LocalDateTime createdAt,
     /** Czy zalogowany uzytkownik moze skasowac ten post (jest autorem albo adminem). */
-    boolean canDelete
+    boolean canDelete,
+    /**
+     * Czy zalogowany uzytkownik moze edytowac ten post.
+     *
+     * <p>Tylko autor. Administrator moderuje przez USUWANIE, a nie przez
+     * przerabianie cudzych wypowiedzi - inaczej pod czyims nazwiskiem
+     * moglaby sie pojawic tresc, ktorej nigdy nie napisal.</p>
+     */
+    boolean canEdit,
+    /**
+     * Adres utworu w postaci nadajacej sie do wklejenia w formularz edycji.
+     * Skladany z zapisanego identyfikatora, wiec bez parametrow sledzacych.
+     */
+    String spotifyUrl
 ) {
 }

@@ -29,6 +29,9 @@ public class PostMapper {
      */
     private static final String SPOTIFY_EMBED = "https://open.spotify.com/embed/track/";
 
+    /** Zwykly adres utworu - wstawiamy go w formularz edycji. */
+    private static final String SPOTIFY_TRACK = "https://open.spotify.com/track/";
+
     /**
      * @param ogladajacy    zalogowany uzytkownik (moze byc {@code null} - wtedy
      *                      nikt nie moze nic kasowac)
@@ -48,7 +51,9 @@ public class PostMapper {
             adresOdtwarzacza(post),
             post.getSpotifyStartSeconds(),
             post.getCreatedAt(),
-            czyMozeUsunac(post, ogladajacy));
+            czyMozeUsunac(post, ogladajacy),
+            czyMozeEdytowac(post, ogladajacy),
+            post.getSpotifyTrackId() == null ? null : SPOTIFY_TRACK + post.getSpotifyTrackId());
     }
 
     private String adresAvatara(User user) {
@@ -60,11 +65,8 @@ public class PostMapper {
     /**
      * Sklada adres odtwarzacza z zapisanego identyfikatora utworu.
      *
-     * <p><b>Uwaga co do wybranego momentu utworu:</b> dokladamy parametr
-     * {@code t=<sekundy>}, ale Spotify NIE gwarantuje, ze odtwarzacz w ramce
-     * go uwzgledni - dla zwyklych utworow zwykle zaczyna od poczatku.
-     * Sekunde i tak zapisujemy w bazie i pokazujemy pod odtwarzaczem jako
-     * podpowiedz ("od 1:23"), zeby informacja nie przepadla.</p>
+     * <p>Parametr {@code t=<sekundy>} ustawia moment, od ktorego zaczyna sie
+     * odtwarzanie - odtwarzacz pokazuje go na pasku postepu.</p>
      */
     private String adresOdtwarzacza(Post post) {
         if (post.getSpotifyTrackId() == null) {
@@ -75,6 +77,12 @@ public class PostMapper {
 
         Integer start = post.getSpotifyStartSeconds();
         return (start != null && start > 0) ? adres + "?t=" + start : adres;
+    }
+
+    /** Edytowac moze WYLACZNIE autor - administrator moderuje usuwaniem. */
+    private boolean czyMozeEdytowac(Post post, User ogladajacy) {
+        return ogladajacy != null
+            && post.getAuthor().getUsername().equals(ogladajacy.getUsername());
     }
 
     /** Post moze skasowac jego autor albo administrator. */

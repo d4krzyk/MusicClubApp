@@ -118,15 +118,13 @@
     "content": "Co słychać?",
     "contentPlaceholder": "Napisz coś o muzyce, której teraz słuchasz…",
     "images": "Zdjęcia",
-    "imagesHint": "Maksymalnie 10 zdjęć, każde do 5 MB",
-    "imagesSelected": "Wybrano zdjęć: {{count}}",
+    "imagesHint": "Możesz dodawać zdjęcia partiami — maksymalnie {{max}}, każde do 5 MB",
+    "imagesSelected": "Wybrano {{count}} z {{max}}",
     "spotify": "Link do utworu ze Spotify",
     "spotifyPlaceholder": "https://open.spotify.com/track/…",
     "spotifyHint": "Wklej link z przycisku „Udostępnij\" w Spotify",
     "startAt": "Zacznij od (min:sek)",
-    "startAtHint": "Opcjonalnie, np. 1:23",
-    "startAtBadge": "Wybrany moment: {{time}}",
-    "startAtWarning": "Spotify nie zawsze uwzględnia wybrany moment w odtwarzaczu na stronie.",
+    "startAtHint": "Opcjonalnie, np. 1:23 (maksymalnie 30:00)",
     "publish": "Opublikuj",
     "publishing": "Publikowanie…",
     "published": "Post został opublikowany.",
@@ -134,6 +132,13 @@
     "empty": "Nie ma jeszcze żadnych postów. Napisz pierwszy!",
     "gallery": "Galeria zdjęć ({{count}})",
     "showMore": "Pokaż więcej",
-    "loadMore": "Pokaż starsze posty"
+    "loadMore": "Pokaż starsze posty",
+    "edit": "Edytuj",
+    "updated": "Post został zaktualizowany.",
+    "chooseImages": "Wybierz zdjęcia",
+    "addMoreImages": "Dodaj kolejne",
+    "clearImages": "Usuń wszystkie",
+    "imagesNotEditable": "Zdjęć nie można zmienić po opublikowaniu. Aby je wymienić, usuń post i dodaj go ponownie.",
+    "spotifyClearHint": "Wyczyść pole, aby usunąć utwór z posta"
   }
 }

@@ -37,6 +37,17 @@ public class OperationNotAllowedException extends RuntimeException {
             "Mozna usuwac tylko wlasne posty", "error.post.notowner");
     }
 
+    /**
+     * Proba edycji cudzego posta.
+     *
+     * <p>Osobny komunikat od usuwania, bo tu nawet administrator nie ma prawa -
+     * moderacja polega na kasowaniu, nie na przerabianiu cudzych tresci.</p>
+     */
+    public static OperationNotAllowedException cudzyPostEdycja() {
+        return new OperationNotAllowedException(
+            "Mozna edytowac tylko wlasne posty", "error.post.notauthor");
+    }
+
     public String getMessageKey() {
         return messageKey;
     }

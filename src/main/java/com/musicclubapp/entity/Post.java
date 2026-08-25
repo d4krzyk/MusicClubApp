@@ -41,6 +41,17 @@ public class Post {
     /** Gorny limit dlugosci tresci - tyle samo pilnuje walidacja w DTO. */
     public static final int MAX_DLUGOSC_TRESCI = 2000;
 
+    /**
+     * Najpozniejszy moment startu utworu, jaki przyjmujemy - 30 minut.
+     *
+     * <p><b>Dlaczego nie sprawdzamy prawdziwej dlugosci utworu?</b> Zeby ja
+     * poznac, trzeba zapytac Spotify Web API o {@code duration_ms}, a to
+     * wymaga tokenu aplikacji, ktorego jeszcze nie mamy (integracja ze Spotify
+     * jest zaplanowana na pozniej). Do tego czasu pilnujemy tylko zakresu,
+     * ktory ma sens dla utworu muzycznego.</p>
+     */
+    public static final int MAX_SEKUNDA_STARTU = 1800;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -133,6 +144,13 @@ public class Post {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    /** Podmienia utwor i moment startu - uzywane przy edycji posta. */
+    public void ustawUtwor(String trackId, Integer startSeconds) {
+        this.spotifyTrackId = trackId;
+        // Sekunda bez utworu nie ma sensu - czyscimy ja razem z identyfikatorem
+        this.spotifyStartSeconds = trackId == null ? null : startSeconds;
     }
 
     public String getSpotifyTrackId() {

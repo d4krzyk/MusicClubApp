@@ -118,15 +118,13 @@
     "content": "What's going on?",
     "contentPlaceholder": "Write something about the music you are listening to…",
     "images": "Images",
-    "imagesHint": "At most 10 images, each up to 5 MB",
-    "imagesSelected": "Selected images: {{count}}",
+    "imagesHint": "You can add images in batches — at most {{max}}, each up to 5 MB",
+    "imagesSelected": "Selected {{count}} of {{max}}",
     "spotify": "Spotify track link",
     "spotifyPlaceholder": "https://open.spotify.com/track/…",
     "spotifyHint": "Paste the link from the \"Share\" button in Spotify",
     "startAt": "Start at (min:sec)",
-    "startAtHint": "Optional, e.g. 1:23",
-    "startAtBadge": "Chosen moment: {{time}}",
-    "startAtWarning": "Spotify does not always honour the chosen moment in the web player.",
+    "startAtHint": "Optional, e.g. 1:23 (at most 30:00)",
     "publish": "Publish",
     "publishing": "Publishing…",
     "published": "Your post has been published.",
@@ -134,6 +132,13 @@
     "empty": "No posts yet. Be the first!",
     "gallery": "Photo gallery ({{count}})",
     "showMore": "Show more",
-    "loadMore": "Show older posts"
+    "loadMore": "Show older posts",
+    "edit": "Edit",
+    "updated": "The post has been updated.",
+    "chooseImages": "Choose images",
+    "addMoreImages": "Add more",
+    "clearImages": "Remove all",
+    "imagesNotEditable": "Images cannot be changed after publishing. To replace them, delete the post and add it again.",
+    "spotifyClearHint": "Clear the field to remove the track from the post"
   }
 }

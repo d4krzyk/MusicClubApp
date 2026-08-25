@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Carousel from 'react-bootstrap/Carousel';
 import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
@@ -11,20 +12,22 @@ const PROG_KARUZELI = 4;
 /**
  * Zdjecia posta.
  *
- * <p><b>Dwa tryby wyswietlania</b> - o to prosil pomysl na aplikacje:</p>
+ * <p><b>Dwa tryby wyswietlania:</b></p>
  * <ul>
- *   <li><b>do {@value #PROG_KARUZELI} zdjec</b> - siatka miniatur; wszystko
- *       widac naraz, bez klikania,</li>
+ *   <li><b>do 4 zdjec</b> - siatka miniatur; wszystko widac naraz,</li>
  *   <li><b>wiecej</b> - karuzela, ktora zajmuje tyle miejsca co jedno zdjecie.
- *       Bez tego post z dwunastoma zdjeciami rozpychalby cala tablice
- *       i przewijanie do nastepnego wpisu trwaloby wieki.</li>
+ *       Bez tego post z dwunastoma zdjeciami rozpychalby cala tablice.</li>
  * </ul>
  *
- * <p>Klikniecie dowolnego zdjecia otwiera je w powiekszeniu.</p>
+ * <p><b>Sterowanie pod zdjeciem, nie na nim.</b> Wbudowane strzalki Bootstrapa
+ * sa biale i lezą NA zdjeciu - na jasnym obrazku po prostu znikaja. Dlatego
+ * dokladamy pasek pod karuzela: strzalki na tle przycisku, licznik "3 / 6"
+ * i kropki. Wbudowane strzalki zostawiamy, bo na ciemnych zdjeciach sa wygodne.</p>
  */
 export default function GaleriaZdjec({ adresy, autor }) {
   const { t } = useTranslation();
   const [powiekszone, setPowiekszone] = useState(null);
+  const [aktywne, setAktywne] = useState(0);
 
   if (!adresy || adresy.length === 0) {
     return null;
@@ -32,12 +35,18 @@ export default function GaleriaZdjec({ adresy, autor }) {
 
   const karuzela = adresy.length > PROG_KARUZELI;
 
+  // Modulo pozwala przewijac w kolko - z ostatniego zdjecia wracamy na pierwsze
+  const przesun = (o) => setAktywne((i) => (i + o + adresy.length) % adresy.length);
+
   return (
     <>
       {karuzela ? (
         <>
           <Carousel
+            activeIndex={aktywne}
+            onSelect={setAktywne}
             interval={null}
+            indicators={false}
             className="rounded overflow-hidden border"
             aria-label={t('posts.gallery', { count: adresy.length })}
           >
@@ -53,8 +62,44 @@ export default function GaleriaZdjec({ adresy, autor }) {
               </Carousel.Item>
             ))}
           </Carousel>
-          <div className="text-body-secondary small mt-1">
-            {t('posts.gallery', { count: adresy.length })}
+
+          {/* Pasek sterowania POD zdjeciem - zawsze widoczny */}
+          <div className="d-flex align-items-center justify-content-center gap-3 mt-2">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={() => przesun(-1)}
+              aria-label={t('users.previous')}
+            >
+              ‹
+            </Button>
+
+            <div className="d-flex align-items-center gap-2">
+              {/* Kropki - klikalne, pokazuja ile jest zdjec i ktore ogladamy */}
+              {adresy.map((adres, i) => (
+                <button
+                  key={adres}
+                  type="button"
+                  className={`kropka-galerii ${i === aktywne ? 'aktywna' : ''}`}
+                  onClick={() => setAktywne(i)}
+                  aria-label={`${i + 1} / ${adresy.length}`}
+                  aria-current={i === aktywne}
+                />
+              ))}
+            </div>
+
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={() => przesun(1)}
+              aria-label={t('users.next')}
+            >
+              ›
+            </Button>
+
+            <span className="text-body-secondary small ms-1">
+              {aktywne + 1} / {adresy.length}
+            </span>
           </div>
         </>
       ) : (

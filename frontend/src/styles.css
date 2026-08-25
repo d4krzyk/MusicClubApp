@@ -73,6 +73,51 @@ body {
   background: #000;
 }
 
+/*
+   Ramka z odtwarzaczem Spotify.
+
+   Zaokraglenie MUSI byc na otoczce z overflow: hidden, a nie na samym
+   <iframe>. Strona Spotify w srodku ma wlasne, prostokatne tlo - przy
+   border-radius nalozonym na iframe wystawalo ono w rogach jako jasne
+   naroznikii. Otoczka przycina wszystko, co wychodzi poza zaokraglenie.
+*/
+.ramka-spotify {
+  border-radius: 12px;
+  overflow: hidden;
+  /* Tlo odtwarzacza Spotify - dzieki temu rogi nie migaja na bialo
+     przez ulamek sekundy, zanim ramka sie zaladuje */
+  background: #121212;
+  line-height: 0;
+}
+
+.ramka-spotify iframe {
+  display: block;
+  border: 0;
+}
+
+/* Kropki pod karuzela - wlasne, bo wbudowane Bootstrapa lezą NA zdjeciu
+   i na jasnych obrazkach sa niewidoczne */
+.kropka-galerii {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bs-secondary-bg);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.kropka-galerii:hover {
+  background: var(--bs-secondary-color);
+}
+
+.kropka-galerii.aktywna {
+  background: var(--bs-primary);
+  width: 20px;
+  border-radius: 4px;
+}
+
 /* Tekst posta ma zachowywac wpisane przez uzytkownika przejscia do nowej linii */
 .tresc-postu {
   white-space: pre-wrap;

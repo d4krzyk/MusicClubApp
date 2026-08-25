@@ -2,6 +2,7 @@ package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -123,6 +126,28 @@ public class PostController {
             .toUri();
 
         return ResponseEntity.created(location).body(utworzony);
+    }
+
+    /**
+     * Edycja wlasnego posta.
+     *
+     * <p>Tutaj zwykly JSON, nie multipart - nie przesylamy plikow, bo zdjec
+     * nie da sie zmienic po opublikowaniu.</p>
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "Edytuje wlasny post (tresc i utwor ze Spotify)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Post zapisany"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego posta"),
+        @ApiResponse(responseCode = "409", description = "Proba edycji cudzego posta"),
+        @ApiResponse(responseCode = "422", description = "Blad walidacji")
+    })
+    public ResponseEntity<PostResponse> update(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePostRequest zadanie,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(postService.update(id, authentication.getName(), zadanie));
     }
 
     /**

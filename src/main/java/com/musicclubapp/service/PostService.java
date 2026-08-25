@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
@@ -84,6 +85,40 @@ public class PostService {
             }
         }
 
+        return postMapper.toResponse(postRepository.save(post), autor);
+    }
+
+    /**
+     * Edycja wlasnego posta - tresc i utwor ze Spotify.
+     *
+     * <p>Edytowac moze WYLACZNIE autor. Administrator, mimo szerszych
+     * uprawnien, tez nie - moderacja polega na usuwaniu, a nie na przerabianiu
+     * cudzych wypowiedzi.</p>
+     *
+     * <p>Zdjecia zostaja bez zmian - patrz komentarz w {@link UpdatePostRequest}.</p>
+     *
+     * @throws OperationNotAllowedException gdy ktos probuje edytowac cudzy post
+     */
+    @Transactional
+    public PostResponse update(Long id, String login, UpdatePostRequest request) {
+        Post post = postRepository.findByIdWithAuthor(id)
+            .orElseThrow(() -> new NoSuchElementFoundException("post", id));
+
+        if (!post.getAuthor().getUsername().equals(login)) {
+            throw OperationNotAllowedException.cudzyPostEdycja();
+        }
+
+        post.setContent(request.content().trim());
+
+        /*
+         * Puste pole z linkiem oznacza "usun utwor z posta" - dlatego
+         * ustawiamy wynik parsowania zawsze, takze gdy jest pusty.
+         */
+        post.ustawUtwor(
+            SpotifyLink.wyciagnijIdUtworu(request.spotifyUrl()).orElse(null),
+            request.spotifyStartSeconds());
+
+        User autor = post.getAuthor();
         return postMapper.toResponse(postRepository.save(post), autor);
     }
 

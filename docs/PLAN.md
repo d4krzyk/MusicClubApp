@@ -331,6 +331,94 @@ osadzamy adresem `open.spotify.com/embed/track/...`.
 
 ---
 
+## Szlifowanie postów (drugie podejście)
+
+Pierwsza wersja tablicy działała, ale w praktyce kilka rzeczy uwierało.
+Poprawki i to, czego się przy nich nauczyliśmy:
+
+### Zaokrąglenie ramki Spotify
+
+Objaw: w rogach odtwarzacza prześwitywały białe narożniki.
+
+`border-radius` na samym `<iframe>` przycina **ramkę**, ale nie to, co jest
+w środku — strona Spotify ma własne, prostokątne tło i wystaje spod zaokrąglenia.
+Rozwiązanie: otoczka z `overflow: hidden`, która przycina zawartość:
+
+```css
+.ramka-spotify { border-radius: 12px; overflow: hidden; background: #121212; line-height: 0; }
+.ramka-spotify iframe { display: block; border: 0; }
+```
+
+`line-height: 0` i `display: block` usuwają kilkupikselowy pasek pod ramką —
+`<iframe>` jest domyślnie elementem liniowym i przeglądarka rezerwuje mu miejsce
+na „ogonki" liter (jak przy `<img>`).
+
+### Moment utworu — czego (jeszcze) nie umiemy sprawdzić
+
+Chcieliśmy pilnować, żeby wybrany moment nie wychodził poza długość piosenki.
+**Nie da się tego zrobić dziś:** prawdziwą długość (`duration_ms`) zna tylko
+Spotify Web API, a to wymaga tokenu aplikacji, którego nie mamy — integracja
+ze Spotify jest zaplanowana na później. Do tego czasu sprawdzamy tylko zakres,
+który ma sens dla utworu muzycznego: **0:00–30:00** (`Post.MAX_SEKUNDA_STARTU`).
+Komunikat mówi wprost, jaki jest limit — „podaj wartość od 0" niczego nie tłumaczy.
+
+Etykieta „Wybrany moment" wyleciała: odtwarzacz i tak sam pokazuje, od którego
+miejsca startuje, więc powtarzanie tego obok było szumem.
+
+### Wybieranie zdjęć partiami
+
+Zwykły `<input type="file" multiple>` przy każdym otwarciu okna **zastępuje**
+poprzedni wybór — zdjęć z dwóch folderów nie dało się dodać, a pomyłka oznaczała
+zaczynanie od zera. `WybieraczZdjec` trzyma listę plików w stanie Reacta i tylko
+**dokłada** do niej nowe. Dwie rzeczy, o których łatwo zapomnieć:
+
+- **`e.target.value = ''` po każdym wyborze.** Bez tego wybranie tego samego
+  pliku drugi raz (np. po usunięciu go z listy) nie wywoła `onChange` —
+  przeglądarka uznaje, że wartość się nie zmieniła.
+- **Duplikaty odsiewamy po nazwie i rozmiarze.** Dwa obiekty `File` wskazujące
+  ten sam plik nie są sobie równe, więc `includes` nic tu nie da.
+
+### Sterowanie karuzelą pod zdjęciem
+
+Wbudowane strzałki Bootstrapa są białe i leżą **na** zdjęciu — na jasnym obrazku
+po prostu znikają. Dołożyliśmy pasek pod karuzelą: strzałki na tle przycisku,
+klikalne kropki i licznik „3 / 6". Karuzela jest przez to **sterowana**
+(`activeIndex` + `onSelect`), bo stan trzyma teraz nasz komponent.
+
+### Kto może edytować, kto usuwać
+
+| Kto | Edycja | Usunięcie |
+|-----|--------|-----------|
+| autor | tak | tak |
+| admin | **nie** | tak |
+
+Świadoma decyzja: moderacja polega na **kasowaniu**, nie na przerabianiu cudzych
+treści — inaczej admin mógłby podmienić komuś post i zostawić jego nazwisko pod spodem.
+Backend pilnuje tego w `PostService.update` (`OperationNotAllowedException`,
+odpowiedź **409**), a frontend tylko rysuje przyciski według pól `canEdit`
+i `canDelete`, **wyliczonych przez serwer**. Nigdy odwrotnie — gdyby o dostępie
+decydował warunek `if` w przeglądarce, wystarczyłoby go obejść narzędziami
+deweloperskimi.
+
+**Zdjęć nie da się zmienić po opublikowaniu.** Edycja idzie zwykłym JSON-em
+(`PUT /api/posts/{id}`), a nie `multipart` — dokładanie i usuwanie plików
+na już istniejącym poście to osobny temat i na razie go nie otwieramy.
+Formularz mówi o tym wprost, zamiast milczeć.
+
+### Pułapka przy sprawdzaniu tego w przeglądarce
+
+Dwa testy Playwrighta „padły" i obie porażki okazały się **błędem samego testu**:
+
+- selektor `.btn-outline-secondary` na strzałkę karuzeli łapał też przycisk
+  „Edytuj" (ta sama klasa Bootstrapa),
+- `.ramka-spotify` bez zawężenia do karty łapał odtwarzacz z **innego** posta
+  na tej samej stronie.
+
+Wniosek: szukaj po `aria-label` i zawsze zawężaj zapytanie do konkretnej karty.
+Zanim uznasz kod za zepsuty, sprawdź, czy test na pewno patrzy tam, gdzie myślisz.
+
+---
+
 ## KROK 6 — całość na Docker Compose
 
 Do `docker-compose.yml` dochodzą usługi `backend` i `frontend`.

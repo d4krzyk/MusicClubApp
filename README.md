@@ -74,8 +74,8 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── i18n/                    # pl.json i en.json
-    ├── components/              # Layout z menu i przełącznikiem PL/EN
-    └── pages/                   # Login, Register, Home, Settings, Users
+    ├── components/              # Layout, Post, GaleriaZdjec, WybieraczZdjec, Ikony
+    └── pages/                   # Login, Register, Home, Feed, Settings, Users
 ```
 
 ## API
@@ -91,6 +91,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | PUT | `/api/profile/password` | zmiana własnego hasła (wymaga obecnego) |
 | GET | `/api/posts` | tablica postów, od najnowszych |
 | POST | `/api/posts` | dodanie posta (tekst + zdjęcia + Spotify) |
+| PUT | `/api/posts/{id}` | edycja posta (tekst i utwór) — **tylko autor** |
 | DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
 | PUT | `/api/profile/avatar` | wgranie zdjęcia profilowego |
 | DELETE | `/api/profile/avatar` | usunięcie zdjęcia profilowego |
@@ -116,6 +117,18 @@ projektu ustaw własne przez zmienne środowiskowe `ADMIN_USERNAME`,
 | zwykły użytkownik | swój profil, ustawienia konta (login, e-mail, hasło) |
 | administrator | to samo + listę wszystkich kont, zmianę ról i usuwanie cudzych postów |
 
+Kto co może zrobić z postem:
+
+| Kto | Edycja | Usunięcie |
+|-----|--------|-----------|
+| autor posta | tak | tak |
+| administrator | **nie** — cudzych treści się nie przerabia | tak (moderacja) |
+| pozostali | nie | nie |
+
+Przyciski „Edytuj" i „Usuń" rysujemy na podstawie pól `canEdit` i `canDelete`,
+które **wylicza serwer**. Backend i tak sprawdza uprawnienia ponownie przy
+każdym zapytaniu, więc dorysowanie sobie przycisku w przeglądarce nic nie da.
+
 Zwykły użytkownik **nie widzi nigdzie swojej roli** — API nie wysyła pola
 `role`, tylko flagę `admin` (`true`/`false`) potrzebną do narysowania menu.
 O prawdziwym dostępie decyduje `SecurityConfig` po stronie backendu, więc
@@ -128,7 +141,7 @@ Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
 obsługa błędów, Swagger oraz frontend w React.
-**56 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
+**60 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
 
 Zaliczone 18 wymagań, w tym **wszystkie 7 czerwonych**. Szczegóły
 w `docs/WYMAGANIA.md`. Następny krok: całość na Docker Compose.

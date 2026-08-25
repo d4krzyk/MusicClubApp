@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
@@ -68,7 +69,7 @@ class PostServiceTest {
         given(postRepository.save(any(Post.class))).willAnswer(w -> w.getArgument(0));
         given(postMapper.toResponse(any(Post.class), any())).willReturn(
             new PostResponse(1L, "anna", null, "tresc", List.of(), null, null,
-                LocalDateTime.now(), true));
+                LocalDateTime.now(), true, true, null));
     }
 
     @Test
@@ -201,6 +202,66 @@ class PostServiceTest {
         postService.delete(5L, "admin");
 
         verify(postRepository).delete(cudzy);
+    }
+
+    @Test
+    @DisplayName("autor moze edytowac swoj post - tresc i utwor")
+    void autorEdytujeSwojPost() {
+        Post post = new Post(anna(), "stara tresc");
+        given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
+        przygotujZapis();
+
+        postService.update(5L, "anna", new UpdatePostRequest(
+            "nowa tresc", "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT", 30));
+
+        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(zapisany.capture());
+        assertThat(zapisany.getValue().getContent()).isEqualTo("nowa tresc");
+        assertThat(zapisany.getValue().getSpotifyTrackId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
+        assertThat(zapisany.getValue().getSpotifyStartSeconds()).isEqualTo(30);
+    }
+
+    @Test
+    @DisplayName("wyczyszczenie linku usuwa utwor RAZEM z wybranym momentem")
+    void pustyLinkUsuwaUtwor() {
+        Post post = new Post(anna(), "tresc");
+        post.ustawUtwor("4cOdK2wGLETKBW3PvgPWqT", 30);
+        given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
+        przygotujZapis();
+
+        postService.update(5L, "anna", new UpdatePostRequest("tresc", "", 30));
+
+        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(zapisany.capture());
+        assertThat(zapisany.getValue().getSpotifyTrackId()).isNull();
+        // sekunda bez utworu nie ma sensu - musi zniknac razem z nim
+        assertThat(zapisany.getValue().getSpotifyStartSeconds()).isNull();
+    }
+
+    @Test
+    @DisplayName("zwykly uzytkownik NIE zedytuje cudzego posta")
+    void cudzyPostNieDoEdycji() {
+        Post cudzy = new Post(new User("bartek", "bartek@example.com", "hash"), "tresc");
+        given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
+
+        assertThatThrownBy(() -> postService.update(
+            5L, "anna", new UpdatePostRequest("przejete", null, null)))
+            .isInstanceOf(OperationNotAllowedException.class);
+
+        verify(postRepository, never()).save(any(Post.class));
+    }
+
+    @Test
+    @DisplayName("nawet ADMINISTRATOR nie edytuje cudzego posta - moderuje usuwaniem")
+    void administratorTezNieEdytuje() {
+        Post cudzy = new Post(new User("bartek", "bartek@example.com", "hash"), "tresc");
+        given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
+
+        assertThatThrownBy(() -> postService.update(
+            5L, "admin", new UpdatePostRequest("podmienione", null, null)))
+            .isInstanceOf(OperationNotAllowedException.class);
+
+        verify(postRepository, never()).save(any(Post.class));
     }
 
     @Test

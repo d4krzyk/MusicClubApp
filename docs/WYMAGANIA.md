@@ -27,7 +27,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User` oraz `Post` 1—N `PostImage` | ✅ posty |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
 | 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — logowanie, rejestracja, homepage, lista | ✅ KROK 5 |
-| 13 | Testy jednostkowe serwisów | `service/UserServiceTest` (Mockito, 6 testów) | ✅ KROK 3 |
+| 13 | Testy jednostkowe serwisów | `service/UserServiceTest` + `service/PostServiceTest` (Mockito) | ✅ KROK 3 |
 | 15 | Rejestracja + logowanie, Spring Security (config NIE deprecated) | `config/SecurityConfig` — `SecurityFilterChain` + lambda DSL, sesja + BCrypt | ✅ KROK 3 |
 
 ## ⚪ Do wyboru — dla wszystkich typów projektów
@@ -70,5 +70,9 @@ wymagane 17 na piątkę.
 - nr 18 — baza na Dockerze działa, całość jednym `docker compose up` w KROKU 6
 
 W zapasie zostają jeszcze 7 (ManyToMany — dojdzie z artystami), 16 i 23.
+
+**Testy: 60 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+`@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
+dla całego kontekstu.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

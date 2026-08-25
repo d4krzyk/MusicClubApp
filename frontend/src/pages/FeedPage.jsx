@@ -7,21 +7,30 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
+import Collapse from 'react-bootstrap/Collapse';
 import client, { opiszBlad } from '../api/client';
 import Pole from '../components/Pole';
 import Post from '../components/Post';
+import WybieraczZdjec from '../components/WybieraczZdjec';
+import { IkonaKrzyzyk, IkonaPlus } from '../components/Ikony';
 import { naSekundy } from '../utils/czas';
 
 /** Ile postow pobieramy za jednym razem. */
 const NA_STRONE = 10;
 
+/** Limit zdjec w jednym poscie - taki sam jak po stronie backendu. */
+const MAKS_ZDJEC = 10;
+
 /**
- * Tablica: formularz nowego posta i lista wpisow.
+ * Tablica: przycisk dodawania posta i lista wpisow.
+ *
+ * <p>Formularz jest domyslnie SCHOWANY za przyciskiem "Nowy post". Wczesniej
+ * zajmowal pol ekranu nad tablica, przez co do pierwszego wpisu trzeba bylo
+ * przewijac - a przez wieksza czesc czasu uzytkownik chce czytac, nie pisac.</p>
  *
  * <p>Posty doladowujemy przyciskiem "pokaz starsze" zamiast klasycznego
- * stronicowania z numerami - na tablicy spolecznosciowej naturalniej jest
- * doklejac kolejne wpisy pod spodem. Backend i tak stronicuje normalnie
- * (wymagania nr 3 i 5), tylko frontend inaczej to pokazuje.</p>
+ * stronicowania z numerami - na tablicy naturalniej jest doklejac kolejne
+ * wpisy pod spodem. Backend i tak stronicuje normalnie (wymagania nr 3 i 5).</p>
  */
 export default function FeedPage() {
   const { t } = useTranslation();
@@ -32,6 +41,7 @@ export default function FeedPage() {
   const [ladowanie, setLadowanie] = useState(true);
   const [bladListy, setBladListy] = useState(null);
   const [komunikat, setKomunikat] = useState(null);
+  const [formularzOtwarty, setFormularzOtwarty] = useState(false);
 
   const pobierz = useCallback(async (numerStrony, dolacz) => {
     setLadowanie(true);
@@ -61,6 +71,13 @@ export default function FeedPage() {
     // Nowy post ma byc na gorze - to najszybszy sposob, bez ponownego pobierania
     setPosty((poprzednie) => [nowy, ...poprzednie]);
     setKomunikat(t('posts.published'));
+    setFormularzOtwarty(false);
+  }
+
+  function poEdycji(zaktualizowany) {
+    setPosty((poprzednie) =>
+      poprzednie.map((p) => (p.id === zaktualizowany.id ? zaktualizowany : p)));
+    setKomunikat(t('posts.updated'));
   }
 
   async function usun(id) {
@@ -80,7 +97,32 @@ export default function FeedPage() {
   return (
     <Row className="justify-content-center">
       <Col lg={8}>
-        <FormularzPostu onDodano={poDodaniu} />
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h1 className="h4 mb-0">{t('posts.title')}</h1>
+
+          <Button
+            variant={formularzOtwarty ? 'outline-secondary' : 'primary'}
+            onClick={() => setFormularzOtwarty((otwarty) => !otwarty)}
+            aria-expanded={formularzOtwarty}
+            aria-controls="formularz-postu"
+          >
+            {formularzOtwarty ? (
+              <>
+                <IkonaKrzyzyk /> {t('common.cancel')}
+              </>
+            ) : (
+              <>
+                <IkonaPlus /> {t('posts.newPost')}
+              </>
+            )}
+          </Button>
+        </div>
+
+        <Collapse in={formularzOtwarty}>
+          <div id="formularz-postu">
+            <FormularzPostu onDodano={poDodaniu} />
+          </div>
+        </Collapse>
 
         {komunikat && (
           <Alert variant="success" dismissible onClose={() => setKomunikat(null)}>
@@ -90,7 +132,7 @@ export default function FeedPage() {
         {bladListy && <Alert variant="danger">{bladListy}</Alert>}
 
         {posty.map((post) => (
-          <Post key={post.id} post={post} onDelete={usun} />
+          <Post key={post.id} post={post} onDelete={usun} onUpdate={poEdycji} />
         ))}
 
         {!ladowanie && posty.length === 0 && !bladListy && (
@@ -179,10 +221,6 @@ function FormularzPostu({ onDodano }) {
   return (
     <Card className="mb-4">
       <Card.Body>
-        <Card.Title as="h2" className="h5 mb-3">
-          {t('posts.newPost')}
-        </Card.Title>
-
         {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
 
         <Form onSubmit={wyslij} noValidate>
@@ -197,25 +235,12 @@ function FormularzPostu({ onDodano }) {
             wiersze={3}
           />
 
-          <Form.Group className="mb-3" controlId="images">
-            <Form.Label>{t('posts.images')}</Form.Label>
-            <Form.Control
-              type="file"
-              accept="image/*"
-              multiple
-              isInvalid={Boolean(bledyPol.images)}
-              onChange={(e) => setPliki(Array.from(e.target.files).slice(0, 10))}
-            />
-            {bledyPol.images ? (
-              <Form.Control.Feedback type="invalid">{bledyPol.images}</Form.Control.Feedback>
-            ) : (
-              <Form.Text muted>
-                {pliki.length > 0
-                  ? t('posts.imagesSelected', { count: pliki.length })
-                  : t('posts.imagesHint')}
-              </Form.Text>
-            )}
-          </Form.Group>
+          <WybieraczZdjec
+            pliki={pliki}
+            onZmiana={setPliki}
+            maks={MAKS_ZDJEC}
+            blad={bledyPol.images}
+          />
 
           <Row>
             <Col md={8}>
@@ -243,11 +268,6 @@ function FormularzPostu({ onDodano }) {
               />
             </Col>
           </Row>
-
-          {/* Uczciwe ostrzezenie - Spotify bywa kapryśne z parametrem czasu */}
-          {startAt && spotifyUrl && (
-            <p className="text-body-secondary small">{t('posts.startAtWarning')}</p>
-          )}
 
           <Button type="submit" disabled={wysylanie}>
             {wysylanie ? t('posts.publishing') : t('posts.publish')}
