@@ -28,7 +28,9 @@ import java.util.Objects;
  *   <li>{@code Post} N—1 {@code User} ({@link #author}) - wielu postow
  *       nalezy do jednego uzytkownika,</li>
  *   <li>{@code Post} 1—N {@code PostImage} ({@link #images}) - jeden post
- *       moze miec wiele zdjec.</li>
+ *       moze miec wiele zdjec,</li>
+ *   <li>{@code Post} 1—N {@code Reaction} ({@link #reactions}) - a takze
+ *       wiele reakcji, kazda od innego uzytkownika.</li>
  * </ul>
  *
  * <p>Wymaganie nr 4 (data i czas) realizuje {@link #createdAt} - po nim
@@ -98,6 +100,22 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("position ASC")
     private List<PostImage> images = new ArrayList<>();
+
+    /**
+     * Reakcje na post - druga relacja OneToMany tej encji.
+     *
+     * <p><b>Po co ta lista, skoro liczniki i tak liczymy zapytaniem?</b>
+     * Dla {@code cascade} przy usuwaniu. Bez niej skasowanie posta, na ktory
+     * ktos zareagowal, konczy sie bledem klucza obcego - w tabeli reakcji
+     * zostalyby wiersze wskazujace na nieistniejacy post.</p>
+     *
+     * <p>Do wyswietlania licznikow tej kolekcji <b>nie uzywamy</b>: przy
+     * dwudziestu postach na stronie Hibernate poszedlby po reakcje kazdego
+     * z nich osobno (problem N+1). Zamiast tego jedno zapytanie grupujace
+     * liczy wszystko naraz - patrz {@code ReactionRepository}.</p>
+     */
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Reaction> reactions = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -171,6 +189,10 @@ public class Post {
 
     public List<PostImage> getImages() {
         return images;
+    }
+
+    public List<Reaction> getReactions() {
+        return reactions;
     }
 
     public LocalDateTime getCreatedAt() {

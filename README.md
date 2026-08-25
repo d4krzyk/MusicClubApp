@@ -52,7 +52,7 @@ docs/                         # plan pracy i checklista wymagań
 src/main/java/com/musicclubapp/
 ├── MusicClubAppApplication.java   # punkt wejścia
 ├── config/                        # SecurityConfig, I18nConfig
-├── controller/                    # REST API (Auth, Profile, Users)
+├── controller/                    # REST API (Auth, Post, Reaction, Profile, Users)
 ├── dto/                           # dane wejściowe/wyjściowe + walidacja
 ├── entity/                        # encje JPA (klasa = tabela)
 ├── error/                         # GlobalExceptionHandler i wyjątki
@@ -74,8 +74,8 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── i18n/                    # pl.json i en.json
-    ├── components/              # Layout, Post, GaleriaZdjec, WybieraczZdjec, Ikony
-    └── pages/                   # Login, Register, Home, Feed, Settings, Users
+    ├── components/              # Layout, Post, Reakcje, GaleriaZdjec, WybieraczZdjec
+    └── pages/                   # Login, Register, Home, Feed, Profile, Settings, Users
 ```
 
 ## API
@@ -93,6 +93,9 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | POST | `/api/posts` | dodanie posta (tekst + zdjęcia + Spotify) |
 | PUT | `/api/posts/{id}` | edycja posta (tekst i utwór) — **tylko autor** |
 | DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
+| PUT | `/api/posts/{id}/reaction` | ustawia reakcję (`FIRE`, `MID`, `MEH`) |
+| DELETE | `/api/posts/{id}/reaction` | cofa własną reakcję |
+| GET | `/api/profiles/{username}` | publiczny profil użytkownika |
 | PUT | `/api/profile/avatar` | wgranie zdjęcia profilowego |
 | DELETE | `/api/profile/avatar` | usunięcie zdjęcia profilowego |
 | GET | `/api/users` | lista ze stronicowaniem i sortowaniem — **tylko admin** |
@@ -117,6 +120,12 @@ projektu ustaw własne przez zmienne środowiskowe `ADMIN_USERNAME`,
 | zwykły użytkownik | swój profil, ustawienia konta (login, e-mail, hasło) |
 | administrator | to samo + listę wszystkich kont, zmianę ról i usuwanie cudzych postów |
 
+Uwaga na dwie podobne ścieżki: `/api/profile` (l. poj.) to **moje** konto —
+zmiana loginu, e-maila, hasła, awatara. `/api/profiles/{username}` (l. mn.)
+to **czyjś** profil do oglądania: sam login, awatar, data dołączenia i liczba
+postów. Publiczny profil celowo **nie zawiera e-maila ani roli** — to osobne
+DTO, a nie ten sam obiekt z wyciętymi polami.
+
 Kto co może zrobić z postem:
 
 | Kto | Edycja | Usunięcie |
@@ -140,8 +149,10 @@ Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 
 Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
-obsługa błędów, Swagger oraz frontend w React.
-**60 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
+obsługa błędów, Swagger oraz frontend w React. Do tego posty z reakcjami
+(🔥 / 😐 / 🥱) i publiczne profile użytkowników.
+**68 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
 
 Zaliczone 18 wymagań, w tym **wszystkie 7 czerwonych**. Szczegóły
-w `docs/WYMAGANIA.md`. Następny krok: całość na Docker Compose.
+w `docs/WYMAGANIA.md`. Następny krok: znajomi (wymaganie nr 7 — ManyToMany),
+potem całość na Docker Compose.

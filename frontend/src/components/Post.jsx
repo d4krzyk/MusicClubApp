@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
@@ -9,6 +10,7 @@ import Col from 'react-bootstrap/Col';
 import Avatar from './Avatar';
 import GaleriaZdjec from './GaleriaZdjec';
 import Pole from './Pole';
+import Reakcje from './Reakcje';
 import { IkonaKosz, IkonaOlowek } from './Ikony';
 import client, { opiszBlad } from '../api/client';
 import { sformatujDate } from '../utils/daty';
@@ -30,10 +32,21 @@ export default function Post({ post, onDelete, onUpdate }) {
     <Card className="mb-3">
       <Card.Body>
         <div className="d-flex align-items-center gap-2 mb-3">
-          <Avatar avatarUrl={post.authorAvatarUrl} username={post.authorUsername} rozmiar={40} />
+          {/*
+            Awatar i nazwa prowadza na profil autora - tak jak na Facebooku.
+            Oba sa w JEDNYM linku, zeby czytnik ekranu przeczytal to jako
+            jedno odniesienie ("profil uzytkownika X"), a nie dwa osobne.
+          */}
+          <Link
+            to={`/profil/${post.authorUsername}`}
+            className="d-flex align-items-center gap-2 text-decoration-none text-body"
+            title={t('profile.visit', { username: post.authorUsername })}
+          >
+            <Avatar avatarUrl={post.authorAvatarUrl} username={post.authorUsername} rozmiar={40} />
+            <span className="fw-semibold link-autora">{post.authorUsername}</span>
+          </Link>
 
           <div className="flex-grow-1">
-            <div className="fw-semibold">{post.authorUsername}</div>
             <div className="text-body-secondary small">
               {sformatujDate(post.createdAt, i18n.language)}
             </div>
@@ -104,6 +117,8 @@ export default function Post({ post, onDelete, onUpdate }) {
                 />
               </div>
             )}
+
+            <Reakcje post={post} onZmiana={onUpdate} />
           </>
         )}
       </Card.Body>

@@ -11,7 +11,8 @@
     "logout": "Wyloguj",
     "language": "Język",
     "settings": "Ustawienia",
-    "feed": "Tablica"
+    "feed": "Tablica",
+    "profile": "Profil"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -140,5 +141,28 @@
     "clearImages": "Usuń wszystkie",
     "imagesNotEditable": "Zdjęć nie można zmienić po opublikowaniu. Aby je wymienić, usuń post i dodaj go ponownie.",
     "spotifyClearHint": "Wyczyść pole, aby usunąć utwór z posta"
+  },
+  "profile": {
+    "visit": "Zobacz profil: {{username}}",
+    "memberSince": "W serwisie od {{date}}",
+    "postCount_one": "{{count}} post",
+    "postCount_few": "{{count}} posty",
+    "postCount_many": "{{count}} postów",
+    "postCount_other": "{{count}} postów",
+    "posts": "Posty",
+    "noPosts": "Ten użytkownik nie napisał jeszcze żadnego posta.",
+    "noPostsSelf": "Nie masz jeszcze żadnych postów. Napisz pierwszy na tablicy!",
+    "editAccount": "Ustawienia konta",
+    "notFound": "Nie znaleziono takiego użytkownika."
+  },
+  "reactions": {
+    "FIRE": "Ogień",
+    "MID": "Średnie",
+    "MEH": "Słabe",
+    "total_one": "{{count}} reakcja",
+    "total_few": "{{count}} reakcje",
+    "total_many": "{{count}} reakcji",
+    "total_other": "{{count}} reakcji",
+    "error": "Nie udało się zapisać reakcji"
   }
 }

@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
@@ -25,11 +26,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -53,6 +56,9 @@ class PostServiceTest {
     @Mock
     private PostMapper postMapper;
 
+    @Mock
+    private ReactionService reactionService;
+
     @InjectMocks
     private PostService postService;
 
@@ -67,9 +73,18 @@ class PostServiceTest {
 
     private void przygotujZapis() {
         given(postRepository.save(any(Post.class))).willAnswer(w -> w.getArgument(0));
-        given(postMapper.toResponse(any(Post.class), any())).willReturn(
+        given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(1L, "anna", null, "tresc", List.of(), null, null,
-                LocalDateTime.now(), true, true, null));
+                LocalDateTime.now(), true, true, null, ReactionSummary.pusta()));
+    }
+
+    /**
+     * Edycja dodatkowo pyta o reakcje, ktore post juz zebral - inaczej
+     * po zapisaniu zmiany liczniki zniknelyby z ekranu.
+     */
+    private void przygotujEdycje() {
+        przygotujZapis();
+        given(reactionService.podsumowania(anyList(), any())).willReturn(Map.of());
     }
 
     @Test
@@ -209,7 +224,7 @@ class PostServiceTest {
     void autorEdytujeSwojPost() {
         Post post = new Post(anna(), "stara tresc");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
-        przygotujZapis();
+        przygotujEdycje();
 
         postService.update(5L, "anna", new UpdatePostRequest(
             "nowa tresc", "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT", 30));
@@ -227,7 +242,7 @@ class PostServiceTest {
         Post post = new Post(anna(), "tresc");
         post.ustawUtwor("4cOdK2wGLETKBW3PvgPWqT", 30);
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
-        przygotujZapis();
+        przygotujEdycje();
 
         postService.update(5L, "anna", new UpdatePostRequest("tresc", "", 30));
 

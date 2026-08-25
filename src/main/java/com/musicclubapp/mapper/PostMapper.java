@@ -1,6 +1,7 @@
 package com.musicclubapp.mapper;
 
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
@@ -33,10 +34,12 @@ public class PostMapper {
     private static final String SPOTIFY_TRACK = "https://open.spotify.com/track/";
 
     /**
-     * @param ogladajacy    zalogowany uzytkownik (moze byc {@code null} - wtedy
-     *                      nikt nie moze nic kasowac)
+     * @param ogladajacy zalogowany uzytkownik (moze byc {@code null} - wtedy
+     *                   nikt nie moze nic kasowac)
+     * @param reakcje    policzone reakcje tego posta; dla swiezo utworzonego
+     *                   wpisu podaj {@link ReactionSummary#pusta()}
      */
-    public PostResponse toResponse(Post post, User ogladajacy) {
+    public PostResponse toResponse(Post post, User ogladajacy, ReactionSummary reakcje) {
         List<String> adresyZdjec = post.getImages().stream()
             .map(PostImage::getFileName)
             .map(nazwa -> SCIEZKA_PLIKOW + nazwa)
@@ -53,7 +56,8 @@ public class PostMapper {
             post.getCreatedAt(),
             czyMozeUsunac(post, ogladajacy),
             czyMozeEdytowac(post, ogladajacy),
-            post.getSpotifyTrackId() == null ? null : SPOTIFY_TRACK + post.getSpotifyTrackId());
+            post.getSpotifyTrackId() == null ? null : SPOTIFY_TRACK + post.getSpotifyTrackId(),
+            reakcje);
     }
 
     private String adresAvatara(User user) {

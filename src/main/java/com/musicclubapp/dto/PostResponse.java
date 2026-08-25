@@ -36,6 +36,8 @@ public record PostResponse(
      * Adres utworu w postaci nadajacej sie do wklejenia w formularz edycji.
      * Skladany z zapisanego identyfikatora, wiec bez parametrow sledzacych.
      */
-    String spotifyUrl
+    String spotifyUrl,
+    /** Liczniki reakcji i informacja, ktora z nich wybral ogladajacy. */
+    ReactionSummary reactions
 ) {
 }

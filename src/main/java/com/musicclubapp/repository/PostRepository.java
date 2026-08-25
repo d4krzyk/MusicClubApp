@@ -53,4 +53,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      */
     @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.id = :id")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
+
+    /**
+     * Ile postow napisal dany uzytkownik - liczba na jego profilu.
+     *
+     * <p>Nazwa metody wystarczy Springowi do zbudowania zapytania, wiec
+     * {@code @Query} nie jest tu potrzebne. Liczymy w bazie zamiast pobierac
+     * posty i wywolywac {@code size()} - inaczej wyswietlenie samej liczby
+     * ciagneloby przez siec wszystkie wpisy razem z trescia.</p>
+     */
+    long countByAuthorUsername(String username);
 }

@@ -11,7 +11,8 @@
     "logout": "Sign out",
     "language": "Language",
     "settings": "Settings",
-    "feed": "Feed"
+    "feed": "Feed",
+    "profile": "Profile"
   },
   "common": {
     "loading": "Loading…",
@@ -140,5 +141,24 @@
     "clearImages": "Remove all",
     "imagesNotEditable": "Images cannot be changed after publishing. To replace them, delete the post and add it again.",
     "spotifyClearHint": "Clear the field to remove the track from the post"
+  },
+  "profile": {
+    "visit": "View {{username}}'s profile",
+    "memberSince": "Member since {{date}}",
+    "postCount_one": "{{count}} post",
+    "postCount_other": "{{count}} posts",
+    "posts": "Posts",
+    "noPosts": "This user has not written any posts yet.",
+    "noPostsSelf": "You have no posts yet. Write your first one on the feed!",
+    "editAccount": "Account settings",
+    "notFound": "No such user."
+  },
+  "reactions": {
+    "FIRE": "Fire",
+    "MID": "Mid",
+    "MEH": "Meh",
+    "total_one": "{{count}} reaction",
+    "total_other": "{{count}} reactions",
+    "error": "Could not save the reaction"
   }
 }

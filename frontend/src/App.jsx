@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
+import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 
@@ -35,6 +36,28 @@ export default function App() {
               element={
                 <TylkoZalogowany>
                   <FeedPage />
+                </TylkoZalogowany>
+              }
+            />
+            {/*
+              Dwie sciezki, jedna strona: /profil to skrot do wlasnego profilu
+              (wygodny link z menu), /profil/:username to czyjs profil.
+              Rozne adresy sa wazne - dzieki nim da sie wyslac komus link
+              do konkretnego profilu.
+            */}
+            <Route
+              path="/profil"
+              element={
+                <TylkoZalogowany>
+                  <ProfilePage />
+                </TylkoZalogowany>
+              }
+            />
+            <Route
+              path="/profil/:username"
+              element={
+                <TylkoZalogowany>
+                  <ProfilePage />
                 </TylkoZalogowany>
               }
             />

@@ -146,6 +146,18 @@ public class SecurityConfig {
 
                 // Wlasny profil - kazdy zalogowany, ale tylko swoj (patrz ProfileController)
                 .requestMatchers("/api/profile/**").authenticated()
+
+                /*
+                 * Publiczne profile innych uzytkownikow (liczba mnoga!).
+                 * "Publiczne" znaczy tu "widoczne dla kazdego ZALOGOWANEGO",
+                 * a nie dla calego internetu - z ulicy nie da sie przegladac,
+                 * kto korzysta z serwisu.
+                 *
+                 * Regule pisemy jawnie, mimo ze anyRequest() ponizej zrobilby
+                 * to samo: przy nastepnej zmianie widac wtedy od razu, ze to
+                 * decyzja, a nie przeoczenie.
+                 */
+                .requestMatchers("/api/profiles/**").authenticated()
                 // zapytania OPTIONS wysyla sama przegladarka przed wlasciwym zapytaniem (CORS preflight)
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 // cala reszta wymaga zalogowania

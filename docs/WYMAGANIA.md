@@ -24,10 +24,10 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 |---|-----------|-------------|--------|
 | 1 | Użycie JPA | `entity/User.java`, `repository/UserRepository.java` | ✅ KROK 2 |
 | 2 | Wsparcie min. 2 języków (PL/EN) | backend: `lang/messages*.properties` + `I18nConfig`; front: `i18next` + przełącznik PL/EN w menu | ✅ KROK 5 |
-| 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User` oraz `Post` 1—N `PostImage` | ✅ posty |
+| 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User`, `Post` 1—N `PostImage`, `Post` 1—N `Reaction` (a `Reaction` N—1 `User`) | ✅ posty |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
 | 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — logowanie, rejestracja, homepage, lista | ✅ KROK 5 |
-| 13 | Testy jednostkowe serwisów | `service/UserServiceTest` + `service/PostServiceTest` (Mockito) | ✅ KROK 3 |
+| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest` (Mockito) | ✅ KROK 3 |
 | 15 | Rejestracja + logowanie, Spring Security (config NIE deprecated) | `config/SecurityConfig` — `SecurityFilterChain` + lambda DSL, sesja + BCrypt | ✅ KROK 3 |
 
 ## ⚪ Do wyboru — dla wszystkich typów projektów
@@ -35,10 +35,10 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | # | Wymaganie | Gdzie u nas | Status |
 |---|-----------|-------------|--------|
 | 3 | Stronicowanie + wybór liczby elementów (backend) | `Pageable` + widoczne sterowanie na `/users` (5/10/20) | ✅ KROK 2 + 5 |
-| 4 | Encja z datą/czasem i jej wykorzystanie | `User.createdAt`, `Post.createdAt`, `Match.matchedAt` | ✅ KROK 2 (User) |
+| 4 | Encja z datą/czasem i jej wykorzystanie | `User.createdAt` (data dołączenia na profilu), `Post.createdAt` (sortowanie tablicy), `Reaction.createdAt` | ✅ KROK 2 |
 | 5 | Sortowanie (backend) | `Sort` w `Pageable` + wybór pola i kierunku na `/users` | ✅ KROK 2 + 5 |
 | 7 | OneToOne **lub** ManyToMany | `User` N—N `Artist` — dojdzie razem z artystami ze Spotify | ⬜ następny etap |
-| 8 | Własne zapytania `@Query` / natywne | `UserRepository.searchByUsernameOrEmail`, później algorytm dopasowań | ✅ KROK 2 |
+| 8 | Własne zapytania `@Query` / natywne | `UserRepository.searchByUsernameOrEmail`, `PostRepository.findFeed` (JOIN FETCH), `ReactionRepository.policzDlaPostow` (GROUP BY + wyrażenie konstruktora) | ✅ KROK 2 |
 | 10 | **Własna** adnotacja walidacyjna | `@UniqueUsername` (pole) + `@PasswordsMatch` (klasa) | ✅ KROK 3 |
 | 11 | `@ControllerAdvice` + wyjątek gdy brak elementu | `error/GlobalExceptionHandler` + `NoSuchElementFoundException` | ✅ KROK 3 |
 | 14 | `@DataJpaTest` do testów zapytań | `repository/UserRepositoryTest` | ✅ KROK 2 |
@@ -50,9 +50,9 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 
 | # | Wymaganie | Gdzie u nas | Status |
 |---|-----------|-------------|--------|
-| 22 | Używanie `ResponseEntity` | każda metoda w `AuthController` i `UserController` | ✅ KROK 3 |
+| 22 | Używanie `ResponseEntity` | każda metoda każdego kontrolera (Auth, Post, Reaction, Profile, Users) | ✅ KROK 3 |
 | 23 | HATEOAS (Spring RESTful) | — | ⬜ opcjonalne (nie planujemy) |
-| 24 | Swagger (Spring RPC) | `springdoc-openapi` → `/swagger-ui.html`, 6 endpointów | ✅ KROK 3 |
+| 24 | Swagger (Spring RPC) | `springdoc-openapi` → `/swagger-ui.html`, 18 endpointów z opisami | ✅ KROK 3 |
 | 25 | `@WebMvcTest` **oraz** `@SpringBootTest` | `AuthControllerTest` (8 testów) + `MusicClubAppApplicationTests` | ✅ KROK 3 |
 
 ---
@@ -71,7 +71,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 7 (ManyToMany — dojdzie z artystami), 16 i 23.
 
-**Testy: 60 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 68 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu.
 

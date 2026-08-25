@@ -419,6 +419,92 @@ Zanim uznasz kod za zepsuty, sprawdź, czy test na pewno patrzy tam, gdzie myśl
 
 ---
 
+## Profile i reakcje
+
+### Reakcje: 🔥 / 😐 / 🥱
+
+Trzecia para relacji `OneToMany`/`ManyToOne` w projekcie: `Reaction` wskazuje
+na `Post` **oraz** na `User`, a `Post` trzyma listę reakcji.
+
+**Jedna osoba = jedna reakcja na dany post.** Pilnuje tego `UNIQUE (post_id, user_id)`
+**w bazie**, nie tylko warunek w Javie. Sam kod da się obejść dwoma zapytaniami
+wysłanymi w tej samej chwili: oba sprawdzą „czy już jest?", oba dostaną „nie ma"
+i oba zapiszą. Baza odrzuci taki duplikat niezależnie od tego, co robi aplikacja.
+Zmiana zdania podmienia `type` w istniejącym wierszu, zamiast dodawać drugi.
+
+**`@Enumerated(EnumType.STRING)`, nie domyślny `ORDINAL`.** Przy `ORDINAL` baza
+trzyma pozycję na liście (0, 1, 2) — wystarczyłoby dopisać czwartą reakcję
+*w środku* enuma, żeby wszystkie dotychczasowe zmieniły znaczenie. I nikt by
+tego nie zauważył, bo żadne zapytanie by się nie wywaliło. Przy okazji Hibernate
+sam dokłada w PostgreSQL `CHECK (type IN ('FIRE','MID','MEH'))`.
+
+**Liczniki: jedno zapytanie na całą stronę, nie jedno na post.** Przy dwudziestu
+postach byłoby dwadzieścia dodatkowych zapytań (N+1). Zamiast tego `GROUP BY`
+liczy wszystko naraz, a `SELECT new ...ReactionCount(...)` (wyrażenie
+konstruktora JPQL) wrzuca wiersze prosto do rekordu — zamiast `Object[]`
+i odczytywania kolumn po numerach.
+
+**Kolekcja `reactions` w `Post` istnieje głównie dla `cascade`.** Bez niej
+skasowanie posta, na który ktoś zareagował, kończy się błędem klucza obcego.
+Do wyświetlania liczników jej nie używamy — właśnie przez N+1.
+
+**`PUT` ustawia, `DELETE` cofa** — zamiast jednego „przełącznika". Dzięki temu
+`PUT` jest idempotentny: wysłany dwa razy daje ten sam wynik, a nie kasuje
+tego, co przed chwilą ustawił. To przeglądarka wie, czy klikam we własną
+reakcję (wtedy `DELETE`), bo to ona trzyma stan ekranu.
+
+Emotki są **wyłącznie we froncie** (`Reakcje.jsx`). Backend zna tylko nazwy,
+więc podmiana obrazka nie wymaga ruszania bazy.
+
+### Publiczne profile
+
+`GET /api/profiles/{username}` — liczba mnoga, celowo inna ścieżka niż
+`/api/profile` (moje konto) i niż `/api/users/**` (panel administratora).
+
+**Osobne DTO, nie to samo z wyciętymi polami.** `PublicProfileResponse` nie ma
+e-maila ani roli. Gdyby profil publiczny używał `UserResponse`, wystarczyłoby
+wejść na czyjś profil, żeby poznać jego adres. O tym, co wychodzi na zewnątrz,
+decyduje **wybór klasy**, a nie `if` w środku mapowania — taki warunek łatwo
+przeoczyć przy kolejnej zmianie.
+
+**Jedna strona na profil własny i cudzy.** Różnica to kilka przycisków, więc
+osobny komponent oznaczałby dwa pliki robiące prawie to samo. O tym, który
+wariant widzimy, decyduje pole `self` **z serwera**.
+
+Przy 404 pokazujemy własny komunikat („Nie znaleziono takiego użytkownika")
+zamiast serwerowego „Nie znaleziono: user o identyfikatorze …" — `user`
+to nazwa z kodu, a nie słowo ze świata odwiedzającego.
+
+### Gdzie będzie edycja profilu (Spotify) — decyzja na przyszłość
+
+Kiedy dojdzie integracja ze Spotify (wybór ulubionych artystów z top 20
+i utworów z top 50), **edycja ma być na własnym profilu, nie w ustawieniach**.
+Podział:
+
+| Ekran | Co tam należy |
+|-------|---------------|
+| Ustawienia | sprawy konta: login, e-mail, hasło — nikt poza właścicielem tego nie widzi |
+| Profil | to, co widzą inni: awatar, artyści, utwory — edycja **w miejscu** |
+
+Powód jest praktyczny: zaznaczając artystów chce się od razu widzieć efekt na
+profilu. W osobnej zakładce ustawień klika się checkboxy na ślepo i dopiero
+potem sprawdza, co z tego wyszło. Dodatkowo `SettingsPage` zostaje mała,
+zamiast zamienić się w worek na wszystko.
+
+### Pułapka: `:visible` przy testach w przeglądarce
+
+Dwa testy Playwrighta padły z powodu samych testów, nie kodu:
+
+1. `locator('.card').filter({ hasText: 'stara treść' })` przestaje pasować
+   po edycji posta — filtr szuka tekstu, który właśnie zmieniliśmy.
+2. `form:has(textarea)` łapało **zwinięty** formularz „Nowy post" — `Collapse`
+   z Bootstrapa zostawia go w DOM, tylko ukrytego. Ratuje `:visible`.
+
+Ta sama lekcja co poprzednio: zanim uznasz kod za zepsuty, sprawdź, czy test
+na pewno patrzy tam, gdzie myślisz.
+
+---
+
 ## KROK 6 — całość na Docker Compose
 
 Do `docker-compose.yml` dochodzą usługi `backend` i `frontend`.

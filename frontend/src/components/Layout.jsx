@@ -48,6 +48,9 @@ export default function Layout({ children }) {
                   <Nav.Link as={NavLink} to="/feed">
                     {t('menu.feed')}
                   </Nav.Link>
+                  <Nav.Link as={NavLink} to="/profil" end>
+                    {t('menu.profile')}
+                  </Nav.Link>
                   <Nav.Link as={NavLink} to="/settings">
                     {t('menu.settings')}
                   </Nav.Link>
@@ -92,8 +95,13 @@ export default function Layout({ children }) {
 
               {user && (
                 <>
+                  {/*
+                    Wlasny awatar prowadzi na PROFIL, nie do ustawien -
+                    tak dziala to w kazdym serwisie spolecznosciowym.
+                    Ustawienia maja swoja pozycje w menu obok.
+                  */}
                   <Link
-                    to="/settings"
+                    to="/profil"
                     className="d-flex align-items-center gap-2 text-decoration-none text-body"
                   >
                     <Avatar avatarUrl={user.avatarUrl} username={user.username} rozmiar={32} />

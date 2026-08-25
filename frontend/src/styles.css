@@ -123,3 +123,18 @@ body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Nazwa autora nad postem - podkreslamy dopiero pod kursorem, zeby naglowek
+   posta nie wygladal jak zbior linkow */
+.link-autora:hover {
+  text-decoration: underline;
+}
+
+/* Przyciski reakcji: emotka ma byc czytelna, wiec troche wieksza niz tekst.
+   Stala szerokosc minimalna sprawia, ze przyciski nie skacza, gdy licznik
+   przechodzi z jednocyfrowego na dwucyfrowy. */
+.przycisk-reakcji {
+  min-width: 3rem;
+  font-size: 1rem;
+  line-height: 1.2;
+}
