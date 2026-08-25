@@ -1,6 +1,8 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.dto.AdminUserResponse;
 import com.musicclubapp.dto.ChangePasswordRequest;
+import com.musicclubapp.dto.ChangeRoleRequest;
 import com.musicclubapp.dto.RegisterRequest;
 import com.musicclubapp.dto.UpdateProfileRequest;
 import com.musicclubapp.dto.UserResponse;
@@ -8,13 +10,16 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.DuplicateResourceException;
 import com.musicclubapp.error.InvalidCurrentPasswordException;
 import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.UserMapper;
 import com.musicclubapp.repository.UserRepository;
+import com.musicclubapp.storage.FileStorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Logika biznesowa zwiazana z uzytkownikami.
@@ -36,13 +41,16 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final FileStorageService fileStorage;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       UserMapper userMapper) {
+                       UserMapper userMapper,
+                       FileStorageService fileStorage) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
+        this.fileStorage = fileStorage;
     }
 
     /**
@@ -92,12 +100,13 @@ public class UserService {
         return userMapper.toResponse(user);
     }
 
+    /** Podglad konta przez administratora - z rola, bo admin moze ja zmieniac. */
     @Transactional(readOnly = true)
-    public UserResponse getById(Long id) {
+    public AdminUserResponse getByIdForAdmin(Long id) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementFoundException("user", id));
 
-        return userMapper.toResponse(user);
+        return userMapper.toAdminResponse(user);
     }
 
     /**
@@ -161,6 +170,43 @@ public class UserService {
     }
 
     /**
+     * Ustawia nowe zdjecie profilowe i kasuje poprzednie.
+     *
+     * <p>Kolejnosc ma znaczenie: najpierw zapisujemy nowy plik, potem
+     * podmieniamy wpis w bazie, a stary plik kasujemy na koncu. Gdyby
+     * najpierw skasowac stary, a zapis nowego by sie nie powiodl,
+     * uzytkownik zostalby bez zdjecia.</p>
+     */
+    @Transactional
+    public UserResponse updateAvatar(String login, MultipartFile plik) {
+        User user = userRepository.findByUsername(login)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", login));
+
+        String stary = user.getAvatarFileName();
+        String nowy = fileStorage.zapiszObrazek(plik);
+
+        user.setAvatarFileName(nowy);
+        UserResponse odpowiedz = userMapper.toResponse(userRepository.save(user));
+
+        fileStorage.usun(stary);
+        return odpowiedz;
+    }
+
+    /** Usuwa zdjecie profilowe - w interfejsie wraca kolo z inicjalem. */
+    @Transactional
+    public UserResponse removeAvatar(String login) {
+        User user = userRepository.findByUsername(login)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", login));
+
+        String stary = user.getAvatarFileName();
+        user.setAvatarFileName(null);
+
+        UserResponse odpowiedz = userMapper.toResponse(userRepository.save(user));
+        fileStorage.usun(stary);
+        return odpowiedz;
+    }
+
+    /**
      * Wyszukiwanie uzytkownikow ze stronicowaniem i sortowaniem
      * (wymagania nr 3, 5 i 8). Obiekt {@link Pageable} buduje kontroler
      * na podstawie parametrow zapytania.
@@ -169,9 +215,34 @@ public class UserService {
      * {@code SecurityConfig}, nie ta metoda.</p>
      */
     @Transactional(readOnly = true)
-    public Page<UserResponse> search(String fragment, Pageable pageable) {
+    public Page<AdminUserResponse> search(String fragment, Pageable pageable) {
         return userRepository
             .searchByUsernameOrEmail(fragment == null ? "" : fragment, pageable)
-            .map(userMapper::toResponse);
+            .map(userMapper::toAdminResponse);
+    }
+
+    /**
+     * Zmiana roli innego uzytkownika - operacja dostepna tylko administratorowi.
+     *
+     * @param loginAdmina login osoby wykonujacej zmiane (z sesji, nie z zapytania)
+     * @param id          identyfikator konta, ktoremu zmieniamy role
+     * @throws OperationNotAllowedException gdy administrator probuje zmienic wlasna role
+     */
+    @Transactional
+    public AdminUserResponse changeRole(String loginAdmina, Long id, ChangeRoleRequest request) {
+        User cel = userRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", id));
+
+        /*
+         * Login admina bierzemy z sesji, a nie z zapytania - dzieki temu nie da
+         * sie obejsc tej blokady, podajac w JSON-ie cudzy login.
+         */
+        if (cel.getUsername().equals(loginAdmina)) {
+            throw OperationNotAllowedException.wlasnaRola();
+        }
+
+        cel.setRole(request.role());
+
+        return userMapper.toAdminResponse(userRepository.save(cel));
     }
 }

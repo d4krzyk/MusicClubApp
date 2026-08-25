@@ -1,6 +1,7 @@
 package com.musicclubapp.controller;
 
-import com.musicclubapp.dto.UserResponse;
+import com.musicclubapp.dto.AdminUserResponse;
+import com.musicclubapp.dto.ChangeRoleRequest;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,7 +13,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -53,7 +58,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Strona wynikow"),
         @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie")
     })
-    public ResponseEntity<Page<UserResponse>> search(
+    public ResponseEntity<Page<AdminUserResponse>> search(
             @Parameter(description = "Fragment loginu lub e-maila")
             @RequestParam(defaultValue = "") String fragment,
 
@@ -95,7 +100,34 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Dane uzytkownika"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
     })
-    public ResponseEntity<UserResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getById(id));
+    public ResponseEntity<AdminUserResponse> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getByIdForAdmin(id));
+    }
+
+    /**
+     * Zmiana roli innego uzytkownika.
+     *
+     * <p>Uzywamy PATCH, a nie PUT - zmieniamy JEDNO pole, a nie podmieniamy
+     * calego zasobu (wyklad 4, slajd 5 o metodach HTTP).</p>
+     *
+     * <p>Login administratora bierzemy z sesji ({@code authentication}),
+     * nigdy z tresci zapytania - inaczej dalo by sie obejsc blokade zmiany
+     * wlasnej roli, podajac w JSON-ie cudzy login.</p>
+     */
+    @PatchMapping("/{id}/role")
+    @Operation(summary = "Zmienia role uzytkownika (tylko administrator)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Rola zmieniona"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnien administratora"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika"),
+        @ApiResponse(responseCode = "409", description = "Proba zmiany wlasnej roli")
+    })
+    public ResponseEntity<AdminUserResponse> changeRole(
+            @PathVariable Long id,
+            @Valid @RequestBody ChangeRoleRequest zadanie,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+            userService.changeRole(authentication.getName(), id, zadanie));
     }
 }

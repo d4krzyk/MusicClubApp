@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
 import { useAuth } from '../auth/AuthContext';
 import { opiszBlad } from '../api/client';
 import Pole from '../components/Pole';
@@ -43,8 +47,6 @@ export default function LoginPage() {
     } catch (error) {
       const opis = opiszBlad(error);
       setBledyPol(opis.fieldErrors);
-      // messageKey jest null, gdy serwer przyslal gotowy tekst albo gdy
-      // bledy dotycza konkretnych pol i banner jest zbedny
       setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
     } finally {
       // finally - zeby przycisk odblokowal sie takze po bledzie
@@ -53,51 +55,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="karta waska">
-      <h1>{t('login.title')}</h1>
+    <Card className="mx-auto" style={{ maxWidth: 420 }}>
+      <Card.Body className="p-4">
+        <Card.Title as="h1" className="h4 mb-3">
+          {t('login.title')}
+        </Card.Title>
 
-      {komunikatPoRejestracji && <p className="sukces">{t('login.registered')}</p>}
-      {bladOgolny && <p className="blad-ogolny" role="alert">{bladOgolny}</p>}
+        {komunikatPoRejestracji && <Alert variant="success">{t('login.registered')}</Alert>}
+        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
 
-      <form onSubmit={wyslij} noValidate>
-        <Pole
-          id="username"
-          label={t('login.username')}
-          wartosc={username}
-          onChange={setUsername}
-          blad={bledyPol.username}
-          autoComplete="username"
-        />
+        <Form onSubmit={wyslij} noValidate>
+          <Pole
+            id="username"
+            label={t('login.username')}
+            wartosc={username}
+            onChange={setUsername}
+            blad={bledyPol.username}
+            autoComplete="username"
+          />
 
-        <Pole
-          id="password"
-          label={t('login.password')}
-          typ="password"
-          wartosc={password}
-          onChange={setPassword}
-          blad={bledyPol.password}
-          autoComplete="current-password"
-        />
+          <Pole
+            id="password"
+            label={t('login.password')}
+            typ="password"
+            wartosc={password}
+            onChange={setPassword}
+            blad={bledyPol.password}
+            autoComplete="current-password"
+          />
 
-        {/* Wymaganie nr 17 - "zapamietaj mnie" */}
-        <label className="pole-checkbox">
-          <input
-            type="checkbox"
+          {/* Wymaganie nr 17 - "zapamietaj mnie" */}
+          <Form.Check
+            className="mb-3"
+            id="rememberMe"
+            label={t('login.rememberMe')}
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
           />
-          {t('login.rememberMe')}
-        </label>
 
-        {/* disabled podczas wysylania chroni przed podwojnym klinieciem */}
-        <button type="submit" className="przycisk" disabled={wysylanie}>
-          {wysylanie ? t('login.submitting') : t('login.submit')}
-        </button>
-      </form>
+          {/* disabled podczas wysylania chroni przed podwojnym klinieciem */}
+          <Button type="submit" className="w-100" disabled={wysylanie}>
+            {wysylanie ? t('login.submitting') : t('login.submit')}
+          </Button>
+        </Form>
 
-      <p className="pod-formularzem">
-        {t('login.noAccount')} <Link to="/register">{t('login.goToRegister')}</Link>
-      </p>
-    </div>
+        <p className="text-center text-body-secondary small mt-3 mb-0">
+          {t('login.noAccount')} <Link to="/register">{t('login.goToRegister')}</Link>
+        </p>
+      </Card.Body>
+    </Card>
   );
 }

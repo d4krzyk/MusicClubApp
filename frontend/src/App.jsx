@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import FeedPage from './pages/FeedPage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 
@@ -26,6 +27,14 @@ export default function App() {
               element={
                 <TylkoZalogowany>
                   <HomePage />
+                </TylkoZalogowany>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <TylkoZalogowany>
+                  <FeedPage />
                 </TylkoZalogowany>
               }
             />

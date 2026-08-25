@@ -117,6 +117,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // rejestracja, logowanie i pobranie tokenu CSRF - dla wszystkich
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf").permitAll()
+                /*
+                 * Wgrane obrazki. Przegladarka pobiera je zwyklym <img src="...">,
+                 * bez naglowkow i bez sesji - gdyby wymagaly logowania, w tablicy
+                 * zamiast zdjec bylyby puste ramki.
+                 */
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
+
                 // dokumentacja API (wymaganie nr 24) - zeby dalo sie ja pokazac na obronie
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 

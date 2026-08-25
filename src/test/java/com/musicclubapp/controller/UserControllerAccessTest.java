@@ -13,6 +13,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -24,7 +25,9 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -79,10 +82,21 @@ class UserControllerAccessTest {
     }
 
     @Test
+    @WithMockUser(username = "anna", roles = "USER")
+    @DisplayName("zwykly uzytkownik NIE zmieni nikomu roli - to najwazniejsza blokada")
+    void zwyklyUzytkownikNieZmieniRoli() throws Exception {
+        mockMvc.perform(patch("/api/users/2/role")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"role\":\"ADMIN\"}"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("administrator widzi liste")
     void administratorWidziListe() throws Exception {
-        Page<com.musicclubapp.dto.UserResponse> pusta = new PageImpl<>(List.of());
+        Page<com.musicclubapp.dto.AdminUserResponse> pusta = new PageImpl<>(List.of());
         given(userService.search(anyString(), any())).willReturn(pusta);
 
         mockMvc.perform(get("/api/users"))

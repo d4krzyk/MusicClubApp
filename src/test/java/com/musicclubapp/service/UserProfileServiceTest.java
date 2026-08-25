@@ -8,6 +8,7 @@ import com.musicclubapp.error.DuplicateResourceException;
 import com.musicclubapp.error.InvalidCurrentPasswordException;
 import com.musicclubapp.mapper.UserMapper;
 import com.musicclubapp.repository.UserRepository;
+import com.musicclubapp.storage.FileStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +48,10 @@ class UserProfileServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    /** Nowa zaleznosc serwisu - obsluga plikow (zdjecia profilowe). */
+    @Mock
+    private FileStorageService fileStorage;
+
     @InjectMocks
     private UserService userService;
 
@@ -61,7 +66,7 @@ class UserProfileServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "nowy@example.com", false, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now()));
 
         userService.updateProfile("anna", new UpdateProfileRequest("anna", "nowy@example.com"));
 
@@ -108,7 +113,7 @@ class UserProfileServiceTest {
         given(userRepository.existsByEmail("ania@example.com")).willReturn(false);
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "ania", "ania@example.com", false, LocalDateTime.now()));
+            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now()));
 
         userService.updateProfile("anna", new UpdateProfileRequest("ania", "ania@example.com"));
 

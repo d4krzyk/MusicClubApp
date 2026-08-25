@@ -89,8 +89,14 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/auth/me` | dane zalogowanego użytkownika |
 | PUT | `/api/profile` | zmiana własnego loginu i e-maila |
 | PUT | `/api/profile/password` | zmiana własnego hasła (wymaga obecnego) |
+| GET | `/api/posts` | tablica postów, od najnowszych |
+| POST | `/api/posts` | dodanie posta (tekst + zdjęcia + Spotify) |
+| DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
+| PUT | `/api/profile/avatar` | wgranie zdjęcia profilowego |
+| DELETE | `/api/profile/avatar` | usunięcie zdjęcia profilowego |
 | GET | `/api/users` | lista ze stronicowaniem i sortowaniem — **tylko admin** |
 | GET | `/api/users/{id}` | pojedynczy użytkownik — **tylko admin** |
+| PATCH | `/api/users/{id}/role` | zmiana roli — **tylko admin** |
 
 Dokumentacja: http://localhost:8080/swagger-ui.html
 
@@ -108,7 +114,7 @@ projektu ustaw własne przez zmienne środowiskowe `ADMIN_USERNAME`,
 | Kto | Widzi |
 |-----|-------|
 | zwykły użytkownik | swój profil, ustawienia konta (login, e-mail, hasło) |
-| administrator | to samo + listę wszystkich kont |
+| administrator | to samo + listę wszystkich kont, zmianę ról i usuwanie cudzych postów |
 
 Zwykły użytkownik **nie widzi nigdzie swojej roli** — API nie wysyła pola
 `role`, tylko flagę `admin` (`true`/`false`) potrzebną do narysowania menu.
@@ -122,8 +128,7 @@ Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
 obsługa błędów, Swagger oraz frontend w React.
-**34 testy backendu przechodzą**, przepływy frontendu sprawdzone w przeglądarce.
+**56 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
 
-Zaliczone 17 z 17 wymagań potrzebnych na piątkę, ale zostaje jeszcze czerwony
-punkt nr 6 (relacja OneToMany) — obowiązkowy niezależnie od licznika.
-Szczegóły w `docs/WYMAGANIA.md`. Następny krok: całość na Docker Compose.
+Zaliczone 18 wymagań, w tym **wszystkie 7 czerwonych**. Szczegóły
+w `docs/WYMAGANIA.md`. Następny krok: całość na Docker Compose.

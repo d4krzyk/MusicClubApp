@@ -1,11 +1,17 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import Spinner from 'react-bootstrap/Spinner';
 import { useAuth } from './AuthContext';
 
-/** Prosty ekran "ladowanie" pokazywany, zanim poznamy stan sesji. */
+/** Ekran "ladowanie" pokazywany, zanim poznamy stan sesji. */
 function Ladowanie() {
   const { t } = useTranslation();
-  return <p className="info">{t('common.loading')}</p>;
+  return (
+    <div className="text-center py-5 text-body-secondary">
+      <Spinner animation="border" size="sm" className="me-2" />
+      {t('common.loading')}
+    </div>
+  );
 }
 
 /**
@@ -35,10 +41,6 @@ export function TylkoZalogowany({ children }) {
  * porzadkuje interfejs - kazdy moze zmienic sobie dane w konsoli albo wpisac
  * adres recznie. O tym, kto naprawde dostanie dane, decyduje wylacznie
  * backend ({@code SecurityConfig} zwraca 403 dla zwyklego uzytkownika).</p>
- *
- * <p>Niezalogowanego odsylamy na logowanie, a zalogowanego bez uprawnien -
- * na strone glowna. Celowo nie pokazujemy komunikatu "brak uprawnien":
- * po co informowac, ze taka strona w ogole istnieje.</p>
  */
 export function TylkoAdmin({ children }) {
   const { user, sprawdzanieSesji } = useAuth();

@@ -8,6 +8,7 @@ import com.musicclubapp.error.DuplicateResourceException;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.mapper.UserMapper;
 import com.musicclubapp.repository.UserRepository;
+import com.musicclubapp.storage.FileStorageService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +57,10 @@ class UserServiceTest {
     @Mock
     private UserMapper userMapper;
 
+    /** Nowa zaleznosc serwisu - obsluga plikow (zdjecia profilowe). */
+    @Mock
+    private FileStorageService fileStorage;
+
     @InjectMocks
     private UserService userService;
 
@@ -71,7 +76,7 @@ class UserServiceTest {
         given(passwordEncoder.encode("tajneHaslo1")).willReturn("$2a$10$zahashowane");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
         userService.register(poprawneZgloszenie());
 
@@ -93,7 +98,7 @@ class UserServiceTest {
         given(passwordEncoder.encode(anyString())).willReturn("hash");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
         userService.register(poprawneZgloszenie());
 
@@ -141,7 +146,7 @@ class UserServiceTest {
     void istniejacyUzytkownikJestMapowanyNaDto() {
         User user = new User("anna", "anna@example.com", "$2a$10$hash");
         UserResponse oczekiwany =
-            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now());
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now());
 
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(user));
         given(userMapper.toResponse(user)).willReturn(oczekiwany);

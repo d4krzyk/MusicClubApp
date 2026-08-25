@@ -24,6 +24,21 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+
+      /*
+       * Wgrane zdjecia (avatary, obrazki w postach) tez leza po stronie
+       * backendu i tez musza tu byc wymienione.
+       *
+       * Bez tego wpisu Vite nie wie, co zrobic z adresem /uploads/... i - jak
+       * kazdy serwer aplikacji jednostronicowej - oddaje index.html ze
+       * statusem 200. Przegladarka dostaje wiec HTML zamiast obrazka
+       * i w tablicy widac same puste ramki. Blad jest o tyle podstepny,
+       * ze status odpowiedzi wyglada poprawnie.
+       */
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
 });

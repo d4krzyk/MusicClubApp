@@ -1,5 +1,6 @@
 package com.musicclubapp.mapper;
 
+import com.musicclubapp.dto.AdminUserResponse;
 import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
@@ -29,6 +30,22 @@ public class UserMapper {
             user.getUsername(),
             user.getEmail(),
             user.getRole() == Role.ADMIN,
+            user.getAvatarFileName() == null
+                ? null
+                : PostMapper.SCIEZKA_PLIKOW + user.getAvatarFileName(),
+            user.getCreatedAt());
+    }
+
+    /**
+     * Encja -&gt; DTO dla administratora. Rozni sie tym, ze zawiera role -
+     * admin musi ja widziec, zeby moc ja zmienic.
+     */
+    public AdminUserResponse toAdminResponse(User user) {
+        return new AdminUserResponse(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getRole(),
             user.getCreatedAt());
     }
 }

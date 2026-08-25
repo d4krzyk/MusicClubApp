@@ -27,6 +27,8 @@ public record UserResponse(
     String username,
     String email,
     boolean admin,
+    /** Gotowy adres zdjecia profilowego albo {@code null}, gdy uzytkownik go nie wgral. */
+    String avatarUrl,
     LocalDateTime createdAt
 ) {
 }

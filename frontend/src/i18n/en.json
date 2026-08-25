@@ -10,13 +10,17 @@
     "register": "Sign up",
     "logout": "Sign out",
     "language": "Language",
-    "settings": "Settings"
+    "settings": "Settings",
+    "feed": "Feed"
   },
   "common": {
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
-    "required": "required"
+    "required": "required",
+    "delete": "Delete",
+    "confirmDelete": "Delete this post?",
+    "close": "Close"
   },
   "login": {
     "title": "Sign in",
@@ -49,7 +53,8 @@
     "memberSince": "Member since",
     "nextSteps": "Coming next",
     "nextStepsText": "Favourite artists, posts and friend suggestions arrive in the next stage.",
-    "goToSettings": "Change your account details in settings →"
+    "goToSettings": "Change your account details in settings →",
+    "goToFeed": "Go to the feed →"
   },
   "users": {
     "title": "Users",
@@ -69,7 +74,12 @@
     "empty": "No users found.",
     "summary": "Page {{page}} of {{totalPages}} · {{total}} found",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "colRole": "Role",
+    "roleUser": "User",
+    "roleAdmin": "Administrator",
+    "roleChanged": "The role has been changed.",
+    "selfRoleHint": "You cannot change your own role"
   },
   "errors": {
     "network": "Cannot reach the server. Check whether the backend is running.",
@@ -91,5 +101,39 @@
     "confirmNewPassword": "Repeat new password",
     "changePassword": "Change password",
     "passwordChanged": "Your password has been changed."
+  },
+  "avatar": {
+    "title": "Profile picture",
+    "choose": "Choose a picture",
+    "upload": "Upload",
+    "uploading": "Uploading…",
+    "remove": "Remove picture",
+    "saved": "Your profile picture has been saved.",
+    "removed": "Your profile picture has been removed.",
+    "hint": "JPG, PNG, WEBP or GIF, at most 5 MB"
+  },
+  "posts": {
+    "title": "Feed",
+    "newPost": "New post",
+    "content": "What's going on?",
+    "contentPlaceholder": "Write something about the music you are listening to…",
+    "images": "Images",
+    "imagesHint": "At most 10 images, each up to 5 MB",
+    "imagesSelected": "Selected images: {{count}}",
+    "spotify": "Spotify track link",
+    "spotifyPlaceholder": "https://open.spotify.com/track/…",
+    "spotifyHint": "Paste the link from the \"Share\" button in Spotify",
+    "startAt": "Start at (min:sec)",
+    "startAtHint": "Optional, e.g. 1:23",
+    "startAtBadge": "Chosen moment: {{time}}",
+    "startAtWarning": "Spotify does not always honour the chosen moment in the web player.",
+    "publish": "Publish",
+    "publishing": "Publishing…",
+    "published": "Your post has been published.",
+    "deleted": "The post has been deleted.",
+    "empty": "No posts yet. Be the first!",
+    "gallery": "Photo gallery ({{count}})",
+    "showMore": "Show more",
+    "loadMore": "Show older posts"
   }
 }

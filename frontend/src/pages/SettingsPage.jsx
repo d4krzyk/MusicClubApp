@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import { useAuth } from '../auth/AuthContext';
-import { opiszBlad } from '../api/client';
+import client, { opiszBlad } from '../api/client';
 import Pole from '../components/Pole';
+import Avatar from '../components/Avatar';
 
 /**
- * Ustawienia wlasnego konta: dane profilu oraz zmiana hasla.
+ * Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla.
  *
- * <p>Dwa OSOBNE formularze, a nie jeden wielki. Powody:</p>
+ * <p>Trzy OSOBNE formularze, a nie jeden wielki. Powody:</p>
  * <ul>
  *   <li>zmiana hasla wymaga podania obecnego hasla, a zmiana e-maila nie -
  *       w jednym formularzu trzeba by pytac o haslo takze przy poprawianiu
@@ -21,17 +28,113 @@ export default function SettingsPage() {
   const { user } = useAuth();
 
   return (
-    <div className="karta">
-      <h1>{t('settings.title')}</h1>
+    <Row className="justify-content-center">
+      <Col lg={8}>
+        <h1 className="h4 mb-3">{t('settings.title')}</h1>
 
-      {/*
-        key = login. Gdy login sie zmieni, React tworzy formularz od nowa,
-        wiec pola startuja z nowymi wartosciami. Bez tego stan formularza
-        zostalby przy starych danych, mimo ze konto ma juz inna nazwe.
-      */}
-      <FormularzProfilu key={user.username} />
-      <FormularzHasla />
-    </div>
+        <FormularzAvatara />
+
+        {/*
+          key = login. Gdy login sie zmieni, React tworzy formularz od nowa,
+          wiec pola startuja z nowymi wartosciami. Bez tego stan formularza
+          zostalby przy starych danych, mimo ze konto ma juz inna nazwe.
+        */}
+        <FormularzProfilu key={user.username} />
+        <FormularzHasla />
+      </Col>
+    </Row>
+  );
+}
+
+/** Wgranie i usuwanie zdjecia profilowego. */
+function FormularzAvatara() {
+  const { t } = useTranslation();
+  const { user, odswiezUzytkownika } = useAuth();
+
+  const [plik, setPlik] = useState(null);
+  const [blad, setBlad] = useState(null);
+  const [komunikat, setKomunikat] = useState(null);
+  const [wysylanie, setWysylanie] = useState(false);
+
+  async function wgraj(e) {
+    e.preventDefault();
+    if (!plik) {
+      return;
+    }
+    setBlad(null);
+    setKomunikat(null);
+    setWysylanie(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', plik);
+
+      const odpowiedz = await client.put('/profile/avatar', formData);
+      odswiezUzytkownika(odpowiedz.data);
+
+      setPlik(null);
+      e.target.reset();
+      setKomunikat(t('avatar.saved'));
+    } catch (error) {
+      const opis = opiszBlad(error);
+      // Blad pliku backend przypina do pola "images" - tutaj mamy jedno pole,
+      // wiec pokazujemy go po prostu jako komunikat nad formularzem
+      setBlad(opis.fieldErrors.images ?? opis.message ?? t('errors.unknown'));
+    } finally {
+      setWysylanie(false);
+    }
+  }
+
+  async function usun() {
+    setBlad(null);
+    setKomunikat(null);
+    try {
+      const odpowiedz = await client.delete('/profile/avatar');
+      odswiezUzytkownika(odpowiedz.data);
+      setKomunikat(t('avatar.removed'));
+    } catch (error) {
+      setBlad(opiszBlad(error).message ?? t('errors.unknown'));
+    }
+  }
+
+  return (
+    <Card className="mb-4">
+      <Card.Body>
+        <Card.Title as="h2" className="h6 text-uppercase text-body-secondary">
+          {t('avatar.title')}
+        </Card.Title>
+
+        {komunikat && <Alert variant="success">{komunikat}</Alert>}
+        {blad && <Alert variant="danger">{blad}</Alert>}
+
+        <div className="d-flex align-items-center gap-3 flex-wrap">
+          <Avatar avatarUrl={user.avatarUrl} username={user.username} rozmiar={80} />
+
+          <Form onSubmit={wgraj} className="flex-grow-1">
+            <Form.Group controlId="avatar" className="mb-2">
+              <Form.Control
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPlik(e.target.files[0] ?? null)}
+              />
+              <Form.Text muted>{t('avatar.hint')}</Form.Text>
+            </Form.Group>
+
+            <div className="d-flex gap-2">
+              <Button type="submit" size="sm" disabled={!plik || wysylanie}>
+                {wysylanie ? t('avatar.uploading') : t('avatar.upload')}
+              </Button>
+
+              {user.avatarUrl && (
+                <Button type="button" size="sm" variant="outline-danger" onClick={usun}>
+                  {t('avatar.remove')}
+                </Button>
+              )}
+            </div>
+          </Form>
+        </div>
+      </Card.Body>
+    </Card>
   );
 }
 
@@ -73,38 +176,42 @@ function FormularzProfilu() {
   }
 
   return (
-    <section>
-      <h2>{t('settings.profile')}</h2>
+    <Card className="mb-4">
+      <Card.Body>
+        <Card.Title as="h2" className="h6 text-uppercase text-body-secondary">
+          {t('settings.profile')}
+        </Card.Title>
 
-      {zapisano && <p className="sukces">{t('settings.profileSaved')}</p>}
-      {bladOgolny && <p className="blad-ogolny" role="alert">{bladOgolny}</p>}
+        {zapisano && <Alert variant="success">{t('settings.profileSaved')}</Alert>}
+        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
 
-      <form onSubmit={wyslij} noValidate>
-        <Pole
-          id="username"
-          label={t('settings.username')}
-          wartosc={dane.username}
-          onChange={(v) => ustaw('username', v)}
-          blad={bledyPol.username}
-          podpowiedz={t('settings.usernameHint')}
-          autoComplete="username"
-        />
+        <Form onSubmit={wyslij} noValidate>
+          <Pole
+            id="username"
+            label={t('settings.username')}
+            wartosc={dane.username}
+            onChange={(v) => ustaw('username', v)}
+            blad={bledyPol.username}
+            podpowiedz={t('settings.usernameHint')}
+            autoComplete="username"
+          />
 
-        <Pole
-          id="email"
-          label={t('settings.email')}
-          typ="email"
-          wartosc={dane.email}
-          onChange={(v) => ustaw('email', v)}
-          blad={bledyPol.email}
-          autoComplete="email"
-        />
+          <Pole
+            id="email"
+            label={t('settings.email')}
+            typ="email"
+            wartosc={dane.email}
+            onChange={(v) => ustaw('email', v)}
+            blad={bledyPol.email}
+            autoComplete="email"
+          />
 
-        <button type="submit" className="przycisk" disabled={wysylanie}>
-          {wysylanie ? t('settings.saving') : t('settings.save')}
-        </button>
-      </form>
-    </section>
+          <Button type="submit" disabled={wysylanie}>
+            {wysylanie ? t('settings.saving') : t('settings.save')}
+          </Button>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 }
 
@@ -147,48 +254,52 @@ function FormularzHasla() {
   }
 
   return (
-    <section>
-      <h2>{t('settings.password')}</h2>
+    <Card className="mb-4">
+      <Card.Body>
+        <Card.Title as="h2" className="h6 text-uppercase text-body-secondary">
+          {t('settings.password')}
+        </Card.Title>
 
-      {zmieniono && <p className="sukces">{t('settings.passwordChanged')}</p>}
-      {bladOgolny && <p className="blad-ogolny" role="alert">{bladOgolny}</p>}
+        {zmieniono && <Alert variant="success">{t('settings.passwordChanged')}</Alert>}
+        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
 
-      <form onSubmit={wyslij} noValidate>
-        <Pole
-          id="currentPassword"
-          label={t('settings.currentPassword')}
-          typ="password"
-          wartosc={dane.currentPassword}
-          onChange={(v) => ustaw('currentPassword', v)}
-          blad={bledyPol.currentPassword}
-          autoComplete="current-password"
-        />
+        <Form onSubmit={wyslij} noValidate>
+          <Pole
+            id="currentPassword"
+            label={t('settings.currentPassword')}
+            typ="password"
+            wartosc={dane.currentPassword}
+            onChange={(v) => ustaw('currentPassword', v)}
+            blad={bledyPol.currentPassword}
+            autoComplete="current-password"
+          />
 
-        <Pole
-          id="password"
-          label={t('settings.newPassword')}
-          typ="password"
-          wartosc={dane.password}
-          onChange={(v) => ustaw('password', v)}
-          blad={bledyPol.password}
-          podpowiedz={t('settings.newPasswordHint')}
-          autoComplete="new-password"
-        />
+          <Pole
+            id="password"
+            label={t('settings.newPassword')}
+            typ="password"
+            wartosc={dane.password}
+            onChange={(v) => ustaw('password', v)}
+            blad={bledyPol.password}
+            podpowiedz={t('settings.newPasswordHint')}
+            autoComplete="new-password"
+          />
 
-        <Pole
-          id="confirmPassword"
-          label={t('settings.confirmNewPassword')}
-          typ="password"
-          wartosc={dane.confirmPassword}
-          onChange={(v) => ustaw('confirmPassword', v)}
-          blad={bledyPol.confirmPassword}
-          autoComplete="new-password"
-        />
+          <Pole
+            id="confirmPassword"
+            label={t('settings.confirmNewPassword')}
+            typ="password"
+            wartosc={dane.confirmPassword}
+            onChange={(v) => ustaw('confirmPassword', v)}
+            blad={bledyPol.confirmPassword}
+            autoComplete="new-password"
+          />
 
-        <button type="submit" className="przycisk" disabled={wysylanie}>
-          {wysylanie ? t('settings.saving') : t('settings.changePassword')}
-        </button>
-      </form>
-    </section>
+          <Button type="submit" disabled={wysylanie}>
+            {wysylanie ? t('settings.saving') : t('settings.changePassword')}
+          </Button>
+        </Form>
+      </Card.Body>
+    </Card>
   );
 }

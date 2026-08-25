@@ -91,7 +91,7 @@ class AuthControllerTest {
     void poprawnaRejestracjaZwraca201() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userService.register(any(RegisterRequest.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
         mockMvc.perform(post("/api/auth/register")
                 .with(csrf())
@@ -184,7 +184,7 @@ class AuthControllerTest {
     @DisplayName("/me zwraca dane zalogowanego, ale NIE ujawnia jego roli")
     void meDlaZalogowanegoZwracaDane() throws Exception {
         given(userService.getByUsername("anna")).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isOk())
@@ -200,7 +200,7 @@ class AuthControllerTest {
     @DisplayName("/me dla administratora ustawia flage admin na true")
     void meDlaAdminaUstawiaFlage() throws Exception {
         given(userService.getByUsername("admin")).willReturn(
-            new UserResponse(1L, "admin", "admin@musicclub.local", true, LocalDateTime.now()));
+            new UserResponse(1L, "admin", "admin@musicclub.local", true, null, LocalDateTime.now()));
 
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isOk())

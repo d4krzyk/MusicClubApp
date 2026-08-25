@@ -78,6 +78,17 @@ public class User {
     private boolean enabled = true;
 
     /**
+     * Nazwa pliku ze zdjeciem profilowym, np. {@code a1b2...ff.jpg}.
+     * {@code null} oznacza brak zdjecia - interfejs pokazuje wtedy kolo
+     * z pierwsza litera loginu.
+     *
+     * <p>W bazie trzymamy sama nazwe, a plik leży na dysku - tak samo jak
+     * przy zdjeciach w postach.</p>
+     */
+    @Column(name = "avatar_file_name", length = 120)
+    private String avatarFileName;
+
+    /**
      * Metoda oznaczona {@code @PrePersist} uruchamia sie automatycznie tuz przed
      * pierwszym zapisem encji do bazy. Dzieki temu nie musimy pamietac o ustawianiu
      * daty w kazdym miejscu, gdzie tworzymy uzytkownika.
@@ -141,6 +152,14 @@ public class User {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public String getAvatarFileName() {
+        return avatarFileName;
+    }
+
+    public void setAvatarFileName(String avatarFileName) {
+        this.avatarFileName = avatarFileName;
     }
 
     public void setEnabled(boolean enabled) {

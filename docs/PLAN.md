@@ -261,6 +261,76 @@ uprawnień.
 
 ---
 
+## Bootstrap, role i posty (zrobione po kroku 5)
+
+### Bootstrap zamiast własnego CSS
+
+`styles.css` skurczył się z ~330 do ~70 linijek. Cały wygląd pochodzi teraz
+z gotowych klas (`card`, `btn`, `form-control`), a ciemny motyw włącza jeden
+atrybut w `main.jsx`:
+
+```js
+document.documentElement.setAttribute('data-bs-theme', 'dark');
+```
+
+Doszły dwie paczki: `bootstrap` (style) i `react-bootstrap` (komponenty jako
+znaczniki Reacta, np. `<Navbar>`, `<Carousel>`, `<Modal>`). Karuzela z galerii
+zdjęć to gotowy komponent stamtąd — pisanie jej samemu zajęłoby sporo czasu.
+
+### Panel administratora: zmiana ról
+
+`PATCH /api/users/{id}/role`, dostępny tylko dla admina. Dwie rzeczy warte uwagi:
+
+**Osobne DTO dla admina.** `UserResponse` (własny profil) nadal nie ma pola
+`role`. Lista w panelu chodzi przez `AdminUserResponse`, które je zawiera.
+O tym, co wychodzi na zewnątrz, decyduje więc wybór klasy w kontrolerze,
+a nie warunek `if` w środku mapowania.
+
+**Admin nie może zmienić własnej roli.** Jedno kliknięcie zamknęłoby ostatniemu
+adminowi drogę do panelu i nikt nie mógłby mu uprawnień przywrócić inaczej niż
+ręcznie w bazie. Login do sprawdzenia bierzemy z sesji, nie z treści zapytania.
+
+### Posty — tu domknęliśmy czerwone wymaganie nr 6
+
+| Encja | Relacja | Po co |
+|-------|---------|-------|
+| `Post` | N—1 `User` | autor posta (**ManyToOne**) |
+| `PostImage` | N—1 `Post` | zdjęcia posta (**OneToMany** od strony `Post`) |
+
+**Zdjęcia leżą na dysku, w bazie są tylko nazwy plików.** Wrzucanie obrazków
+do bazy działa, ale wtedy każde zapytanie o tablicę ciągnie megabajty danych.
+
+**Galeria ma dwa tryby:** do 4 zdjęć siatka miniatur, powyżej — karuzela.
+Bez tego post z dwunastoma zdjęciami rozpychałby całą tablicę.
+
+**Spotify:** z wklejonego linku wyciągamy sam identyfikator utworu
+(`SpotifyLink`), więc nie zapisujemy parametru `?si=`, który Spotify dokleja
+przy udostępnianiu i który identyfikuje osobę udostępniającą. Odtwarzacz
+osadzamy adresem `open.spotify.com/embed/track/...`.
+
+### Cztery pułapki z tego etapu
+
+1. **Vite nie przekazywał `/uploads` do backendu.** W `vite.config.js` było
+   tylko `/api`, więc obrazki dostawały w odpowiedzi `index.html` — ze statusem
+   **200**, przez co wyglądało to na sukces. Objaw: puste ramki zamiast zdjęć.
+   Pułapka o tyle podstępna, że test sprawdzający tylko kod odpowiedzi ją przepuszcza.
+
+2. **`@WebMvcTest` wciąga każdą klasę `WebMvcConfigurer`.** `UploadsWebConfig`
+   wymagał `FileStorageService`, więc wszystkie testy kontrolerów przestały
+   wstawać. Konfiguracja czyta teraz ścieżkę wprost z `application.properties`
+   i nie zależy od serwisu.
+
+3. **`MaxUploadSizeExceededException` jest już obsługiwany przez klasę
+   nadrzędną.** Dołożenie drugiej metody `@ExceptionHandler` wywala aplikację
+   przy starcie („Ambiguous @ExceptionHandler method"). Trzeba **nadpisać**
+   `handleMaxUploadSizeExceededException`, a nie dodawać własną.
+
+4. **Nazwa pliku od klienta nigdy nie trafia na dysk.** Nazwę generujemy sami
+   (UUID), a rozszerzenie bierzemy z typu MIME. Nazwa w stylu
+   `../../etc/passwd` pozwoliłaby nadpisać pliki poza katalogiem uploadów.
+
+---
+
 ## KROK 6 — całość na Docker Compose
 
 Do `docker-compose.yml` dochodzą usługi `backend` i `frontend`.

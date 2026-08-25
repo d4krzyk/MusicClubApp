@@ -10,13 +10,17 @@
     "register": "Załóż konto",
     "logout": "Wyloguj",
     "language": "Język",
-    "settings": "Ustawienia"
+    "settings": "Ustawienia",
+    "feed": "Tablica"
   },
   "common": {
     "loading": "Ładowanie…",
     "save": "Zapisz",
     "cancel": "Anuluj",
-    "required": "pole wymagane"
+    "required": "pole wymagane",
+    "delete": "Usuń",
+    "confirmDelete": "Na pewno usunąć ten post?",
+    "close": "Zamknij"
   },
   "login": {
     "title": "Logowanie",
@@ -49,7 +53,8 @@
     "memberSince": "Członek od",
     "nextSteps": "Kolejne kroki",
     "nextStepsText": "Ulubieni artyści, posty i propozycje znajomych dojdą w następnym etapie.",
-    "goToSettings": "Zmień dane konta w ustawieniach →"
+    "goToSettings": "Zmień dane konta w ustawieniach →",
+    "goToFeed": "Przejdź na tablicę →"
   },
   "users": {
     "title": "Użytkownicy",
@@ -69,7 +74,12 @@
     "empty": "Nikogo nie znaleziono.",
     "summary": "Strona {{page}} z {{totalPages}} · znaleziono {{total}}",
     "previous": "Poprzednia",
-    "next": "Następna"
+    "next": "Następna",
+    "colRole": "Rola",
+    "roleUser": "Użytkownik",
+    "roleAdmin": "Administrator",
+    "roleChanged": "Rola została zmieniona.",
+    "selfRoleHint": "Nie możesz zmienić własnej roli"
   },
   "errors": {
     "network": "Nie można połączyć się z serwerem. Sprawdź, czy backend jest uruchomiony.",
@@ -91,5 +101,39 @@
     "confirmNewPassword": "Powtórz nowe hasło",
     "changePassword": "Zmień hasło",
     "passwordChanged": "Hasło zostało zmienione."
+  },
+  "avatar": {
+    "title": "Zdjęcie profilowe",
+    "choose": "Wybierz zdjęcie",
+    "upload": "Wgraj",
+    "uploading": "Wgrywanie…",
+    "remove": "Usuń zdjęcie",
+    "saved": "Zdjęcie profilowe zostało zapisane.",
+    "removed": "Zdjęcie profilowe zostało usunięte.",
+    "hint": "JPG, PNG, WEBP lub GIF, maksymalnie 5 MB"
+  },
+  "posts": {
+    "title": "Tablica",
+    "newPost": "Nowy post",
+    "content": "Co słychać?",
+    "contentPlaceholder": "Napisz coś o muzyce, której teraz słuchasz…",
+    "images": "Zdjęcia",
+    "imagesHint": "Maksymalnie 10 zdjęć, każde do 5 MB",
+    "imagesSelected": "Wybrano zdjęć: {{count}}",
+    "spotify": "Link do utworu ze Spotify",
+    "spotifyPlaceholder": "https://open.spotify.com/track/…",
+    "spotifyHint": "Wklej link z przycisku „Udostępnij\" w Spotify",
+    "startAt": "Zacznij od (min:sek)",
+    "startAtHint": "Opcjonalnie, np. 1:23",
+    "startAtBadge": "Wybrany moment: {{time}}",
+    "startAtWarning": "Spotify nie zawsze uwzględnia wybrany moment w odtwarzaczu na stronie.",
+    "publish": "Opublikuj",
+    "publishing": "Publikowanie…",
+    "published": "Post został opublikowany.",
+    "deleted": "Post został usunięty.",
+    "empty": "Nie ma jeszcze żadnych postów. Napisz pierwszy!",
+    "gallery": "Galeria zdjęć ({{count}})",
+    "showMore": "Pokaż więcej",
+    "loadMore": "Pokaż starsze posty"
   }
 }

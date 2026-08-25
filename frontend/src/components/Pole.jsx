@@ -1,12 +1,12 @@
+import Form from 'react-bootstrap/Form';
+
 /**
  * Pojedyncze pole formularza: etykieta, input, podpowiedz i komunikat bledu.
  *
- * <p>Wydzielone do osobnego komponentu, bo formularze logowania i rejestracji
- * maja razem siedem takich pol - bez tego ten sam kod bylby przepisany
- * siedem razy.</p>
- *
- * <p>Gdy {@code blad} jest ustawiony, pole dostaje czerwona ramke oraz
- * {@code aria-invalid}, dzieki czemu czytniki ekranu tez zglaszaja problem.</p>
+ * <p>Po przejsciu na Bootstrapa korzystamy z gotowych komponentow
+ * {@code Form.Control} i {@code Form.Control.Feedback}. Wlasnosc
+ * {@code isInvalid} sama dokleja czerwona ramke i pokazuje komunikat -
+ * wczesniej trzeba bylo to obslugiwac recznie klasami CSS.</p>
  */
 export default function Pole({
   id,
@@ -18,38 +18,31 @@ export default function Pole({
   podpowiedz,
   autoComplete,
   wymagane = true,
+  jakoObszarTekstu = false,
+  wiersze = 4,
+  placeholder,
 }) {
-  const idPodpowiedzi = podpowiedz ? `${id}-hint` : undefined;
-  const idBledu = blad ? `${id}-error` : undefined;
-
   return (
-    <div className="pole">
-      <label htmlFor={id}>{label}</label>
+    <Form.Group className="mb-3" controlId={id}>
+      <Form.Label>{label}</Form.Label>
 
-      <input
-        id={id}
+      <Form.Control
+        as={jakoObszarTekstu ? 'textarea' : 'input'}
+        rows={jakoObszarTekstu ? wiersze : undefined}
+        type={jakoObszarTekstu ? undefined : typ}
         name={id}
-        type={typ}
         value={wartosc}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         autoComplete={autoComplete}
         required={wymagane}
-        className={blad ? 'input blad' : 'input'}
-        aria-invalid={blad ? 'true' : undefined}
-        aria-describedby={[idPodpowiedzi, idBledu].filter(Boolean).join(' ') || undefined}
+        isInvalid={Boolean(blad)}
       />
 
-      {podpowiedz && !blad && (
-        <small id={idPodpowiedzi} className="podpowiedz">
-          {podpowiedz}
-        </small>
-      )}
+      {/* Podpowiedz chowamy, gdy jest blad - dwa teksty pod polem tylko mylą */}
+      {podpowiedz && !blad && <Form.Text muted>{podpowiedz}</Form.Text>}
 
-      {blad && (
-        <small id={idBledu} className="komunikat-bledu" role="alert">
-          {blad}
-        </small>
-      )}
-    </div>
+      <Form.Control.Feedback type="invalid">{blad}</Form.Control.Feedback>
+    </Form.Group>
   );
 }

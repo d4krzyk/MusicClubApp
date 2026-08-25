@@ -1,330 +1,80 @@
 /* =============================================================================
-   Zwykly CSS, bez Tailwinda i bez bibliotek komponentow.
-   Kolory trzymane w jednym miejscu jako zmienne - zmiana motywu to zmiana
-   kilku linijek tutaj, a nie szukanie po calym projekcie.
+   Wlasny CSS jest tu juz tylko dodatkiem - cala reszta wyglądu pochodzi
+   z Bootstrapa (klasy typu "card", "btn", "form-control") i z jego ciemnego
+   motywu wlaczanego w main.jsx.
+
+   Zostawiamy wylacznie rzeczy, ktorych Bootstrap nie ma gotowych.
    ============================================================================= */
 
-:root {
-  --tlo: #12111a;
-  --tlo-karty: #1c1b26;
-  --tekst: #eceaf3;
-  --tekst-przygaszony: #9d9aae;
-  --akcent: #7c5cff;
-  --akcent-jasny: #9b83ff;
-  --blad: #ff6b6b;
-  --sukces: #4ade80;
-  --ramka: #2e2c3d;
-  --promien: 10px;
+/* Delikatny fiolet jako kolor wiodacy - podmieniamy zmienne Bootstrapa,
+   zamiast pisac wlasne klasy przyciskow. */
+:root,
+[data-bs-theme='dark'] {
+  --bs-primary: #7c5cff;
+  --bs-primary-rgb: 124, 92, 255;
+  --bs-link-color: #9b83ff;
+  --bs-link-hover-color: #b7a5ff;
 }
 
-* {
-  box-sizing: border-box;
+.btn-primary {
+  --bs-btn-bg: #7c5cff;
+  --bs-btn-border-color: #7c5cff;
+  --bs-btn-hover-bg: #9b83ff;
+  --bs-btn-hover-border-color: #9b83ff;
+  --bs-btn-active-bg: #6a49f2;
+  --bs-btn-active-border-color: #6a49f2;
+  --bs-btn-disabled-bg: #7c5cff;
+  --bs-btn-disabled-border-color: #7c5cff;
 }
 
+/* Strona ma wypelniac okno, ze stopka zawsze na dole */
 body {
-  margin: 0;
-  background: var(--tlo);
-  color: var(--tekst);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.6;
+  min-height: 100vh;
 }
 
-.strona {
+#root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* --- Naglowek i menu --- */
+/* Awatar - kolo o stalej wielkosci, obrazek przyciety do srodka */
+.avatar {
+  object-fit: cover;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 
-.naglowek {
-  display: flex;
+/* Zastepnik awatara, gdy uzytkownik nie wgral zdjecia: inicjal na kolorowym kole */
+.avatar-zastepnik {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--ramka);
-}
-
-.logo {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--akcent-jasny);
-  text-decoration: none;
-}
-
-.menu {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-}
-
-.menu a {
-  color: var(--tekst-przygaszony);
-  text-decoration: none;
-}
-
-.menu a:hover,
-.menu a.active {
-  color: var(--tekst);
-}
-
-.link-button {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  color: var(--tekst-przygaszony);
-  cursor: pointer;
-}
-
-.link-button:hover {
-  color: var(--tekst);
-}
-
-.jezyki {
-  display: flex;
-  border: 1px solid var(--ramka);
-  border-radius: var(--promien);
-  overflow: hidden;
-}
-
-.jezyk {
-  background: none;
-  border: none;
-  padding: 0.3rem 0.6rem;
-  font: inherit;
-  font-size: 0.8rem;
-  color: var(--tekst-przygaszony);
-  cursor: pointer;
-}
-
-.jezyk.aktywny {
-  background: var(--akcent);
+  justify-content: center;
+  background: var(--bs-primary);
   color: #fff;
-}
-
-/* --- Tresc --- */
-
-.tresc {
-  flex: 1;
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
-}
-
-.karta {
-  background: var(--tlo-karty);
-  border: 1px solid var(--ramka);
-  border-radius: var(--promien);
-  padding: 1.75rem;
-}
-
-.karta.waska {
-  max-width: 420px;
-  margin: 0 auto;
-}
-
-h1 {
-  margin-top: 0;
-  font-size: 1.5rem;
-}
-
-h2 {
-  font-size: 1.05rem;
-  margin: 1.75rem 0 0.5rem;
-  color: var(--tekst-przygaszony);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
-/* --- Formularze --- */
-
-.pole {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 1rem;
-}
-
-.pole label {
-  font-size: 0.85rem;
-  color: var(--tekst-przygaszony);
-}
-
-.input {
-  padding: 0.6rem 0.75rem;
-  background: var(--tlo);
-  color: var(--tekst);
-  border: 1px solid var(--ramka);
-  border-radius: var(--promien);
-  font: inherit;
-}
-
-.input:focus {
-  outline: 2px solid var(--akcent);
-  outline-offset: 1px;
-}
-
-.input.blad {
-  border-color: var(--blad);
-}
-
-.podpowiedz {
-  color: var(--tekst-przygaszony);
-  font-size: 0.78rem;
-}
-
-.komunikat-bledu {
-  color: var(--blad);
-  font-size: 0.8rem;
-}
-
-.pole-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  font-size: 0.9rem;
-  color: var(--tekst-przygaszony);
+/* Miniatury zdjec w poscie - kwadratowe kafelki */
+.miniatura-postu {
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  width: 100%;
   cursor: pointer;
 }
 
-.przycisk {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  background: var(--akcent);
-  color: #fff;
-  border: none;
-  border-radius: var(--promien);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
+/* Zdjecia w karuzeli nie moga rozpychac karty posta */
+.karuzela-obraz {
+  max-height: 480px;
+  object-fit: contain;
+  background: #000;
 }
 
-.przycisk:hover:not(:disabled) {
-  background: var(--akcent-jasny);
-}
-
-.przycisk:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.przycisk.maly {
-  width: auto;
-  padding: 0.4rem 0.9rem;
-  font-size: 0.85rem;
-}
-
-.pod-formularzem {
-  margin-top: 1.25rem;
-  font-size: 0.9rem;
-  color: var(--tekst-przygaszony);
-  text-align: center;
-}
-
-.pod-formularzem a {
-  color: var(--akcent-jasny);
-}
-
-/* --- Komunikaty --- */
-
-.blad-ogolny,
-.sukces {
-  padding: 0.7rem 0.9rem;
-  border-radius: var(--promien);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.blad-ogolny {
-  background: rgba(255, 107, 107, 0.12);
-  border: 1px solid var(--blad);
-  color: var(--blad);
-}
-
-.sukces {
-  background: rgba(74, 222, 128, 0.12);
-  border: 1px solid var(--sukces);
-  color: var(--sukces);
-}
-
-.info {
-  color: var(--tekst-przygaszony);
-  font-size: 0.9rem;
-}
-
-/* --- Dane uzytkownika --- */
-
-.dane {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.4rem 1.5rem;
-  margin: 0;
-}
-
-.dane dt {
-  color: var(--tekst-przygaszony);
-  font-size: 0.85rem;
-}
-
-.dane dd {
-  margin: 0;
-}
-
-/* --- Lista uzytkownikow --- */
-
-.filtry {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-}
-
-.filtry .pole {
-  margin-bottom: 0;
-  flex: 1 1 140px;
-}
-
-.tabela {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.tabela th,
-.tabela td {
-  text-align: left;
-  padding: 0.6rem 0.5rem;
-  border-bottom: 1px solid var(--ramka);
-}
-
-.tabela th {
-  color: var(--tekst-przygaszony);
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-}
-
-.stronicowanie {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 1.25rem;
-}
-
-/* --- Stopka --- */
-
-.stopka {
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid var(--ramka);
-  color: var(--tekst-przygaszony);
-  font-size: 0.85rem;
-  text-align: center;
+/* Tekst posta ma zachowywac wpisane przez uzytkownika przejscia do nowej linii */
+.tresc-postu {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }

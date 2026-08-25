@@ -75,6 +75,17 @@ export function AuthProvider({ children }) {
     return odpowiedz.data;
   }, []);
 
+  /**
+   * Podmienia dane zalogowanego uzytkownika w stanie aplikacji.
+   *
+   * <p>Uzywane po wgraniu albo usunieciu zdjecia profilowego - endpoint
+   * zwraca aktualnego uzytkownika, a my od razu odswiezamy avatar w menu,
+   * bez ponownego pytania serwera o sesje.</p>
+   */
+  const odswiezUzytkownika = useCallback((noweDane) => {
+    setUser(noweDane);
+  }, []);
+
   /** Zmiana hasla. Nic nie zwraca - serwer odsyla 204 bez tresci. */
   const changePassword = useCallback(async (dane) => {
     await client.put('/profile/password', dane);
@@ -101,6 +112,7 @@ export function AuthProvider({ children }) {
     logout,
     updateProfile,
     changePassword,
+    odswiezUzytkownika,
   };
 
   return <AuthContext.Provider value={wartosc}>{children}</AuthContext.Provider>;

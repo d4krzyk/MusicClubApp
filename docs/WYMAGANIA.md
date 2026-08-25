@@ -24,7 +24,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 |---|-----------|-------------|--------|
 | 1 | Użycie JPA | `entity/User.java`, `repository/UserRepository.java` | ✅ KROK 2 |
 | 2 | Wsparcie min. 2 języków (PL/EN) | backend: `lang/messages*.properties` + `I18nConfig`; front: `i18next` + przełącznik PL/EN w menu | ✅ KROK 5 |
-| 6 | OneToMany + ManyToOne między min. 2 encjami | `User` 1—N `Post` (posty użytkownika) | ⬜ KROK 7 |
+| 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User` oraz `Post` 1—N `PostImage` | ✅ posty |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
 | 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — logowanie, rejestracja, homepage, lista | ✅ KROK 5 |
 | 13 | Testy jednostkowe serwisów | `service/UserServiceTest` (Mockito, 6 testów) | ✅ KROK 3 |
@@ -37,7 +37,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 3 | Stronicowanie + wybór liczby elementów (backend) | `Pageable` + widoczne sterowanie na `/users` (5/10/20) | ✅ KROK 2 + 5 |
 | 4 | Encja z datą/czasem i jej wykorzystanie | `User.createdAt`, `Post.createdAt`, `Match.matchedAt` | ✅ KROK 2 (User) |
 | 5 | Sortowanie (backend) | `Sort` w `Pageable` + wybór pola i kierunku na `/users` | ✅ KROK 2 + 5 |
-| 7 | OneToOne **lub** ManyToMany | `User` N—N `Artist` (ulubieni), `Artist` N—N `Genre` | ⬜ KROK 7 |
+| 7 | OneToOne **lub** ManyToMany | `User` N—N `Artist` — dojdzie razem z artystami ze Spotify | ⬜ następny etap |
 | 8 | Własne zapytania `@Query` / natywne | `UserRepository.searchByUsernameOrEmail`, później algorytm dopasowań | ✅ KROK 2 |
 | 10 | **Własna** adnotacja walidacyjna | `@UniqueUsername` (pole) + `@PasswordsMatch` (klasa) | ✅ KROK 3 |
 | 11 | `@ControllerAdvice` + wyjątek gdy brak elementu | `error/GlobalExceptionHandler` + `NoSuchElementFoundException` | ✅ KROK 3 |
@@ -59,17 +59,16 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 
 ## Podsumowanie na dziś
 
-**Zaliczone w całości: 17 z 17** potrzebnych na piątkę —
-punkty 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 17, 22, 24, 25.
+**Zaliczone w całości: 18** — punkty 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13,
+14, 15, 17, 22, 24, 25.
 
-Czerwone (obowiązkowe na każdą ocenę): zrobione 6 z 7 — **1, 2, 9, 12, 13, 15**.
-Został jeden: **6** (OneToMany) — dojdzie w KROKU 7.
+**Wszystkie 7 czerwonych jest zrobionych** — 1, 2, 6, 9, 12, 13, 15.
+Projekt spełnia więc warunek konieczny na każdą ocenę, a licznik (18) przekracza
+wymagane 17 na piątkę.
 
 **Częściowo: 1**
 - nr 18 — baza na Dockerze działa, całość jednym `docker compose up` w KROKU 6
 
-Licznik osiągnął wymagane 17, ale **projekt nadal nie przechodzi bez punktu 6** —
-czerwone są obowiązkowe niezależnie od liczby. Po KROKU 7 (relacje) będzie 19,
-po KROKU 6 (Docker) 20.
+W zapasie zostają jeszcze 7 (ManyToMany — dojdzie z artystami), 16 i 23.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

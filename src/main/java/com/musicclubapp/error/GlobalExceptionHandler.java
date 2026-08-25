@@ -1,5 +1,6 @@
 package com.musicclubapp.error;
 
+import com.musicclubapp.storage.InvalidFileException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -160,6 +162,65 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
                 tlumacz(ex.getMessageKey())));
+    }
+
+    /**
+     * Wgrany plik nie przeszedl kontroli (pusty albo nie jest obrazkiem).
+     * 422 z bledem przypietym do pola, zeby frontend podswietlil wybor pliku.
+     */
+    @ExceptionHandler(InvalidFileException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ResponseEntity<ErrorResponse> handleInvalidFile(
+            InvalidFileException ex, WebRequest request) {
+
+        logger.warn("Odrzucony plik: " + ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.UNPROCESSABLE_ENTITY.value(),
+            tlumacz("error.validation"));
+
+        errorResponse.addValidationError("images", tlumacz(ex.getMessageKey()));
+
+        return ResponseEntity.unprocessableEntity().body(errorResponse);
+    }
+
+    /**
+     * Wgrany plik przekroczyl limit rozmiaru z application.properties.
+     *
+     * <p>Bez tego uzytkownik dostawalby domyslna odpowiedz Springa, ktora nie
+     * ma naszego formatu bledu - frontend nie umialby jej pokazac przy polu.</p>
+     *
+     * <p><b>Uwaga:</b> to musi byc {@code @Override}, a NIE nowa metoda
+     * z {@code @ExceptionHandler}. Klasa nadrzedna obsluguje juz ten wyjatek,
+     * wiec dolozenie drugiej metody konczy sie bledem przy starcie:
+     * "Ambiguous @ExceptionHandler method mapped for MaxUploadSizeExceededException".</p>
+     */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+
+        logger.warn("Plik przekroczyl dozwolony rozmiar");
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.PAYLOAD_TOO_LARGE.value(), tlumacz("error.file.toolarge"));
+        errorResponse.addValidationError("images", tlumacz("error.file.toolarge"));
+
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(errorResponse);
+    }
+
+    /** Operacja zabroniona regula biznesowa (np. zmiana wlasnej roli). 409 wg wykladu 4, slajd 32. */
+    @ExceptionHandler(OperationNotAllowedException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<ErrorResponse> handleOperationNotAllowed(
+            OperationNotAllowedException ex, WebRequest request) {
+
+        logger.warn("Zablokowana operacja: " + ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+            new ErrorResponse(HttpStatus.CONFLICT.value(), tlumacz(ex.getMessageKey())));
     }
 
     /**

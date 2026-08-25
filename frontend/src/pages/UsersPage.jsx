@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Card from 'react-bootstrap/Card';
+import Form from 'react-bootstrap/Form';
+import Table from 'react-bootstrap/Table';
+import Button from 'react-bootstrap/Button';
+import Alert from 'react-bootstrap/Alert';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Spinner from 'react-bootstrap/Spinner';
 import client, { opiszBlad } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { sformatujDate } from '../utils/daty';
 
 /**
- * Lista uzytkownikow ze stronicowaniem i sortowaniem.
+ * Panel administratora: lista kont ze stronicowaniem, sortowaniem
+ * i zmiana rol.
  *
- * <p>Ta strona istnieje po to, zeby bylo WIDAC dzialanie wymagan nr 3
- * (stronicowanie + wybor liczby elementow) i nr 5 (sortowanie). Cala praca
- * dzieje sie po stronie backendu - tutaj tylko wysylamy parametry
- * i rysujemy to, co przyszlo. Na obronie mozna kliknac i pokazac,
- * jak zmienia sie zapytanie.</p>
+ * <p>Widoczne sterowanie stronicowaniem i sortowaniem pokazuje dzialanie
+ * wymagan nr 3 i 5 - cala praca dzieje sie po stronie backendu, tutaj tylko
+ * wysylamy parametry i rysujemy to, co przyszlo.</p>
  */
 export default function UsersPage() {
   const { t, i18n } = useTranslation();
+  const { user: zalogowany } = useAuth();
 
   // Parametry wysylane do backendu
   const [fragment, setFragment] = useState('');
@@ -25,6 +34,8 @@ export default function UsersPage() {
   const [strona, setStrona] = useState(null);
   const [ladowanie, setLadowanie] = useState(true);
   const [blad, setBlad] = useState(null);
+  const [komunikat, setKomunikat] = useState(null);
+  const [odswiez, setOdswiez] = useState(0);
 
   /*
    * Odpytujemy backend przy kazdej zmianie parametrow.
@@ -42,7 +53,6 @@ export default function UsersPage() {
         const odpowiedz = await client.get('/users', {
           params: { fragment, page, size, sortBy, direction },
         });
-        // Nie ruszamy stanu, jesli w miedzyczasie zmienily sie parametry
         if (!anulowane) {
           setStrona(odpowiedz.data);
         }
@@ -62,7 +72,7 @@ export default function UsersPage() {
       anulowane = true;
       clearTimeout(licznik);
     };
-  }, [fragment, page, size, sortBy, direction, t]);
+  }, [fragment, page, size, sortBy, direction, odswiez, t]);
 
   /*
    * Zmiana filtra musi cofac na pierwsza strone. Bez tego przy wejsciu
@@ -76,126 +86,172 @@ export default function UsersPage() {
     };
   }
 
+  async function zmienRole(id, nowaRola) {
+    setBlad(null);
+    setKomunikat(null);
+    try {
+      await client.patch(`/users/${id}/role`, { role: nowaRola });
+      setKomunikat(t('users.roleChanged'));
+      // Przeladowujemy liste, zeby pokazac stan faktycznie zapisany w bazie
+      setOdswiez((n) => n + 1);
+    } catch (error) {
+      const opis = opiszBlad(error);
+      setBlad(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+    }
+  }
+
   return (
-    <div className="karta">
-      <h1>{t('users.title')}</h1>
+    <Card>
+      <Card.Body>
+        <Card.Title as="h1" className="h4 mb-3">
+          {t('users.title')}
+        </Card.Title>
 
-      <div className="filtry">
-        <div className="pole">
-          <label htmlFor="fragment">{t('users.search')}</label>
-          <input
-            id="fragment"
-            className="input"
-            value={fragment}
-            placeholder={t('users.searchPlaceholder')}
-            onChange={(e) => zmienFiltr(setFragment)(e.target.value)}
-          />
-        </div>
+        <Row className="g-2 mb-3">
+          <Col md={4}>
+            <Form.Group controlId="fragment">
+              <Form.Label className="small text-body-secondary">{t('users.search')}</Form.Label>
+              <Form.Control
+                value={fragment}
+                placeholder={t('users.searchPlaceholder')}
+                onChange={(e) => zmienFiltr(setFragment)(e.target.value)}
+              />
+            </Form.Group>
+          </Col>
 
-        {/* Wymaganie nr 3 - uzytkownik wybiera, ile elementow na stronie */}
-        <div className="pole">
-          <label htmlFor="size">{t('users.pageSize')}</label>
-          <select
-            id="size"
-            className="input"
-            value={size}
-            onChange={(e) => zmienFiltr(setSize)(Number(e.target.value))}
-          >
-            {[5, 10, 20].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Wymaganie nr 5 - sortowanie po stronie backendu */}
-        <div className="pole">
-          <label htmlFor="sortBy">{t('users.sortBy')}</label>
-          <select
-            id="sortBy"
-            className="input"
-            value={sortBy}
-            onChange={(e) => zmienFiltr(setSortBy)(e.target.value)}
-          >
-            <option value="username">{t('users.sortUsername')}</option>
-            <option value="email">{t('users.sortEmail')}</option>
-            <option value="createdAt">{t('users.sortCreatedAt')}</option>
-          </select>
-        </div>
-
-        <div className="pole">
-          <label htmlFor="direction">{t('users.direction')}</label>
-          <select
-            id="direction"
-            className="input"
-            value={direction}
-            onChange={(e) => zmienFiltr(setDirection)(e.target.value)}
-          >
-            <option value="asc">{t('users.asc')}</option>
-            <option value="desc">{t('users.desc')}</option>
-          </select>
-        </div>
-      </div>
-
-      {blad && <p className="blad-ogolny" role="alert">{blad}</p>}
-      {ladowanie && <p className="info">{t('common.loading')}</p>}
-
-      {!ladowanie && !blad && strona && (
-        <>
-          {strona.content.length === 0 ? (
-            <p className="info">{t('users.empty')}</p>
-          ) : (
-            <table className="tabela">
-              <thead>
-                <tr>
-                  <th>{t('users.colUsername')}</th>
-                  <th>{t('users.colEmail')}</th>
-                  <th>{t('users.colCreatedAt')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {strona.content.map((u) => (
-                  <tr key={u.id}>
-                    <td>{u.username}</td>
-                    <td>{u.email}</td>
-                    <td>{sformatujDate(u.createdAt, i18n.language)}</td>
-                  </tr>
+          {/* Wymaganie nr 3 - uzytkownik wybiera, ile elementow na stronie */}
+          <Col md={2}>
+            <Form.Group controlId="size">
+              <Form.Label className="small text-body-secondary">{t('users.pageSize')}</Form.Label>
+              <Form.Select
+                value={size}
+                onChange={(e) => zmienFiltr(setSize)(Number(e.target.value))}
+              >
+                {[5, 10, 20].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
                 ))}
-              </tbody>
-            </table>
-          )}
+              </Form.Select>
+            </Form.Group>
+          </Col>
 
-          <div className="stronicowanie">
-            <button
-              type="button"
-              className="przycisk maly"
-              onClick={() => setPage((p) => p - 1)}
-              disabled={strona.first}
-            >
-              {t('users.previous')}
-            </button>
+          {/* Wymaganie nr 5 - sortowanie po stronie backendu */}
+          <Col md={3}>
+            <Form.Group controlId="sortBy">
+              <Form.Label className="small text-body-secondary">{t('users.sortBy')}</Form.Label>
+              <Form.Select value={sortBy} onChange={(e) => zmienFiltr(setSortBy)(e.target.value)}>
+                <option value="username">{t('users.sortUsername')}</option>
+                <option value="email">{t('users.sortEmail')}</option>
+                <option value="createdAt">{t('users.sortCreatedAt')}</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
 
-            <span className="info">
-              {t('users.summary', {
-                // W API strony liczy sie od zera, uzytkownikowi pokazujemy od jedynki
-                page: strona.number + 1,
-                totalPages: Math.max(strona.totalPages, 1),
-                total: strona.totalElements,
-              })}
-            </span>
+          <Col md={3}>
+            <Form.Group controlId="direction">
+              <Form.Label className="small text-body-secondary">{t('users.direction')}</Form.Label>
+              <Form.Select
+                value={direction}
+                onChange={(e) => zmienFiltr(setDirection)(e.target.value)}
+              >
+                <option value="asc">{t('users.asc')}</option>
+                <option value="desc">{t('users.desc')}</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+        </Row>
 
-            <button
-              type="button"
-              className="przycisk maly"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={strona.last}
-            >
-              {t('users.next')}
-            </button>
+        {komunikat && (
+          <Alert variant="success" dismissible onClose={() => setKomunikat(null)}>
+            {komunikat}
+          </Alert>
+        )}
+        {blad && <Alert variant="danger">{blad}</Alert>}
+
+        {ladowanie && (
+          <div className="text-center py-3 text-body-secondary">
+            <Spinner animation="border" size="sm" className="me-2" />
+            {t('common.loading')}
           </div>
-        </>
-      )}
-    </div>
+        )}
+
+        {!ladowanie && !blad && strona && (
+          <>
+            {strona.content.length === 0 ? (
+              <p className="text-body-secondary">{t('users.empty')}</p>
+            ) : (
+              <Table responsive hover size="sm" className="align-middle">
+                <thead>
+                  <tr>
+                    <th>{t('users.colUsername')}</th>
+                    <th>{t('users.colEmail')}</th>
+                    <th>{t('users.colCreatedAt')}</th>
+                    <th style={{ width: 180 }}>{t('users.colRole')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {strona.content.map((u) => {
+                    // Administrator nie moze zmienic wlasnej roli - blokuje to
+                    // takze backend (409), tu tylko wygaszamy pole
+                    const toJa = u.username === zalogowany.username;
+
+                    return (
+                      <tr key={u.id}>
+                        <td>{u.username}</td>
+                        <td>{u.email}</td>
+                        <td>{sformatujDate(u.createdAt, i18n.language)}</td>
+                        <td>
+                          <Form.Select
+                            size="sm"
+                            value={u.role}
+                            disabled={toJa}
+                            title={toJa ? t('users.selfRoleHint') : undefined}
+                            onChange={(e) => zmienRole(u.id, e.target.value)}
+                            aria-label={t('users.colRole')}
+                          >
+                            <option value="USER">{t('users.roleUser')}</option>
+                            <option value="ADMIN">{t('users.roleAdmin')}</option>
+                          </Form.Select>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            )}
+
+            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setPage((p) => p - 1)}
+                disabled={strona.first}
+              >
+                {t('users.previous')}
+              </Button>
+
+              <span className="text-body-secondary small">
+                {t('users.summary', {
+                  // W API strony liczy sie od zera, uzytkownikowi pokazujemy od jedynki
+                  page: strona.number + 1,
+                  totalPages: Math.max(strona.totalPages, 1),
+                  total: strona.totalElements,
+                })}
+              </span>
+
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={strona.last}
+              >
+                {t('users.next')}
+              </Button>
+            </div>
+          </>
+        )}
+      </Card.Body>
+    </Card>
   );
 }
