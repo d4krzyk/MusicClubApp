@@ -5,7 +5,6 @@ import com.musicclubapp.config.I18nConfig;
 import com.musicclubapp.config.SecurityConfig;
 import com.musicclubapp.dto.RegisterRequest;
 import com.musicclubapp.dto.UserResponse;
-import com.musicclubapp.entity.Role;
 import com.musicclubapp.error.DuplicateResourceException;
 import com.musicclubapp.error.GlobalExceptionHandler;
 import com.musicclubapp.repository.UserRepository;
@@ -92,7 +91,7 @@ class AuthControllerTest {
     void poprawnaRejestracjaZwraca201() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userService.register(any(RegisterRequest.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
 
         mockMvc.perform(post("/api/auth/register")
                 .with(csrf())
@@ -182,14 +181,29 @@ class AuthControllerTest {
 
     @Test
     @WithMockUser(username = "anna")
-    @DisplayName("/me dla zalogowanego zwraca jego dane")
+    @DisplayName("/me zwraca dane zalogowanego, ale NIE ujawnia jego roli")
     void meDlaZalogowanegoZwracaDane() throws Exception {
         given(userService.getByUsername("anna")).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
 
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.username").value("anna"))
-            .andExpect(jsonPath("$.role").value("USER"));
+            // Zwykly uzytkownik nie ma ogladac napisu "USER" - w odpowiedzi
+            // jest tylko flaga admin, a samo pole "role" nie istnieje
+            .andExpect(jsonPath("$.role").doesNotExist())
+            .andExpect(jsonPath("$.admin").value(false));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    @DisplayName("/me dla administratora ustawia flage admin na true")
+    void meDlaAdminaUstawiaFlage() throws Exception {
+        given(userService.getByUsername("admin")).willReturn(
+            new UserResponse(1L, "admin", "admin@musicclub.local", true, LocalDateTime.now()));
+
+        mockMvc.perform(get("/api/auth/me"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.admin").value(true));
     }
 }

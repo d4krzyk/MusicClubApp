@@ -71,7 +71,7 @@ class UserServiceTest {
         given(passwordEncoder.encode("tajneHaslo1")).willReturn("$2a$10$zahashowane");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
 
         userService.register(poprawneZgloszenie());
 
@@ -93,7 +93,7 @@ class UserServiceTest {
         given(passwordEncoder.encode(anyString())).willReturn("hash");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now()));
 
         userService.register(poprawneZgloszenie());
 
@@ -141,7 +141,7 @@ class UserServiceTest {
     void istniejacyUzytkownikJestMapowanyNaDto() {
         User user = new User("anna", "anna@example.com", "$2a$10$hash");
         UserResponse oczekiwany =
-            new UserResponse(1L, "anna", "anna@example.com", Role.USER, LocalDateTime.now());
+            new UserResponse(1L, "anna", "anna@example.com", false, LocalDateTime.now());
 
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(user));
         given(userMapper.toResponse(user)).willReturn(oczekiwany);

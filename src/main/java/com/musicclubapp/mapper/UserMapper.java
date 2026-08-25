@@ -1,6 +1,7 @@
 package com.musicclubapp.mapper;
 
 import com.musicclubapp.dto.UserResponse;
+import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -17,13 +18,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserMapper {
 
-    /** Encja -&gt; DTO. Swiadomie pomijamy {@code passwordHash}. */
+    /**
+     * Encja -&gt; DTO. Swiadomie pomijamy {@code passwordHash}, a role zamieniamy
+     * na flage {@code admin} - zwykly uzytkownik nie ma po co ogladac napisu
+     * "USER" w swoim profilu.
+     */
     public UserResponse toResponse(User user) {
         return new UserResponse(
             user.getId(),
             user.getUsername(),
             user.getEmail(),
-            user.getRole(),
+            user.getRole() == Role.ADMIN,
             user.getCreatedAt());
     }
 }

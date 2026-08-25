@@ -63,6 +63,23 @@ export function AuthProvider({ children }) {
     return odpowiedz.data;
   }, []);
 
+  /**
+   * Zmiana loginu i e-maila we wlasnym profilu.
+   *
+   * <p>Wynik od razu wstawiamy do stanu - inaczej menu i strona glowna
+   * pokazywalyby stary login az do odswiezenia strony.</p>
+   */
+  const updateProfile = useCallback(async (dane) => {
+    const odpowiedz = await client.put('/profile', dane);
+    setUser(odpowiedz.data);
+    return odpowiedz.data;
+  }, []);
+
+  /** Zmiana hasla. Nic nie zwraca - serwer odsyla 204 bez tresci. */
+  const changePassword = useCallback(async (dane) => {
+    await client.put('/profile/password', dane);
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await client.post('/auth/logout');
@@ -76,7 +93,15 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const wartosc = { user, sprawdzanieSesji, login, register, logout };
+  const wartosc = {
+    user,
+    sprawdzanieSesji,
+    login,
+    register,
+    logout,
+    updateProfile,
+    changePassword,
+  };
 
   return <AuthContext.Provider value={wartosc}>{children}</AuthContext.Provider>;
 }

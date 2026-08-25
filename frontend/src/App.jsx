@@ -1,10 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
-import { TylkoNiezalogowany, TylkoZalogowany } from './auth/RouteGuards';
+import { TylkoAdmin, TylkoNiezalogowany, TylkoZalogowany } from './auth/RouteGuards';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 
 /**
@@ -29,11 +30,21 @@ export default function App() {
               }
             />
             <Route
-              path="/users"
+              path="/settings"
               element={
                 <TylkoZalogowany>
-                  <UsersPage />
+                  <SettingsPage />
                 </TylkoZalogowany>
+              }
+            />
+
+            {/* Lista wszystkich kont - tylko administrator */}
+            <Route
+              path="/users"
+              element={
+                <TylkoAdmin>
+                  <UsersPage />
+                </TylkoAdmin>
               }
             />
             <Route

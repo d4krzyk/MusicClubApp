@@ -119,6 +119,26 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf").permitAll()
                 // dokumentacja API (wymaganie nr 24) - zeby dalo sie ja pokazac na obronie
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+
+                /*
+                 * AUTORYZACJA - wyklad 7, slajdy 47-48.
+                 *
+                 * Przegladanie listy wszystkich kont to funkcja administracyjna.
+                 * Zwykly uzytkownik nie ma powodu widziec, kto jeszcze korzysta
+                 * z serwisu, ani ogladac cudzych adresow e-mail.
+                 *
+                 * Wyklad zaleca wlasnie ten sposob (regula w konfiguracji)
+                 * zamiast adnotacji @PreAuthorize przy metodach - "bo
+                 * konfiguracja jest w jednym miejscu" (slajd 47).
+                 *
+                 * hasRole("ADMIN") sprawdza uprawnienie "ROLE_ADMIN" -
+                 * przedrostek ROLE_ Spring dokleja sam, dlatego w kodzie
+                 * podajemy sama nazwe roli.
+                 */
+                .requestMatchers("/api/users/**").hasRole("ADMIN")
+
+                // Wlasny profil - kazdy zalogowany, ale tylko swoj (patrz ProfileController)
+                .requestMatchers("/api/profile/**").authenticated()
                 // zapytania OPTIONS wysyla sama przegladarka przed wlasciwym zapytaniem (CORS preflight)
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 // cala reszta wymaga zalogowania

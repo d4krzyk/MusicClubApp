@@ -9,7 +9,8 @@
     "login": "Zaloguj się",
     "register": "Załóż konto",
     "logout": "Wyloguj",
-    "language": "Język"
+    "language": "Język",
+    "settings": "Ustawienia"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -45,10 +46,10 @@
     "welcome": "Cześć, {{username}}!",
     "yourAccount": "Twoje konto",
     "email": "E-mail",
-    "role": "Rola",
     "memberSince": "Członek od",
     "nextSteps": "Kolejne kroki",
-    "nextStepsText": "Ulubieni artyści, posty i propozycje znajomych dojdą w następnym etapie."
+    "nextStepsText": "Ulubieni artyści, posty i propozycje znajomych dojdą w następnym etapie.",
+    "goToSettings": "Zmień dane konta w ustawieniach →"
   },
   "users": {
     "title": "Użytkownicy",
@@ -73,5 +74,22 @@
   "errors": {
     "network": "Nie można połączyć się z serwerem. Sprawdź, czy backend jest uruchomiony.",
     "unknown": "Wystąpił nieoczekiwany błąd. Spróbuj ponownie."
+  },
+  "settings": {
+    "title": "Ustawienia konta",
+    "profile": "Dane konta",
+    "username": "Login",
+    "usernameHint": "3–50 znaków: litery, cyfry oraz _ . -",
+    "email": "Adres e-mail",
+    "save": "Zapisz zmiany",
+    "saving": "Zapisywanie…",
+    "profileSaved": "Dane konta zostały zapisane.",
+    "password": "Zmiana hasła",
+    "currentPassword": "Obecne hasło",
+    "newPassword": "Nowe hasło",
+    "newPasswordHint": "co najmniej 8 znaków",
+    "confirmNewPassword": "Powtórz nowe hasło",
+    "changePassword": "Zmień hasło",
+    "passwordChanged": "Hasło zostało zmienione."
   }
 }

@@ -209,6 +209,58 @@ Przełącznik języka PL/EN — po stronie frontu `react-i18next` (domyka wymaga
 - odczytać ciasteczko `XSRF-TOKEN` i wysyłać je w nagłówku `X-XSRF-TOKEN`
   (axios robi to sam po ustawieniu `withCredentials: true`).
 
+## Role: użytkownik i administrator (zrobione po kroku 5)
+
+Poprawka zgłoszona po pierwszym uruchomieniu aplikacji.
+
+**Co się zmieniło:**
+
+| Przed | Po |
+|-------|-----|
+| każdy zalogowany widział listę wszystkich kont | listę widzi **tylko administrator** |
+| profil pokazywał „Rola: USER" | zwykły użytkownik nie widzi roli w ogóle |
+| nie dało się zmienić swoich danych | ustawienia konta: login, e-mail, hasło |
+
+**Jak zrobiona jest blokada.** Reguła siedzi w `SecurityConfig`:
+
+```java
+.requestMatchers("/api/users/**").hasRole("ADMIN")
+```
+
+Wykład 7 (slajd 47) zaleca właśnie ten sposób zamiast adnotacji
+`@PreAuthorize` przy metodach — „bo konfiguracja jest w jednym miejscu".
+Ukrycie linku w menu to **tylko porządek w interfejsie**, nie zabezpieczenie:
+wpisanie adresu ręcznie i tak kończy się kodem 403 z backendu. Pilnują tego
+testy w `UserControllerAccessTest`.
+
+**Skąd bierze się administrator.** Rejestracja przez formularz zawsze tworzy
+zwykłego użytkownika — inaczej każdy zrobiłby sobie konto admina. Pierwszego
+zakłada `config/AdminInitializer` przy starcie aplikacji, o ile w bazie nie ma
+jeszcze żadnego. Domyślnie `admin` / `admin12345`, do zmiany przed oddaniem.
+
+**Dlaczego `admin: true/false` zamiast pola `role`.** Frontend musi wiedzieć,
+czy narysować część administracyjną, ale zwykły użytkownik nie ma po co oglądać
+napisu „USER". Jedna flaga załatwia jedno i drugie, nie ujawniając systemu
+uprawnień.
+
+### Trzy pułapki z tego kroku
+
+1. **Zmiana loginu wysadza sesję.** Spring Security zapamiętuje użytkownika po
+   loginie, więc po jego zmianie sesja wskazuje na konto, którego już nie ma —
+   każde kolejne zapytanie kończy się błędem. `ProfileController` po udanej
+   zmianie buduje nowy obiekt uwierzytelnienia i nadpisuje nim sesję.
+
+2. **`@UniqueUsername` nie nadaje się do edycji profilu.** Ta adnotacja odrzuca
+   każdy istniejący login — a przy zapisie ustawień użytkownik zwykle zostawia
+   swój własny. Zajętość sprawdzamy więc w serwisie, pomijając jego własny wpis.
+
+3. **Zmiana hasła wymaga podania obecnego.** Zalogowana sesja to nie to samo co
+   potwierdzona tożsamość — bez tego pola ktoś przy niezablokowanym komputerze
+   przejąłby konto na stałe. Błędne hasło zwraca 422 przypięte do pola,
+   a nie 401, bo 401 oznacza dla frontendu „sesja wygasła, wyloguj".
+
+---
+
 ## KROK 6 — całość na Docker Compose
 
 Do `docker-compose.yml` dochodzą usługi `backend` i `frontend`.

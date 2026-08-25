@@ -32,7 +32,15 @@ export default function Layout({ children }) {
               <NavLink to="/" end>
                 {t('menu.home')}
               </NavLink>
-              <NavLink to="/users">{t('menu.users')}</NavLink>
+              <NavLink to="/settings">{t('menu.settings')}</NavLink>
+
+              {/*
+                Lista uzytkownikow to funkcja administracyjna - zwykly
+                uzytkownik nie widzi nawet linku. Prawdziwa blokada siedzi
+                w backendzie (403), to tylko porzadek w menu.
+              */}
+              {user.admin && <NavLink to="/users">{t('menu.users')}</NavLink>}
+
               <button type="button" className="link-button" onClick={wyloguj}>
                 {t('menu.logout')}
               </button>

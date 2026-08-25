@@ -9,7 +9,8 @@
     "login": "Sign in",
     "register": "Sign up",
     "logout": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "settings": "Settings"
   },
   "common": {
     "loading": "Loading…",
@@ -45,10 +46,10 @@
     "welcome": "Hi, {{username}}!",
     "yourAccount": "Your account",
     "email": "Email",
-    "role": "Role",
     "memberSince": "Member since",
     "nextSteps": "Coming next",
-    "nextStepsText": "Favourite artists, posts and friend suggestions arrive in the next stage."
+    "nextStepsText": "Favourite artists, posts and friend suggestions arrive in the next stage.",
+    "goToSettings": "Change your account details in settings →"
   },
   "users": {
     "title": "Users",
@@ -73,5 +74,22 @@
   "errors": {
     "network": "Cannot reach the server. Check whether the backend is running.",
     "unknown": "Something went wrong. Please try again."
+  },
+  "settings": {
+    "title": "Account settings",
+    "profile": "Account details",
+    "username": "Username",
+    "usernameHint": "3–50 characters: letters, digits and _ . -",
+    "email": "Email address",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "profileSaved": "Your account details have been saved.",
+    "password": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "newPasswordHint": "at least 8 characters",
+    "confirmNewPassword": "Repeat new password",
+    "changePassword": "Change password",
+    "passwordChanged": "Your password has been changed."
   }
 }

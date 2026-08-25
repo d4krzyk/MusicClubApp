@@ -1,5 +1,6 @@
 package com.musicclubapp.repository;
 
+import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +47,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    /** Czy istnieje juz ktos z podana rola - uzywane przy zakladaniu konta administratora. */
+    boolean existsByRole(Role role);
 
     /**
      * Wlasne zapytanie JPQL - wymaganie nr 8.

@@ -52,7 +52,7 @@ docs/                         # plan pracy i checklista wymagań
 src/main/java/com/musicclubapp/
 ├── MusicClubAppApplication.java   # punkt wejścia
 ├── config/                        # SecurityConfig, I18nConfig
-├── controller/                    # REST API (zwraca ResponseEntity)
+├── controller/                    # REST API (Auth, Profile, Users)
 ├── dto/                           # dane wejściowe/wyjściowe + walidacja
 ├── entity/                        # encje JPA (klasa = tabela)
 ├── error/                         # GlobalExceptionHandler i wyjątki
@@ -75,7 +75,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── i18n/                    # pl.json i en.json
     ├── components/              # Layout z menu i przełącznikiem PL/EN
-    └── pages/                   # Login, Register, Home, Users
+    └── pages/                   # Login, Register, Home, Settings, Users
 ```
 
 ## API
@@ -87,10 +87,33 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | POST | `/api/auth/login` | logowanie (zakłada sesję) |
 | POST | `/api/auth/logout` | wylogowanie |
 | GET | `/api/auth/me` | dane zalogowanego użytkownika |
-| GET | `/api/users` | lista ze stronicowaniem i sortowaniem |
-| GET | `/api/users/{id}` | pojedynczy użytkownik |
+| PUT | `/api/profile` | zmiana własnego loginu i e-maila |
+| PUT | `/api/profile/password` | zmiana własnego hasła (wymaga obecnego) |
+| GET | `/api/users` | lista ze stronicowaniem i sortowaniem — **tylko admin** |
+| GET | `/api/users/{id}` | pojedynczy użytkownik — **tylko admin** |
 
 Dokumentacja: http://localhost:8080/swagger-ui.html
+
+## Role i konto administratora
+
+Rejestracja przez formularz zawsze tworzy **zwykłego użytkownika** — inaczej
+każdy mógłby zrobić sobie konto administratora. Pierwszego admina zakłada więc
+sama aplikacja przy pierwszym starcie (`config/AdminInitializer`), o ile w bazie
+nie ma jeszcze żadnego.
+
+Domyślne dane logowania: **`admin` / `admin12345`** — do nauki. Przed oddaniem
+projektu ustaw własne przez zmienne środowiskowe `ADMIN_USERNAME`,
+`ADMIN_EMAIL`, `ADMIN_PASSWORD` albo po prostu zmień hasło w ustawieniach konta.
+
+| Kto | Widzi |
+|-----|-------|
+| zwykły użytkownik | swój profil, ustawienia konta (login, e-mail, hasło) |
+| administrator | to samo + listę wszystkich kont |
+
+Zwykły użytkownik **nie widzi nigdzie swojej roli** — API nie wysyła pola
+`role`, tylko flagę `admin` (`true`/`false`) potrzebną do narysowania menu.
+O prawdziwym dostępie decyduje `SecurityConfig` po stronie backendu, więc
+podmiana tej flagi w przeglądarce niczego nie odblokuje.
 
 Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 
@@ -99,7 +122,7 @@ Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
 obsługa błędów, Swagger oraz frontend w React.
-**23 testy backendu przechodzą**, przepływy frontendu sprawdzone w przeglądarce.
+**34 testy backendu przechodzą**, przepływy frontendu sprawdzone w przeglądarce.
 
 Zaliczone 17 z 17 wymagań potrzebnych na piątkę, ale zostaje jeszcze czerwony
 punkt nr 6 (relacja OneToMany) — obowiązkowy niezależnie od licznika.

@@ -125,6 +125,29 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 tlumacz("error.badcredentials")));
     }
 
+    /**
+     * Zle obecne haslo przy zmianie hasla w ustawieniach.
+     * Zwracamy 422 z bledem przypietym do konkretnego pola, zeby frontend
+     * podswietlil je tak samo jak kazdy inny blad walidacji.
+     */
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ResponseEntity<ErrorResponse> handleInvalidCurrentPassword(
+            InvalidCurrentPasswordException ex, WebRequest request) {
+
+        logger.warn("Nieudana proba zmiany hasla - bledne obecne haslo");
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.UNPROCESSABLE_ENTITY.value(),
+            tlumacz("error.validation"));
+
+        errorResponse.addValidationError(
+            InvalidCurrentPasswordException.POLE,
+            tlumacz("error.password.current.invalid"));
+
+        return ResponseEntity.unprocessableEntity().body(errorResponse);
+    }
+
     /** Proba zalozenia konta na zajety login lub e-mail. Zwracamy 409 (wyklad 4, slajd 32). */
     @ExceptionHandler(DuplicateResourceException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
