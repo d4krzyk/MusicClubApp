@@ -16,7 +16,18 @@ public enum MusicKind {
 
     ALBUM,
 
-    ARTIST;
+    ARTIST,
+
+    /**
+     * Playlista - skladanka, ktora ktos ulozyl.
+     *
+     * <p><b>Celowo NIE liczy sie do zestawienia "najczesciej wrzucane".</b>
+     * Playlista to nie jest konkretne nagranie: dwie osoby moga wrzucic te sama
+     * skladanke, majac na mysli zupelnie co innego, a jej zawartosc zmienia sie
+     * w czasie. Wrzucac wolno, bo to wygodne - ale statystyka gustu muzycznego
+     * na tym oparta bylaby myląca.</p>
+     */
+    PLAYLIST;
 
     /**
      * Czy przy tym rodzaju ma sens wybieranie momentu, od ktorego zaczyna

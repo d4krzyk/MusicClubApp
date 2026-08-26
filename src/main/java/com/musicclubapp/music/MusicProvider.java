@@ -15,5 +15,28 @@ public enum MusicProvider {
 
     SPOTIFY,
 
-    YOUTUBE
+    /**
+     * YouTube i YouTube Music.
+     *
+     * <p><b>To jeden serwis, nie dwa.</b> Utwor w YouTube Music ma dokladnie
+     * ten sam identyfikator filmu co na zwyklym YouTube, wiec
+     * {@code music.youtube.com/watch?v=XYZ} i {@code youtube.com/watch?v=XYZ}
+     * wskazuja to samo nagranie. Osobnego adresu osadzenia dla YouTube Music
+     * nie ma - wszystko idzie przez {@code youtube.com/embed/}.</p>
+     *
+     * <p>Albumy w YouTube Music sa technicznie PLAYLISTAMI
+     * ({@code music.youtube.com/playlist?list=OLAK5uy_...}) i tak je
+     * rozpoznajemy.</p>
+     */
+    YOUTUBE,
+
+    /**
+     * Apple Music.
+     *
+     * <p>Adres osadzenia powstaje przez samą PODMIANE nazwy serwera:
+     * {@code music.apple.com/...} → {@code embed.music.apple.com/...}.
+     * Reszta sciezki zostaje bez zmian - dlatego przy tym serwisie
+     * zapisujemy cala sciezke, a nie sam identyfikator.</p>
+     */
+    APPLE_MUSIC
 }

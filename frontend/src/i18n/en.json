@@ -146,27 +146,31 @@
     "musicKinds": {
       "TRACK": "Track",
       "ALBUM": "Album",
-      "ARTIST": "Artist"
+      "ARTIST": "Artist",
+      "PLAYLIST": "Playlist"
     },
     "musicUrl": "Link",
-    "musicPlaceholder": "Paste a Spotify or YouTube link",
+    "musicPlaceholder": "Paste a Spotify, YouTube Music or Apple Music link",
     "musicHints": {
-      "TRACK": "A track link - from Spotify or YouTube",
-      "ALBUM": "An album link from Spotify (YouTube has no albums)",
-      "ARTIST": "An artist link from Spotify (YouTube has no artist pages)"
+      "TRACK": "A track link - Spotify, YouTube / YouTube Music or Apple Music",
+      "ALBUM": "An album link from Spotify or Apple Music (in YouTube Music an album is a playlist)",
+      "ARTIST": "An artist link from Spotify or Apple Music",
+      "PLAYLIST": "A playlist link - Spotify, YouTube Music or Apple Music. Playlists do not count towards statistics."
     },
     "musicClearHint": "Clear the field to remove the music from this post.",
     "musicErrors": {
-      "invalid": "This is not a Spotify or YouTube link",
+      "invalid": "This is not a Spotify, YouTube or Apple Music link",
       "mismatch": {
         "TRACK": "This is a TRACK link - switch the kind to \"Track\"",
         "ALBUM": "This is an ALBUM link - switch the kind to \"Album\"",
-        "ARTIST": "This is an ARTIST link - switch the kind to \"Artist\""
+        "ARTIST": "This is an ARTIST link - switch the kind to \"Artist\"",
+        "PLAYLIST": "This is a PLAYLIST link - switch the kind to \"Playlist\""
       }
     },
     "providers": {
       "SPOTIFY": "Spotify",
-      "YOUTUBE": "YouTube"
+      "YOUTUBE": "YouTube",
+      "APPLE_MUSIC": "Apple Music"
     },
     "topTracks": "Most posted tracks",
     "postedTimes_one": "{{count}} time",

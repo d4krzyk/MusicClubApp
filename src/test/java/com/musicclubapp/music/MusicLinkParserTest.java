@@ -91,18 +91,94 @@ class MusicLinkParserTest {
         "to nie jest zaden link",
         "https://example.com/track/" + ID_SPOTIFY,
         "https://open.spotify.com/track/zakrotki",
-        "https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M",
         "https://open.spotify.com/episode/512ojhOuo1ktJprKbVcKyQ",
     })
     @DisplayName("nierozpoznany adres zwraca pusty wynik - i to KONCZY sie bledem walidacji")
     void nierozpoznaneAdresy(String adres) {
         /*
-         * Playlisty i podcasty swiadomie NIE sa obslugiwane - aplikacja jest
-         * o utworach, albumach i artystach. Wazne jest to, ze taki adres
-         * zwraca pusty wynik, a walidator zamienia go na czytelny blad.
-         * Wczesniej byl po cichu polykany i post powstawal bez odtwarzacza.
+         * Podcasty swiadomie NIE sa obslugiwane - aplikacja jest o muzyce.
+         * Wazne jest to, ze taki adres zwraca pusty wynik, a walidator
+         * zamienia go na czytelny blad. Wczesniej byl po cichu polykany
+         * i post powstawal bez odtwarzacza.
          */
         assertThat(MusicLinkParser.rozpoznaj(adres)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("playlista ze Spotify")
+    void playlistaSpotify() {
+        ParsedMusicLink link = MusicLinkParser
+            .rozpoznaj("https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M")
+            .orElseThrow();
+
+        assertThat(link.kind()).isEqualTo(MusicKind.PLAYLIST);
+        assertThat(link.externalId()).isEqualTo("37i9dQZF1DXcBWIGoYBM5M");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "https://music.youtube.com/playlist?list=OLAK5uy_abcdefghij",
+        "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghij",
+    })
+    @DisplayName("ALBUM z YouTube Music przychodzi jako playlista - i tak ma byc")
+    void albumYouTubeMusicToPlaylista(String adres) {
+        /*
+         * W YouTube Music nie ma osobnego adresu albumu - udostepniajac album
+         * dostajemy adres playlisty (OLAK5uy_...). To nie jest nasza pomylka,
+         * tylko sposob dzialania tamtego serwisu.
+         */
+        ParsedMusicLink link = MusicLinkParser.rozpoznaj(adres).orElseThrow();
+
+        assertThat(link.provider()).isEqualTo(MusicProvider.YOUTUBE);
+        assertThat(link.kind()).isEqualTo(MusicKind.PLAYLIST);
+        assertThat(link.externalId()).isEqualTo("OLAK5uy_abcdefghij");
+    }
+
+    @Test
+    @DisplayName("krotki film (shorts) tez jest rozpoznawany jako utwor")
+    void shortsJakoUtwor() {
+        ParsedMusicLink link = MusicLinkParser
+            .rozpoznaj("https://youtube.com/shorts/" + ID_YOUTUBE).orElseThrow();
+
+        assertThat(link.kind()).isEqualTo(MusicKind.TRACK);
+        assertThat(link.externalId()).isEqualTo(ID_YOUTUBE);
+    }
+
+    @Test
+    @DisplayName("Apple Music: album")
+    void appleAlbum() {
+        ParsedMusicLink link = MusicLinkParser
+            .rozpoznaj("https://music.apple.com/pl/album/abbey-road/1441164426")
+            .orElseThrow();
+
+        assertThat(link.provider()).isEqualTo(MusicProvider.APPLE_MUSIC);
+        assertThat(link.kind()).isEqualTo(MusicKind.ALBUM);
+        // Przy Apple zapisujemy CALA sciezke - adres osadzenia powstaje
+        // przez sama podmiane nazwy serwera
+        assertThat(link.externalId()).isEqualTo("pl/album/abbey-road/1441164426");
+    }
+
+    @Test
+    @DisplayName("Apple Music: album z ?i= to POJEDYNCZY UTWOR, nie album")
+    void appleUtworNaAlbumie() {
+        ParsedMusicLink link = MusicLinkParser
+            .rozpoznaj("https://music.apple.com/pl/album/abbey-road/1441164426?i=1441164468")
+            .orElseThrow();
+
+        assertThat(link.kind()).isEqualTo(MusicKind.TRACK);
+        assertThat(link.externalId()).isEqualTo("pl/album/abbey-road/1441164426?i=1441164468");
+    }
+
+    @Test
+    @DisplayName("Apple Music: playlista i artysta")
+    void applePlaylistaIArtysta() {
+        assertThat(MusicLinkParser
+            .rozpoznaj("https://music.apple.com/us/playlist/todays-hits/pl.abc123")
+            .orElseThrow().kind()).isEqualTo(MusicKind.PLAYLIST);
+
+        assertThat(MusicLinkParser
+            .rozpoznaj("https://music.apple.com/us/artist/the-beatles/136975")
+            .orElseThrow().kind()).isEqualTo(MusicKind.ARTIST);
     }
 
     @Test

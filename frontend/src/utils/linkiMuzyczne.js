@@ -12,14 +12,20 @@
  * generowanie regul z jednego zrodla.</p>
  */
 
-const SPOTIFY_URL = /open\.spotify\.com\/(?:intl-[\w-]+\/)?(track|album|artist)\/([A-Za-z0-9]{22})/;
-const SPOTIFY_URI = /spotify:(track|album|artist):([A-Za-z0-9]{22})/;
+const SPOTIFY_URL = /open\.spotify\.com\/(?:intl-[\w-]+\/)?(track|album|artist|playlist)\/([A-Za-z0-9]{22})/;
+const SPOTIFY_URI = /spotify:(track|album|artist|playlist):([A-Za-z0-9]{22})/;
 
-const YOUTUBE = [
+const YOUTUBE_UTWOR = [
   /youtube\.com\/watch\?(?:[^\s]*&)?v=([\w-]{11})/,
   /youtu\.be\/([\w-]{11})/,
   /youtube\.com\/embed\/([\w-]{11})/,
+  /youtube\.com\/shorts\/([\w-]{11})/,
 ];
+
+/* W YouTube Music KAZDY album jest playlista - stad ten sam wzorzec. */
+const YOUTUBE_PLAYLISTA = /youtube\.com\/playlist\?(?:[^\s]*&)?list=([\w-]{10,60})/;
+
+const APPLE = /music\.apple\.com\/[a-z]{2}\/(album|playlist|artist|song)\/[^?\s]+(\?i=\d+)?/;
 
 /**
  * @param {string} adres tekst wpisany przez uzytkownika
@@ -38,11 +44,25 @@ export function rozpoznajLink(adres) {
     }
   }
 
-  for (const wzorzec of YOUTUBE) {
+  if (YOUTUBE_PLAYLISTA.test(tekst)) {
+    return { provider: 'YOUTUBE', kind: 'PLAYLIST' };
+  }
+
+  for (const wzorzec of YOUTUBE_UTWOR) {
     if (wzorzec.test(tekst)) {
-      // Film na YouTube to zawsze pojedyncze nagranie
+      // Film to zawsze pojedyncze nagranie
       return { provider: 'YOUTUBE', kind: 'TRACK' };
     }
+  }
+
+  const apple = tekst.match(APPLE);
+  if (apple) {
+    // Album z parametrem ?i= to w rzeczywistosci pojedynczy utwor z albumu
+    if (apple[1] === 'album' && apple[2]) {
+      return { provider: 'APPLE_MUSIC', kind: 'TRACK' };
+    }
+    const rodzaje = { album: 'ALBUM', playlist: 'PLAYLIST', artist: 'ARTIST', song: 'TRACK' };
+    return { provider: 'APPLE_MUSIC', kind: rodzaje[apple[1]] };
   }
 
   return null;

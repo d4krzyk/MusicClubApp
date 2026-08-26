@@ -75,6 +75,11 @@ public class MusicMetadataService {
     public Opis pobierz(ParsedMusicLink link) {
         String adres = MusicEmbed.adresOEmbed(link.provider(), link.kind(), link.externalId());
 
+        if (adres == null) {
+            // Serwis nie wystawia oEmbed (np. Apple Music) - to nie jest blad
+            return Opis.pusty();
+        }
+
         try {
             JsonNode odpowiedz = restClient.get()
                 .uri(adres)

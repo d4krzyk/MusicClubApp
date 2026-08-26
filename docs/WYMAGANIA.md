@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 115 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 128 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu.
 

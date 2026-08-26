@@ -34,8 +34,27 @@ public final class MusicEmbed {
                 // Parametr t= ustawia moment startu i dziala tylko przy utworze
                 yield doklejMoment(adres, "?t=", kind, startSeconds);
             }
-            case YOUTUBE -> doklejMoment(
-                "https://www.youtube.com/embed/" + externalId, "?start=", kind, startSeconds);
+            case YOUTUBE -> {
+                /*
+                 * Playlisty maja na YouTube wlasny adres osadzenia: zamiast
+                 * identyfikatora filmu podaje sie slowo "videoseries"
+                 * i przekazuje liste w parametrze.
+                 */
+                if (kind == MusicKind.PLAYLIST) {
+                    yield "https://www.youtube.com/embed/videoseries?list=" + externalId;
+                }
+                yield doklejMoment(
+                    "https://www.youtube.com/embed/" + externalId, "?start=", kind, startSeconds);
+            }
+            /*
+             * Apple Music: adres osadzenia to ten sam adres z podmieniona
+             * nazwa serwera. Dlatego przy tym serwisie trzymamy cala sciezke -
+             * nie ma tu czego skladac.
+             *
+             * Apple nie obsluguje wskazania momentu startu w osadzonym
+             * odtwarzaczu, wiec parametru nie doklejamy.
+             */
+            case APPLE_MUSIC -> "https://embed.music.apple.com/" + externalId;
         };
     }
 
@@ -44,7 +63,10 @@ public final class MusicEmbed {
         return switch (provider) {
             case SPOTIFY -> "https://open.spotify.com/"
                 + kind.name().toLowerCase(Locale.ROOT) + "/" + externalId;
-            case YOUTUBE -> "https://www.youtube.com/watch?v=" + externalId;
+            case YOUTUBE -> kind == MusicKind.PLAYLIST
+                ? "https://www.youtube.com/playlist?list=" + externalId
+                : "https://www.youtube.com/watch?v=" + externalId;
+            case APPLE_MUSIC -> "https://music.apple.com/" + externalId;
         };
     }
 
@@ -53,6 +75,7 @@ public final class MusicEmbed {
         return switch (provider) {
             case SPOTIFY -> "Spotify";
             case YOUTUBE -> "YouTube";
+            case APPLE_MUSIC -> "Apple Music";
         };
     }
 
@@ -65,9 +88,16 @@ public final class MusicEmbed {
      */
     public static String adresOEmbed(MusicProvider provider, MusicKind kind, String externalId) {
         String strona = adresZwykly(provider, kind, externalId);
+        // "return null" ponizej oznacza: ten serwis nie ma oEmbed
         return switch (provider) {
             case SPOTIFY -> "https://open.spotify.com/oembed?url=" + strona;
             case YOUTUBE -> "https://www.youtube.com/oembed?format=json&url=" + strona;
+            /*
+             * Apple Music nie wystawia publicznego oEmbed. Tytul i miniaturka
+             * zostana wiec puste - odtwarzacz i tak pokazuje wszystko sam,
+             * bo laduje sie w przegladarce niezaleznie od nas.
+             */
+            case APPLE_MUSIC -> null;
         };
     }
 

@@ -85,6 +85,43 @@ class MusicEmbedTest {
     }
 
     @Test
+    @DisplayName("playlista YouTube ma adres z 'videoseries'")
+    void playlistaYouTube() {
+        String adres = MusicEmbed.adresOsadzenia(
+            MusicProvider.YOUTUBE, MusicKind.PLAYLIST, "OLAK5uy_abc", null);
+
+        assertThat(adres)
+            .isEqualTo("https://www.youtube.com/embed/videoseries?list=OLAK5uy_abc");
+    }
+
+    @Test
+    @DisplayName("Apple Music: adres osadzenia to podmiana samej nazwy serwera")
+    void appleOsadzenie() {
+        String sciezka = "pl/album/abbey-road/1441164426?i=1441164468";
+
+        assertThat(MusicEmbed.adresOsadzenia(
+            MusicProvider.APPLE_MUSIC, MusicKind.TRACK, sciezka, 70))
+            .isEqualTo("https://embed.music.apple.com/" + sciezka);
+
+        assertThat(MusicEmbed.adresZwykly(MusicProvider.APPLE_MUSIC, MusicKind.TRACK, sciezka))
+            .isEqualTo("https://music.apple.com/" + sciezka);
+    }
+
+    @Test
+    @DisplayName("Apple Music nie ma oEmbed - zwracamy null zamiast zmyslac adres")
+    void appleBezOEmbed() {
+        assertThat(MusicEmbed.adresOEmbed(
+            MusicProvider.APPLE_MUSIC, MusicKind.ALBUM, "pl/album/x/1")).isNull();
+    }
+
+    @Test
+    @DisplayName("playlista NIE liczy sie do statystyk gustu")
+    void playlistaBezMomentu() {
+        // Playlista to nie konkretne nagranie - moment startu nie ma sensu
+        assertThat(MusicKind.PLAYLIST.obslugujeMomentStartu()).isFalse();
+    }
+
+    @Test
     @DisplayName("tylko utwor obsluguje moment startu")
     void tylkoUtworMaMoment() {
         assertThat(MusicKind.TRACK.obslugujeMomentStartu()).isTrue();

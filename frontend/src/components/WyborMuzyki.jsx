@@ -25,7 +25,7 @@ import { bladLinku } from '../utils/linkiMuzyczne';
  */
 
 /** Kolejnosc na przelaczniku - od najczestszego przypadku. */
-const RODZAJE = ['TRACK', 'ALBUM', 'ARTIST'];
+const RODZAJE = ['TRACK', 'ALBUM', 'ARTIST', 'PLAYLIST'];
 
 export default function WyborMuzyki({
   rodzaj, onRodzaj,

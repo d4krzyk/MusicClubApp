@@ -745,15 +745,15 @@ i milczenie o tym jest gorsze niż odmowa.**
 Zamiast `spotifyTrackId` post ma teraz `provider` + `kind` + `externalId`
 (+ tytuł, miniaturkę i moment startu).
 
-| | Spotify | YouTube |
-|---|---|---|
-| Utwór | ✅ | ✅ |
-| Album | ✅ | — |
-| Artysta | ✅ | — |
+| | Spotify | YouTube | Apple Music |
+|---|---|---|---|
+| Utwór | ✅ | ✅ | ✅ |
+| Album | ✅ | jako playlista | ✅ |
+| Artysta | ✅ | — | ✅ |
+| Playlista | ✅ | ✅ | ✅ |
 
-YouTube ma **największe pokrycie** — jest tam praktycznie wszystko. Album bywa
-tam playlistą, a artysta kanałem; to inne byty i nie udajemy, że umiemy je
-rozpoznać.
+YouTube ma **największe pokrycie** — jest tam praktycznie wszystko. Artysta
+jest tam kanałem, czyli innym bytem, i nie udajemy, że umiemy go rozpoznać.
 
 Adresy osadzenia składa **serwer** (`MusicEmbed`), nie React. Każdy serwis ma
 inny format i inny parametr momentu startu (`?t=` kontra `?start=`) — gdyby ta
@@ -845,6 +845,147 @@ ani razu**. Sprawdzone zostało natomiast to, co ważniejsze: **przy
 nieosiągalnym serwisie post i tak powstaje**, a odtwarzacz dostaje poprawny
 adres. Po wgraniu łatki sprawdź u siebie, czy przy postach pojawiają się
 prawdziwe tytuły — jeśli tak, oEmbed działa.
+
+---
+
+## Poprawki po pierwszym uruchomieniu na Dockerze
+
+### Zdjęcia się nie ładowały — i to była moja wina w `nginx.conf`
+
+Zgłoszenie: „nie ma dobrze wczytywanych zdjęć na profilu i ogólnie w postach".
+W trybie deweperskim (Vite) wszystko działało, w Dockerze — żaden awatar
+i żadne zdjęcie z posta.
+
+Przyczyna siedziała w `frontend/nginx.conf`, w pliku, który sam napisałem.
+Miałem tam dwie reguły:
+
+```nginx
+location /uploads/ { proxy_pass http://backend:8080; }
+location ~* \.(js|css|png|jpe?g|svg|ico)$ { root /usr/share/nginx/html; }
+```
+
+**nginx nie wybiera reguły po kolejności w pliku.** Kolejność jest taka:
+dokładne `=`, potem najdłuższy przedrostek, potem **wyrażenia regularne**,
+a przedrostek jest tylko rezerwą, jeśli żadne wyrażenie nie pasuje.
+Czyli `/uploads/awatar.jpg` trafiał w regułę z wyrażeniem, nginx szukał pliku
+na dysku **kontenera z frontendem** — gdzie go oczywiście nie ma — i zwracał
+404. Vite w trybie deweloperskim żadnego wyrażenia nie ma, więc tam problem
+się nie ujawniał: klasyczna różnica „u mnie działa".
+
+Naprawa to trzy znaki: `location ^~ /uploads/`. Przedrostek `^~` znaczy
+„jeśli to pasuje, **przestań szukać** i nie sprawdzaj wyrażeń". To samo
+dostało `/api/`, a regułę z cache'owaniem zawęziłem do `^/assets/`, żeby
+nigdy więcej nie łapała czegoś spoza zbudowanego frontendu.
+
+Wniosek na przyszłość: **to nie był błąd w kodzie aplikacji, tylko
+w konfiguracji serwera** — i widać go wyłącznie w środowisku produkcyjnym.
+Dlatego warto uruchomić `docker compose up` przed oddaniem, a nie tylko
+`npm run dev`.
+
+Poprawka została sprawdzona na uruchomionym nginxie, obie wersje obok siebie,
+na prawdziwym wgranym pliku:
+
+| Adres | stara konfiguracja | nowa konfiguracja |
+|---|---|---|
+| `/uploads/<plik>.png` | **404** | **200** |
+| `/api/auth/me` | 401 (proxy działa) | 401 (proxy działa) |
+| `/profil/ktos` (odświeżenie F5) | 200 | 200 |
+| `/assets/index-*.js` | 200 + cache 30 dni | 200 + cache 30 dni |
+
+### Drugi błąd, znaleziony dopiero na żywej bazie
+
+Po dołożeniu `PLAYLIST` i `APPLE_MUSIC` **wszystkie 125 testów przechodziło**,
+a mimo to każda próba wrzucenia playlisty albo linku z Apple Music kończyła się
+błędem 500:
+
+```
+ERROR: new row for relation "posts" violates check constraint "posts_music_kind_check"
+```
+
+Przy kolumnie z `@Enumerated(EnumType.STRING)` Hibernate zakłada w bazie
+ograniczenie `CHECK (music_kind IN ('TRACK','ALBUM','ARTIST'))` — z listą
+wartości **z chwili zakładania kolumny**. `ddl-auto=update` dokłada nowe
+kolumny i poszerza istniejące (sprawdzone: `music_external_id` faktycznie
+urosło z 64 do 300 znaków), ale **raz założonego ograniczenia nie rusza
+nigdy**. Baza zostaje więc przy starej liście na zawsze.
+
+**Dlaczego testy tego nie złapały.** Testy idą na H2 z `ddl-auto=create-drop`,
+więc schemat powstaje od zera przy każdym uruchomieniu — od razu z pełną listą.
+Błąd wymaga bazy, która *istniała przed zmianą*. To dokładnie ta klasa błędów,
+której nie da się znaleźć inaczej niż uruchomieniem aplikacji na prawdziwych
+danych — i stąd wniosek ogólniejszy: **zielone testy nie są dowodem, że
+aplikacja działa**, tylko że działa to, co testy sprawdzają.
+
+Naprawia to `OdswiezenieOgraniczenEnum`: przy starcie zrzuca ograniczenie
+i zakłada je na nowo, biorąc listę wartości **z samej klasy enuma**. Nie ma
+tu więc żadnej listy do ręcznego pilnowania — dopisanie kolejnego rodzaju
+nagrania automatycznie trafi też do bazy. Gdyby `ALTER TABLE` się nie udał
+(np. użytkownik bazy bez uprawnień), zostaje ostrzeżenie w logu, a aplikacja
+startuje normalnie.
+
+Test (`OdswiezenieOgraniczenEnumTest`) musiał najpierw **cofnąć** ograniczenie
+do starej postaci, bo inaczej na H2 nie byłoby czego sprawdzać. Sprawdza trzy
+rzeczy: że stara baza faktycznie odrzuca `PLAYLIST` (czyli błąd jest odtworzony),
+że po odświeżeniu ta sama baza go przyjmuje, i że **ochrona nie zniknęła** —
+wartość spoza enuma nadal leci błędem. Ten trzeci przypadek jest tu po to, żeby
+najprostsza „naprawa" (skasować ograniczenie i tyle) nie przeszła jako poprawna.
+
+### YouTube Music: nie ma czego dodawać, ale czegoś brakowało
+
+Prośba brzmiała „nie chcę linków od samego YT, chcę od YT Music".
+Sprawdziłem to, zanim cokolwiek zmieniłem — i okazało się, że linki
+`music.youtube.com/watch?v=…` **działały już wcześniej**, bo YouTube
+i YouTube Music to **jeden serwis z jedną bazą filmów**. Ten sam
+identyfikator, ten sam odtwarzacz; osobnego „embeda YT Music" po prostu
+nie ma i nie da się go zrobić.
+
+Czego naprawdę brakowało, to **albumów**. Udostępniając album z YouTube
+Music dostajesz adres `music.youtube.com/playlist?list=OLAK5uy_…` — formalnie
+playlistę. Ten wzorzec nie był rozpoznawany. Przy okazji doszły `shorts/`
+(coraz częstsza forma udostępniania) i playlisty z samego YouTube.
+
+Zapisujemy je **jako playlistę, a nie jako album**, chociaż dla użytkownika
+to album. Powód: `list=OLAK5uy_…` to identyfikator playlisty i tylko przez
+`embed/videoseries?list=` da się go odtworzyć. Udawanie w bazie, że mamy
+album, skończyłoby się kłamstwem w statystykach.
+
+### Apple Music: tak. Tidal: nie, i to nie jest kaprys
+
+Apple Music **da się osadzić bez żadnego klucza** — wystarczy zamienić
+`music.apple.com/…` na `embed.music.apple.com/…`. Cała reszta adresu zostaje
+bez zmian, dlatego przy Apple w `externalId` trzymamy **całą ścieżkę**
+(`pl/album/abbey-road/1441164426`), a nie samo ID jak przy Spotify.
+Jedna pułapka: adres albumu z doklejonym `?i=…` to w rzeczywistości
+**pojedynczy utwór z tego albumu** — bez tego rozróżnienia każdy utwór
+z Apple lądowałby w bazie jako album.
+
+Apple **nie ma publicznego oEmbed**, więc `adresOEmbed` zwraca tam `null`,
+a `MusicMetadataService` po prostu nie dzwoni nigdzie. Post powstaje
+z odtwarzaczem, ale bez zapisanego tytułu. **Wolę puste pole niż zmyślony
+tytuł** — zwłaszcza że tytuł służy potem do statystyk.
+
+Tidal odpada z konkretnego powodu: ich oficjalne osadzanie **nie jest zwykłą
+ramką `<iframe>`**, tylko wymaga doładowania cudzego skryptu
+(`tidal-embed.js`) na naszą stronę. To znaczy: obcy JavaScript z pełnym
+dostępem do naszej strony, kolejna zewnętrzna zależność i coś, co przestanie
+działać, gdy Tidal zmieni zdanie — w zamian za serwis o najmniejszym udziale
+w rynku z całej czwórki. Ramka jest bezpieczna, bo działa w osobnym
+„piaskownicy" przeglądarki; skrypt nie jest. **Nie warto.**
+
+Osobno: **tego akurat nie udało mi się sprawdzić na żywo** — środowisko,
+w którym powstawał kod, nie ma dostępu do `tidal.com`. Opieram się na
+dokumentacji, nie na własnym teście, i tak to tu zapisuję.
+
+### Playlisty nie liczą się do gustu
+
+Playlista jest **czwartą** pozycją przełącznika, ale świadomie **nie wchodzi
+do zestawienia „najczęściej wrzucane"**. Playlista to zwykle cudza składanka
+z kilkudziesięcioma wykonawcami — z tego nie wynika, że wrzucający lubi
+kogokolwiek z nich. Gdyby playlisty się liczyły, jedno wrzucenie
+„Top 50 Polska" ustawiałoby czyjś profil na resztę semestru.
+
+To jest zapisane w `MusicKind.PLAYLIST` jako komentarz, żeby przy dokładaniu
+statystyk nikt (łącznie ze mną za miesiąc) nie „naprawił" tego przez pomyłkę.
 
 ---
 

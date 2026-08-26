@@ -105,7 +105,7 @@ public class Post {
      * "najczesciej wrzucanych" rozjezdzaloby sie przy kazdej innej postaci
      * adresu.</p>
      */
-    @Column(name = "music_external_id", length = 64)
+    @Column(name = "music_external_id", length = 300)
     private String musicExternalId;
 
     /**

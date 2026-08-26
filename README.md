@@ -159,24 +159,37 @@ DTO, a nie ten sam obiekt z wyciętymi polami.
 
 ## Muzyka w postach
 
-Post może mieć podpięte nagranie ze **Spotify** albo **YouTube**. W formularzu
-wybierasz przełącznikiem, co wrzucasz:
+Post może mieć podpięte nagranie ze **Spotify**, **YouTube / YouTube Music**
+albo **Apple Music**. W formularzu wybierasz przełącznikiem, co wrzucasz:
 
-| Rodzaj | Spotify | YouTube | Moment startu |
-|---|---|---|---|
-| Utwór | ✅ | ✅ | ✅ opcjonalny |
-| Album | ✅ | — | — |
-| Artysta | ✅ | — | — |
+| Rodzaj | Spotify | YouTube | Apple Music | Moment startu |
+|---|---|---|---|---|
+| Utwór | ✅ | ✅ | ✅ | ✅ opcjonalny |
+| Album | ✅ | (jako playlista) | ✅ | — |
+| Artysta | ✅ | — | ✅ | — |
+| Playlista | ✅ | ✅ | ✅ | — |
 
 **Zły link zatrzymuje wysyłkę**, zamiast zostać po cichu połkniętym — a komunikat
 mówi, *co* wkleiłeś („to jest link do ALBUMU"), a nie tylko „zły link". Pole
 momentu startu **pokazuje się wyłącznie przy utworze**: album to wiele nagrań,
 a profil artysty w ogóle nie jest nagraniem.
 
+Linki z **YouTube Music** (`music.youtube.com`) działają tak samo jak zwykłe
+youtube'owe — to jeden serwis i te same identyfikatory nagrań, więc odtwarzacz
+zawsze składamy przez `youtube.com/embed/`. Album udostępniony z YouTube Music
+przychodzi jako `playlist?list=OLAK5uy_…` i tak też go zapisujemy: jako
+**playlistę**, bo tym on tam formalnie jest.
+
+**Playlisty nie wliczają się do statystyk gustu** — playlista to cudza składanka,
+a nie deklaracja „lubię tego artystę". Wrzucić ją na tablicę można, ale
+w podsumowaniu profilu się nie pojawia.
+
 Tytuł i miniaturkę pobieramy **raz, przy dodawaniu posta**, przez publiczne
 **oEmbed** — bez klucza i bez tokenu, więc działa dla każdego użytkownika.
 Gdy serwis nie odpowie, post i tak powstaje: odtwarzacz ładuje się
-w przeglądarce niezależnie od tego.
+w przeglądarce niezależnie od tego. Apple Music **nie ma publicznego oEmbed**,
+więc tam zostaje sam odtwarzacz bez podpisu — świadomie wolimy puste pole
+niż zmyślony tytuł.
 
 Na profilu widać **najczęściej wrzucane utwory** — liczone z postów, nie
 z osobnej tabeli statystyk, więc licznik nie ma jak rozjechać się
@@ -237,10 +250,11 @@ załadowaniem.
 Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
 obsługa błędów, Swagger oraz frontend w React. Do tego posty z reakcjami
-(🔥 / 😐 / 🥱), publiczne profile, znajomi z zaproszeniami, **muzyka ze Spotify
-i YouTube** (utwory, albumy, artyści), zestawienie najczęściej wrzucanych
-utworów, motyw jasny/ciemny oraz cała aplikacja na Docker Compose.
-**115 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
+(🔥 / 😐 / 🥱), publiczne profile, znajomi z zaproszeniami, **muzyka ze Spotify,
+YouTube / YouTube Music i Apple Music** (utwory, albumy, artyści, playlisty),
+zestawienie najczęściej wrzucanych utworów, motyw jasny/ciemny oraz cała
+aplikacja na Docker Compose.
+**128 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
 Szczegóły w `docs/WYMAGANIA.md`. Następny krok: ulubieni artyści na profilu
