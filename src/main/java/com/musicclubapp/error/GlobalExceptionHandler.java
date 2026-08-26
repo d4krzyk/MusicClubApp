@@ -65,7 +65,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            tlumacz("error.validation"));
+            translate("error.validation"));
 
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             errorResponse.addValidationError(fieldError.getField(), fieldError.getDefaultMessage());
@@ -87,12 +87,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            tlumacz("error.validation"));
+            translate("error.validation"));
 
-        ex.getConstraintViolations().forEach(naruszenie ->
+        ex.getConstraintViolations().forEach(violation ->
             errorResponse.addValidationError(
-                naruszenie.getPropertyPath().toString(),
-                naruszenie.getMessage()));
+                violation.getPropertyPath().toString(),
+                violation.getMessage()));
 
         return ResponseEntity.unprocessableEntity().body(errorResponse);
     }
@@ -108,7 +108,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
             new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
-                tlumacz(ex.getMessageKey(), ex.getArguments())));
+                translate(ex.getMessageKey(), ex.getArguments())));
     }
 
     /** Zle haslo albo nieistniejacy login. Zwracamy 401. */
@@ -124,7 +124,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
             new ErrorResponse(
                 HttpStatus.UNAUTHORIZED.value(),
-                tlumacz("error.badcredentials")));
+                translate("error.badcredentials")));
     }
 
     /**
@@ -141,11 +141,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            tlumacz("error.validation"));
+            translate("error.validation"));
 
         errorResponse.addValidationError(
             InvalidCurrentPasswordException.POLE,
-            tlumacz("error.password.current.invalid"));
+            translate("error.password.current.invalid"));
 
         return ResponseEntity.unprocessableEntity().body(errorResponse);
     }
@@ -161,7 +161,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
             new ErrorResponse(
                 HttpStatus.CONFLICT.value(),
-                tlumacz(ex.getMessageKey())));
+                translate(ex.getMessageKey())));
     }
 
     /**
@@ -177,9 +177,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            tlumacz("error.validation"));
+            translate("error.validation"));
 
-        errorResponse.addValidationError("images", tlumacz(ex.getMessageKey()));
+        errorResponse.addValidationError("images", translate(ex.getMessageKey()));
 
         return ResponseEntity.unprocessableEntity().body(errorResponse);
     }
@@ -205,8 +205,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         logger.warn("Plik przekroczyl dozwolony rozmiar");
 
         ErrorResponse errorResponse = new ErrorResponse(
-            HttpStatus.PAYLOAD_TOO_LARGE.value(), tlumacz("error.file.toolarge"));
-        errorResponse.addValidationError("images", tlumacz("error.file.toolarge"));
+            HttpStatus.PAYLOAD_TOO_LARGE.value(), translate("error.file.toolarge"));
+        errorResponse.addValidationError("images", translate("error.file.toolarge"));
 
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(errorResponse);
     }
@@ -219,8 +219,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         logger.warn("Zablokowana operacja: " + ex.getMessage());
 
+        /*
+         * Argumenty sa tu potrzebne dla zakazu publikowania - komunikat musi
+         * podac termin, do kiedy on obowiazuje. Reszta przypadkow przysyla
+         * pusta tablice, wiec dziala tak samo jak wczesniej.
+         */
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
-            new ErrorResponse(HttpStatus.CONFLICT.value(), tlumacz(ex.getMessageKey())));
+            new ErrorResponse(HttpStatus.CONFLICT.value(),
+                translate(ex.getMessageKey(), ex.getArguments())));
     }
 
     /**
@@ -238,7 +244,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
             new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                tlumacz("error.internal")));
+                translate("error.internal")));
     }
 
     /**
@@ -246,7 +252,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * {@link LocaleContextHolder} zwraca jezyk ustalony przez LocaleResolver
      * (u nas: na podstawie naglowka Accept-Language albo parametru ?lang=).
      */
-    private String tlumacz(String klucz, Object... argumenty) {
-        return messageSource.getMessage(klucz, argumenty, LocaleContextHolder.getLocale());
+    private String translate(String key, Object... arguments) {
+        return messageSource.getMessage(key, arguments, LocaleContextHolder.getLocale());
     }
 }

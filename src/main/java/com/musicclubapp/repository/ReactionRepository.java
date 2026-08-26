@@ -2,6 +2,7 @@ package com.musicclubapp.repository;
 
 import com.musicclubapp.entity.Reaction;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -38,7 +39,7 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
            WHERE r.post.id IN :postIds
            GROUP BY r.post.id, r.type
            """)
-    List<ReactionCount> policzDlaPostow(@Param("postIds") Collection<Long> postIds);
+    List<ReactionCount> countForPosts(@Param("postIds") Collection<Long> postIds);
 
     /**
      * Reakcje JEDNEGO uzytkownika na podane posty - zeby podswietlic
@@ -48,7 +49,7 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
            SELECT r FROM Reaction r
            WHERE r.post.id IN :postIds AND r.user.username = :username
            """)
-    List<Reaction> znajdzWlasne(@Param("postIds") Collection<Long> postIds,
+    List<Reaction> findOwn(@Param("postIds") Collection<Long> postIds,
                                 @Param("username") String username);
 
     /** Reakcja konkretnej osoby na konkretny post - przy dodawaniu i zmianie zdania. */
@@ -56,6 +57,16 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
            SELECT r FROM Reaction r
            WHERE r.post.id = :postId AND r.user.username = :username
            """)
-    Optional<Reaction> znajdz(@Param("postId") Long postId,
+    Optional<Reaction> find(@Param("postId") Long postId,
                               @Param("username") String username);
+
+    /**
+     * Kasuje wszystkie reakcje jednej osoby - przy usuwaniu konta.
+     *
+     * <p>{@code @Modifying} jest tu obowiazkowe: bez niego Spring probowalby
+     * potraktowac to jako zapytanie czytajace i odmowilby wykonania.</p>
+     */
+    @Modifying
+    @Query("DELETE FROM Reaction r WHERE r.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }

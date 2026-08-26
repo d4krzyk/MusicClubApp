@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Bo tamten pracuje na atrapach i obiektach tworzonych przez {@code new} -
  * a najgrozniejszy blad, jaki nas tu spotkal, ujawnia sie WYLACZNIE na
  * prawdziwym Hibernate. Szczegoly przy tescie
- * {@link #znajomoscZapisujeSieWObieStronyNawetPrzezProxy()}.</p>
+ * {@link #friendshipIsSavedBothWaysEvenThroughProxy()}.</p>
  */
 @DataJpaTest
 @ActiveProfiles("test")
@@ -36,16 +36,16 @@ class FriendshipRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
-    private User zapisz(String login) {
-        return userRepository.save(new User(login, login + "@example.com", "hash"));
+    private User save(String username) {
+        return userRepository.save(new User(username, username + "@example.com", "hash"));
     }
 
     @Test
     @DisplayName("znajomosc zapisuje sie w OBIE strony, nawet gdy encje sa leniwymi proxy")
-    void znajomoscZapisujeSieWObieStronyNawetPrzezProxy() {
-        User ala = zapisz("ala");
-        User bob = zapisz("bob");
-        FriendRequest zaproszenie = requestRepository.save(new FriendRequest(ala, bob));
+    void friendshipIsSavedBothWaysEvenThroughProxy() {
+        User ala = save("ala");
+        User bob = save("bob");
+        FriendRequest invitation = requestRepository.save(new FriendRequest(ala, bob));
 
         /*
          * clear() wyrzuca encje z pamieci sesji. Dzieki temu ponizsze
@@ -53,7 +53,7 @@ class FriendshipRepositoryTest {
          * ktore przed chwila zapisalismy - czyli dokladnie taka sytuacje,
          * jaka wystepuje w prawdziwym dzialaniu aplikacji.
          *
-         * TO JEST SEDNO TEGO TESTU. Pierwsza wersja metody dodajZnajomego()
+         * TO JEST SEDNO TEGO TESTU. Pierwsza wersja metody addFriend()
          * siegala wprost do pola (inny.friends), a nie przez getter. Na
          * zwyklych obiektach dzialalo to bez zarzutu i testy jednostkowe
          * przechodzily - ale odczyt POLA na proxy trafia do pustego pola
@@ -63,44 +63,44 @@ class FriendshipRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        FriendRequest zPowrotem = requestRepository.findById(zaproszenie.getId()).orElseThrow();
-        zPowrotem.getSender().dodajZnajomego(zPowrotem.getRecipient());
+        FriendRequest zPowrotem = requestRepository.findById(invitation.getId()).orElseThrow();
+        zPowrotem.getSender().addFriend(zPowrotem.getRecipient());
 
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(userRepository.czySaZnajomymi("ala", "bob"))
+        assertThat(userRepository.areFriends("ala", "bob"))
             .as("ala powinna miec boba w znajomych").isTrue();
-        assertThat(userRepository.czySaZnajomymi("bob", "ala"))
+        assertThat(userRepository.areFriends("bob", "ala"))
             .as("bob powinien miec ale w znajomych - TO wlasnie gubila stara wersja").isTrue();
 
-        assertThat(userRepository.policzZnajomych("ala")).isEqualTo(1);
-        assertThat(userRepository.policzZnajomych("bob")).isEqualTo(1);
+        assertThat(userRepository.countFriends("ala")).isEqualTo(1);
+        assertThat(userRepository.countFriends("bob")).isEqualTo(1);
     }
 
     @Test
     @DisplayName("usuniecie znajomosci kasuje oba wiersze")
-    void usuniecieKasujeObaWiersze() {
-        User ala = zapisz("ala");
-        User bob = zapisz("bob");
-        ala.dodajZnajomego(bob);
+    void removalDeletesBothRows() {
+        User ala = save("ala");
+        User bob = save("bob");
+        ala.addFriend(bob);
         entityManager.flush();
         entityManager.clear();
 
         User alaZBazy = userRepository.findByUsername("ala").orElseThrow();
         User bobZBazy = userRepository.findByUsername("bob").orElseThrow();
-        alaZBazy.usunZnajomego(bobZBazy);
+        alaZBazy.removeFriend(bobZBazy);
 
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(userRepository.czySaZnajomymi("ala", "bob")).isFalse();
-        assertThat(userRepository.czySaZnajomymi("bob", "ala")).isFalse();
+        assertThat(userRepository.areFriends("ala", "bob")).isFalse();
+        assertThat(userRepository.areFriends("bob", "ala")).isFalse();
     }
 
     @Test
     @DisplayName("lista znajomych sortuje sie po liczbie WSPOLNYCH znajomych z ogladajacym")
-    void sortowaniePoWspolnychZnajomych() {
+    void sortingBySharedFriends() {
         /*
          * Uklad testowy - warto go przesledzic, bo "wspolni znajomi" liczy sie
          * inaczej, niz podpowiada intuicja. Liczymy osoby, ktore sa znajomymi
@@ -116,45 +116,45 @@ class FriendshipRepositoryTest {
          * dawid  i ela nie maja nikogo      -> 0
          * Wiec cezary musi byc nad dawidem.
          */
-        User ala = zapisz("ala");
-        User bob = zapisz("bob");
-        User cezary = zapisz("cezary");
-        User dawid = zapisz("dawid");
-        User ela = zapisz("ela");
+        User ala = save("ala");
+        User bob = save("bob");
+        User cezary = save("cezary");
+        User dawid = save("dawid");
+        User ela = save("ela");
 
-        ala.dodajZnajomego(cezary);
-        ala.dodajZnajomego(dawid);
-        ela.dodajZnajomego(bob);
-        cezary.dodajZnajomego(bob);
+        ala.addFriend(cezary);
+        ala.addFriend(dawid);
+        ela.addFriend(bob);
+        cezary.addFriend(bob);
 
         entityManager.flush();
         entityManager.clear();
 
-        Page<FriendRow> strona = userRepository.znajomiPosortowani(
+        Page<FriendRow> page = userRepository.friendsRanked(
             "ala", "ela", PageRequest.of(0, 10));
 
-        assertThat(strona.getTotalElements()).isEqualTo(2);
+        assertThat(page.getTotalElements()).isEqualTo(2);
 
-        assertThat(strona.getContent().get(0).getUsername())
+        assertThat(page.getContent().get(0).getUsername())
             .as("cezary ma wspolnego znajomego z ogladajaca, wiec idzie na gore")
             .isEqualTo("cezary");
-        assertThat(strona.getContent().get(0).getWspolniZnajomi()).isEqualTo(1);
+        assertThat(page.getContent().get(0).getSharedFriends()).isEqualTo(1);
 
-        assertThat(strona.getContent().get(1).getUsername()).isEqualTo("dawid");
-        assertThat(strona.getContent().get(1).getWspolniZnajomi()).isZero();
+        assertThat(page.getContent().get(1).getUsername()).isEqualTo("dawid");
+        assertThat(page.getContent().get(1).getSharedFriends()).isZero();
     }
 
     @Test
     @DisplayName("stronicowanie listy znajomych dziala (wymagania nr 3 i 5)")
-    void stronicowanieDziala() {
-        User ala = zapisz("ala");
+    void pagingWorks() {
+        User ala = save("ala");
         for (int i = 0; i < 7; i++) {
-            ala.dodajZnajomego(zapisz("znajomy" + i));
+            ala.addFriend(save("znajomy" + i));
         }
         entityManager.flush();
         entityManager.clear();
 
-        Page<FriendRow> pierwsza = userRepository.znajomiPosortowani(
+        Page<FriendRow> pierwsza = userRepository.friendsRanked(
             "ala", "ala", PageRequest.of(0, 3));
 
         assertThat(pierwsza.getContent()).hasSize(3);

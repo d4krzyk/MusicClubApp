@@ -4,7 +4,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import { useAuth } from './AuthContext';
 
 /** Ekran "ladowanie" pokazywany, zanim poznamy stan sesji. */
-function Ladowanie() {
+function LoadingScreen() {
   const { t } = useTranslation();
   return (
     <div className="text-center py-5 text-body-secondary">
@@ -21,12 +21,12 @@ function Ladowanie() {
  * chcial wejsc ({@code state.from}) - po zalogowaniu wracamy dokladnie tam,
  * zamiast zawsze na strone glowna.</p>
  */
-export function TylkoZalogowany({ children }) {
-  const { user, sprawdzanieSesji } = useAuth();
+export function RequireAuth({ children }) {
+  const { user, checkingSession } = useAuth();
   const location = useLocation();
 
-  if (sprawdzanieSesji) {
-    return <Ladowanie />;
+  if (checkingSession) {
+    return <LoadingScreen />;
   }
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
@@ -42,12 +42,12 @@ export function TylkoZalogowany({ children }) {
  * adres recznie. O tym, kto naprawde dostanie dane, decyduje wylacznie
  * backend ({@code SecurityConfig} zwraca 403 dla zwyklego uzytkownika).</p>
  */
-export function TylkoAdmin({ children }) {
-  const { user, sprawdzanieSesji } = useAuth();
+export function RequireAdmin({ children }) {
+  const { user, checkingSession } = useAuth();
   const location = useLocation();
 
-  if (sprawdzanieSesji) {
-    return <Ladowanie />;
+  if (checkingSession) {
+    return <LoadingScreen />;
   }
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
@@ -64,11 +64,11 @@ export function TylkoAdmin({ children }) {
  * <p>Bez tego zalogowany uzytkownik mogl wejsc na /login i zobaczyc formularz,
  * mimo ze jest juz w srodku - mylace.</p>
  */
-export function TylkoNiezalogowany({ children }) {
-  const { user, sprawdzanieSesji } = useAuth();
+export function RequireAnonymous({ children }) {
+  const { user, checkingSession } = useAuth();
 
-  if (sprawdzanieSesji) {
-    return <Ladowanie />;
+  if (checkingSession) {
+    return <LoadingScreen />;
   }
   if (user) {
     return <Navigate to="/" replace />;

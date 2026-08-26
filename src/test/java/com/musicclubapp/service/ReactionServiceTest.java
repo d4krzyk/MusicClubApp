@@ -68,22 +68,22 @@ class ReactionServiceTest {
     }
 
     /** Wspolne przygotowanie dla testow, ktore koncza sie zwroceniem posta. */
-    private void przygotujPostIUzytkownika() {
+    private void setUpPostAndUser() {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post()));
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(5L, "bartek", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), false, false, ReactionSummary.pusta()));
+                LocalDateTime.now(), false, false, ReactionSummary.empty()));
     }
 
     @Test
     @DisplayName("pierwsza reakcja tworzy nowy wpis")
-    void pierwszaReakcjaZapisujeWpis() {
-        przygotujPostIUzytkownika();
-        given(reactionRepository.znajdz(5L, "anna")).willReturn(Optional.empty());
+    void firstReactionCreatesRow() {
+        setUpPostAndUser();
+        given(reactionRepository.find(5L, "anna")).willReturn(Optional.empty());
 
-        reactionService.ustaw(5L, "anna", ReactionType.FIRE);
+        reactionService.set(5L, "anna", ReactionType.FIRE);
 
         ArgumentCaptor<Reaction> zapisana = ArgumentCaptor.forClass(Reaction.class);
         verify(reactionRepository).save(zapisana.capture());
@@ -93,47 +93,47 @@ class ReactionServiceTest {
 
     @Test
     @DisplayName("zmiana zdania PODMIENIA reakcje, zamiast dodawac druga")
-    void zmianaZdaniaNieDodajeDrugiegoWiersza() {
-        przygotujPostIUzytkownika();
-        Reaction istniejaca = new Reaction(post(), anna(), ReactionType.MEH);
-        given(reactionRepository.znajdz(5L, "anna")).willReturn(Optional.of(istniejaca));
+    void changingMindDoesNotAddSecondRow() {
+        setUpPostAndUser();
+        Reaction existing = new Reaction(post(), anna(), ReactionType.MEH);
+        given(reactionRepository.find(5L, "anna")).willReturn(Optional.of(existing));
 
-        reactionService.ustaw(5L, "anna", ReactionType.FIRE);
+        reactionService.set(5L, "anna", ReactionType.FIRE);
 
-        assertThat(istniejaca.getType()).isEqualTo(ReactionType.FIRE);
+        assertThat(existing.getType()).isEqualTo(ReactionType.FIRE);
         // kluczowe: zaden NOWY wiersz nie powstaje
         verify(reactionRepository, never()).save(any(Reaction.class));
     }
 
     @Test
     @DisplayName("cofniecie reakcji kasuje wpis")
-    void cofniecieKasujeWpis() {
-        przygotujPostIUzytkownika();
-        Reaction istniejaca = new Reaction(post(), anna(), ReactionType.FIRE);
-        given(reactionRepository.znajdz(5L, "anna")).willReturn(Optional.of(istniejaca));
+    void undoDeletesRow() {
+        setUpPostAndUser();
+        Reaction existing = new Reaction(post(), anna(), ReactionType.FIRE);
+        given(reactionRepository.find(5L, "anna")).willReturn(Optional.of(existing));
 
-        reactionService.cofnij(5L, "anna");
+        reactionService.revert(5L, "anna");
 
-        verify(reactionRepository).delete(istniejaca);
+        verify(reactionRepository).delete(existing);
     }
 
     @Test
     @DisplayName("cofniecie nieistniejacej reakcji niczego nie psuje")
-    void cofniecieBezReakcjiJestBezpieczne() {
-        przygotujPostIUzytkownika();
-        given(reactionRepository.znajdz(5L, "anna")).willReturn(Optional.empty());
+    void undoWithoutReactionIsSafe() {
+        setUpPostAndUser();
+        given(reactionRepository.find(5L, "anna")).willReturn(Optional.empty());
 
-        reactionService.cofnij(5L, "anna");
+        reactionService.revert(5L, "anna");
 
         verify(reactionRepository, never()).delete(any(Reaction.class));
     }
 
     @Test
     @DisplayName("reakcja na nieistniejacy post konczy sie wyjatkiem 'nie znaleziono'")
-    void nieistniejacyPostRzucaWyjatek() {
+    void unknownPostThrows() {
         given(postRepository.findByIdWithAuthor(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> reactionService.ustaw(999L, "anna", ReactionType.FIRE))
+        assertThatThrownBy(() -> reactionService.set(999L, "anna", ReactionType.FIRE))
             .isInstanceOf(NoSuchElementFoundException.class);
 
         verify(reactionRepository, never()).save(any(Reaction.class));
@@ -141,41 +141,41 @@ class ReactionServiceTest {
 
     @Test
     @DisplayName("podsumowanie uzupelnia zerami rodzaje, ktorych nikt nie wybral")
-    void podsumowanieUzupelniaZera() {
-        given(reactionRepository.policzDlaPostow(anyCollection())).willReturn(List.of(
+    void summaryFillsInZeros() {
+        given(reactionRepository.countForPosts(anyCollection())).willReturn(List.of(
             new ReactionCount(5L, ReactionType.FIRE, 3L),
             new ReactionCount(5L, ReactionType.MEH, 1L)));
-        given(reactionRepository.znajdzWlasne(anyCollection(), anyString())).willReturn(List.of());
+        given(reactionRepository.findOwn(anyCollection(), anyString())).willReturn(List.of());
 
-        Map<Long, ReactionSummary> wynik = reactionService.podsumowania(List.of(5L), "anna");
+        Map<Long, ReactionSummary> score = reactionService.summaries(List.of(5L), "anna");
 
-        ReactionSummary podsumowanie = wynik.get(5L);
-        assertThat(podsumowanie.counts()).containsEntry(ReactionType.FIRE, 3L);
+        ReactionSummary summary = score.get(5L);
+        assertThat(summary.counts()).containsEntry(ReactionType.FIRE, 3L);
         // MID nie padl ani razu, ale i tak musi byc w mapie - inaczej front sie wysypie
-        assertThat(podsumowanie.counts()).containsEntry(ReactionType.MID, 0L);
-        assertThat(podsumowanie.total()).isEqualTo(4);
-        assertThat(podsumowanie.mine()).isNull();
+        assertThat(summary.counts()).containsEntry(ReactionType.MID, 0L);
+        assertThat(summary.total()).isEqualTo(4);
+        assertThat(summary.mine()).isNull();
     }
 
     @Test
     @DisplayName("post bez zadnych reakcji dostaje same zera, a nie pusta mape")
-    void postBezReakcji() {
-        given(reactionRepository.policzDlaPostow(anyCollection())).willReturn(List.of());
-        given(reactionRepository.znajdzWlasne(anyCollection(), anyString())).willReturn(List.of());
+    void postWithoutReactions() {
+        given(reactionRepository.countForPosts(anyCollection())).willReturn(List.of());
+        given(reactionRepository.findOwn(anyCollection(), anyString())).willReturn(List.of());
 
-        ReactionSummary podsumowanie =
-            reactionService.podsumowania(List.of(7L), "anna").get(7L);
+        ReactionSummary summary =
+            reactionService.summaries(List.of(7L), "anna").get(7L);
 
-        assertThat(podsumowanie.total()).isZero();
-        assertThat(podsumowanie.counts()).hasSize(ReactionType.values().length);
+        assertThat(summary.total()).isZero();
+        assertThat(summary.counts()).hasSize(ReactionType.values().length);
     }
 
     @Test
     @DisplayName("pusta lista postow nie generuje zadnego zapytania do bazy")
-    void pustaListaNiePytaBazy() {
-        Map<Long, ReactionSummary> wynik = reactionService.podsumowania(List.of(), "anna");
+    void emptyListSkipsDatabase() {
+        Map<Long, ReactionSummary> score = reactionService.summaries(List.of(), "anna");
 
-        assertThat(wynik).isEmpty();
-        verify(reactionRepository, never()).policzDlaPostow(anyCollection());
+        assertThat(score).isEmpty();
+        verify(reactionRepository, never()).countForPosts(anyCollection());
     }
 }

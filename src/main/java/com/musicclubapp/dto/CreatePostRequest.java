@@ -2,8 +2,8 @@ package com.musicclubapp.dto;
 
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.music.MusicKind;
-import com.musicclubapp.validation.LinkMuzycznyDoSprawdzenia;
-import com.musicclubapp.validation.PoprawnyLinkMuzyczny;
+import com.musicclubapp.validation.MusicLinkToValidate;
+import com.musicclubapp.validation.ValidMusicLink;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,15 +15,15 @@ import jakarta.validation.constraints.Size;
  * <p>Zdjecia przychodza osobno, jako pliki w tym samym zapytaniu
  * {@code multipart/form-data}, dlatego nie ma ich w tym rekordzie.</p>
  *
- * <p>{@link PoprawnyLinkMuzyczny} pilnuje, zeby wklejony adres byl poprawny
+ * <p>{@link ValidMusicLink} pilnuje, zeby wklejony adres byl poprawny
  * i zgadzal sie z wybranym rodzajem - wczesniej nierozpoznany link byl
  * po prostu polykany bez slowa.</p>
  */
-@PoprawnyLinkMuzyczny
+@ValidMusicLink
 public record CreatePostRequest(
 
     @NotBlank(message = "{validation.post.content.notblank}")
-    @Size(max = Post.MAX_DLUGOSC_TRESCI, message = "{validation.post.content.size}")
+    @Size(max = Post.MAX_CONTENT_LENGTH, message = "{validation.post.content.size}")
     String content,
 
     /** Adres ze Spotify albo YouTube'a. Pole opcjonalne - post moze byc bez muzyki. */
@@ -40,5 +40,5 @@ public record CreatePostRequest(
     @Max(value = Post.MAX_SEKUNDA_STARTU, message = "{validation.post.start.range}")
     Integer musicStartSeconds
 
-) implements LinkMuzycznyDoSprawdzenia {
+) implements MusicLinkToValidate {
 }

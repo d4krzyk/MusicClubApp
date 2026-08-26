@@ -6,15 +6,15 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Avatar from './Avatar';
-import GaleriaZdjec from './GaleriaZdjec';
-import Pole from './Pole';
-import Reakcje from './Reakcje';
-import WyborMuzyki from './WyborMuzyki';
-import { IkonaKosz, IkonaOlowek } from './Ikony';
-import client, { opiszBlad } from '../api/client';
-import { sformatujDate } from '../utils/daty';
-import { naMinuty, naSekundy } from '../utils/czas';
-import { bladLinku } from '../utils/linkiMuzyczne';
+import ImageGallery from './ImageGallery';
+import Field from './Field';
+import Reactions from './Reactions';
+import MusicPicker from './MusicPicker';
+import { IconTrash, IconPencil } from './Icons';
+import client, { describeError } from '../api/client';
+import { formatDate } from '../utils/dates';
+import { toMinutes, toSeconds } from '../utils/time';
+import { linkError } from '../utils/musicLinks';
 
 /**
  * Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify.
@@ -42,13 +42,13 @@ export default function Post({ post, onDelete, onUpdate }) {
             className="d-flex align-items-center gap-2 text-decoration-none text-body"
             title={t('profile.visit', { username: post.authorUsername })}
           >
-            <Avatar avatarUrl={post.authorAvatarUrl} username={post.authorUsername} rozmiar={40} />
-            <span className="fw-semibold link-autora">{post.authorUsername}</span>
+            <Avatar avatarUrl={post.authorAvatarUrl} username={post.authorUsername} size={40} />
+            <span className="fw-semibold author-link">{post.authorUsername}</span>
           </Link>
 
           <div className="flex-grow-1">
             <div className="text-body-secondary small">
-              {sformatujDate(post.createdAt, i18n.language)}
+              {formatDate(post.createdAt, i18n.language)}
             </div>
           </div>
 
@@ -61,7 +61,7 @@ export default function Post({ post, onDelete, onUpdate }) {
                   onClick={() => setEdycja(true)}
                   title={t('posts.edit')}
                 >
-                  <IkonaOlowek /> <span className="d-none d-sm-inline">{t('posts.edit')}</span>
+                  <IconPencil /> <span className="d-none d-sm-inline">{t('posts.edit')}</span>
                 </Button>
               )}
 
@@ -72,7 +72,7 @@ export default function Post({ post, onDelete, onUpdate }) {
                   onClick={() => onDelete(post.id)}
                   title={t('common.delete')}
                 >
-                  <IkonaKosz /> <span className="d-none d-sm-inline">{t('common.delete')}</span>
+                  <IconTrash /> <span className="d-none d-sm-inline">{t('common.delete')}</span>
                 </Button>
               )}
             </div>
@@ -80,28 +80,28 @@ export default function Post({ post, onDelete, onUpdate }) {
         </div>
 
         {edycja ? (
-          <FormularzEdycji
+          <EditForm
             post={post}
-            onZapisano={(zaktualizowany) => {
-              onUpdate(zaktualizowany);
+            onSaved={(updated) => {
+              onUpdate(updated);
               setEdycja(false);
             }}
             onAnuluj={() => setEdycja(false)}
           />
         ) : (
           <>
-            {/* tresc-postu zachowuje przejscia do nowej linii wpisane przez autora */}
-            <Card.Text className="tresc-postu">{post.content}</Card.Text>
+            {/* post-content zachowuje przejscia do nowej linii wpisane przez autora */}
+            <Card.Text className="post-content">{post.content}</Card.Text>
 
             {post.imageUrls.length > 0 && (
               <div className="mb-3">
-                <GaleriaZdjec adresy={post.imageUrls} autor={post.authorUsername} />
+                <ImageGallery urls={post.imageUrls} author={post.authorUsername} />
               </div>
             )}
 
-            {post.musicEmbedUrl && <Odtwarzacz post={post} />}
+            {post.musicEmbedUrl && <Player post={post} />}
 
-            <Reakcje post={post} onZmiana={onUpdate} />
+            <Reactions post={post} onChange={onUpdate} />
           </>
         )}
       </Card.Body>
@@ -110,63 +110,63 @@ export default function Post({ post, onDelete, onUpdate }) {
 }
 
 /** Formularz edycji - tresc i utwor. Zdjec nie da sie zmienic po opublikowaniu. */
-function FormularzEdycji({ post, onZapisano, onAnuluj }) {
+function EditForm({ post, onSaved, onAnuluj }) {
   const { t } = useTranslation();
 
   const [content, setContent] = useState(post.content);
   const [musicUrl, setMusicUrl] = useState(post.musicUrl ?? '');
   const [musicKind, setMusicKind] = useState(post.musicKind ?? 'TRACK');
-  const [startAt, setStartAt] = useState(naMinuty(post.musicStartSeconds) || '');
+  const [startAt, setStartAt] = useState(toMinutes(post.musicStartSeconds) || '');
 
-  const [bledyPol, setBledyPol] = useState({});
-  const [bladOgolny, setBladOgolny] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
 
-  async function wyslij(e) {
+  async function submit(e) {
     e.preventDefault();
-    setBledyPol({});
-    setBladOgolny(null);
+    setFieldErrors({});
+    setGeneralError(null);
     setWysylanie(true);
 
     try {
-      const odpowiedz = await client.put(`/posts/${post.id}`, {
+      const response = await client.put(`/posts/${post.id}`, {
         content,
         musicUrl: musicUrl || null,
         musicKind: musicUrl ? musicKind : null,
-        musicStartSeconds: musicKind === 'TRACK' ? naSekundy(startAt) : null,
+        musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
       });
-      onZapisano(odpowiedz.data);
+      onSaved(response.data);
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBledyPol(opis.fieldErrors);
-      setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setFieldErrors(details.fieldErrors);
+      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       setWysylanie(false);
     }
   }
 
   return (
-    <Form onSubmit={wyslij} noValidate>
-      {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
+    <Form onSubmit={submit} noValidate>
+      {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-      <Pole
+      <Field
         id={`content-${post.id}`}
         label={t('posts.content')}
-        wartosc={content}
+        value={content}
         onChange={setContent}
-        blad={bledyPol.content}
-        jakoObszarTekstu
-        wiersze={3}
+        error={fieldErrors.content}
+        asTextarea
+        rows={3}
       />
 
-      <WyborMuzyki
-        rodzaj={musicKind}
-        onRodzaj={setMusicKind}
+      <MusicPicker
+        kind={musicKind}
+        onKind={setMusicKind}
         link={musicUrl}
         onLink={setMusicUrl}
-        moment={startAt}
-        onMoment={setStartAt}
-        bledySerwera={bledyPol}
+        startSeconds={startAt}
+        onStartSeconds={setStartAt}
+        serverErrors={fieldErrors}
       />
 
       <p className="text-body-secondary small">{t('posts.musicClearHint')}</p>
@@ -176,7 +176,7 @@ function FormularzEdycji({ post, onZapisano, onAnuluj }) {
       )}
 
       <div className="d-flex gap-2">
-        <Button type="submit" size="sm" disabled={wysylanie || Boolean(bladLinku(musicUrl, musicKind))}>
+        <Button type="submit" size="sm" disabled={wysylanie || Boolean(linkError(musicUrl, musicKind))}>
           {wysylanie ? t('settings.saving') : t('common.save')}
         </Button>
         <Button type="button" size="sm" variant="outline-secondary" onClick={onAnuluj}>
@@ -188,20 +188,55 @@ function FormularzEdycji({ post, onZapisano, onAnuluj }) {
 }
 
 /**
- * Odtwarzacz nagrania - dziala tak samo dla kazdego serwisu.
+ * Wysokosc odtwarzacza w pikselach - albo `null`, gdy ma byc proporcja 16:9.
+ *
+ * <p><b>YouTube dostaje PROPORCJE, nie wysokosc.</b> W tamtym odtwarzaczu
+ * leci obraz - teledysk, koncert, wizualizacja - a przy sztywnych 152 px
+ * film robil sie paskiem wysokosci wiersza tekstu. Sztywna wysokosc pasuje
+ * do Spotify i Apple, bo tam odtwarzacz to okladka plus pasek postepu
+ * i wiecej miejsca po prostu nie potrzebuje.</p>
+ *
+ * <p>Wartosci dla Apple sa te, ktore Apple podaje we wlasnym generatorze
+ * kodu do osadzania (175 px dla utworu, 450 px dla albumu i playlisty).</p>
+ */
+function playerHeight(provider, kind) {
+  if (provider === 'YOUTUBE') {
+    return null;                       // proporcja 16:9, patrz nizej
+  }
+  if (provider === 'APPLE_MUSIC') {
+    return kind === 'TRACK' ? 175 : 450;
+  }
+  return kind === 'TRACK' ? 152 : 352; // Spotify
+}
+
+/**
+ * Player nagrania.
  *
  * <p><b>Adres skladamy na SERWERZE</b>, nie tutaj. Kazdy serwis ma inny format
  * adresu osadzenia (i inny parametr momentu startu), a gdyby wiedza o tym
- * siedziala w Reakcie, dolozenie trzeciego serwisu wymagaloby zmian
+ * siedziala w Reakcie, dolozenie kolejnego serwisu wymagaloby zmian
  * w dwoch miejscach.</p>
  *
- * <p>Wysokosc zalezy od rodzaju: album i profil artysty pokazuja liste
- * nagran, wiec potrzebuja wiecej miejsca niz pojedynczy utwor.</p>
+ * <p>Tutaj zostaje wylacznie to, czego serwer nie moze wiedziec: <b>ile
+ * miejsca</b> odtwarzacz potrzebuje na ekranie.</p>
  */
-function Odtwarzacz({ post }) {
+function Player({ post }) {
   const { t } = useTranslation();
 
-  const wysokosc = post.musicKind === 'TRACK' ? 152 : 352;
+  const height = playerHeight(post.musicProvider, post.musicKind);
+  const hasVideo = height === null;
+
+  const frame = (
+    <iframe
+      src={post.musicEmbedUrl}
+      title={post.musicTitle ?? `${post.musicProvider} - ${post.authorUsername}`}
+      width="100%"
+      height={height ?? undefined}
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      allowFullScreen={hasVideo}
+      loading="lazy"
+    />
+  );
 
   return (
     <div>
@@ -209,16 +244,14 @@ function Odtwarzacz({ post }) {
         Zaokraglenie musi byc na OTOCZCE z overflow: hidden, a nie na samej
         ramce. Strona serwisu w srodku ma wlasne, prostokatne tlo - przy
         border-radius na iframe wystawalo ono w rogach jako biale narozniki.
+
+        "ratio ratio-16x9" to gotowe klasy Bootstrapa: otoczka dostaje
+        wysokosc rowna 56,25% swojej szerokosci, a ramka w srodku wypelnia
+        ja w calosci. Dzieki temu film skaluje sie razem z szerokoscia
+        tablicy i na telefonie nie trzeba niczego przeliczac.
       */}
-      <div className="ramka-spotify">
-        <iframe
-          src={post.musicEmbedUrl}
-          title={post.musicTitle ?? `${post.musicProvider} - ${post.authorUsername}`}
-          width="100%"
-          height={wysokosc}
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-        />
+      <div className={`player-frame${hasVideo ? ' ratio ratio-16x9' : ''}`}>
+        {frame}
       </div>
 
       {/*

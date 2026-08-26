@@ -88,7 +88,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("poprawna rejestracja zwraca 201 i naglowek Location")
-    void poprawnaRejestracjaZwraca201() throws Exception {
+    void validRegistrationReturns201() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userService.register(any(RegisterRequest.class))).willReturn(
             new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
@@ -107,7 +107,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("bledny e-mail konczy sie kodem 422 i wskazaniem pola")
-    void blednyEmailZwraca422() throws Exception {
+    void invalidEmailReturns422() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
 
         mockMvc.perform(post("/api/auth/register")
@@ -121,7 +121,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("rozne hasla konczy sie kodem 422 - wlasna adnotacja @PasswordsMatch")
-    void rozneHaslaZwracaja422() throws Exception {
+    void mismatchedPasswordsReturn422() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
 
         mockMvc.perform(post("/api/auth/register")
@@ -135,7 +135,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("za krotkie haslo konczy sie kodem 422")
-    void zaKrotkieHasloZwraca422() throws Exception {
+    void tooShortPasswordReturns422() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
 
         mockMvc.perform(post("/api/auth/register")
@@ -148,7 +148,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("zajety login konczy sie kodem 409 CONFLICT")
-    void zajetyLoginZwraca409() throws Exception {
+    void takenUsernameReturns409() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userService.register(any(RegisterRequest.class)))
             .willThrow(DuplicateResourceException.username("anna"));
@@ -164,7 +164,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("POST bez tokenu CSRF jest odrzucany - dowod, ze ochrona dziala")
-    void brakTokenuCsrfZwraca403() throws Exception {
+    void missingCsrfTokenReturns403() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json(new RegisterRequest(
@@ -174,7 +174,7 @@ class AuthControllerTest {
 
     @Test
     @DisplayName("/me bez zalogowania zwraca 401, a nie przekierowanie")
-    void meBezZalogowaniaZwraca401() throws Exception {
+    void meWithoutLoginReturns401() throws Exception {
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isUnauthorized());
     }
@@ -182,7 +182,7 @@ class AuthControllerTest {
     @Test
     @WithMockUser(username = "anna")
     @DisplayName("/me zwraca dane zalogowanego, ale NIE ujawnia jego roli")
-    void meDlaZalogowanegoZwracaDane() throws Exception {
+    void meReturnsDataForLoggedInUser() throws Exception {
         given(userService.getByUsername("anna")).willReturn(
             new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
@@ -198,7 +198,7 @@ class AuthControllerTest {
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("/me dla administratora ustawia flage admin na true")
-    void meDlaAdminaUstawiaFlage() throws Exception {
+    void meSetsAdminFlag() throws Exception {
         given(userService.getByUsername("admin")).willReturn(
             new UserResponse(1L, "admin", "admin@musicclub.local", true, null, LocalDateTime.now()));
 

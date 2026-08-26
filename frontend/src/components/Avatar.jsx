@@ -9,8 +9,8 @@
  * @param username  login - z niego bierzemy litere do zastepnika
  * @param rozmiar   bok kola w pikselach
  */
-export default function Avatar({ avatarUrl, username, rozmiar = 40 }) {
-  const styl = { width: rozmiar, height: rozmiar };
+export default function Avatar({ avatarUrl, username, size = 40 }) {
+  const styl = { width: size, height: size };
 
   if (avatarUrl) {
     return (
@@ -32,8 +32,8 @@ export default function Avatar({ avatarUrl, username, rozmiar = 40 }) {
 
   return (
     <span
-      className="avatar-zastepnik"
-      style={{ ...styl, fontSize: rozmiar * 0.45 }}
+      className="avatar-placeholder"
+      style={{ ...styl, fontSize: size * 0.45 }}
       aria-hidden="true"
     >
       {username?.charAt(0) ?? '?'}

@@ -307,7 +307,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         List<String> origins = Arrays.stream(corsAllowedOrigins.split(","))
             .map(String::trim)
-            .filter(adres -> !adres.isEmpty())
+            .filter(url -> !url.isEmpty())
             .toList();
 
         CorsConfiguration config = new CorsConfiguration();

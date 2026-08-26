@@ -22,6 +22,16 @@ public record AdminUserResponse(
     String username,
     String email,
     Role role,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+
+    /**
+     * Do kiedy obowiazuje zakaz publikowania; {@code null} - gdy zadnego nie ma.
+     *
+     * <p>Oddajemy sam termin, a nie gotowe "zablokowany: tak/nie". Panel
+     * pokazuje dzieki temu, do kiedy kara trwa, a data w przeszlosci mowi
+     * administratorowi, ze ktos byl juz kiedys blokowany - i to bywa
+     * wazniejsze niz sam biezacy stan.</p>
+     */
+    LocalDateTime postingBannedUntil
 ) {
 }

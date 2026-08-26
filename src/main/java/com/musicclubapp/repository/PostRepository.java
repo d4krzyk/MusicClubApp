@@ -89,17 +89,26 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                   p.music_external_id       AS externalId,
                   MAX(p.music_title)        AS title,
                   MAX(p.music_thumbnail_url) AS thumbnailUrl,
-                  COUNT(*)                  AS ile
+                  COUNT(*)                  AS timesPosted
              FROM posts p
              JOIN users u ON u.id = p.author_id
             WHERE u.username = :username
               AND p.music_external_id IS NOT NULL
               AND p.music_kind = :kind
             GROUP BY p.music_provider, p.music_kind, p.music_external_id
-            ORDER BY ile DESC, MAX(p.created_at) DESC
+            ORDER BY timesPosted DESC, MAX(p.created_at) DESC
             LIMIT :limit
            """, nativeQuery = true)
-    List<TopMusicRow> najczesciejWrzucane(@Param("username") String username,
+    List<TopMusicRow> mostPosted(@Param("username") String username,
                                           @Param("kind") String kind,
                                           @Param("limit") int limit);
+
+    /**
+     * Wszystkie posty jednego autora - przy usuwaniu konta.
+     *
+     * <p>Nie kasujemy ich jednym {@code DELETE}, bo najpierw trzeba zdjac
+     * z dysku zdjecia, ktore do nich naleza. Wersja z pobraniem encji pozwala
+     * tez kaskadzie zabrac zdjecia i cudze reakcje pod tymi postami.</p>
+     */
+    List<Post> findByAuthorId(Long authorId);
 }

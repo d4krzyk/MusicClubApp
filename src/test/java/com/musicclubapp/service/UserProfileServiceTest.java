@@ -61,7 +61,7 @@ class UserProfileServiceTest {
 
     @Test
     @DisplayName("zapis bez zmiany loginu NIE zglasza 'login zajety'")
-    void zapisBezZmianyLoginuDziala() {
+    void saveWithoutUsernameChangeWorks() {
         User anna = anna();
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
@@ -80,7 +80,7 @@ class UserProfileServiceTest {
 
     @Test
     @DisplayName("zmiana loginu na zajety przez kogos innego konczy sie wyjatkiem")
-    void zajetyLoginInnegoUzytkownikaRzucaWyjatek() {
+    void usernameTakenByAnotherUserThrows() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         given(userRepository.existsByUsername("bartek")).willReturn(true);
 
@@ -93,7 +93,7 @@ class UserProfileServiceTest {
 
     @Test
     @DisplayName("zmiana e-maila na zajety przez kogos innego konczy sie wyjatkiem")
-    void zajetyEmailInnegoUzytkownikaRzucaWyjatek() {
+    void emailTakenByAnotherUserThrows() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         given(userRepository.existsByEmail("zajety@example.com")).willReturn(true);
 
@@ -106,7 +106,7 @@ class UserProfileServiceTest {
 
     @Test
     @DisplayName("poprawna zmiana loginu i e-maila zapisuje nowe wartosci")
-    void poprawnaZmianaZapisujeDane() {
+    void validChangeIsSaved() {
         User anna = anna();
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.existsByUsername("ania")).willReturn(false);
@@ -117,15 +117,15 @@ class UserProfileServiceTest {
 
         userService.updateProfile("anna", new UpdateProfileRequest("ania", "ania@example.com"));
 
-        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getUsername()).isEqualTo("ania");
-        assertThat(zapisany.getValue().getEmail()).isEqualTo("ania@example.com");
+        ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(stored.capture());
+        assertThat(stored.getValue().getUsername()).isEqualTo("ania");
+        assertThat(stored.getValue().getEmail()).isEqualTo("ania@example.com");
     }
 
     @Test
     @DisplayName("zle obecne haslo NIE pozwala zmienic hasla")
-    void zleObecneHasloRzucaWyjatek() {
+    void wrongCurrentPasswordThrows() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         given(passwordEncoder.matches("zle", "$2a$10$stary")).willReturn(false);
 
@@ -138,7 +138,7 @@ class UserProfileServiceTest {
 
     @Test
     @DisplayName("poprawne obecne haslo zapisuje NOWY hash, nie jawne haslo")
-    void poprawnaZmianaHaslaZapisujeHash() {
+    void validPasswordChangeStoresHash() {
         User anna = anna();
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(passwordEncoder.matches("tajneHaslo1", "$2a$10$stary")).willReturn(true);
@@ -148,9 +148,9 @@ class UserProfileServiceTest {
         userService.changePassword(
             "anna", new ChangePasswordRequest("tajneHaslo1", "noweHaslo123", "noweHaslo123"));
 
-        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getPasswordHash()).isEqualTo("$2a$10$nowy");
-        assertThat(zapisany.getValue().getPasswordHash()).isNotEqualTo("noweHaslo123");
+        ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(stored.capture());
+        assertThat(stored.getValue().getPasswordHash()).isEqualTo("$2a$10$nowy");
+        assertThat(stored.getValue().getPasswordHash()).isNotEqualTo("noweHaslo123");
     }
 }

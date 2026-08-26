@@ -64,13 +64,13 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    private RegisterRequest poprawneZgloszenie() {
+    private RegisterRequest reportViolation() {
         return new RegisterRequest("anna", "anna@example.com", "tajneHaslo1", "tajneHaslo1");
     }
 
     @Test
     @DisplayName("rejestracja zapisuje uzytkownika z ZAHASHOWANYM haslem")
-    void rejestracjaHashujeHaslo() {
+    void registrationHashesPassword() {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userRepository.existsByEmail("anna@example.com")).willReturn(false);
         given(passwordEncoder.encode("tajneHaslo1")).willReturn("$2a$10$zahashowane");
@@ -78,21 +78,21 @@ class UserServiceTest {
         given(userMapper.toResponse(any(User.class))).willReturn(
             new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
-        userService.register(poprawneZgloszenie());
+        userService.register(reportViolation());
 
         // Sprawdzamy, CO dokladnie poszlo do repozytorium
-        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(zapisany.capture());
+        ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(stored.capture());
 
-        assertThat(zapisany.getValue().getUsername()).isEqualTo("anna");
-        assertThat(zapisany.getValue().getPasswordHash()).isEqualTo("$2a$10$zahashowane");
+        assertThat(stored.getValue().getUsername()).isEqualTo("anna");
+        assertThat(stored.getValue().getPasswordHash()).isEqualTo("$2a$10$zahashowane");
         // najwazniejsze: jawne haslo NIE trafia do bazy
-        assertThat(zapisany.getValue().getPasswordHash()).isNotEqualTo("tajneHaslo1");
+        assertThat(stored.getValue().getPasswordHash()).isNotEqualTo("tajneHaslo1");
     }
 
     @Test
     @DisplayName("nowy uzytkownik dostaje role USER")
-    void nowyUzytkownikMaRoleUser() {
+    void newUserGetsUserRole() {
         given(userRepository.existsByUsername(anyString())).willReturn(false);
         given(userRepository.existsByEmail(anyString())).willReturn(false);
         given(passwordEncoder.encode(anyString())).willReturn("hash");
@@ -100,19 +100,19 @@ class UserServiceTest {
         given(userMapper.toResponse(any(User.class))).willReturn(
             new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
 
-        userService.register(poprawneZgloszenie());
+        userService.register(reportViolation());
 
-        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getRole()).isEqualTo(Role.USER);
+        ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(stored.capture());
+        assertThat(stored.getValue().getRole()).isEqualTo(Role.USER);
     }
 
     @Test
     @DisplayName("zajety login przerywa rejestracje i nic nie zapisuje")
-    void zajetyLoginRzucaWyjatek() {
+    void takenUsernameThrows() {
         given(userRepository.existsByUsername("anna")).willReturn(true);
 
-        assertThatThrownBy(() -> userService.register(poprawneZgloszenie()))
+        assertThatThrownBy(() -> userService.register(reportViolation()))
             .isInstanceOf(DuplicateResourceException.class)
             .hasMessageContaining("anna");
 
@@ -121,11 +121,11 @@ class UserServiceTest {
 
     @Test
     @DisplayName("zajety e-mail przerywa rejestracje i nic nie zapisuje")
-    void zajetyEmailRzucaWyjatek() {
+    void takenEmailThrows() {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userRepository.existsByEmail("anna@example.com")).willReturn(true);
 
-        assertThatThrownBy(() -> userService.register(poprawneZgloszenie()))
+        assertThatThrownBy(() -> userService.register(reportViolation()))
             .isInstanceOf(DuplicateResourceException.class);
 
         verify(userRepository, never()).save(any(User.class));
@@ -133,7 +133,7 @@ class UserServiceTest {
 
     @Test
     @DisplayName("szukanie nieistniejacego uzytkownika rzuca wyjatek 'nie znaleziono'")
-    void brakUzytkownikaRzucaWyjatek() {
+    void missingUserThrows() {
         given(userRepository.findByUsername("duch")).willReturn(Optional.empty());
 
         // wymaganie nr 11 - wyjatek przy braku elementu w bazie
@@ -143,7 +143,7 @@ class UserServiceTest {
 
     @Test
     @DisplayName("istniejacy uzytkownik jest zwracany jako DTO, bez hasha hasla")
-    void istniejacyUzytkownikJestMapowanyNaDto() {
+    void existingUserIsMappedToDto() {
         User user = new User("anna", "anna@example.com", "$2a$10$hash");
         UserResponse oczekiwany =
             new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now());
@@ -151,9 +151,9 @@ class UserServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(user));
         given(userMapper.toResponse(user)).willReturn(oczekiwany);
 
-        UserResponse wynik = userService.getByUsername("anna");
+        UserResponse score = userService.getByUsername("anna");
 
-        assertThat(wynik).isEqualTo(oczekiwany);
-        assertThat(wynik.username()).isEqualTo("anna");
+        assertThat(score).isEqualTo(oczekiwany);
+        assertThat(score.username()).isEqualTo("anna");
     }
 }

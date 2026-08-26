@@ -38,7 +38,7 @@ public enum MusicKind {
      * Dlatego formularz chowa wtedy to pole, a serwer odrzuca probe
      * przeslania takiej wartosci.</p>
      */
-    public boolean obslugujeMomentStartu() {
+    public boolean supportsStartSeconds() {
         return this == TRACK;
     }
 }

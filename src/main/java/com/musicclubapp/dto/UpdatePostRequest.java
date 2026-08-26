@@ -2,8 +2,8 @@ package com.musicclubapp.dto;
 
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.music.MusicKind;
-import com.musicclubapp.validation.LinkMuzycznyDoSprawdzenia;
-import com.musicclubapp.validation.PoprawnyLinkMuzyczny;
+import com.musicclubapp.validation.MusicLinkToValidate;
+import com.musicclubapp.validation.ValidMusicLink;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -19,11 +19,11 @@ import jakarta.validation.constraints.Size;
  *
  * <p>Puste {@code musicUrl} oznacza "usun nagranie z posta".</p>
  */
-@PoprawnyLinkMuzyczny
+@ValidMusicLink
 public record UpdatePostRequest(
 
     @NotBlank(message = "{validation.post.content.notblank}")
-    @Size(max = Post.MAX_DLUGOSC_TRESCI, message = "{validation.post.content.size}")
+    @Size(max = Post.MAX_CONTENT_LENGTH, message = "{validation.post.content.size}")
     String content,
 
     String musicUrl,
@@ -34,5 +34,5 @@ public record UpdatePostRequest(
     @Max(value = Post.MAX_SEKUNDA_STARTU, message = "{validation.post.start.range}")
     Integer musicStartSeconds
 
-) implements LinkMuzycznyDoSprawdzenia {
+) implements MusicLinkToValidate {
 }

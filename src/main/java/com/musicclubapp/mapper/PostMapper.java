@@ -28,32 +28,32 @@ public class PostMapper {
      * @param reakcje    policzone reakcje tego posta; dla swiezo utworzonego
      *                   wpisu podaj {@link ReactionSummary#pusta()}
      */
-    public PostResponse toResponse(Post post, User ogladajacy, ReactionSummary reakcje) {
-        List<String> adresyZdjec = post.getImages().stream()
+    public PostResponse toResponse(Post post, User viewer, ReactionSummary reactions) {
+        List<String> imageUrls = post.getImages().stream()
             .map(PostImage::getFileName)
-            .map(nazwa -> SCIEZKA_PLIKOW + nazwa)
+            .map(name -> SCIEZKA_PLIKOW + name)
             .toList();
 
         return new PostResponse(
             post.getId(),
             post.getAuthor().getUsername(),
-            adresAvatara(post.getAuthor()),
+            avatarUrl(post.getAuthor()),
             post.getContent(),
-            adresyZdjec,
-            adresOdtwarzacza(post),
+            imageUrls,
+            playerUrl(post),
             post.getMusicProvider(),
             post.getMusicKind(),
             post.getMusicTitle(),
             post.getMusicThumbnailUrl(),
             post.getMusicStartSeconds(),
-            adresStrony(post),
+            pageUrl(post),
             post.getCreatedAt(),
-            czyMozeUsunac(post, ogladajacy),
-            czyMozeEdytowac(post, ogladajacy),
-            reakcje);
+            canDelete(post, viewer),
+            canEdit(post, viewer),
+            reactions);
     }
 
-    private String adresAvatara(User user) {
+    private String avatarUrl(User user) {
         return user.getAvatarFileName() == null
             ? null
             : SCIEZKA_PLIKOW + user.getAvatarFileName();
@@ -66,11 +66,11 @@ public class PostMapper {
      * Frontend dostaje wynik i nie musi znac zadnego z tych formatow -
      * dolozenie trzeciego serwisu nie wymaga wtedy ruszania Reacta.</p>
      */
-    private String adresOdtwarzacza(Post post) {
-        if (!post.maMuzyke()) {
+    private String playerUrl(Post post) {
+        if (!post.hasMusic()) {
             return null;
         }
-        return MusicEmbed.adresOsadzenia(
+        return MusicEmbed.embedUrl(
             post.getMusicProvider(),
             post.getMusicKind(),
             post.getMusicExternalId(),
@@ -78,26 +78,26 @@ public class PostMapper {
     }
 
     /** Adres strony w serwisie - do formularza edycji i przycisku "otworz". */
-    private String adresStrony(Post post) {
-        if (!post.maMuzyke()) {
+    private String pageUrl(Post post) {
+        if (!post.hasMusic()) {
             return null;
         }
-        return MusicEmbed.adresZwykly(
+        return MusicEmbed.canonicalUrl(
             post.getMusicProvider(), post.getMusicKind(), post.getMusicExternalId());
     }
 
     /** Edytowac moze WYLACZNIE autor - administrator moderuje usuwaniem. */
-    private boolean czyMozeEdytowac(Post post, User ogladajacy) {
-        return ogladajacy != null
-            && post.getAuthor().getUsername().equals(ogladajacy.getUsername());
+    private boolean canEdit(Post post, User viewer) {
+        return viewer != null
+            && post.getAuthor().getUsername().equals(viewer.getUsername());
     }
 
     /** Post moze skasowac jego autor albo administrator. */
-    private boolean czyMozeUsunac(Post post, User ogladajacy) {
-        if (ogladajacy == null) {
+    private boolean canDelete(Post post, User viewer) {
+        if (viewer == null) {
             return false;
         }
-        return ogladajacy.getRole() == Role.ADMIN
-            || post.getAuthor().getUsername().equals(ogladajacy.getUsername());
+        return viewer.getRole() == Role.ADMIN
+            || post.getAuthor().getUsername().equals(viewer.getUsername());
     }
 }

@@ -51,20 +51,20 @@ public class FileStorageService {
         "image/webp", ".webp",
         "image/gif", ".gif");
 
-    private final Path katalog;
+    private final Path catalog;
 
-    public FileStorageService(@Value("${app.uploads.dir:uploads}") String katalogUploadow) {
-        this.katalog = Paths.get(katalogUploadow).toAbsolutePath().normalize();
+    public FileStorageService(@Value("${app.uploads.dir:uploads}") String uploadsDirectory) {
+        this.catalog = Paths.get(uploadsDirectory).toAbsolutePath().normalize();
     }
 
     /** Tworzy katalog na pliki przy starcie aplikacji, jesli go jeszcze nie ma. */
     @PostConstruct
-    void przygotujKatalog() {
+    void prepareDirectory() {
         try {
-            Files.createDirectories(katalog);
-            log.info("Katalog na wgrane pliki: {}", katalog);
+            Files.createDirectories(catalog);
+            log.info("Katalog na wgrane pliki: {}", catalog);
         } catch (IOException e) {
-            throw new UncheckedIOException("Nie udalo sie utworzyc katalogu na pliki: " + katalog, e);
+            throw new UncheckedIOException("Nie udalo sie utworzyc katalogu na pliki: " + catalog, e);
         }
     }
 
@@ -73,28 +73,28 @@ public class FileStorageService {
      *
      * @throws InvalidFileException gdy plik jest pusty albo nie jest obrazkiem
      */
-    public String zapiszObrazek(MultipartFile plik) {
-        if (plik == null || plik.isEmpty()) {
-            throw InvalidFileException.pusty();
+    public String saveImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw InvalidFileException.empty();
         }
 
-        String typ = plik.getContentType();
-        String rozszerzenie = DOZWOLONE_TYPY.get(typ == null ? "" : typ.toLowerCase());
-        if (rozszerzenie == null) {
-            throw InvalidFileException.zlyTyp(typ);
+        String type = file.getContentType();
+        String extension = DOZWOLONE_TYPY.get(type == null ? "" : type.toLowerCase());
+        if (extension == null) {
+            throw InvalidFileException.wrongType(type);
         }
 
         // Nazwe nadajemy sami - nazwa od klienta NIGDY nie trafia na dysk
-        String nazwa = UUID.randomUUID().toString().replace("-", "") + rozszerzenie;
+        String name = UUID.randomUUID().toString().replace("-", "") + extension;
 
         try {
-            Files.copy(plik.getInputStream(), katalog.resolve(nazwa),
+            Files.copy(file.getInputStream(), catalog.resolve(name),
                 StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new UncheckedIOException("Nie udalo sie zapisac pliku " + nazwa, e);
+            throw new UncheckedIOException("Nie udalo sie zapisac pliku " + name, e);
         }
 
-        return nazwa;
+        return name;
     }
 
     /**
@@ -104,8 +104,8 @@ public class FileStorageService {
      * przy poprzedniej probie. Wywalanie sie z tego powodu tylko blokowaloby
      * usuniecie posta.</p>
      */
-    public void usun(String nazwaPliku) {
-        if (nazwaPliku == null || nazwaPliku.isBlank()) {
+    public void remove(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
             return;
         }
 
@@ -114,16 +114,16 @@ public class FileStorageService {
          * ewentualne sciezki. Nawet gdyby do bazy trafilo kiedys "../coś",
          * nie skasujemy niczego poza katalogiem uploadow.
          */
-        Path cel = katalog.resolve(Paths.get(nazwaPliku).getFileName());
+        Path target = catalog.resolve(Paths.get(fileName).getFileName());
 
         try {
-            Files.deleteIfExists(cel);
+            Files.deleteIfExists(target);
         } catch (IOException e) {
-            log.warn("Nie udalo sie usunac pliku {}: {}", nazwaPliku, e.getMessage());
+            log.warn("Nie udalo sie usunac pliku {}: {}", fileName, e.getMessage());
         }
     }
 
-    public Path getKatalog() {
-        return katalog;
+    public Path getDirectory() {
+        return catalog;
     }
 }

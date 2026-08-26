@@ -8,20 +8,20 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
 import Collapse from 'react-bootstrap/Collapse';
-import client, { opiszBlad } from '../api/client';
-import Pole from '../components/Pole';
+import client, { describeError } from '../api/client';
+import Field from '../components/Field';
 import Post from '../components/Post';
-import WybieraczZdjec from '../components/WybieraczZdjec';
-import WyborMuzyki from '../components/WyborMuzyki';
-import { IkonaKrzyzyk, IkonaPlus } from '../components/Ikony';
-import { naSekundy } from '../utils/czas';
-import { bladLinku } from '../utils/linkiMuzyczne';
+import ImagePicker from '../components/ImagePicker';
+import MusicPicker from '../components/MusicPicker';
+import { IconCross, IconPlus } from '../components/Icons';
+import { toSeconds } from '../utils/time';
+import { linkError } from '../utils/musicLinks';
 
 /** Ile postow pobieramy za jednym razem. */
 const NA_STRONE = 10;
 
 /** Limit zdjec w jednym poscie - taki sam jak po stronie backendu. */
-const MAKS_ZDJEC = 10;
+const MAX_IMAGES = 10;
 
 /**
  * Tablica: przycisk dodawania posta i lista wpisow.
@@ -38,61 +38,61 @@ export default function FeedPage() {
   const { t } = useTranslation();
 
   const [posty, setPosty] = useState([]);
-  const [strona, setStrona] = useState(0);
-  const [ostatnia, setOstatnia] = useState(true);
-  const [ladowanie, setLadowanie] = useState(true);
-  const [bladListy, setBladListy] = useState(null);
-  const [komunikat, setKomunikat] = useState(null);
-  const [formularzOtwarty, setFormularzOtwarty] = useState(false);
+  const [page, setPage] = useState(0);
+  const [lastPage, setLastPage] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [listError, setListError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [formOpen, setFormOpen] = useState(false);
 
-  const pobierz = useCallback(async (numerStrony, dolacz) => {
-    setLadowanie(true);
-    setBladListy(null);
+  const fetch = useCallback(async (pageNumber, joined) => {
+    setLoading(true);
+    setListError(null);
     try {
-      const odpowiedz = await client.get('/posts', {
-        params: { page: numerStrony, size: NA_STRONE, direction: 'desc' },
+      const response = await client.get('/posts', {
+        params: { page: pageNumber, size: NA_STRONE, direction: 'desc' },
       });
-      const dane = odpowiedz.data;
+      const data = response.data;
 
-      setPosty((poprzednie) => (dolacz ? [...poprzednie, ...dane.content] : dane.content));
-      setOstatnia(dane.last);
-      setStrona(dane.number);
+      setPosty((previous) => (joined ? [...previous, ...data.content] : data.content));
+      setLastPage(data.last);
+      setPage(data.number);
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBladListy(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setListError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
-      setLadowanie(false);
+      setLoading(false);
     }
   }, [t]);
 
   useEffect(() => {
-    pobierz(0, false);
-  }, [pobierz]);
+    fetch(0, false);
+  }, [fetch]);
 
-  function poDodaniu(nowy) {
+  function afterAdd(created) {
     // Nowy post ma byc na gorze - to najszybszy sposob, bez ponownego pobierania
-    setPosty((poprzednie) => [nowy, ...poprzednie]);
-    setKomunikat(t('posts.published'));
-    setFormularzOtwarty(false);
+    setPosty((previous) => [created, ...previous]);
+    setMessage(t('posts.published'));
+    setFormOpen(false);
   }
 
-  function poEdycji(zaktualizowany) {
-    setPosty((poprzednie) =>
-      poprzednie.map((p) => (p.id === zaktualizowany.id ? zaktualizowany : p)));
-    setKomunikat(t('posts.updated'));
+  function poEdycji(updated) {
+    setPosty((previous) =>
+      previous.map((p) => (p.id === updated.id ? updated : p)));
+    setMessage(t('posts.updated'));
   }
 
-  async function usun(id) {
+  async function remove(id) {
     if (!window.confirm(t('common.confirmDelete'))) {
       return;
     }
     try {
       await client.delete(`/posts/${id}`);
-      setPosty((poprzednie) => poprzednie.filter((p) => p.id !== id));
-      setKomunikat(t('posts.deleted'));
+      setPosty((previous) => previous.filter((p) => p.id !== id));
+      setMessage(t('posts.deleted'));
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBladListy(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setListError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     }
   }
 
@@ -103,54 +103,54 @@ export default function FeedPage() {
           <h1 className="h4 mb-0">{t('posts.title')}</h1>
 
           <Button
-            variant={formularzOtwarty ? 'outline-secondary' : 'primary'}
-            onClick={() => setFormularzOtwarty((otwarty) => !otwarty)}
-            aria-expanded={formularzOtwarty}
+            variant={formOpen ? 'outline-secondary' : 'primary'}
+            onClick={() => setFormOpen((open) => !open)}
+            aria-expanded={formOpen}
             aria-controls="formularz-postu"
           >
-            {formularzOtwarty ? (
+            {formOpen ? (
               <>
-                <IkonaKrzyzyk /> {t('common.cancel')}
+                <IconCross /> {t('common.cancel')}
               </>
             ) : (
               <>
-                <IkonaPlus /> {t('posts.newPost')}
+                <IconPlus /> {t('posts.newPost')}
               </>
             )}
           </Button>
         </div>
 
-        <Collapse in={formularzOtwarty}>
+        <Collapse in={formOpen}>
           <div id="formularz-postu">
-            <FormularzPostu onDodano={poDodaniu} />
+            <PostForm onDodano={afterAdd} />
           </div>
         </Collapse>
 
-        {komunikat && (
-          <Alert variant="success" dismissible onClose={() => setKomunikat(null)}>
-            {komunikat}
+        {message && (
+          <Alert variant="success" dismissible onClose={() => setMessage(null)}>
+            {message}
           </Alert>
         )}
-        {bladListy && <Alert variant="danger">{bladListy}</Alert>}
+        {listError && <Alert variant="danger">{listError}</Alert>}
 
         {posty.map((post) => (
-          <Post key={post.id} post={post} onDelete={usun} onUpdate={poEdycji} />
+          <Post key={post.id} post={post} onDelete={remove} onUpdate={poEdycji} />
         ))}
 
-        {!ladowanie && posty.length === 0 && !bladListy && (
+        {!loading && posty.length === 0 && !listError && (
           <p className="text-body-secondary text-center py-4">{t('posts.empty')}</p>
         )}
 
-        {ladowanie && (
+        {loading && (
           <div className="text-center py-3 text-body-secondary">
             <Spinner animation="border" size="sm" className="me-2" />
             {t('common.loading')}
           </div>
         )}
 
-        {!ladowanie && !ostatnia && (
+        {!loading && !lastPage && (
           <div className="text-center">
-            <Button variant="outline-secondary" onClick={() => pobierz(strona + 1, true)}>
+            <Button variant="outline-secondary" onClick={() => fetch(page + 1, true)}>
               {t('posts.loadMore')}
             </Button>
           </div>
@@ -161,25 +161,25 @@ export default function FeedPage() {
 }
 
 /** Formularz dodawania posta: tekst, zdjecia i utwor ze Spotify. */
-function FormularzPostu({ onDodano }) {
+function PostForm({ onDodano }) {
   const { t } = useTranslation();
 
   const [content, setContent] = useState('');
   const [musicUrl, setMusicUrl] = useState('');
   const [musicKind, setMusicKind] = useState('TRACK');
   const [startAt, setStartAt] = useState('');
-  const [pliki, setPliki] = useState([]);
+  const [files, setFiles] = useState([]);
 
-  const [bledyPol, setBledyPol] = useState({});
-  const [bladOgolny, setBladOgolny] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
 
-  function wyczysc() {
+  function clear() {
     setContent('');
     setMusicUrl('');
     setMusicKind('TRACK');
     setStartAt('');
-    setPliki([]);
+    setFiles([]);
   }
 
   /*
@@ -187,12 +187,12 @@ function FormularzPostu({ onDodano }) {
    * post powstawal bez odtwarzacza i bez slowa wyjasnienia, co dla
    * uzytkownika wygladalo jak zepsuta aplikacja.
    */
-  const blokada = bladLinku(musicUrl, musicKind);
+  const blokada = linkError(musicUrl, musicKind);
 
-  async function wyslij(e) {
+  async function submit(e) {
     e.preventDefault();
-    setBledyPol({});
-    setBladOgolny(null);
+    setFieldErrors({});
+    setGeneralError(null);
     setWysylanie(true);
 
     try {
@@ -211,21 +211,21 @@ function FormularzPostu({ onDodano }) {
             musicUrl: musicUrl || null,
             // Bez linku rodzaj nie ma do czego sie odnosic - serwer to odrzuci
             musicKind: musicUrl ? musicKind : null,
-            musicStartSeconds: musicKind === 'TRACK' ? naSekundy(startAt) : null,
+            musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
           })],
           { type: 'application/json' }
         )
       );
-      pliki.forEach((plik) => formData.append('images', plik));
+      files.forEach((file) => formData.append('images', file));
 
-      const odpowiedz = await client.post('/posts', formData);
+      const response = await client.post('/posts', formData);
 
-      wyczysc();
-      onDodano(odpowiedz.data);
+      clear();
+      onDodano(response.data);
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBledyPol(opis.fieldErrors);
-      setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setFieldErrors(details.fieldErrors);
+      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       setWysylanie(false);
     }
@@ -234,35 +234,35 @@ function FormularzPostu({ onDodano }) {
   return (
     <Card className="mb-4">
       <Card.Body>
-        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
+        {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={wyslij} noValidate>
-          <Pole
+        <Form onSubmit={submit} noValidate>
+          <Field
             id="content"
             label={t('posts.content')}
-            wartosc={content}
+            value={content}
             onChange={setContent}
-            blad={bledyPol.content}
+            error={fieldErrors.content}
             placeholder={t('posts.contentPlaceholder')}
-            jakoObszarTekstu
-            wiersze={3}
+            asTextarea
+            rows={3}
           />
 
-          <WybieraczZdjec
-            pliki={pliki}
-            onZmiana={setPliki}
-            maks={MAKS_ZDJEC}
-            blad={bledyPol.images}
+          <ImagePicker
+            files={files}
+            onChange={setFiles}
+            maks={MAX_IMAGES}
+            error={fieldErrors.images}
           />
 
-          <WyborMuzyki
-            rodzaj={musicKind}
-            onRodzaj={setMusicKind}
+          <MusicPicker
+            kind={musicKind}
+            onKind={setMusicKind}
             link={musicUrl}
             onLink={setMusicUrl}
-            moment={startAt}
-            onMoment={setStartAt}
-            bledySerwera={bledyPol}
+            startSeconds={startAt}
+            onStartSeconds={setStartAt}
+            serverErrors={fieldErrors}
           />
 
           <Button type="submit" disabled={wysylanie || Boolean(blokada)}>

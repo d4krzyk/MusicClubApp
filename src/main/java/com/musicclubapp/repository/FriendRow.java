@@ -8,7 +8,7 @@ package com.musicclubapp.repository;
  * z implementacja nie piszemy.</p>
  *
  * <p>Dlaczego nie zwracamy po prostu encji {@code User}? Bo obok danych
- * uzytkownika potrzebujemy kolumny WYLICZONEJ ({@code wspolniZnajomi}),
+ * uzytkownika potrzebujemy kolumny WYLICZONEJ ({@code sharedFriends}),
  * ktorej w tabeli {@code users} nie ma. Encja nie ma gdzie takiej wartosci
  * przyjac, a projekcja - owszem.</p>
  *
@@ -30,5 +30,5 @@ public interface FriendRow {
      * Gdy dojda artysci ze Spotify, doliczymy do wyniku takze wspolnych
      * artystow i gatunki; nazwa metody i cala reszta zostaje bez zmian.</p>
      */
-    long getWspolniZnajomi();
+    long getSharedFriends();
 }

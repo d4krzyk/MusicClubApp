@@ -58,26 +58,26 @@ public class ReactionService {
      * <p>Gdy juz jakas byla, podmienia jej rodzaj w tym samym wierszu.</p>
      */
     @Transactional
-    public PostResponse ustaw(Long postId, String login, ReactionType typ) {
+    public PostResponse set(Long postId, String username, ReactionType type) {
         Post post = post(postId);
-        User user = user(login);
+        User user = user(username);
 
-        reactionRepository.znajdz(postId, login).ifPresentOrElse(
-            istniejaca -> istniejaca.setType(typ),
-            () -> reactionRepository.save(new Reaction(post, user, typ)));
+        reactionRepository.find(postId, username).ifPresentOrElse(
+            existing -> existing.setType(type),
+            () -> reactionRepository.save(new Reaction(post, user, type)));
 
-        return odpowiedzZeSwiezymiLicznikami(postId, post, user);
+        return responseWithFreshCounts(postId, post, user);
     }
 
     /** Cofa reakcje. Gdy uzytkownik nie reagowal, po prostu nic sie nie dzieje. */
     @Transactional
-    public PostResponse cofnij(Long postId, String login) {
+    public PostResponse revert(Long postId, String username) {
         Post post = post(postId);
-        User user = user(login);
+        User user = user(username);
 
-        reactionRepository.znajdz(postId, login).ifPresent(reactionRepository::delete);
+        reactionRepository.find(postId, username).ifPresent(reactionRepository::delete);
 
-        return odpowiedzZeSwiezymiLicznikami(postId, post, user);
+        return responseWithFreshCounts(postId, post, user);
     }
 
     /**
@@ -91,47 +91,47 @@ public class ReactionService {
      *              wtedy zadna reakcja nie jest podswietlona
      */
     @Transactional(readOnly = true)
-    public Map<Long, ReactionSummary> podsumowania(Collection<Long> postIds, String login) {
+    public Map<Long, ReactionSummary> summaries(Collection<Long> postIds, String username) {
         if (postIds.isEmpty()) {
             return Map.of();
         }
 
         // postId -> (rodzaj -> ile)
-        Map<Long, Map<ReactionType, Long>> policzone = new HashMap<>();
-        for (ReactionCount wiersz : reactionRepository.policzDlaPostow(postIds)) {
-            policzone
-                .computeIfAbsent(wiersz.postId(), k -> new EnumMap<>(ReactionType.class))
-                .put(wiersz.type(), wiersz.ile());
+        Map<Long, Map<ReactionType, Long>> counted = new HashMap<>();
+        for (ReactionCount row : reactionRepository.countForPosts(postIds)) {
+            counted
+                .computeIfAbsent(row.postId(), k -> new EnumMap<>(ReactionType.class))
+                .put(row.type(), row.count());
         }
 
         // postId -> reakcja ogladajacego
-        Map<Long, ReactionType> moje = new HashMap<>();
-        if (login != null) {
-            for (Reaction reakcja : reactionRepository.znajdzWlasne(postIds, login)) {
+        Map<Long, ReactionType> mine = new HashMap<>();
+        if (username != null) {
+            for (Reaction reaction : reactionRepository.findOwn(postIds, username)) {
                 /*
                  * getId() na leniwym powiazaniu NIE dociaga posta z bazy -
                  * identyfikator jest w kolumnie klucza obcego, ktora Hibernate
                  * juz ma. Siegniecie po dowolne inne pole posta wywolaloby
                  * osobne zapytanie dla kazdej reakcji.
                  */
-                moje.put(reakcja.getPost().getId(), reakcja.getType());
+                mine.put(reaction.getPost().getId(), reaction.getType());
             }
         }
 
-        Map<Long, ReactionSummary> wynik = new HashMap<>();
+        Map<Long, ReactionSummary> score = new HashMap<>();
         for (Long id : postIds) {
-            wynik.put(id, ReactionSummary.z(
-                policzone.getOrDefault(id, Map.of()),
-                moje.get(id)));
+            score.put(id, ReactionSummary.z(
+                counted.getOrDefault(id, Map.of()),
+                mine.get(id)));
         }
-        return wynik;
+        return score;
     }
 
     /**
      * Odsyla post z przeliczonymi na nowo licznikami, zeby przegladarka nie
      * musiala pobierac calej tablicy po kazdym kliknieciu.
      */
-    private PostResponse odpowiedzZeSwiezymiLicznikami(Long postId, Post post, User ogladajacy) {
+    private PostResponse responseWithFreshCounts(Long postId, Post post, User viewer) {
         /*
          * flush() wypycha zmiane do bazy PRZED zapytaniem liczacym. Bez tego
          * ryzykujemy, ze suma zostanie policzona jeszcze bez wlasnie dodanej
@@ -139,10 +139,10 @@ public class ReactionService {
          */
         reactionRepository.flush();
 
-        ReactionSummary podsumowanie =
-            podsumowania(List.of(postId), ogladajacy.getUsername()).get(postId);
+        ReactionSummary summary =
+            summaries(List.of(postId), viewer.getUsername()).get(postId);
 
-        return postMapper.toResponse(post, ogladajacy, podsumowanie);
+        return postMapper.toResponse(post, viewer, summary);
     }
 
     private Post post(Long id) {
@@ -150,8 +150,8 @@ public class ReactionService {
             .orElseThrow(() -> new NoSuchElementFoundException("post", id));
     }
 
-    private User user(String login) {
-        return userRepository.findByUsername(login)
-            .orElseThrow(() -> new NoSuchElementFoundException("user", login));
+    private User user(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
     }
 }

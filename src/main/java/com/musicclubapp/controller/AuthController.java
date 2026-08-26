@@ -86,13 +86,13 @@ public class AuthController {
         @ApiResponse(responseCode = "422", description = "Blad walidacji danych")
     })
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
-        UserResponse utworzony = userService.register(request);
+        UserResponse created = userService.register(request);
 
         URI location = UriComponentsBuilder.fromPath("/api/users/{id}")
-            .buildAndExpand(utworzony.id())
+            .buildAndExpand(created.id())
             .toUri();
 
-        return ResponseEntity.created(location).body(utworzony);
+        return ResponseEntity.created(location).body(created);
     }
 
     /**
@@ -121,18 +121,18 @@ public class AuthController {
         @ApiResponse(responseCode = "200", description = "Zalogowano"),
         @ApiResponse(responseCode = "401", description = "Bledny login lub haslo")
     })
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest loginRequest,
+    public ResponseEntity<UserResponse> username(@Valid @RequestBody LoginRequest loginPayload,
                                               HttpServletRequest request,
                                               HttpServletResponse response) {
 
-        Authentication zadanie = new UsernamePasswordAuthenticationToken(
-            loginRequest.username(),
-            loginRequest.password());
+        Authentication payload = new UsernamePasswordAuthenticationToken(
+            loginPayload.username(),
+            loginPayload.password());
 
-        Authentication uwierzytelniony = authenticationManager.authenticate(zadanie);
+        Authentication authenticated = authenticationManager.authenticate(payload);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(uwierzytelniony);
+        context.setAuthentication(authenticated);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
@@ -141,11 +141,11 @@ public class AuthController {
          * dzieje sie to samo z siebie, ale my logujemy recznie, wiec sami
          * prosimy o wystawienie dlugotrwalego ciasteczka.
          */
-        if (loginRequest.rememberMe()) {
-            rememberMeServices.zapamietajUzytkownika(request, response, uwierzytelniony);
+        if (loginPayload.rememberMe()) {
+            rememberMeServices.rememberUser(request, response, authenticated);
         }
 
-        return ResponseEntity.ok(userService.getByUsername(uwierzytelniony.getName()));
+        return ResponseEntity.ok(userService.getByUsername(authenticated.getName()));
     }
 
     /**

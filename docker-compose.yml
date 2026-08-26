@@ -78,6 +78,11 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@musicclub.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+
+      # Klucz Last.fm jest OPCJONALNY - pusty wylacza sam przycisk importu
+      # historii sluchania. Wyszukiwarka katalogu (Deezer) klucza nie wymaga,
+      # wiec bez tej zmiennej ulubione dzialaja normalnie.
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
     volumes:
       # BEZ TEGO WGRANE ZDJECIA ZNIKAJA przy kazdym `docker compose down`.
       # Kontenery sa jednorazowe - wszystko, co ma przezyc restart, musi lezec

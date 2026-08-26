@@ -7,8 +7,8 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { useAuth } from '../auth/AuthContext';
-import client, { opiszBlad } from '../api/client';
-import Pole from '../components/Pole';
+import client, { describeError } from '../api/client';
+import Field from '../components/Field';
 import Avatar from '../components/Avatar';
 
 /**
@@ -32,68 +32,68 @@ export default function SettingsPage() {
       <Col lg={8}>
         <h1 className="h4 mb-3">{t('settings.title')}</h1>
 
-        <FormularzAvatara />
+        <AvatarForm />
 
         {/*
           key = login. Gdy login sie zmieni, React tworzy formularz od nowa,
           wiec pola startuja z nowymi wartosciami. Bez tego stan formularza
           zostalby przy starych danych, mimo ze konto ma juz inna nazwe.
         */}
-        <FormularzProfilu key={user.username} />
-        <FormularzHasla />
+        <ProfileForm key={user.username} />
+        <PasswordForm />
       </Col>
     </Row>
   );
 }
 
 /** Wgranie i usuwanie zdjecia profilowego. */
-function FormularzAvatara() {
+function AvatarForm() {
   const { t } = useTranslation();
-  const { user, odswiezUzytkownika } = useAuth();
+  const { user, refreshUser } = useAuth();
 
-  const [plik, setPlik] = useState(null);
-  const [blad, setBlad] = useState(null);
-  const [komunikat, setKomunikat] = useState(null);
+  const [file, setFile] = useState(null);
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
 
   async function wgraj(e) {
     e.preventDefault();
-    if (!plik) {
+    if (!file) {
       return;
     }
-    setBlad(null);
-    setKomunikat(null);
+    setError(null);
+    setMessage(null);
     setWysylanie(true);
 
     try {
       const formData = new FormData();
-      formData.append('file', plik);
+      formData.append('file', file);
 
-      const odpowiedz = await client.put('/profile/avatar', formData);
-      odswiezUzytkownika(odpowiedz.data);
+      const response = await client.put('/profile/avatar', formData);
+      refreshUser(response.data);
 
-      setPlik(null);
+      setFile(null);
       e.target.reset();
-      setKomunikat(t('avatar.saved'));
+      setMessage(t('avatar.saved'));
     } catch (error) {
-      const opis = opiszBlad(error);
+      const details = describeError(error);
       // Blad pliku backend przypina do pola "images" - tutaj mamy jedno pole,
       // wiec pokazujemy go po prostu jako komunikat nad formularzem
-      setBlad(opis.fieldErrors.images ?? opis.message ?? t('errors.unknown'));
+      setError(details.fieldErrors.images ?? details.message ?? t('errors.unknown'));
     } finally {
       setWysylanie(false);
     }
   }
 
-  async function usun() {
-    setBlad(null);
-    setKomunikat(null);
+  async function remove() {
+    setError(null);
+    setMessage(null);
     try {
-      const odpowiedz = await client.delete('/profile/avatar');
-      odswiezUzytkownika(odpowiedz.data);
-      setKomunikat(t('avatar.removed'));
+      const response = await client.delete('/profile/avatar');
+      refreshUser(response.data);
+      setMessage(t('avatar.removed'));
     } catch (error) {
-      setBlad(opiszBlad(error).message ?? t('errors.unknown'));
+      setError(describeError(error).message ?? t('errors.unknown'));
     }
   }
 
@@ -104,29 +104,29 @@ function FormularzAvatara() {
           {t('avatar.title')}
         </Card.Title>
 
-        {komunikat && <Alert variant="success">{komunikat}</Alert>}
-        {blad && <Alert variant="danger">{blad}</Alert>}
+        {message && <Alert variant="success">{message}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
 
         <div className="d-flex align-items-center gap-3 flex-wrap">
-          <Avatar avatarUrl={user.avatarUrl} username={user.username} rozmiar={80} />
+          <Avatar avatarUrl={user.avatarUrl} username={user.username} size={80} />
 
           <Form onSubmit={wgraj} className="flex-grow-1">
             <Form.Group controlId="avatar" className="mb-2">
               <Form.Control
                 type="file"
                 accept="image/*"
-                onChange={(e) => setPlik(e.target.files[0] ?? null)}
+                onChange={(e) => setFile(e.target.files[0] ?? null)}
               />
               <Form.Text muted>{t('avatar.hint')}</Form.Text>
             </Form.Group>
 
             <div className="d-flex gap-2">
-              <Button type="submit" size="sm" disabled={!plik || wysylanie}>
+              <Button type="submit" size="sm" disabled={!file || wysylanie}>
                 {wysylanie ? t('avatar.uploading') : t('avatar.upload')}
               </Button>
 
               {user.avatarUrl && (
-                <Button type="button" size="sm" variant="outline-danger" onClick={usun}>
+                <Button type="button" size="sm" variant="outline-danger" onClick={remove}>
                   {t('avatar.remove')}
                 </Button>
               )}
@@ -139,37 +139,37 @@ function FormularzAvatara() {
 }
 
 /** Zmiana loginu i adresu e-mail. */
-function FormularzProfilu() {
+function ProfileForm() {
   const { t } = useTranslation();
   const { user, updateProfile } = useAuth();
 
-  const [dane, setDane] = useState({ username: user.username, email: user.email });
-  const [bledyPol, setBledyPol] = useState({});
-  const [bladOgolny, setBladOgolny] = useState(null);
-  const [zapisano, setZapisano] = useState(false);
+  const [data, setData] = useState({ username: user.username, email: user.email });
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
+  const [saved, setSaved] = useState(false);
   const [wysylanie, setWysylanie] = useState(false);
 
-  function ustaw(pole, wartosc) {
-    setDane((p) => ({ ...p, [pole]: wartosc }));
+  function ustaw(field, value) {
+    setData((p) => ({ ...p, [field]: value }));
     // Komunikat "zapisano" znika, gdy tylko uzytkownik znowu cos zmienia -
     // inaczej wisialby nad formularzem z niezapisanymi juz danymi
-    setZapisano(false);
+    setSaved(false);
   }
 
-  async function wyslij(e) {
+  async function submit(e) {
     e.preventDefault();
-    setBledyPol({});
-    setBladOgolny(null);
-    setZapisano(false);
+    setFieldErrors({});
+    setGeneralError(null);
+    setSaved(false);
     setWysylanie(true);
 
     try {
-      await updateProfile(dane);
-      setZapisano(true);
+      await updateProfile(data);
+      setSaved(true);
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBledyPol(opis.fieldErrors);
-      setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setFieldErrors(details.fieldErrors);
+      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       setWysylanie(false);
     }
@@ -182,27 +182,27 @@ function FormularzProfilu() {
           {t('settings.profile')}
         </Card.Title>
 
-        {zapisano && <Alert variant="success">{t('settings.profileSaved')}</Alert>}
-        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
+        {saved && <Alert variant="success">{t('settings.profileSaved')}</Alert>}
+        {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={wyslij} noValidate>
-          <Pole
+        <Form onSubmit={submit} noValidate>
+          <Field
             id="username"
             label={t('settings.username')}
-            wartosc={dane.username}
+            value={data.username}
             onChange={(v) => ustaw('username', v)}
-            blad={bledyPol.username}
-            podpowiedz={t('settings.usernameHint')}
+            error={fieldErrors.username}
+            suggestion={t('settings.usernameHint')}
             autoComplete="username"
           />
 
-          <Pole
+          <Field
             id="email"
             label={t('settings.email')}
             typ="email"
-            wartosc={dane.email}
+            value={data.email}
             onChange={(v) => ustaw('email', v)}
-            blad={bledyPol.email}
+            error={fieldErrors.email}
             autoComplete="email"
           />
 
@@ -216,38 +216,38 @@ function FormularzProfilu() {
 }
 
 /** Zmiana hasla - wymaga podania obecnego. */
-function FormularzHasla() {
+function PasswordForm() {
   const { t } = useTranslation();
   const { changePassword } = useAuth();
 
-  const pusty = { currentPassword: '', password: '', confirmPassword: '' };
-  const [dane, setDane] = useState(pusty);
-  const [bledyPol, setBledyPol] = useState({});
-  const [bladOgolny, setBladOgolny] = useState(null);
-  const [zmieniono, setZmieniono] = useState(false);
+  const empty = { currentPassword: '', password: '', confirmPassword: '' };
+  const [data, setData] = useState(empty);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
+  const [changed, setChanged] = useState(false);
   const [wysylanie, setWysylanie] = useState(false);
 
-  function ustaw(pole, wartosc) {
-    setDane((p) => ({ ...p, [pole]: wartosc }));
-    setZmieniono(false);
+  function ustaw(field, value) {
+    setData((p) => ({ ...p, [field]: value }));
+    setChanged(false);
   }
 
-  async function wyslij(e) {
+  async function submit(e) {
     e.preventDefault();
-    setBledyPol({});
-    setBladOgolny(null);
-    setZmieniono(false);
+    setFieldErrors({});
+    setGeneralError(null);
+    setChanged(false);
     setWysylanie(true);
 
     try {
-      await changePassword(dane);
-      setZmieniono(true);
+      await changePassword(data);
+      setChanged(true);
       // Czyscimy pola - hasla nie maja po co wisiec w formularzu po zapisie
-      setDane(pusty);
+      setData(empty);
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBledyPol(opis.fieldErrors);
-      setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setFieldErrors(details.fieldErrors);
+      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       setWysylanie(false);
     }
@@ -260,38 +260,38 @@ function FormularzHasla() {
           {t('settings.password')}
         </Card.Title>
 
-        {zmieniono && <Alert variant="success">{t('settings.passwordChanged')}</Alert>}
-        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
+        {changed && <Alert variant="success">{t('settings.passwordChanged')}</Alert>}
+        {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={wyslij} noValidate>
-          <Pole
+        <Form onSubmit={submit} noValidate>
+          <Field
             id="currentPassword"
             label={t('settings.currentPassword')}
             typ="password"
-            wartosc={dane.currentPassword}
+            value={data.currentPassword}
             onChange={(v) => ustaw('currentPassword', v)}
-            blad={bledyPol.currentPassword}
+            error={fieldErrors.currentPassword}
             autoComplete="current-password"
           />
 
-          <Pole
+          <Field
             id="password"
             label={t('settings.newPassword')}
             typ="password"
-            wartosc={dane.password}
+            value={data.password}
             onChange={(v) => ustaw('password', v)}
-            blad={bledyPol.password}
-            podpowiedz={t('settings.newPasswordHint')}
+            error={fieldErrors.password}
+            suggestion={t('settings.newPasswordHint')}
             autoComplete="new-password"
           />
 
-          <Pole
+          <Field
             id="confirmPassword"
             label={t('settings.confirmNewPassword')}
             typ="password"
-            wartosc={dane.confirmPassword}
+            value={data.confirmPassword}
             onChange={(v) => ustaw('confirmPassword', v)}
-            blad={bledyPol.confirmPassword}
+            error={fieldErrors.confirmPassword}
             autoComplete="new-password"
           />
 

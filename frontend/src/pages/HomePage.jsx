@@ -5,7 +5,7 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
-import { sformatujDate } from '../utils/daty';
+import { formatDate } from '../utils/dates';
 
 export default function HomePage() {
   const { t, i18n } = useTranslation();
@@ -17,13 +17,13 @@ export default function HomePage() {
         <Card>
           <Card.Body className="p-4">
             <div className="d-flex align-items-center gap-3 mb-4">
-              <Avatar avatarUrl={user.avatarUrl} username={user.username} rozmiar={72} />
+              <Avatar avatarUrl={user.avatarUrl} username={user.username} size={72} />
               <div>
                 <Card.Title as="h1" className="h4 mb-1">
                   {t('home.welcome', { username: user.username })}
                 </Card.Title>
                 <div className="text-body-secondary small">
-                  {t('home.memberSince')}: {sformatujDate(user.createdAt, i18n.language)}
+                  {t('home.memberSince')}: {formatDate(user.createdAt, i18n.language)}
                 </div>
               </div>
             </div>

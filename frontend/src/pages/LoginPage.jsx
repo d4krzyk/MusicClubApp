@@ -6,8 +6,8 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import { useAuth } from '../auth/AuthContext';
-import { opiszBlad } from '../api/client';
-import Pole from '../components/Pole';
+import { describeError } from '../api/client';
+import Field from '../components/Field';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -19,19 +19,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  const [bledyPol, setBledyPol] = useState({});
-  const [bladOgolny, setBladOgolny] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
 
   // Komunikat po udanej rejestracji - przekazany przez RegisterPage
-  const komunikatPoRejestracji = location.state?.zarejestrowano;
+  const messageAfterRegister = location.state?.registered;
 
-  async function wyslij(e) {
+  async function submit(e) {
     e.preventDefault();
 
     // Czyscimy poprzednie bledy, zeby nie zostawaly na ekranie po poprawce
-    setBledyPol({});
-    setBladOgolny(null);
+    setFieldErrors({});
+    setGeneralError(null);
     setWysylanie(true);
 
     try {
@@ -45,9 +45,9 @@ export default function LoginPage() {
        */
       navigate(location.state?.from ?? '/', { replace: true });
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBledyPol(opis.fieldErrors);
-      setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setFieldErrors(details.fieldErrors);
+      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       // finally - zeby przycisk odblokowal sie takze po bledzie
       setWysylanie(false);
@@ -61,26 +61,26 @@ export default function LoginPage() {
           {t('login.title')}
         </Card.Title>
 
-        {komunikatPoRejestracji && <Alert variant="success">{t('login.registered')}</Alert>}
-        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
+        {messageAfterRegister && <Alert variant="success">{t('login.registered')}</Alert>}
+        {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={wyslij} noValidate>
-          <Pole
+        <Form onSubmit={submit} noValidate>
+          <Field
             id="username"
             label={t('login.username')}
-            wartosc={username}
+            value={username}
             onChange={setUsername}
-            blad={bledyPol.username}
+            error={fieldErrors.username}
             autoComplete="username"
           />
 
-          <Pole
+          <Field
             id="password"
             label={t('login.password')}
             typ="password"
-            wartosc={password}
+            value={password}
             onChange={setPassword}
-            blad={bledyPol.password}
+            error={fieldErrors.password}
             autoComplete="current-password"
           />
 

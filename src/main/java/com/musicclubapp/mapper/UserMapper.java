@@ -46,6 +46,7 @@ public class UserMapper {
             user.getUsername(),
             user.getEmail(),
             user.getRole(),
-            user.getCreatedAt());
+            user.getCreatedAt(),
+            user.getPostingBannedUntil());
     }
 }

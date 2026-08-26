@@ -22,7 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class MusicClubAppApplicationTests {
 
     @Test
-    void kontekstAplikacjiSieUruchamia() {
+    void applicationContextStarts() {
         // Pusty celowo: samo wstanie kontekstu jest tu sprawdzana rzecza.
     }
 }

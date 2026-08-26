@@ -44,7 +44,7 @@ public class I18nConfig implements WebMvcConfigurer {
     }
 
     /** Jezyki, ktore obslugujemy. Kolejnosc ma znaczenie - pierwszy jest domyslny. */
-    private static final List<Locale> OBSLUGIWANE_JEZYKI =
+    private static final List<Locale> SUPPORTED_LANGUAGES =
         List.of(Locale.ENGLISH, Locale.forLanguageTag("pl"));
 
     /**
@@ -73,7 +73,7 @@ public class I18nConfig implements WebMvcConfigurer {
         CookieLocaleResolver resolver = new CookieLocaleResolver("LANG");
         resolver.setCookieMaxAge(Duration.ofDays(365));
         resolver.setCookiePath("/");
-        resolver.setDefaultLocaleFunction(this::jezykZNaglowka);
+        resolver.setDefaultLocaleFunction(this::languageFromHeader);
         return resolver;
     }
 
@@ -82,15 +82,15 @@ public class I18nConfig implements WebMvcConfigurer {
      * {@code Accept-Language} (np. {@code "pl-PL,pl;q=0.9,en;q=0.8"}).
      * Gdy naglowka nie ma albo prosi o jezyk, ktorego nie mamy - angielski.
      */
-    private Locale jezykZNaglowka(HttpServletRequest request) {
-        String naglowek = request.getHeader(HttpHeaders.ACCEPT_LANGUAGE);
-        if (naglowek == null || naglowek.isBlank()) {
+    private Locale languageFromHeader(HttpServletRequest request) {
+        String header = request.getHeader(HttpHeaders.ACCEPT_LANGUAGE);
+        if (header == null || header.isBlank()) {
             return Locale.ENGLISH;
         }
         try {
-            Locale dopasowany = Locale.lookup(
-                Locale.LanguageRange.parse(naglowek), OBSLUGIWANE_JEZYKI);
-            return dopasowany != null ? dopasowany : Locale.ENGLISH;
+            Locale matched = Locale.lookup(
+                Locale.LanguageRange.parse(header), SUPPORTED_LANGUAGES);
+            return matched != null ? matched : Locale.ENGLISH;
         } catch (IllegalArgumentException e) {
             // Naglowek moze byc zepsuty (przysyla go klient) - wtedy po prostu
             // wracamy do domyslnego jezyka zamiast wywracac cale zapytanie.

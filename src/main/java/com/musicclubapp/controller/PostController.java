@@ -90,13 +90,13 @@ public class PostController {
             Math.min(Math.max(size, 1), MAX_SIZE),
             sort);
 
-        String login = authentication.getName();
+        String username = authentication.getName();
 
-        Page<PostResponse> wynik = (author == null || author.isBlank())
-            ? postService.feed(login, pageable)
-            : postService.byAuthor(author, login, pageable);
+        Page<PostResponse> score = (author == null || author.isBlank())
+            ? postService.feed(username, pageable)
+            : postService.byAuthor(author, username, pageable);
 
-        return ResponseEntity.ok(wynik);
+        return ResponseEntity.ok(score);
     }
 
     /**
@@ -112,20 +112,20 @@ public class PostController {
         @ApiResponse(responseCode = "422", description = "Blad walidacji albo niedozwolony plik")
     })
     public ResponseEntity<PostResponse> create(
-            @Valid @RequestPart("post") CreatePostRequest zadanie,
+            @Valid @RequestPart("post") CreatePostRequest payload,
 
             @Parameter(description = "Zdjecia - opcjonalne, maksymalnie 10")
-            @RequestPart(value = "images", required = false) List<MultipartFile> zdjecia,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images,
 
             Authentication authentication) {
 
-        PostResponse utworzony = postService.create(authentication.getName(), zadanie, zdjecia);
+        PostResponse created = postService.create(authentication.getName(), payload, images);
 
         URI location = UriComponentsBuilder.fromPath("/api/posts/{id}")
-            .buildAndExpand(utworzony.id())
+            .buildAndExpand(created.id())
             .toUri();
 
-        return ResponseEntity.created(location).body(utworzony);
+        return ResponseEntity.created(location).body(created);
     }
 
     /**
@@ -144,10 +144,10 @@ public class PostController {
     })
     public ResponseEntity<PostResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody UpdatePostRequest zadanie,
+            @Valid @RequestBody UpdatePostRequest payload,
             Authentication authentication) {
 
-        return ResponseEntity.ok(postService.update(id, authentication.getName(), zadanie));
+        return ResponseEntity.ok(postService.update(id, authentication.getName(), payload));
     }
 
     /**

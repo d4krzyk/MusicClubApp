@@ -3,9 +3,10 @@
 Projekt zaliczeniowy — Programowanie w Javie III.
 
 Aplikacja do poznawania ludzi o podobnym guście muzycznym. Użytkownicy mają
-ulubionych artystów i utwory ze Spotify; im więcej wspólnych artystów i gatunków,
-tym wyżej ktoś pojawia się na liście proponowanych znajomych. Do tego posty
-(tekst, zdjęcie, link do podglądu utworu), konta z logowaniem i interfejs PL/EN.
+ulubionych artystów i utwory z katalogu Deezera; im więcej wspólnych artystów
+i gatunków, tym wyżej ktoś pojawia się na liście proponowanych znajomych. Do
+tego posty (tekst, zdjęcie, link do podglądu utworu), konta z logowaniem
+i interfejs PL/EN.
 
 **Stack:** Spring Boot 3.3 (REST API) · PostgreSQL 16 · React + Vite · Docker Compose
 
@@ -72,7 +73,8 @@ docs/                         # plan pracy i checklista wymagań
 src/main/java/com/musicclubapp/
 ├── MusicClubAppApplication.java   # punkt wejścia
 ├── config/                        # SecurityConfig, I18nConfig
-├── controller/                    # REST API (Auth, Post, Reaction, Profile, Users)
+├── controller/                    # REST API (Auth, Post, Reaction, Profile, Users,
+│                                  #           Favorites, MusicCatalog, Friend)
 ├── dto/                           # dane wejściowe/wyjściowe + walidacja
 ├── entity/                        # encje JPA (klasa = tabela)
 ├── error/                         # GlobalExceptionHandler i wyjątki
@@ -97,7 +99,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── theme/                   # motyw jasny/ciemny
     ├── i18n/                    # pl.json i en.json
-    ├── components/              # Layout, Post, Reakcje, PasekZnajomych, GaleriaZdjec
+    ├── components/              # Layout, Post, Reactions, Favorites, FriendSuggestions, …
     └── pages/                   # Login, Register, Home, Feed, Profile, Friends, Settings
 ```
 
@@ -121,6 +123,17 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/profiles/{username}` | publiczny profil użytkownika |
 | GET | `/api/profiles/{username}/friends` | znajomi — od najbardziej powiązanych |
 | GET | `/api/profiles/{username}/top-music` | najczęściej wrzucane nagrania (top 5) |
+| GET | `/api/profiles/{username}/favorites` | czyjeś ulubione — do oglądania |
+| GET | `/api/profile/favorites` | **moje** ulubione |
+| POST | `/api/profile/favorites/artists` | dodanie artysty z katalogu (w treści sam `externalId`) |
+| DELETE | `/api/profile/favorites/artists/{externalId}` | usunięcie artysty z własnej listy |
+| POST | `/api/profile/favorites/tracks` | dodanie utworu z katalogu |
+| DELETE | `/api/profile/favorites/tracks/{externalId}` | usunięcie utworu z własnej listy |
+| GET | `/api/profile/favorites/import/lastfm` | czy import jest włączony (czy jest klucz API) |
+| POST | `/api/profile/favorites/import/lastfm` | import z Last.fm po nazwie użytkownika |
+| GET | `/api/music/search/artists?q=` | wyszukiwarka artystów (Deezer) |
+| GET | `/api/music/search/tracks?q=` | wyszukiwarka utworów (Deezer) |
+| GET | `/api/friends/suggestions` | proponowani znajomi — od najlepiej dopasowanych |
 | GET | `/api/friends/requests` | zaproszenia oczekujące (do mnie i ode mnie) |
 | POST | `/api/friends/requests` | zaproszenie do znajomych |
 | POST | `/api/friends/requests/{id}/accept` | przyjęcie zaproszenia |
@@ -131,6 +144,8 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/users` | lista ze stronicowaniem i sortowaniem — **tylko admin** |
 | GET | `/api/users/{id}` | pojedynczy użytkownik — **tylko admin** |
 | PATCH | `/api/users/{id}/role` | zmiana roli — **tylko admin** |
+| PATCH | `/api/users/{id}/posting-ban` | zakaz publikowania na N godzin (pusto = zdejmij) — **tylko admin** |
+| DELETE | `/api/users/{id}` | usunięcie konta wraz z jego treściami — **tylko admin** |
 | GET | `/actuator/health` | czy aplikacja żyje — używa tego healthcheck Dockera |
 
 Dokumentacja: http://localhost:8080/swagger-ui.html
@@ -149,7 +164,34 @@ projektu ustaw własne przez zmienne środowiskowe `ADMIN_USERNAME`,
 | Kto | Widzi |
 |-----|-------|
 | zwykły użytkownik | swój profil, ustawienia konta (login, e-mail, hasło) |
-| administrator | to samo + listę wszystkich kont, zmianę ról i usuwanie cudzych postów |
+| administrator | to samo + listę wszystkich kont, zmianę ról, usuwanie cudzych postów, **zakaz publikowania i usuwanie kont** |
+
+### Moderacja: zakaz publikowania i usuwanie kont
+
+W panelu administratora, przy każdym koncie poza własnym, są dwie rzeczy:
+**zakaz publikowania** (godzina / doba / tydzień / miesiąc) i **usunięcie konta**.
+
+**Zakaz ma termin, a nie flagę „zablokowany".** Blokada bezterminowa
+wymagałaby, żeby ktoś pamiętał o jej zdjęciu — a o tym zwykle nikt nie
+pamięta. Zapisany termin sam pilnuje końca kary: wygasa bez żadnego zadania
+w tle, bo liczy się wyłącznie porównanie z bieżącą chwilą. Wpisu nie
+kasujemy, więc administrator widzi, że ktoś był już kiedyś karany.
+
+Zakaz obejmuje **dodawanie i edytowanie postów**. Czytanie, reakcje
+i usuwanie własnych treści zostają dozwolone — kara ma powstrzymać przed
+publikowaniem, a nie odciąć od portalu. (Edycja też jest zablokowana celowo:
+inaczej wystarczyłoby wejść w dowolny stary post i podmienić w nim treść.)
+Ukarany widzi komunikat z **terminem** końca kary, a nie samo „nie wolno".
+
+**Usunięcie konta zabiera ze sobą wszystko**: posty (razem ze zdjęciami
+na dysku), reakcje pod cudzymi postami, zaproszenia w obie strony,
+znajomości i awatar. Cudze posty, pod którymi ta osoba zostawiła reakcję,
+zostają — usuwamy konto, a nie fragmenty cudzych rozmów.
+
+Dwie rzeczy administrator ma zablokowane **na sobie**: usunięcie własnego
+konta i nałożenie na siebie zakazu. Powód jest ten sam co przy zmianie
+własnej roli — jedno kliknięcie nie może zostawić portalu bez nikogo,
+kto ma do niego dostęp.
 
 Uwaga na dwie podobne ścieżki: `/api/profile` (l. poj.) to **moje** konto —
 zmiana loginu, e-maila, hasła, awatara. `/api/profiles/{username}` (l. mn.)
@@ -159,10 +201,10 @@ DTO, a nie ten sam obiekt z wyciętymi polami.
 
 ## Muzyka w postach
 
-Post może mieć podpięte nagranie ze **Spotify**, **YouTube / YouTube Music**
+Post może mieć podpięte nagranie ze **Spotify**, **YouTube Music**
 albo **Apple Music**. W formularzu wybierasz przełącznikiem, co wrzucasz:
 
-| Rodzaj | Spotify | YouTube | Apple Music | Moment startu |
+| Rodzaj | Spotify | YouTube Music | Apple Music | Moment startu |
 |---|---|---|---|---|
 | Utwór | ✅ | ✅ | ✅ | ✅ opcjonalny |
 | Album | ✅ | (jako playlista) | ✅ | — |
@@ -174,26 +216,100 @@ mówi, *co* wkleiłeś („to jest link do ALBUMU"), a nie tylko „zły link". 
 momentu startu **pokazuje się wyłącznie przy utworze**: album to wiele nagrań,
 a profil artysty w ogóle nie jest nagraniem.
 
-Linki z **YouTube Music** (`music.youtube.com`) działają tak samo jak zwykłe
-youtube'owe — to jeden serwis i te same identyfikatory nagrań, więc odtwarzacz
-zawsze składamy przez `youtube.com/embed/`. Album udostępniony z YouTube Music
-przychodzi jako `playlist?list=OLAK5uy_…` i tak też go zapisujemy: jako
-**playlistę**, bo tym on tam formalnie jest.
+### Tylko YouTube Music, nie zwykły YouTube
+
+Przyjmujemy **wyłącznie `music.youtube.com`**. Link z `youtube.com/watch`
+i skrócony `youtu.be` są odrzucane z podpowiedzią, co zrobić („otwórz to
+nagranie w YouTube Music i skopiuj adres stamtąd"). Powód jest prosty: to
+serwis **muzyczny**, a zwykły YouTube to wszystko — od podcastów po vlogi.
+Statystyki gustu i dopasowywanie znajomych opierają się na tym, co ludzie
+wrzucają, więc wpuszczenie tam dowolnego filmu zamieniłoby je w szum.
+
+Uwaga na kolejność sprawdzania: `music.youtube.com` **zawiera w sobie**
+`youtube.com`, więc najpierw pytamy o YT Music, a dopiero potem odrzucamy
+resztę. Odwrotna kolejność odrzucałaby też te dobre linki.
+
+Sam odtwarzacz składamy przez `youtube.com/embed/` — identyfikator nagrania
+jest ten sam w obu serwisach. **YT Music dostaje duży ekran 16:9**, a nie
+wąski pasek jak Spotify: pod tym adresem leci normalne nagranie z obrazem
+i teledysk schowany w pasku wysokości 152 px nie miałby sensu.
+
+Album udostępniony z YouTube Music przychodzi jako `playlist?list=OLAK5uy_…`
+i tak też go zapisujemy: jako **playlistę**, bo tym on tam formalnie jest.
 
 **Playlisty nie wliczają się do statystyk gustu** — playlista to cudza składanka,
 a nie deklaracja „lubię tego artystę". Wrzucić ją na tablicę można, ale
 w podsumowaniu profilu się nie pojawia.
 
+### Skąd bierzemy tytuł
+
 Tytuł i miniaturkę pobieramy **raz, przy dodawaniu posta**, przez publiczne
 **oEmbed** — bez klucza i bez tokenu, więc działa dla każdego użytkownika.
 Gdy serwis nie odpowie, post i tak powstaje: odtwarzacz ładuje się
-w przeglądarce niezależnie od tego. Apple Music **nie ma publicznego oEmbed**,
-więc tam zostaje sam odtwarzacz bez podpisu — świadomie wolimy puste pole
-niż zmyślony tytuł.
+w przeglądarce niezależnie od tego.
+
+Apple Music **nie ma publicznego oEmbed**, ale ma tytuł **w samym adresie**:
+w `music.apple.com/pl/song/lullaby/1440786034` człon `lullaby` to nazwa
+utworu. Zamieniamy myślniki na spacje i podnosimy pierwsze litery — wychodzi
+„Lullaby". To nie jest zgadywanie: ten człon generuje sam Apple z prawdziwej
+nazwy nagrania.
+
+Jest jeden wyjątek, w którym tego **nie** robimy. Adres z parametrem `?i=`
+(utwór wskazany wewnątrz albumu) ma w slugu nazwę **albumu**, a nie utworu —
+podpisanie takiego posta nazwą albumu byłoby zwykłym błędem, więc wtedy
+zostawiamy puste pole. Lepsze puste niż mylące.
 
 Na profilu widać **najczęściej wrzucane utwory** — liczone z postów, nie
 z osobnej tabeli statystyk, więc licznik nie ma jak rozjechać się
 z rzeczywistością.
+
+## Ulubieni artyści i utwory
+
+Na profilu jest sekcja **Ulubieni** — to świadoma deklaracja gustu i to na
+niej opiera się dopasowywanie ludzi. Blok obok („najczęściej wrzucane") mówi
+co innego: co ktoś *postuje*, a to nie zawsze to samo, co lubi.
+
+**Dodać da się tylko to, co istnieje w katalogu Deezera.** Nie ma pola „wpisz
+nazwę artysty" i nie jest to przeoczenie — bez tego lista ulubionych byłaby
+polem do popisu dla wymyślonych zespołów. Wpisujesz frazę, dostajesz
+podpowiedzi z katalogu i klikasz w jedną z nich.
+
+Ochrona nie kończy się na formularzu. Zapytanie da się wysłać z pominięciem
+przeglądarki, więc metody serwisu przyjmują **wyłącznie identyfikator** —
+nazwy ani zdjęcia nie ma jak przysłać, serwer pobiera je sobie sam z katalogu.
+Pilnuje tego test `FavoritesServiceTest#serverDoesNotTrustNameFromRequest`.
+
+Wiersz w tabeli `artists` jest **wspólny dla wszystkich** — polubienie tego
+samego wykonawcy przez drugą osobę to samo dopisanie powiązania, bez ani
+jednego zapytania do sieci. Usunięcie z ulubionych kasuje **tylko
+powiązanie**; sam artysta zostaje, bo mają go u siebie inni.
+
+Domyślny limit to **30 artystów i 30 utworów** (`app.favorites.max-artists`,
+`app.favorites.max-tracks`).
+
+### Import z Last.fm
+
+Jeśli w `.env` jest `LASTFM_API_KEY`, na profilu pojawia się przycisk
+**Import z Last.fm**: podajesz swoją nazwę użytkownika stamtąd i aplikacja
+zaciąga najczęściej słuchanych artystów i utwory. Bez klucza przycisku po
+prostu nie ma — to lepsze niż przycisk, który zawsze kończy się błędem.
+
+Podział ról między serwisami jest celowy: **Last.fm mówi, *czego* ktoś
+słucha** (samych nazw — ich API od 2019 roku nie oddaje użytecznych zdjęć),
+a **Deezer mówi, *kto* to jest** — identyfikator, zdjęcie, pewność, że taki
+wykonawca istnieje. Czego nie da się odnaleźć w katalogu, tego nie dodajemy,
+a podsumowanie po imporcie mówi wprost, ile pozycji pominięto i dlaczego.
+
+Konta Last.fm **nie podpinamy** — nie ma logowania OAuth, nie trzymamy żadnego
+tokenu. Wystarczy publiczna nazwa użytkownika, bo historia słuchania jest tam
+publiczna.
+
+Gatunki artysty bierzemy z tagów Last.fm, ale **tagi to nie są gatunki** —
+wśród najpopularniejszych są „seen live" i „favorites". Odsiewamy je listą
+wykluczeń i progiem popularności, inaczej dopasowanie łączyłoby ludzi na
+zasadzie „oboje byli na jakimś koncercie". Gatunki zapisujemy **przy artyście,
+nie przy użytkowniku**, więc kosztują jedno zapytanie na wykonawcę — raz,
+na zawsze, dla wszystkich.
 
 ## Znajomi
 
@@ -204,10 +320,37 @@ a liczba nieodebranych pokazuje się przy pozycji w menu.
 Jeśli **obie osoby zaproszą się nawzajem**, znajomość powstaje od razu — bez
 czekania na dodatkowe kliknięcie. Obie przecież wyraziły zgodę.
 
-Pasek znajomych pod profilem jest posortowany **od najbardziej powiązanych**:
-dziś liczy się to po wspólnych znajomych, a po integracji ze Spotify dojdą
-wspólni artyści i gatunki. Zmieni się wtedy tylko zapytanie w bazie —
-API i frontend zostają bez zmian.
+Pasek znajomych pod profilem jest posortowany **od najbardziej powiązanych** —
+po liczbie wspólnych znajomych.
+
+### Proponowani znajomi
+
+Na stronie `/znajomi` jest przewijany w poziomie pasek **proponowanych
+znajomych**, od lewej najlepiej dopasowani. Układ poziomy jest tu celowy:
+mówi „to jest lista uporządkowana, zacznij od lewej", czego pionowa siatka
+nie przekazuje.
+
+Dopasowanie liczy zapytanie w bazie, po trzech sygnałach:
+
+| Sygnał | Waga | Dlaczego tyle |
+|---|---|---|
+| wspólny ulubiony artysta | 5 | najmocniejszy — obie strony świadomie go wybrały |
+| wspólny znajomy | 3 | mocny, ale mówi o kręgu znajomych, nie o guście |
+| wspólny gatunek | 1 | najsłabszy: „oboje słuchacie rocka" to prawie nic |
+
+Na kartach pokazujemy **powód dopasowania** („2 wspólnych artystów"),
+a nie liczbę punktów. Punkty nic nikomu nie mówią, a jeszcze zachęcałyby do
+zgadywania, jak je podbić.
+
+Na liście są **wszyscy** użytkownicy, nie tylko dopasowani — przy małej
+aplikacji pusta strona wypadałaby dokładnie wtedy, kiedy najbardziej
+potrzeba kogoś poznać. Osoby, które już są znajomymi, zostają na liście
+z innym oznaczeniem, żeby pasek nie „skakał" po przyjęciu zaproszenia.
+
+Gdy nikt się nie dopasował, pod paskiem pojawia się notka: żeby propozycje
+były trafniejsze, trzeba dodać więcej ulubionych do profilu. To jedyny
+moment, w którym ją pokazujemy — przy dobrych wynikach byłaby zwykłym
+zrzędzeniem.
 
 Kto co może zrobić z postem:
 
@@ -241,21 +384,41 @@ a nie React: React startuje za późno i przy jasnym motywie strona zdążyłaby
 mignąć na ciemno.
 
 Jeden kolor celowo **nie** zmienia się z motywem — tło ramki odtwarzacza
-Spotify (`.ramka-spotify`). Sam odtwarzacz jest ciemny niezależnie od naszej
+(`.ramka-odtwarzacza`). Sam odtwarzacz jest ciemny niezależnie od naszej
 strony, więc jasne tło dawałoby białe rogi na ułamek sekundy przed jego
 załadowaniem.
 
+## Klucze i konfiguracja zewnętrznych serwisów
+
+| Zmienna | Potrzebna do | Bez niej |
+|---|---|---|
+| `LASTFM_API_KEY` | import historii słuchania z Last.fm | przycisk importu się nie pokazuje, reszta działa |
+| — (Deezer) | wyszukiwarka artystów i utworów | — Deezer nie wymaga żadnego klucza |
+| — (oEmbed) | tytuły postów ze Spotify / YT Music | tytuł zostaje pusty, odtwarzacz działa |
+
+Klucz Last.fm zakłada się w minutę na
+<https://www.last.fm/api/account/create> — wystarczy sam „API key", bez
+„shared secret" i bez OAuth, bo czytamy wyłącznie publiczne dane.
+
+Adresy obu serwisów da się podmienić (`app.music.deezer.base-url`,
+`app.lastfm.base-url`) — z tego korzystają testy, żeby nie zależeć od cudzej
+dostępności.
+
 ## Stan projektu
 
-Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
+Kroki 0–6 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
 obsługa błędów, Swagger oraz frontend w React. Do tego posty z reakcjami
 (🔥 / 😐 / 🥱), publiczne profile, znajomi z zaproszeniami, **muzyka ze Spotify,
-YouTube / YouTube Music i Apple Music** (utwory, albumy, artyści, playlisty),
-zestawienie najczęściej wrzucanych utworów, motyw jasny/ciemny oraz cała
-aplikacja na Docker Compose.
-**128 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
+YouTube Music i Apple Music** (utwory, albumy, artyści, playlisty),
+zestawienie najczęściej wrzucanych utworów, **ulubieni artyści i utwory
+z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
+guście**, **moderacja kont (zakaz publikowania, usuwanie)**, motyw
+jasny/ciemny oraz cała aplikacja na Docker Compose. Nazwy w kodzie są
+konsekwentnie angielskie, komentarze — polskie.
+**197 testów backendu przechodzi**, przepływy frontendu sprawdzone
+w przeglądarce.
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
-Szczegóły w `docs/WYMAGANIA.md`. Następny krok: ulubieni artyści na profilu
-(wyszukiwarka Deezer/iTunes + import z Last.fm).
+Szczegóły w `docs/WYMAGANIA.md`. Następny krok: gablotka ulubionych playlist
+na profilu.

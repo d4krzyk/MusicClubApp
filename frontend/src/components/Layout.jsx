@@ -9,10 +9,10 @@ import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
 import client from '../api/client';
 import { useAuth } from '../auth/AuthContext';
-import { useMotyw } from '../theme/MotywContext';
-import { JEZYKI, zmienJezyk } from '../i18n';
+import { useTheme } from '../theme/ThemeContext';
+import { LANGUAGES, changeLanguage } from '../i18n';
 import Avatar from './Avatar';
-import { IkonaKsiezyc, IkonaSlonce } from './Ikony';
+import { IconMoon, IconSun } from './Icons';
 
 /**
  * Wspolna rama strony: gorne menu, tresc i stopka.
@@ -26,7 +26,7 @@ import { IkonaKsiezyc, IkonaSlonce } from './Ikony';
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
-  const { ciemny, przelacz } = useMotyw();
+  const { dark, toggle } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,19 +35,19 @@ export default function Layout({ children }) {
    * to najprostszy moment, w ktorym liczba moze sie zdezaktualizowac
    * (np. po przyjeciu zaproszenia na stronie "Znajomi").
    */
-  const [oczekujace, setOczekujace] = useState(0);
+  const [pending, setPending] = useState(0);
 
   useEffect(() => {
     if (!user) {
-      setOczekujace(0);
+      setPending(0);
       return;
     }
     client.get('/friends/requests/count')
-      .then((o) => setOczekujace(o.data.count))
-      .catch(() => setOczekujace(0));   // licznik to dodatek, nie psujemy menu
+      .then((o) => setPending(o.data.count))
+      .catch(() => setPending(0));   // licznik to dodatek, nie psujemy menu
   }, [user, location.pathname]);
 
-  async function wyloguj() {
+  async function handleLogout() {
     await logout();
     navigate('/login', { replace: true });
   }
@@ -82,8 +82,8 @@ export default function Layout({ children }) {
                       jest wieksza od zera - stale "0" obok pozycji w menu
                       to szum, ktory nic nie wnosi.
                     */}
-                    {oczekujace > 0 && (
-                      <Badge bg="primary" className="ms-1">{oczekujace}</Badge>
+                    {pending > 0 && (
+                      <Badge bg="primary" className="ms-1">{pending}</Badge>
                     )}
                   </Nav.Link>
                   <Nav.Link as={NavLink} to="/settings">
@@ -116,14 +116,14 @@ export default function Layout({ children }) {
             <div className="d-flex align-items-center gap-3">
               {/* Przelacznik jezyka - widoczny zawsze, takze przed zalogowaniem */}
               <ButtonGroup size="sm" aria-label={t('menu.language')}>
-                {JEZYKI.map((kod) => (
+                {LANGUAGES.map((code) => (
                   <Button
-                    key={kod}
-                    variant={i18n.language === kod ? 'primary' : 'outline-secondary'}
-                    onClick={() => zmienJezyk(kod)}
-                    aria-pressed={i18n.language === kod}
+                    key={code}
+                    variant={i18n.language === code ? 'primary' : 'outline-secondary'}
+                    onClick={() => changeLanguage(code)}
+                    aria-pressed={i18n.language === code}
                   >
-                    {kod.toUpperCase()}
+                    {code.toUpperCase()}
                   </Button>
                 ))}
               </ButtonGroup>
@@ -136,11 +136,11 @@ export default function Layout({ children }) {
               <Button
                 variant="outline-secondary"
                 size="sm"
-                onClick={przelacz}
-                title={ciemny ? t('menu.themeLight') : t('menu.themeDark')}
-                aria-label={ciemny ? t('menu.themeLight') : t('menu.themeDark')}
+                onClick={toggle}
+                title={dark ? t('menu.themeLight') : t('menu.themeDark')}
+                aria-label={dark ? t('menu.themeLight') : t('menu.themeDark')}
               >
-                {ciemny ? <IkonaSlonce /> : <IkonaKsiezyc />}
+                {dark ? <IconSun /> : <IconMoon />}
               </Button>
 
               {user && (
@@ -154,11 +154,11 @@ export default function Layout({ children }) {
                     to="/profil"
                     className="d-flex align-items-center gap-2 text-decoration-none text-body"
                   >
-                    <Avatar avatarUrl={user.avatarUrl} username={user.username} rozmiar={32} />
+                    <Avatar avatarUrl={user.avatarUrl} username={user.username} size={32} />
                     <span className="d-none d-lg-inline">{user.username}</span>
                   </Link>
 
-                  <Button variant="outline-secondary" size="sm" onClick={wyloguj}>
+                  <Button variant="outline-secondary" size="sm" onClick={handleLogout}>
                     {t('menu.logout')}
                   </Button>
                 </>

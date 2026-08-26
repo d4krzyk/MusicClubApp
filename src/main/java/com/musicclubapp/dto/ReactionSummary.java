@@ -26,31 +26,31 @@ public record ReactionSummary(
 ) {
 
     /** Post, na ktory nikt jeszcze nie zareagowal. */
-    public static ReactionSummary pusta() {
-        return new ReactionSummary(zeraDlaWszystkich(), null, 0);
+    public static ReactionSummary empty() {
+        return new ReactionSummary(zerosForAll(), null, 0);
     }
 
     /**
      * Sklada podsumowanie z policzonych reakcji, uzupelniajac zerami rodzaje,
      * ktorych nikt nie wybral.
      */
-    public static ReactionSummary z(Map<ReactionType, Long> policzone, ReactionType moja) {
-        Map<ReactionType, Long> pelne = zeraDlaWszystkich();
-        pelne.putAll(policzone);
+    public static ReactionSummary z(Map<ReactionType, Long> counted, ReactionType mine) {
+        Map<ReactionType, Long> complete = zerosForAll();
+        complete.putAll(counted);
 
-        long suma = pelne.values().stream().mapToLong(Long::longValue).sum();
-        return new ReactionSummary(pelne, moja, suma);
+        long total = complete.values().stream().mapToLong(Long::longValue).sum();
+        return new ReactionSummary(complete, mine, total);
     }
 
     /**
      * {@code EnumMap} zamiast {@code HashMap}: klucze wracaja w kolejnosci
      * zadeklarowanej w enumie, wiec JSON zawsze wyglada tak samo.
      */
-    private static Map<ReactionType, Long> zeraDlaWszystkich() {
-        Map<ReactionType, Long> mapa = new EnumMap<>(ReactionType.class);
-        for (ReactionType typ : ReactionType.values()) {
-            mapa.put(typ, 0L);
+    private static Map<ReactionType, Long> zerosForAll() {
+        Map<ReactionType, Long> byPost = new EnumMap<>(ReactionType.class);
+        for (ReactionType type : ReactionType.values()) {
+            byPost.put(type, 0L);
         }
-        return mapa;
+        return byPost;
     }
 }

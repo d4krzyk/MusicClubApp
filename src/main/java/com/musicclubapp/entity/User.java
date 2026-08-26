@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -80,6 +81,22 @@ public class User {
     private boolean enabled = true;
 
     /**
+     * Do kiedy obowiazuje zakaz publikowania nalozony przez administratora.
+     *
+     * <p>{@code null} znaczy "bez zakazu". Data w przeszlosci tez znaczy
+     * "bez zakazu" - zakaz <b>wygasa sam</b>, bez zadnego zadania w tle, bo
+     * liczy sie wylacznie porownanie z chwila obecna. Wpisu nie kasujemy,
+     * dzieki czemu administrator widzi w panelu, ze ktos byl juz kiedys
+     * zablokowany.</p>
+     *
+     * <p><b>Dlaczego termin, a nie flaga.</b> Blokada bezterminowa wymagalaby,
+     * zeby ktos pamietal o jej zdjeciu - a o tym zwykle nikt nie pamieta.
+     * Zapisany termin sam pilnuje konca kary.</p>
+     */
+    @Column(name = "posting_banned_until")
+    private LocalDateTime postingBannedUntil;
+
+    /**
      * Nazwa pliku ze zdjeciem profilowym, np. {@code a1b2...ff.jpg}.
      * {@code null} oznacza brak zdjecia - interfejs pokazuje wtedy kolo
      * z pierwsza litera loginu.
@@ -102,7 +119,7 @@ public class User {
      * zapytaniu sprawdzac obie kolumny przez {@code OR} - ale wtedy KAZDE
      * pytanie o znajomych robi sie dwa razy trudniejsze do przeczytania.
      * Tu placimy jednym dodatkowym wierszem za to, ze zapytania sa proste.
-     * Dopisywaniem obu stron zajmuje sie {@link #dodajZnajomego(User)}.</p>
+     * Dopisywaniem obu stron zajmuje sie {@link #addFriend(User)}.</p>
      *
      * <p>{@code Set}, a nie {@code List}: tej samej osoby nie da sie miec
      * w znajomych dwa razy. Dziala to dzieki temu, ze {@code equals} i
@@ -114,6 +131,34 @@ public class User {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "friend_id"))
     private Set<User> friends = new HashSet<>();
+
+    /**
+     * Ulubieni wykonawcy - <b>serce dopasowywania ludzi po guscie</b>.
+     *
+     * <p>Kazdy element to wiersz w tabeli {@link Artist}, wspolny dla
+     * wszystkich uzytkownikow. Porownanie dwoch osob sprowadza sie wiec do
+     * policzenia czesci wspolnej dwoch zbiorow identyfikatorow - a nie do
+     * porownywania tekstow, ktore roznilyby sie wielkoscia liter i literowkami.</p>
+     *
+     * <p>{@code LinkedHashSet} zamiast zwyklego {@code HashSet}, zeby na
+     * profilu artysci pokazywali sie w kolejnosci dodawania. To czysto
+     * wizualna sprawa, ale bez tego kolejnosc zmienialaby sie przy kazdym
+     * odswiezeniu strony i wygladalo to jak usterka.</p>
+     */
+    @ManyToMany
+    @JoinTable(
+        name = "user_favorite_artists",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "artist_id"))
+    private Set<Artist> favoriteArtists = new LinkedHashSet<>();
+
+    /** Ulubione utwory - te same zasady co przy {@link #favoriteArtists}. */
+    @ManyToMany
+    @JoinTable(
+        name = "user_favorite_tracks",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "track_id"))
+    private Set<Track> favoriteTracks = new LinkedHashSet<>();
 
     /**
      * Metoda oznaczona {@code @PrePersist} uruchamia sie automatycznie tuz przed
@@ -193,6 +238,26 @@ public class User {
         this.enabled = enabled;
     }
 
+    public LocalDateTime getPostingBannedUntil() {
+        return postingBannedUntil;
+    }
+
+    public void setPostingBannedUntil(LocalDateTime postingBannedUntil) {
+        this.postingBannedUntil = postingBannedUntil;
+    }
+
+    /**
+     * Czy zakaz publikowania obowiazuje <b>teraz</b>.
+     *
+     * <p>Pytanie zadajemy encji, a nie porownujemy dat w serwisie. Inaczej ta
+     * sama regula ("null albo przeszlosc znaczy: wolno") musialaby byc
+     * powtorzona w kazdym miejscu, ktore jej pilnuje - a wystarczy pomylic sie
+     * raz, zeby zakaz dalo sie obejsc jednym niesprawdzonym wejsciem.</p>
+     */
+    public boolean isPostingBanned() {
+        return postingBannedUntil != null && postingBannedUntil.isAfter(LocalDateTime.now());
+    }
+
     public Set<User> getFriends() {
         return friends;
     }
@@ -213,15 +278,30 @@ public class User {
      * i bez bledu. Wywolanie METODY proxy przekazuje dalej, do wlasciwego
      * obiektu, wiec dziala poprawnie.</p>
      */
-    public void dodajZnajomego(User inny) {
-        this.friends.add(inny);
-        inny.getFriends().add(this);
+    public void addFriend(User other) {
+        this.friends.add(other);
+        other.getFriends().add(this);
     }
 
     /** Usuwa znajomosc po obu stronach - z ta sama uwaga o proxy co wyzej. */
-    public void usunZnajomego(User inny) {
-        this.friends.remove(inny);
-        inny.getFriends().remove(this);
+    public void removeFriend(User other) {
+        this.friends.remove(other);
+        other.getFriends().remove(this);
+    }
+
+    /*
+     * Ulubione sa relacja JEDNOSTRONNA - inaczej niz znajomosc. Nie ma tu
+     * odpowiednika addFriend(): polubienie artysty nie powoduje, ze
+     * artysta "polubil" nas. Encja Artist nie wie nawet, kto ja lubi -
+     * i nie musi wiedziec, bo pytamy zawsze od strony uzytkownika.
+     */
+
+    public Set<Artist> getFavoriteArtists() {
+        return favoriteArtists;
+    }
+
+    public Set<Track> getFavoriteTracks() {
+        return favoriteTracks;
     }
 
     /**

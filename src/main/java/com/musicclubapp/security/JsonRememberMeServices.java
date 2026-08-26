@@ -39,7 +39,7 @@ public class JsonRememberMeServices extends TokenBasedRememberMeServices {
      * @param authentication wynik udanego logowania; jego {@code principal}
      *                       musi byc typu {@code UserDetails}
      */
-    public void zapamietajUzytkownika(HttpServletRequest request,
+    public void rememberUser(HttpServletRequest request,
                                       HttpServletResponse response,
                                       Authentication authentication) {
         onLoginSuccess(request, response, authentication);

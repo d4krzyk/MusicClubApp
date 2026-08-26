@@ -80,10 +80,10 @@ public class UserService {
         // Haslo NIGDY nie trafia do bazy jawnym tekstem - zapisujemy hash BCrypt.
         String hash = passwordEncoder.encode(request.password());
 
-        User zapisany = userRepository.save(
+        User stored = userRepository.save(
             new User(request.username(), request.email(), hash));
 
-        return userMapper.toResponse(zapisany);
+        return userMapper.toResponse(stored);
     }
 
     /**
@@ -116,13 +116,13 @@ public class UserService {
      * zapisanie formularza bez zmiany loginu konczyloby sie komunikatem
      * "ten login jest juz zajety" (bo faktycznie jest - przez niego samego).</p>
      *
-     * @param aktualnyLogin login uzytkownika, ktory edytuje swoj profil
+     * @param currentUsername login uzytkownika, ktory edytuje swoj profil
      * @throws DuplicateResourceException gdy nowy login lub e-mail nalezy do kogos innego
      */
     @Transactional
-    public UserResponse updateProfile(String aktualnyLogin, UpdateProfileRequest request) {
-        User user = userRepository.findByUsername(aktualnyLogin)
-            .orElseThrow(() -> new NoSuchElementFoundException("user", aktualnyLogin));
+    public UserResponse updateProfile(String currentUsername, UpdateProfileRequest request) {
+        User user = userRepository.findByUsername(currentUsername)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", currentUsername));
 
         if (!user.getUsername().equals(request.username())
             && userRepository.existsByUsername(request.username())) {
@@ -157,9 +157,9 @@ public class UserService {
      * @throws InvalidCurrentPasswordException gdy obecne haslo sie nie zgadza
      */
     @Transactional
-    public void changePassword(String login, ChangePasswordRequest request) {
-        User user = userRepository.findByUsername(login)
-            .orElseThrow(() -> new NoSuchElementFoundException("user", login));
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
 
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
             throw new InvalidCurrentPasswordException();
@@ -173,37 +173,37 @@ public class UserService {
      * Ustawia nowe zdjecie profilowe i kasuje poprzednie.
      *
      * <p>Kolejnosc ma znaczenie: najpierw zapisujemy nowy plik, potem
-     * podmieniamy wpis w bazie, a stary plik kasujemy na koncu. Gdyby
-     * najpierw skasowac stary, a zapis nowego by sie nie powiodl,
+     * podmieniamy wpis w bazie, a previous plik kasujemy na koncu. Gdyby
+     * najpierw skasowac previous, a zapis nowego by sie nie powiodl,
      * uzytkownik zostalby bez zdjecia.</p>
      */
     @Transactional
-    public UserResponse updateAvatar(String login, MultipartFile plik) {
-        User user = userRepository.findByUsername(login)
-            .orElseThrow(() -> new NoSuchElementFoundException("user", login));
+    public UserResponse updateAvatar(String username, MultipartFile file) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
 
-        String stary = user.getAvatarFileName();
-        String nowy = fileStorage.zapiszObrazek(plik);
+        String previous = user.getAvatarFileName();
+        String created = fileStorage.saveImage(file);
 
-        user.setAvatarFileName(nowy);
-        UserResponse odpowiedz = userMapper.toResponse(userRepository.save(user));
+        user.setAvatarFileName(created);
+        UserResponse response = userMapper.toResponse(userRepository.save(user));
 
-        fileStorage.usun(stary);
-        return odpowiedz;
+        fileStorage.remove(previous);
+        return response;
     }
 
     /** Usuwa zdjecie profilowe - w interfejsie wraca kolo z inicjalem. */
     @Transactional
-    public UserResponse removeAvatar(String login) {
-        User user = userRepository.findByUsername(login)
-            .orElseThrow(() -> new NoSuchElementFoundException("user", login));
+    public UserResponse removeAvatar(String username) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
 
-        String stary = user.getAvatarFileName();
+        String previous = user.getAvatarFileName();
         user.setAvatarFileName(null);
 
-        UserResponse odpowiedz = userMapper.toResponse(userRepository.save(user));
-        fileStorage.usun(stary);
-        return odpowiedz;
+        UserResponse response = userMapper.toResponse(userRepository.save(user));
+        fileStorage.remove(previous);
+        return response;
     }
 
     /**
@@ -224,25 +224,25 @@ public class UserService {
     /**
      * Zmiana roli innego uzytkownika - operacja dostepna tylko administratorowi.
      *
-     * @param loginAdmina login osoby wykonujacej zmiane (z sesji, nie z zapytania)
+     * @param adminUsername login osoby wykonujacej zmiane (z sesji, nie z zapytania)
      * @param id          identyfikator konta, ktoremu zmieniamy role
      * @throws OperationNotAllowedException gdy administrator probuje zmienic wlasna role
      */
     @Transactional
-    public AdminUserResponse changeRole(String loginAdmina, Long id, ChangeRoleRequest request) {
-        User cel = userRepository.findById(id)
+    public AdminUserResponse changeRole(String adminUsername, Long id, ChangeRoleRequest request) {
+        User target = userRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementFoundException("user", id));
 
         /*
          * Login admina bierzemy z sesji, a nie z zapytania - dzieki temu nie da
          * sie obejsc tej blokady, podajac w JSON-ie cudzy login.
          */
-        if (cel.getUsername().equals(loginAdmina)) {
-            throw OperationNotAllowedException.wlasnaRola();
+        if (target.getUsername().equals(adminUsername)) {
+            throw OperationNotAllowedException.ownRole();
         }
 
-        cel.setRole(request.role());
+        target.setRole(request.role());
 
-        return userMapper.toAdminResponse(userRepository.save(cel));
+        return userMapper.toAdminResponse(userRepository.save(target));
     }
 }

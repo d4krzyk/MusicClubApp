@@ -49,13 +49,13 @@ public class ReactionController {
         @ApiResponse(responseCode = "400", description = "Nieznany rodzaj reakcji"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego posta")
     })
-    public ResponseEntity<PostResponse> ustaw(
+    public ResponseEntity<PostResponse> set(
             @PathVariable Long postId,
-            @Valid @RequestBody ReactionRequest zadanie,
+            @Valid @RequestBody ReactionRequest payload,
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            reactionService.ustaw(postId, authentication.getName(), zadanie.type()));
+            reactionService.set(postId, authentication.getName(), payload.type()));
     }
 
     @DeleteMapping
@@ -64,10 +64,10 @@ public class ReactionController {
         @ApiResponse(responseCode = "200", description = "Post z przeliczonymi licznikami"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego posta")
     })
-    public ResponseEntity<PostResponse> cofnij(
+    public ResponseEntity<PostResponse> revert(
             @PathVariable Long postId,
             Authentication authentication) {
 
-        return ResponseEntity.ok(reactionService.cofnij(postId, authentication.getName()));
+        return ResponseEntity.ok(reactionService.revert(postId, authentication.getName()));
     }
 }

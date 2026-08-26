@@ -37,26 +37,26 @@ public class TopMusicService {
     }
 
     @Transactional(readOnly = true)
-    public List<TopMusicResponse> najczesciej(String username, MusicKind kind, int limit) {
-        int bezpiecznyLimit = Math.min(Math.max(limit, 1), 20);
+    public List<TopMusicResponse> mostPosted(String username, MusicKind kind, int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 20);
 
         return postRepository
-            .najczesciejWrzucane(username, kind.name(), bezpiecznyLimit)
+            .mostPosted(username, kind.name(), safeLimit)
             .stream()
-            .map(this::naOdpowiedz)
+            .map(this::toResponse)
             .toList();
     }
 
-    private TopMusicResponse naOdpowiedz(TopMusicRow wiersz) {
-        MusicProvider provider = MusicProvider.valueOf(wiersz.getProvider());
-        MusicKind kind = MusicKind.valueOf(wiersz.getKind());
+    private TopMusicResponse toResponse(TopMusicRow row) {
+        MusicProvider provider = MusicProvider.valueOf(row.getProvider());
+        MusicKind kind = MusicKind.valueOf(row.getKind());
 
         return new TopMusicResponse(
             provider,
             kind,
-            wiersz.getTitle(),
-            wiersz.getThumbnailUrl(),
-            MusicEmbed.adresZwykly(provider, kind, wiersz.getExternalId()),
-            wiersz.getIle());
+            row.getTitle(),
+            row.getThumbnailUrl(),
+            MusicEmbed.canonicalUrl(provider, kind, row.getExternalId()),
+            row.getTimesPosted());
     }
 }

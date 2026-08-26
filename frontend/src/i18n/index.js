@@ -2,10 +2,10 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import pl from './pl.json';
 import en from './en.json';
-import { ustawJezykZapytan } from '../api/client';
+import { setRequestLanguage } from '../api/client';
 
-export const JEZYKI = ['pl', 'en'];
-const KLUCZ_W_PAMIECI = 'musicclub.lang';
+export const LANGUAGES = ['pl', 'en'];
+const STORAGE_KEY = 'musicclub.lang';
 
 /**
  * Ustala jezyk przy starcie aplikacji, w kolejnosci:
@@ -13,23 +13,23 @@ const KLUCZ_W_PAMIECI = 'musicclub.lang';
  *   2. jezyk ustawiony w przegladarce,
  *   3. polski.
  */
-function jezykPoczatkowy() {
-  const zapamietany = localStorage.getItem(KLUCZ_W_PAMIECI);
-  if (JEZYKI.includes(zapamietany)) {
-    return zapamietany;
+function initialLanguage() {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (LANGUAGES.includes(stored)) {
+    return stored;
   }
-  const zPrzegladarki = navigator.language?.slice(0, 2);
-  return JEZYKI.includes(zPrzegladarki) ? zPrzegladarki : 'pl';
+  const fromBrowser = navigator.language?.slice(0, 2);
+  return LANGUAGES.includes(fromBrowser) ? fromBrowser : 'pl';
 }
 
-const jezyk = jezykPoczatkowy();
+const language = initialLanguage();
 
 i18n.use(initReactI18next).init({
   resources: {
     pl: { translation: pl },
     en: { translation: en },
   },
-  lng: jezyk,
+  lng: language,
   fallbackLng: 'pl',
   interpolation: {
     // React sam zabezpiecza tekst przed wstrzyknieciem HTML-a
@@ -38,22 +38,22 @@ i18n.use(initReactI18next).init({
 });
 
 // Ten sam jezyk wysylamy do backendu, zeby bledy walidacji tez byly przetlumaczone
-ustawJezykZapytan(jezyk);
+setRequestLanguage(language);
 
 /**
  * Przelacza jezyk calej aplikacji - napisy w interfejsie ORAZ komunikaty
  * bledow przychodzace z serwera.
  */
-export function zmienJezyk(nowyJezyk) {
-  if (!JEZYKI.includes(nowyJezyk)) {
+export function changeLanguage(newLanguage) {
+  if (!LANGUAGES.includes(newLanguage)) {
     return;
   }
-  i18n.changeLanguage(nowyJezyk);
-  ustawJezykZapytan(nowyJezyk);
-  localStorage.setItem(KLUCZ_W_PAMIECI, nowyJezyk);
-  document.documentElement.lang = nowyJezyk;
+  i18n.changeLanguage(newLanguage);
+  setRequestLanguage(newLanguage);
+  localStorage.setItem(STORAGE_KEY, newLanguage);
+  document.documentElement.lang = newLanguage;
 }
 
-document.documentElement.lang = jezyk;
+document.documentElement.lang = language;
 
 export default i18n;

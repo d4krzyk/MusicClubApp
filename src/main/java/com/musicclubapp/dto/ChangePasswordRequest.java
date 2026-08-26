@@ -1,6 +1,6 @@
 package com.musicclubapp.dto;
 
-import com.musicclubapp.validation.HaslaDoPorownania;
+import com.musicclubapp.validation.PasswordsToCompare;
 import com.musicclubapp.validation.PasswordsMatch;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -33,5 +33,5 @@ public record ChangePasswordRequest(
     @NotBlank(message = "{validation.password.confirm.notblank}")
     String confirmPassword
 
-) implements HaslaDoPorownania {
+) implements PasswordsToCompare {
 }

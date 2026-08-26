@@ -35,7 +35,7 @@ public class AdminInitializer implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(AdminInitializer.class);
 
     /** Haslo, przy ktorym wypisujemy ostrzezenie - zeby nie zostalo na produkcji. */
-    private static final String HASLO_DOMYSLNE = "admin12345";
+    private static final String DEFAULT_PASSWORD = "admin12345";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -46,7 +46,7 @@ public class AdminInitializer implements CommandLineRunner {
     @Value("${app.admin.email:admin@musicclub.local}")
     private String adminEmail;
 
-    @Value("${app.admin.password:" + HASLO_DOMYSLNE + "}")
+    @Value("${app.admin.password:" + DEFAULT_PASSWORD + "}")
     private String adminPassword;
 
     public AdminInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
@@ -80,11 +80,11 @@ public class AdminInitializer implements CommandLineRunner {
 
         log.info("Zalozono konto administratora o loginie '{}'.", adminUsername);
 
-        if (HASLO_DOMYSLNE.equals(adminPassword)) {
+        if (DEFAULT_PASSWORD.equals(adminPassword)) {
             log.warn("""
                 UWAGA: administrator uzywa hasla domyslnego ({}).\s
                 Zmien je w ustawieniach konta albo ustaw zmienna ADMIN_PASSWORD\s
-                przed oddaniem projektu.""", HASLO_DOMYSLNE);
+                przed oddaniem projektu.""", DEFAULT_PASSWORD);
         }
     }
 }

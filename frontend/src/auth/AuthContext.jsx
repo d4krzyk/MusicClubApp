@@ -21,11 +21,11 @@ export function AuthProvider({ children }) {
    * sekundy uznawalaby kazdego za niezalogowanego i wyrzucala na ekran
    * logowania nawet zalogowana osobe - klasyczny migajacy ekran przy F5.
    */
-  const [sprawdzanieSesji, setSprawdzanieSesji] = useState(true);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   // Uruchamia sie raz, przy pierwszym otwarciu aplikacji
   useEffect(() => {
-    async function sprawdzKtoZalogowany() {
+    async function checkCurrentUser() {
       try {
         /*
          * Najpierw token CSRF. Ten endpoint ustawia ciasteczko XSRF-TOKEN,
@@ -38,29 +38,29 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const odpowiedz = await client.get('/auth/me');
-        setUser(odpowiedz.data);
+        const response = await client.get('/auth/me');
+        setUser(response.data);
       } catch {
         // 401 to normalna sytuacja: nikt nie jest zalogowany
         setUser(null);
       } finally {
-        setSprawdzanieSesji(false);
+        setCheckingSession(false);
       }
     }
 
-    sprawdzKtoZalogowany();
+    checkCurrentUser();
   }, []);
 
   const login = useCallback(async (username, password, rememberMe) => {
-    const odpowiedz = await client.post('/auth/login', { username, password, rememberMe });
-    setUser(odpowiedz.data);
-    return odpowiedz.data;
+    const response = await client.post('/auth/login', { username, password, rememberMe });
+    setUser(response.data);
+    return response.data;
   }, []);
 
-  const register = useCallback(async (dane) => {
+  const register = useCallback(async (data) => {
     // Rejestracja NIE loguje automatycznie - backend tylko zaklada konto
-    const odpowiedz = await client.post('/auth/register', dane);
-    return odpowiedz.data;
+    const response = await client.post('/auth/register', data);
+    return response.data;
   }, []);
 
   /**
@@ -69,10 +69,10 @@ export function AuthProvider({ children }) {
    * <p>Wynik od razu wstawiamy do stanu - inaczej menu i strona glowna
    * pokazywalyby stary login az do odswiezenia strony.</p>
    */
-  const updateProfile = useCallback(async (dane) => {
-    const odpowiedz = await client.put('/profile', dane);
-    setUser(odpowiedz.data);
-    return odpowiedz.data;
+  const updateProfile = useCallback(async (data) => {
+    const response = await client.put('/profile', data);
+    setUser(response.data);
+    return response.data;
   }, []);
 
   /**
@@ -82,13 +82,13 @@ export function AuthProvider({ children }) {
    * zwraca aktualnego uzytkownika, a my od razu odswiezamy avatar w menu,
    * bez ponownego pytania serwera o sesje.</p>
    */
-  const odswiezUzytkownika = useCallback((noweDane) => {
-    setUser(noweDane);
+  const refreshUser = useCallback((newData) => {
+    setUser(newData);
   }, []);
 
   /** Zmiana hasla. Nic nie zwraca - serwer odsyla 204 bez tresci. */
-  const changePassword = useCallback(async (dane) => {
-    await client.put('/profile/password', dane);
+  const changePassword = useCallback(async (data) => {
+    await client.put('/profile/password', data);
   }, []);
 
   const logout = useCallback(async () => {
@@ -104,18 +104,18 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const wartosc = {
+  const value = {
     user,
-    sprawdzanieSesji,
+    checkingSession,
     login,
     register,
     logout,
     updateProfile,
     changePassword,
-    odswiezUzytkownika,
+    refreshUser,
   };
 
-  return <AuthContext.Provider value={wartosc}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 /** Skrot do korzystania z kontekstu: {@code const { user, logout } = useAuth();} */

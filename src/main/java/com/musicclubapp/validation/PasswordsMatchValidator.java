@@ -8,21 +8,21 @@ import java.util.Objects;
 /**
  * Walidator dla {@link PasswordsMatch} - wyklad 3, slajd 65.
  *
- * <p>Dziala na dowolnym DTO, ktore implementuje {@link HaslaDoPorownania},
+ * <p>Dziala na dowolnym DTO, ktore implementuje {@link PasswordsToCompare},
  * czyli zarowno na formularzu rejestracji, jak i na zmianie hasla
  * w ustawieniach.</p>
  */
-public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, HaslaDoPorownania> {
+public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, PasswordsToCompare> {
 
     @Override
-    public boolean isValid(HaslaDoPorownania dane, ConstraintValidatorContext context) {
-        if (dane == null) {
+    public boolean isValid(PasswordsToCompare data, ConstraintValidatorContext context) {
+        if (data == null) {
             return true;
         }
 
-        boolean pasuja = Objects.equals(dane.password(), dane.confirmPassword());
+        boolean matches = Objects.equals(data.password(), data.confirmPassword());
 
-        if (!pasuja) {
+        if (!matches) {
             /*
              * Domyslnie blad walidacji na poziomie klasy nie jest przypisany do
              * zadnego pola - w odpowiedzi JSON pole "field" byloby puste i
@@ -35,6 +35,6 @@ public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMat
                 .addConstraintViolation();
         }
 
-        return pasuja;
+        return matches;
     }
 }

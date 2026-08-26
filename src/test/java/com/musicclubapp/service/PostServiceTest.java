@@ -76,94 +76,94 @@ class PostServiceTest {
         return new User("anna", "anna@example.com", "hash");
     }
 
-    private MultipartFile obrazek(String nazwa) {
+    private MultipartFile image(String name) {
         return new MockMultipartFile(
-            "images", nazwa, "image/jpeg", new byte[] {1, 2, 3});
+            "images", name, "image/jpeg", new byte[] {1, 2, 3});
     }
 
-    private void przygotujZapis() {
+    private void prepareSave() {
         given(postRepository.save(any(Post.class))).willAnswer(w -> w.getArgument(0));
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(1L, "anna", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), true, true, ReactionSummary.pusta()));
+                LocalDateTime.now(), true, true, ReactionSummary.empty()));
     }
 
     /** Serwis oEmbed odpowiada tytulem i miniaturka. */
-    private void przygotujOpisMuzyki() {
-        given(musicMetadata.pobierz(any()))
-            .willReturn(new MusicMetadataService.Opis("Tytul utworu", "https://obrazek/x.jpg"));
+    private void buildMusicDetails() {
+        given(musicMetadata.fetch(any()))
+            .willReturn(new MusicMetadataService.Metadata("Tytul utworu", "https://obrazek/x.jpg"));
     }
 
     /**
      * Edycja dodatkowo pyta o reakcje, ktore post juz zebral - inaczej
      * po zapisaniu zmiany liczniki zniknelyby z ekranu.
      */
-    private void przygotujEdycje() {
-        przygotujZapis();
-        given(reactionService.podsumowania(anyList(), any())).willReturn(Map.of());
+    private void prepareEdit() {
+        prepareSave();
+        given(reactionService.summaries(anyList(), any())).willReturn(Map.of());
     }
 
     @Test
     @DisplayName("post z samym tekstem zapisuje sie bez zdjec")
-    void postZSamymTekstem() {
+    void textOnlyPost() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        przygotujZapis();
+        prepareSave();
 
         postService.create("anna", new CreatePostRequest("Dzien dobry", null, null, null), null);
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getContent()).isEqualTo("Dzien dobry");
-        assertThat(zapisany.getValue().getImages()).isEmpty();
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
+        assertThat(stored.getValue().getContent()).isEqualTo("Dzien dobry");
+        assertThat(stored.getValue().getImages()).isEmpty();
     }
 
     @Test
     @DisplayName("zdjecia zachowuja kolejnosc wgrania")
-    void zdjeciaZachowujaKolejnosc() {
+    void imagesKeepTheirOrder() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        given(fileStorage.zapiszObrazek(any())).willReturn("a.jpg", "b.jpg", "c.jpg");
-        przygotujZapis();
+        given(fileStorage.saveImage(any())).willReturn("a.jpg", "b.jpg", "c.jpg");
+        prepareSave();
 
         postService.create("anna", new CreatePostRequest("Galeria", null, null, null),
-            List.of(obrazek("1.jpg"), obrazek("2.jpg"), obrazek("3.jpg")));
+            List.of(image("1.jpg"), image("2.jpg"), image("3.jpg")));
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
 
-        assertThat(zapisany.getValue().getImages())
+        assertThat(stored.getValue().getImages())
             .extracting(PostImage::getFileName)
             .containsExactly("a.jpg", "b.jpg", "c.jpg");
-        assertThat(zapisany.getValue().getImages())
+        assertThat(stored.getValue().getImages())
             .extracting(PostImage::getPosition)
             .containsExactly(0, 1, 2);
     }
 
     @Test
     @DisplayName("wiecej niz 10 zdjec zostaje przycietych do limitu")
-    void limitZdjec() {
+    void imageLimit() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        given(fileStorage.zapiszObrazek(any())).willReturn("x.jpg");
-        przygotujZapis();
+        given(fileStorage.saveImage(any())).willReturn("x.jpg");
+        prepareSave();
 
         List<MultipartFile> duzo = java.util.stream.IntStream.range(0, 15)
-            .mapToObj(i -> obrazek(i + ".jpg"))
+            .mapToObj(i -> image(i + ".jpg"))
             .map(MultipartFile.class::cast)
             .toList();
 
         postService.create("anna", new CreatePostRequest("Duzo zdjec", null, null, null), duzo);
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getImages()).hasSize(PostService.MAX_ZDJEC);
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
+        assertThat(stored.getValue().getImages()).hasSize(PostService.MAX_IMAGES);
     }
 
     @Test
     @DisplayName("z linku Spotify zapisujemy sam identyfikator, bez parametru ?si=")
-    void linkSpotifyJestOczyszczany() {
+    void spotifyLinkIsCleanedUp() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        przygotujZapis();
-        przygotujOpisMuzyki();
+        prepareSave();
+        buildMusicDetails();
 
         postService.create("anna", new CreatePostRequest(
             "Polecam",
@@ -171,9 +171,9 @@ class PostServiceTest {
             MusicKind.TRACK,
             42), null);
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
-        Post post = zapisany.getValue();
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
+        Post post = stored.getValue();
 
         assertThat(post.getMusicProvider()).isEqualTo(MusicProvider.SPOTIFY);
         assertThat(post.getMusicKind()).isEqualTo(MusicKind.TRACK);
@@ -184,28 +184,28 @@ class PostServiceTest {
     }
 
     @Test
-    @DisplayName("link z YouTube zapisuje sie jako utwor tego serwisu")
-    void linkYouTube() {
+    @DisplayName("link z YouTube Music zapisuje sie jako utwor tego serwisu")
+    void youtubeLink() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        przygotujZapis();
-        przygotujOpisMuzyki();
+        prepareSave();
+        buildMusicDetails();
 
         postService.create("anna", new CreatePostRequest(
-            "Polecam", "https://youtu.be/dQw4w9WgXcQ", MusicKind.TRACK, 42), null);
+            "Polecam", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.TRACK, 42), null);
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
 
-        assertThat(zapisany.getValue().getMusicProvider()).isEqualTo(MusicProvider.YOUTUBE);
-        assertThat(zapisany.getValue().getMusicExternalId()).isEqualTo("dQw4w9WgXcQ");
+        assertThat(stored.getValue().getMusicProvider()).isEqualTo(MusicProvider.YOUTUBE);
+        assertThat(stored.getValue().getMusicExternalId()).isEqualTo("dQw4w9WgXcQ");
     }
 
     @Test
     @DisplayName("przy ALBUMIE moment startu jest odrzucany, mimo ze przyszedl")
-    void albumIgnorujeMomentStartu() {
+    void albumIgnoresStartSecondsField() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        przygotujZapis();
-        przygotujOpisMuzyki();
+        prepareSave();
+        buildMusicDetails();
 
         postService.create("anna", new CreatePostRequest(
             "Caly album",
@@ -213,21 +213,21 @@ class PostServiceTest {
             MusicKind.ALBUM,
             70), null);
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
 
-        assertThat(zapisany.getValue().getMusicKind()).isEqualTo(MusicKind.ALBUM);
+        assertThat(stored.getValue().getMusicKind()).isEqualTo(MusicKind.ALBUM);
         // Przy albumie nie ma czego przewijac - encja czysci te wartosc sama
-        assertThat(zapisany.getValue().getMusicStartSeconds()).isNull();
+        assertThat(stored.getValue().getMusicStartSeconds()).isNull();
     }
 
     @Test
     @DisplayName("gdy serwis oEmbed nie odpowie, post i tak powstaje")
-    void awariaOEmbedNieBlokujePosta() {
+    void oEmbedOutageDoesNotBlockPost() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        przygotujZapis();
+        prepareSave();
         // Serwis niedostepny -> puste wartosci, a nie wyjatek
-        given(musicMetadata.pobierz(any())).willReturn(MusicMetadataService.Opis.pusty());
+        given(musicMetadata.fetch(any())).willReturn(MusicMetadataService.Metadata.empty());
 
         postService.create("anna", new CreatePostRequest(
             "Polecam",
@@ -235,17 +235,17 @@ class PostServiceTest {
             MusicKind.TRACK,
             null), null);
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
 
         // odtwarzacz i tak zadziala - iframe pobiera sobie wszystko sam
-        assertThat(zapisany.getValue().getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
-        assertThat(zapisany.getValue().getMusicTitle()).isNull();
+        assertThat(stored.getValue().getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
+        assertThat(stored.getValue().getMusicTitle()).isNull();
     }
 
     @Test
     @DisplayName("autor moze usunac swoj post - razem z plikami z dysku")
-    void autorUsuwaSwojPost() {
+    void authorDeletesOwnPost() {
         Post post = new Post(anna(), "tresc");
         post.addImage(new PostImage("zdjecie.jpg"));
 
@@ -256,12 +256,12 @@ class PostServiceTest {
 
         verify(postRepository).delete(post);
         // pliki znikaja z dysku, inaczej katalog uploadow rosnie w nieskonczonosc
-        verify(fileStorage).usun("zdjecie.jpg");
+        verify(fileStorage).remove("zdjecie.jpg");
     }
 
     @Test
     @DisplayName("zwykly uzytkownik NIE usunie cudzego posta")
-    void cudzyPostJestChroniony() {
+    void someoneElsesPostIsProtected() {
         Post cudzy = new Post(new User("bartek", "bartek@example.com", "hash"), "tresc");
 
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
@@ -275,7 +275,7 @@ class PostServiceTest {
 
     @Test
     @DisplayName("administrator moze usunac cudzy post - moderacja")
-    void administratorUsuwaCudzyPost() {
+    void adminDeletesSomeoneElsesPost() {
         Post cudzy = new Post(new User("bartek", "bartek@example.com", "hash"), "tresc");
         User admin = new User("admin", "admin@musicclub.local", "hash");
         admin.setRole(Role.ADMIN);
@@ -290,49 +290,49 @@ class PostServiceTest {
 
     @Test
     @DisplayName("autor moze edytowac swoj post - tresc i utwor")
-    void autorEdytujeSwojPost() {
+    void authorEditsOwnPost() {
         Post post = new Post(anna(), "stara tresc");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
-        przygotujEdycje();
+        prepareEdit();
 
-        przygotujOpisMuzyki();
+        buildMusicDetails();
         postService.update(5L, "anna", new UpdatePostRequest(
             "nowa tresc", "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
             MusicKind.TRACK, 30));
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getContent()).isEqualTo("nowa tresc");
-        assertThat(zapisany.getValue().getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
-        assertThat(zapisany.getValue().getMusicStartSeconds()).isEqualTo(30);
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
+        assertThat(stored.getValue().getContent()).isEqualTo("nowa tresc");
+        assertThat(stored.getValue().getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
+        assertThat(stored.getValue().getMusicStartSeconds()).isEqualTo(30);
     }
 
     @Test
     @DisplayName("wyczyszczenie linku usuwa utwor RAZEM z wybranym momentem")
-    void pustyLinkUsuwaUtwor() {
+    void emptyLinkRemovesTrack() {
         Post post = new Post(anna(), "tresc");
-        post.ustawMuzyke(new com.musicclubapp.music.ParsedMusicLink(
+        post.applyMusic(new com.musicclubapp.music.ParsedMusicLink(
             MusicProvider.SPOTIFY, MusicKind.TRACK, "4cOdK2wGLETKBW3PvgPWqT"),
             30, "Tytul", "https://obrazek/x.jpg");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
-        przygotujEdycje();
+        prepareEdit();
 
         postService.update(5L, "anna", new UpdatePostRequest("tresc", "", null, null));
 
-        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
-        verify(postRepository).save(zapisany.capture());
-        Post zapisanyPost = zapisany.getValue();
+        ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(stored.capture());
+        Post savedPost = stored.getValue();
 
-        assertThat(zapisanyPost.maMuzyke()).isFalse();
-        assertThat(zapisanyPost.getMusicExternalId()).isNull();
+        assertThat(savedPost.hasMusic()).isFalse();
+        assertThat(savedPost.getMusicExternalId()).isNull();
         // razem z nagraniem znikaja tytul, miniaturka i moment startu
-        assertThat(zapisanyPost.getMusicTitle()).isNull();
-        assertThat(zapisanyPost.getMusicStartSeconds()).isNull();
+        assertThat(savedPost.getMusicTitle()).isNull();
+        assertThat(savedPost.getMusicStartSeconds()).isNull();
     }
 
     @Test
     @DisplayName("zwykly uzytkownik NIE zedytuje cudzego posta")
-    void cudzyPostNieDoEdycji() {
+    void someoneElsesPostCannotBeEdited() {
         Post cudzy = new Post(new User("bartek", "bartek@example.com", "hash"), "tresc");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
 
@@ -345,7 +345,7 @@ class PostServiceTest {
 
     @Test
     @DisplayName("nawet ADMINISTRATOR nie edytuje cudzego posta - moderuje usuwaniem")
-    void administratorTezNieEdytuje() {
+    void adminCannotEditEither() {
         Post cudzy = new Post(new User("bartek", "bartek@example.com", "hash"), "tresc");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
 
@@ -358,10 +358,59 @@ class PostServiceTest {
 
     @Test
     @DisplayName("usuwanie nieistniejacego posta konczy sie wyjatkiem 'nie znaleziono'")
-    void nieistniejacyPostRzucaWyjatek() {
+    void unknownPostThrows() {
         given(postRepository.findByIdWithAuthor(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> postService.delete(999L, "anna"))
             .isInstanceOf(NoSuchElementFoundException.class);
+    }
+
+    @Test
+    @DisplayName("konto z zakazem publikowania NIE doda posta")
+    void bannedAccountCannotPost() {
+        User banned = anna();
+        banned.setPostingBannedUntil(java.time.LocalDateTime.now().plusHours(5));
+        given(userRepository.findByUsername("anna")).willReturn(Optional.of(banned));
+
+        assertThatThrownBy(() -> postService.create(
+                "anna", new CreatePostRequest("mimo bana", null, null, null), null))
+            .isInstanceOf(OperationNotAllowedException.class);
+
+        // Kluczowe: nic nie trafilo do bazy - kara ma zatrzymac zapis,
+        // a nie tylko pokazac komunikat po fakcie
+        verify(postRepository, never()).save(any(Post.class));
+    }
+
+    @Test
+    @DisplayName("konto z zakazem NIE przerobi tez starego posta na nowa tresc")
+    void bannedAccountCannotEditEither() {
+        /*
+         * Bez tego zakaz nie znaczylby nic: wystarczyloby wejsc w edycje
+         * dowolnego wlasnego posta i podmienic w nim cala tresc.
+         */
+        User banned = anna();
+        banned.setPostingBannedUntil(java.time.LocalDateTime.now().plusHours(5));
+
+        Post post = new Post(banned, "stara tresc");
+        given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> postService.update(
+                5L, "anna", new UpdatePostRequest("nowa tresc", null, null, null)))
+            .isInstanceOf(OperationNotAllowedException.class);
+
+        assertThat(post.getContent()).isEqualTo("stara tresc");
+    }
+
+    @Test
+    @DisplayName("zakaz, ktory juz minal, NIE blokuje niczego")
+    void expiredBanDoesNotBlock() {
+        User byly = anna();
+        byly.setPostingBannedUntil(java.time.LocalDateTime.now().minusMinutes(1));
+        given(userRepository.findByUsername("anna")).willReturn(Optional.of(byly));
+        prepareSave();
+
+        postService.create("anna", new CreatePostRequest("juz moge", null, null, null), null);
+
+        verify(postRepository).save(any(Post.class));
     }
 }

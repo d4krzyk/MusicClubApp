@@ -24,9 +24,9 @@ class MusicLinkParserTest {
 
     @Test
     @DisplayName("zwykly link do utworu ze Spotify")
-    void utworSpotify() {
+    void spotifyTrack() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://open.spotify.com/track/" + ID_SPOTIFY)
+            .parse("https://open.spotify.com/track/" + ID_SPOTIFY)
             .orElseThrow();
 
         assertThat(link.provider()).isEqualTo(MusicProvider.SPOTIFY);
@@ -36,9 +36,9 @@ class MusicLinkParserTest {
 
     @Test
     @DisplayName("parametr sledzacy ?si= NIE trafia do bazy")
-    void parametrSledzacyOdrzucony() {
+    void trackingParameterDropped() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://open.spotify.com/track/" + ID_SPOTIFY + "?si=tajnyparametr")
+            .parse("https://open.spotify.com/track/" + ID_SPOTIFY + "?si=tajnyparametr")
             .orElseThrow();
 
         // Spotify dokleja ?si= przy udostepnianiu i identyfikuje nim osobe udostepniajaca
@@ -47,9 +47,9 @@ class MusicLinkParserTest {
 
     @Test
     @DisplayName("adres z przedrostkiem jezykowym (intl-pl)")
-    void przedrostekJezykowy() {
+    void languagePrefix() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://open.spotify.com/intl-pl/album/" + ID_SPOTIFY)
+            .parse("https://open.spotify.com/intl-pl/album/" + ID_SPOTIFY)
             .orElseThrow();
 
         assertThat(link.kind()).isEqualTo(MusicKind.ALBUM);
@@ -58,9 +58,9 @@ class MusicLinkParserTest {
 
     @Test
     @DisplayName("postac spotify:artist: z aplikacji na komputer")
-    void postacUri() {
+    void uriForm() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("spotify:artist:" + ID_SPOTIFY)
+            .parse("spotify:artist:" + ID_SPOTIFY)
             .orElseThrow();
 
         assertThat(link.provider()).isEqualTo(MusicProvider.SPOTIFY);
@@ -69,21 +69,56 @@ class MusicLinkParserTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "https://www.youtube.com/watch?v=" + ID_YOUTUBE,
-        "https://www.youtube.com/watch?v=" + ID_YOUTUBE + "&list=PLcos",
-        "https://youtu.be/" + ID_YOUTUBE,
-        "https://youtu.be/" + ID_YOUTUBE + "?t=42",
         "https://music.youtube.com/watch?v=" + ID_YOUTUBE,
-        "https://www.youtube.com/embed/" + ID_YOUTUBE,
+        "https://music.youtube.com/watch?v=" + ID_YOUTUBE + "&si=abc",
+        "https://music.youtube.com/watch?v=" + ID_YOUTUBE + "&list=PLcos",
     })
-    @DisplayName("wszystkie postacie linku do YouTube daja ten sam identyfikator")
-    void youtubeWRoznychPostaciach(String adres) {
-        ParsedMusicLink link = MusicLinkParser.rozpoznaj(adres).orElseThrow();
+    @DisplayName("postacie linku z YouTube Music daja ten sam identyfikator")
+    void youtubeMusicInVariousForms(String url) {
+        ParsedMusicLink link = MusicLinkParser.parse(url).orElseThrow();
 
         assertThat(link.provider()).isEqualTo(MusicProvider.YOUTUBE);
-        // Film to zawsze pojedyncze nagranie - YouTube nie ma "albumu" w naszym sensie
+        // Nagranie to zawsze pojedynczy utwor - "artysta" jest tam kanalem
         assertThat(link.kind()).isEqualTo(MusicKind.TRACK);
         assertThat(link.externalId()).isEqualTo(ID_YOUTUBE);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "https://www.youtube.com/watch?v=" + ID_YOUTUBE,
+        "https://youtu.be/" + ID_YOUTUBE,
+        "https://youtu.be/" + ID_YOUTUBE + "?t=42",
+        "https://www.youtube.com/embed/" + ID_YOUTUBE,
+        "https://youtube.com/shorts/" + ID_YOUTUBE,
+        "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghij",
+    })
+    @DisplayName("ZWYKLY YouTube jest odrzucany - przyjmujemy tylko YouTube Music")
+    void plainYouTubeRejected(String url) {
+        /*
+         * To jest decyzja o charakterze aplikacji, nie ograniczenie techniczne:
+         * film jest ten sam. Na zwyklym YouTube jest jednak wszystko - vlogi,
+         * filmiki, wykopki - a tablica ma byc o muzyce.
+         */
+        assertThat(MusicLinkParser.parse(url)).isEmpty();
+        // ...ale rozpoznajemy, ZE to YouTube, zeby dac trafniejszy komunikat
+        assertThat(MusicLinkParser.isPlainYouTube(url)).isTrue();
+    }
+
+    @Test
+    @DisplayName("adres z YouTube Music NIE jest uznany za zwykly YouTube")
+    void musicIsNotPlainYouTube() {
+        /*
+         * Pulapka warta testu: tekst "music.youtube.com" ZAWIERA "youtube.com".
+         * Gdyby sprawdzac to w zlej kolejnosci, kazdy poprawny adres z YT Music
+         * dostawalby komunikat "to zwykly YouTube".
+         */
+        assertThat(MusicLinkParser.isPlainYouTube(
+            "https://music.youtube.com/watch?v=" + ID_YOUTUBE)).isFalse();
+        assertThat(MusicLinkParser.isPlainYouTube(
+            "https://music.youtube.com/playlist?list=OLAK5uy_abcdefghij")).isFalse();
+        assertThat(MusicLinkParser.isPlainYouTube(
+            "https://open.spotify.com/track/" + ID_SPOTIFY)).isFalse();
+        assertThat(MusicLinkParser.isPlainYouTube(null)).isFalse();
     }
 
     @ParameterizedTest
@@ -94,40 +129,38 @@ class MusicLinkParserTest {
         "https://open.spotify.com/episode/512ojhOuo1ktJprKbVcKyQ",
     })
     @DisplayName("nierozpoznany adres zwraca pusty wynik - i to KONCZY sie bledem walidacji")
-    void nierozpoznaneAdresy(String adres) {
+    void unrecognizedUrls(String url) {
         /*
          * Podcasty swiadomie NIE sa obslugiwane - aplikacja jest o muzyce.
          * Wazne jest to, ze taki adres zwraca pusty wynik, a walidator
          * zamienia go na czytelny blad. Wczesniej byl po cichu polykany
          * i post powstawal bez odtwarzacza.
          */
-        assertThat(MusicLinkParser.rozpoznaj(adres)).isEmpty();
+        assertThat(MusicLinkParser.parse(url)).isEmpty();
     }
 
     @Test
     @DisplayName("playlista ze Spotify")
-    void playlistaSpotify() {
+    void spotifyPlaylist() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M")
+            .parse("https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M")
             .orElseThrow();
 
         assertThat(link.kind()).isEqualTo(MusicKind.PLAYLIST);
         assertThat(link.externalId()).isEqualTo("37i9dQZF1DXcBWIGoYBM5M");
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-        "https://music.youtube.com/playlist?list=OLAK5uy_abcdefghij",
-        "https://www.youtube.com/playlist?list=OLAK5uy_abcdefghij",
-    })
+    @Test
     @DisplayName("ALBUM z YouTube Music przychodzi jako playlista - i tak ma byc")
-    void albumYouTubeMusicToPlaylista(String adres) {
+    void youtubeMusicAlbumIsPlaylist() {
         /*
          * W YouTube Music nie ma osobnego adresu albumu - udostepniajac album
          * dostajemy adres playlisty (OLAK5uy_...). To nie jest nasza pomylka,
          * tylko sposob dzialania tamtego serwisu.
          */
-        ParsedMusicLink link = MusicLinkParser.rozpoznaj(adres).orElseThrow();
+        ParsedMusicLink link = MusicLinkParser
+            .parse("https://music.youtube.com/playlist?list=OLAK5uy_abcdefghij")
+            .orElseThrow();
 
         assertThat(link.provider()).isEqualTo(MusicProvider.YOUTUBE);
         assertThat(link.kind()).isEqualTo(MusicKind.PLAYLIST);
@@ -135,20 +168,10 @@ class MusicLinkParserTest {
     }
 
     @Test
-    @DisplayName("krotki film (shorts) tez jest rozpoznawany jako utwor")
-    void shortsJakoUtwor() {
-        ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://youtube.com/shorts/" + ID_YOUTUBE).orElseThrow();
-
-        assertThat(link.kind()).isEqualTo(MusicKind.TRACK);
-        assertThat(link.externalId()).isEqualTo(ID_YOUTUBE);
-    }
-
-    @Test
     @DisplayName("Apple Music: album")
     void appleAlbum() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://music.apple.com/pl/album/abbey-road/1441164426")
+            .parse("https://music.apple.com/pl/album/abbey-road/1441164426")
             .orElseThrow();
 
         assertThat(link.provider()).isEqualTo(MusicProvider.APPLE_MUSIC);
@@ -160,9 +183,9 @@ class MusicLinkParserTest {
 
     @Test
     @DisplayName("Apple Music: album z ?i= to POJEDYNCZY UTWOR, nie album")
-    void appleUtworNaAlbumie() {
+    void appleTrackOnAlbum() {
         ParsedMusicLink link = MusicLinkParser
-            .rozpoznaj("https://music.apple.com/pl/album/abbey-road/1441164426?i=1441164468")
+            .parse("https://music.apple.com/pl/album/abbey-road/1441164426?i=1441164468")
             .orElseThrow();
 
         assertThat(link.kind()).isEqualTo(MusicKind.TRACK);
@@ -170,29 +193,42 @@ class MusicLinkParserTest {
     }
 
     @Test
+    @DisplayName("Apple Music: adres /song/ - i parametr ?l= nie trafia do bazy")
+    void appleTrack() {
+        ParsedMusicLink link = MusicLinkParser
+            .parse("https://music.apple.com/pl/song/lullaby/1440786034?l=pl")
+            .orElseThrow();
+
+        assertThat(link.provider()).isEqualTo(MusicProvider.APPLE_MUSIC);
+        assertThat(link.kind()).isEqualTo(MusicKind.TRACK);
+        // ?l=pl to tylko jezyk interfejsu Apple - do adresu osadzenia niepotrzebny
+        assertThat(link.externalId()).isEqualTo("pl/song/lullaby/1440786034");
+    }
+
+    @Test
     @DisplayName("Apple Music: playlista i artysta")
-    void applePlaylistaIArtysta() {
+    void applePlaylistAndArtist() {
         assertThat(MusicLinkParser
-            .rozpoznaj("https://music.apple.com/us/playlist/todays-hits/pl.abc123")
+            .parse("https://music.apple.com/us/playlist/todays-hits/pl.abc123")
             .orElseThrow().kind()).isEqualTo(MusicKind.PLAYLIST);
 
         assertThat(MusicLinkParser
-            .rozpoznaj("https://music.apple.com/us/artist/the-beatles/136975")
+            .parse("https://music.apple.com/us/artist/the-beatles/136975")
             .orElseThrow().kind()).isEqualTo(MusicKind.ARTIST);
     }
 
     @Test
     @DisplayName("pusty i nullowy tekst nie wywalaja sie wyjatkiem")
-    void pustyTekst() {
-        assertThat(MusicLinkParser.rozpoznaj(null)).isEmpty();
-        assertThat(MusicLinkParser.rozpoznaj("")).isEmpty();
-        assertThat(MusicLinkParser.rozpoznaj("   ")).isEmpty();
+    void emptyText() {
+        assertThat(MusicLinkParser.parse(null)).isEmpty();
+        assertThat(MusicLinkParser.parse("")).isEmpty();
+        assertThat(MusicLinkParser.parse("   ")).isEmpty();
     }
 
     @Test
     @DisplayName("link wklejony w srodku zdania tez jest rozpoznawany")
-    void linkWSrodkuTekstu() {
-        Optional<ParsedMusicLink> link = MusicLinkParser.rozpoznaj(
+    void linkInsideText() {
+        Optional<ParsedMusicLink> link = MusicLinkParser.parse(
             "posluchajcie https://open.spotify.com/track/" + ID_SPOTIFY + " swietne");
 
         assertThat(link).isPresent();

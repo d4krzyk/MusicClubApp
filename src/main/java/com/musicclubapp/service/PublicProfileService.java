@@ -40,29 +40,29 @@ public class PublicProfileService {
 
     /**
      * @param username     czyj profil ogladamy
-     * @param loginOgladajacego kto oglada - po to, zeby oznaczyc profil wlasny
+     * @param viewerUsername kto oglada - po to, zeby oznaczyc profil wlasny
      * @throws NoSuchElementFoundException gdy takiego uzytkownika nie ma (404)
      */
     @Transactional(readOnly = true)
-    public PublicProfileResponse profil(String username, String loginOgladajacego) {
+    public PublicProfileResponse profile(String username, String viewerUsername) {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new NoSuchElementFoundException("user", username));
 
         return new PublicProfileResponse(
             user.getUsername(),
-            adresAvatara(user),
+            avatarUrl(user),
             user.getCreatedAt(),
             postRepository.countByAuthorUsername(user.getUsername()),
-            user.getUsername().equals(loginOgladajacego),
-            userRepository.policzZnajomych(user.getUsername()),
-            friendService.status(loginOgladajacego, user.getUsername()));
+            user.getUsername().equals(viewerUsername),
+            userRepository.countFriends(user.getUsername()),
+            friendService.status(viewerUsername, user.getUsername()));
     }
 
     /**
      * Ta sama zasada co przy postach: baza trzyma nazwe pliku, a serwer sklada
      * z niej gotowy adres. Frontend nie musi wiedziec, gdzie leza zdjecia.
      */
-    private String adresAvatara(User user) {
+    private String avatarUrl(User user) {
         return user.getAvatarFileName() == null
             ? null
             : PostMapper.SCIEZKA_PLIKOW + user.getAvatarFileName();

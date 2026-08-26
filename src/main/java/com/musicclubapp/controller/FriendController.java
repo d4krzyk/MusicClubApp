@@ -2,6 +2,7 @@ package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.CreateFriendRequest;
 import com.musicclubapp.dto.PendingRequestsResponse;
+import com.musicclubapp.dto.SuggestionResponse;
 import com.musicclubapp.service.FriendService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,8 +18,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,17 +42,41 @@ public class FriendController {
         this.friendService = friendService;
     }
 
+    /**
+     * Proponowani znajomi - <b>cala spolecznosc, od najlepiej dopasowanych</b>.
+     *
+     * <p>Wisi pod {@code /api/friends}, a nie pod profilem, bo to lista
+     * liczona <b>wzgledem zalogowanego uzytkownika</b>. Login bierzemy
+     * z sesji i nie ma tu parametru, ktorym dalo by sie zapytac "a kogo
+     * proponujecie tamtej osobie" - takie pytanie zdradzaloby, kto z kim
+     * ma cos wspolnego.</p>
+     */
+    @GetMapping("/suggestions")
+    @Operation(summary = "Proponowani znajomi: wszyscy uzytkownicy, od najlepiej dopasowanych")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200",
+            description = "Lista kart wraz z powodem dopasowania"),
+        @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie")
+    })
+    public ResponseEntity<List<SuggestionResponse>> suggestions(
+            @RequestParam(defaultValue = "24") int limit,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+            friendService.suggestions(authentication.getName(), limit));
+    }
+
     @GetMapping("/requests")
     @Operation(summary = "Zaproszenia oczekujace: przychodzace i wyslane")
-    public ResponseEntity<PendingRequestsResponse> oczekujace(Authentication authentication) {
-        return ResponseEntity.ok(friendService.oczekujace(authentication.getName()));
+    public ResponseEntity<PendingRequestsResponse> pending(Authentication authentication) {
+        return ResponseEntity.ok(friendService.pending(authentication.getName()));
     }
 
     @GetMapping("/requests/count")
     @Operation(summary = "Ile zaproszen czeka na moja odpowiedz (liczba w menu)")
-    public ResponseEntity<Map<String, Long>> ile(Authentication authentication) {
+    public ResponseEntity<Map<String, Long>> count(Authentication authentication) {
         return ResponseEntity.ok(
-            Map.of("count", friendService.ileOczekujacych(authentication.getName())));
+            Map.of("count", friendService.countPending(authentication.getName())));
     }
 
     /**
@@ -67,15 +94,15 @@ public class FriendController {
         @ApiResponse(responseCode = "409",
             description = "Zaproszenie do siebie, juz sa znajomymi albo zaproszenie juz czeka")
     })
-    public ResponseEntity<Map<String, Boolean>> zapros(
-            @Valid @RequestBody CreateFriendRequest zadanie,
+    public ResponseEntity<Map<String, Boolean>> invite(
+            @Valid @RequestBody CreateFriendRequest payload,
             Authentication authentication) {
 
-        boolean odRazuZnajomi = friendService.zapros(
-            authentication.getName(), zadanie.username());
+        boolean instantFriends = friendService.invite(
+            authentication.getName(), payload.username());
 
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(Map.of("friendsNow", odRazuZnajomi));
+            .body(Map.of("friendsNow", instantFriends));
     }
 
     @PostMapping("/requests/{id}/accept")
@@ -85,8 +112,8 @@ public class FriendController {
         @ApiResponse(responseCode = "404", description = "Nie ma takiego zaproszenia"),
         @ApiResponse(responseCode = "409", description = "To nie jest zaproszenie do mnie")
     })
-    public ResponseEntity<Void> przyjmij(@PathVariable Long id, Authentication authentication) {
-        friendService.przyjmij(id, authentication.getName());
+    public ResponseEntity<Void> accept(@PathVariable Long id, Authentication authentication) {
+        friendService.accept(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
@@ -103,8 +130,8 @@ public class FriendController {
         @ApiResponse(responseCode = "404", description = "Nie ma takiego zaproszenia"),
         @ApiResponse(responseCode = "409", description = "To nie jest Twoje zaproszenie")
     })
-    public ResponseEntity<Void> odrzuc(@PathVariable Long id, Authentication authentication) {
-        friendService.odrzucLubAnuluj(id, authentication.getName());
+    public ResponseEntity<Void> reject(@PathVariable Long id, Authentication authentication) {
+        friendService.rejectOrCancel(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
@@ -114,9 +141,9 @@ public class FriendController {
         @ApiResponse(responseCode = "204", description = "Znajomosc usunieta"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
     })
-    public ResponseEntity<Void> usun(@PathVariable String username,
+    public ResponseEntity<Void> remove(@PathVariable String username,
                                      Authentication authentication) {
-        friendService.usunZnajomego(authentication.getName(), username);
+        friendService.removeFriend(authentication.getName(), username);
         return ResponseEntity.noContent().build();
     }
 }

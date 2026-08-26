@@ -15,13 +15,13 @@ public class InvalidFileException extends RuntimeException {
         this.messageKey = messageKey;
     }
 
-    public static InvalidFileException pusty() {
+    public static InvalidFileException empty() {
         return new InvalidFileException("Wgrany plik jest pusty", "error.file.empty");
     }
 
-    public static InvalidFileException zlyTyp(String typ) {
+    public static InvalidFileException wrongType(String type) {
         return new InvalidFileException(
-            "Niedozwolony typ pliku: " + typ, "error.file.type");
+            "Niedozwolony typ pliku: " + type, "error.file.type");
     }
 
     public String getMessageKey() {

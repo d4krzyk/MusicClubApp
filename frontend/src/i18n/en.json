@@ -84,7 +84,21 @@
     "roleUser": "User",
     "roleAdmin": "Administrator",
     "roleChanged": "The role has been changed.",
-    "selfRoleHint": "You cannot change your own role"
+    "selfRoleHint": "You cannot change your own role",
+    "colPostingBan": "Posting ban",
+    "banNone": "no ban",
+    "banLift": "lift the ban",
+    "banFor_one": "for {{count}} hour",
+    "banFor_other": "for {{count}} hours",
+    "bannedUntil": "until {{date}}",
+    "banSet": "The posting ban has been applied.",
+    "banLifted": "The posting ban has been lifted.",
+    "selfDeleteHint": "You cannot delete your own account",
+    "deleteTitle": "Delete this account?",
+    "deleteQuestion": "Really delete the account \"{{username}}\"? This cannot be undone.",
+    "deleteWhatGoes": "All of their posts, photos, reactions and friendships go with it.",
+    "deleteConfirm": "Delete account",
+    "deleted": "The account \"{{username}}\" has been deleted."
   },
   "errors": {
     "network": "Cannot reach the server. Check whether the backend is running.",
@@ -152,14 +166,15 @@
     "musicUrl": "Link",
     "musicPlaceholder": "Paste a Spotify, YouTube Music or Apple Music link",
     "musicHints": {
-      "TRACK": "A track link - Spotify, YouTube / YouTube Music or Apple Music",
+      "TRACK": "A track link - Spotify, YouTube Music or Apple Music",
       "ALBUM": "An album link from Spotify or Apple Music (in YouTube Music an album is a playlist)",
       "ARTIST": "An artist link from Spotify or Apple Music",
       "PLAYLIST": "A playlist link - Spotify, YouTube Music or Apple Music. Playlists do not count towards statistics."
     },
     "musicClearHint": "Clear the field to remove the music from this post.",
     "musicErrors": {
-      "invalid": "This is not a Spotify, YouTube or Apple Music link",
+      "invalid": "This is not a Spotify, YouTube Music or Apple Music link",
+      "youtubeNotMusic": "That is a plain YouTube link. Open the recording in YouTube Music (music.youtube.com) and copy the address from there.",
       "mismatch": {
         "TRACK": "This is a TRACK link - switch the kind to \"Track\"",
         "ALBUM": "This is an ALBUM link - switch the kind to \"Album\"",
@@ -169,12 +184,37 @@
     },
     "providers": {
       "SPOTIFY": "Spotify",
-      "YOUTUBE": "YouTube",
+      "YOUTUBE": "YouTube Music",
       "APPLE_MUSIC": "Apple Music"
     },
     "topTracks": "Most posted tracks",
     "postedTimes_one": "{{count}} time",
     "postedTimes_other": "{{count}} times"
+  },
+  "favorites": {
+    "title": "Favourites",
+    "artists": "Favourite artists",
+    "tracks": "Favourite tracks",
+    "whyItMatters": "Friend matching is based on this list - the more you add, the better the suggestions.",
+    "search": {
+      "artists": "Search for an artist...",
+      "tracks": "Search for a track..."
+    },
+    "noResults": "Nothing found in the catalogue",
+    "noArtists": "This person has not added any favourite artists yet",
+    "noArtistsSelf": "You have no favourite artists yet. Search for someone below.",
+    "noTracks": "This person has not added any favourite tracks yet",
+    "noTracksSelf": "You have no favourite tracks yet. Search for something below.",
+    "limitReached": "Limit reached - remove something to make room.",
+    "importLastFm": "Import from Last.fm",
+    "lastFmHint": "Enter your Last.fm username - we will fetch your most played artists and tracks. No password, no sign-in.",
+    "lastFmPlaceholder": "Last.fm username",
+    "importAction": "Fetch",
+    "importing": "Fetching...",
+    "importSummary": "Added {{artists}} artists and {{tracks}} tracks.",
+    "importSkipped": "Skipped {{count}} entries that are not in the catalogue.",
+    "importAlready": "{{count}} entries were already on the list.",
+    "importLimit": "Stopped at the favourites limit."
   },
   "profile": {
     "visit": "View {{username}}'s profile",
@@ -219,6 +259,16 @@
     "incoming": "Invitations to you",
     "noIncoming": "No new invitations.",
     "outgoing": "Your invitations",
-    "noOutgoing": "You have not sent any invitations."
+    "noOutgoing": "You have not sent any invitations.",
+    "suggestions": "Suggested friends",
+    "noSuggestions": "There are no other users yet.",
+    "sharedArtists_one": "{{count}} artist in common",
+    "sharedArtists_other": "{{count}} artists in common",
+    "sharedGenres_one": "{{count}} genre in common",
+    "sharedGenres_other": "{{count}} genres in common",
+    "noCommonGround": "nothing in common (yet)",
+    "alreadyFriends": "Friends",
+    "betterMatchesHint": "Nobody matches you yet. Add the artists and tracks you like to your profile - then the suggestions will stop being random.",
+    "betterMatchesLink": "Go to your profile"
   }
 }

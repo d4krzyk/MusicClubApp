@@ -31,8 +31,8 @@ const client = axios.create({
  * Dzieki temu przelacznik PL/EN zmienia nie tylko napisy w interfejsie,
  * ale takze komunikaty bledow walidacji, ktore generuje serwer.
  */
-export function ustawJezykZapytan(jezyk) {
-  client.defaults.headers.common['Accept-Language'] = jezyk;
+export function setRequestLanguage(language) {
+  client.defaults.headers.common['Accept-Language'] = language;
 }
 
 /**
@@ -49,19 +49,19 @@ export function ustawJezykZapytan(jezyk) {
  *          messageKey ustawiamy tylko wtedy, gdy tekst musi pochodzic
  *          z tlumaczen frontendu (bo serwer nic nie odpowiedzial).
  */
-export function opiszBlad(error) {
+export function describeError(error) {
   // Serwer nie odpowiedzial w ogole - najczesciej backend jest wylaczony
   if (!error.response) {
     return { message: null, messageKey: 'errors.network', fieldErrors: {} };
   }
 
-  const dane = error.response.data;
+  const data = error.response.data;
 
   // Bledy przy konkretnych polach formularza -> { email: "Podaj poprawny adres" }
   const fieldErrors = {};
-  if (Array.isArray(dane?.errors)) {
-    for (const blad of dane.errors) {
-      fieldErrors[blad.field] = blad.message;
+  if (Array.isArray(data?.errors)) {
+    for (const error of data.errors) {
+      fieldErrors[error.field] = error.message;
     }
   }
 
@@ -71,12 +71,12 @@ export function opiszBlad(error) {
    * to zdanie jest dla programisty, nie dla uzytkownika, ktory i tak widzi
    * czerwony tekst pod kazdym niepoprawnym polem.
    */
-  const maBledyPol = Object.keys(fieldErrors).length > 0;
+  const hasFieldErrors = Object.keys(fieldErrors).length > 0;
 
   return {
     // Komunikat z serwera jest juz przetlumaczony (wyslalismy Accept-Language)
-    message: maBledyPol ? null : (dane?.message ?? null),
-    messageKey: maBledyPol || dane?.message ? null : 'errors.unknown',
+    message: hasFieldErrors ? null : (data?.message ?? null),
+    messageKey: hasFieldErrors || data?.message ? null : 'errors.unknown',
     fieldErrors,
   };
 }

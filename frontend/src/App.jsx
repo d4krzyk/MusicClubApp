@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
-import { TylkoAdmin, TylkoNiezalogowany, TylkoZalogowany } from './auth/RouteGuards';
+import { RequireAdmin, RequireAnonymous, RequireAuth } from './auth/RouteGuards';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -27,17 +27,17 @@ export default function App() {
             <Route
               path="/"
               element={
-                <TylkoZalogowany>
+                <RequireAuth>
                   <HomePage />
-                </TylkoZalogowany>
+                </RequireAuth>
               }
             />
             <Route
               path="/feed"
               element={
-                <TylkoZalogowany>
+                <RequireAuth>
                   <FeedPage />
-                </TylkoZalogowany>
+                </RequireAuth>
               }
             />
             {/*
@@ -49,33 +49,33 @@ export default function App() {
             <Route
               path="/profil"
               element={
-                <TylkoZalogowany>
+                <RequireAuth>
                   <ProfilePage />
-                </TylkoZalogowany>
+                </RequireAuth>
               }
             />
             <Route
               path="/profil/:username"
               element={
-                <TylkoZalogowany>
+                <RequireAuth>
                   <ProfilePage />
-                </TylkoZalogowany>
+                </RequireAuth>
               }
             />
             <Route
               path="/znajomi"
               element={
-                <TylkoZalogowany>
+                <RequireAuth>
                   <FriendsPage />
-                </TylkoZalogowany>
+                </RequireAuth>
               }
             />
             <Route
               path="/settings"
               element={
-                <TylkoZalogowany>
+                <RequireAuth>
                   <SettingsPage />
-                </TylkoZalogowany>
+                </RequireAuth>
               }
             />
 
@@ -83,25 +83,25 @@ export default function App() {
             <Route
               path="/users"
               element={
-                <TylkoAdmin>
+                <RequireAdmin>
                   <UsersPage />
-                </TylkoAdmin>
+                </RequireAdmin>
               }
             />
             <Route
               path="/login"
               element={
-                <TylkoNiezalogowany>
+                <RequireAnonymous>
                   <LoginPage />
-                </TylkoNiezalogowany>
+                </RequireAnonymous>
               }
             />
             <Route
               path="/register"
               element={
-                <TylkoNiezalogowany>
+                <RequireAnonymous>
                   <RegisterPage />
-                </TylkoNiezalogowany>
+                </RequireAnonymous>
               }
             />
 

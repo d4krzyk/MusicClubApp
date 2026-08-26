@@ -64,7 +64,7 @@ public class ProfileController {
      * i kazde kolejne zapytanie (np. {@code /api/auth/me}) konczyloby sie
      * bledem 404 albo wylogowaniem. Dlatego po udanej zmianie budujemy nowy
      * obiekt uwierzytelnienia i nadpisujemy nim sesje - patrz
-     * {@link #odswiezSesje}.</p>
+     * {@link #refreshSession}.</p>
      */
     @PutMapping
     @Operation(summary = "Zmienia login i adres e-mail zalogowanego uzytkownika")
@@ -74,18 +74,18 @@ public class ProfileController {
         @ApiResponse(responseCode = "422", description = "Blad walidacji")
     })
     public ResponseEntity<UserResponse> updateProfile(
-            @Valid @RequestBody UpdateProfileRequest zadanie,
+            @Valid @RequestBody UpdateProfileRequest payload,
             Authentication authentication,
             HttpServletRequest request,
             HttpServletResponse response) {
 
-        UserResponse zaktualizowany = userService.updateProfile(authentication.getName(), zadanie);
+        UserResponse updated = userService.updateProfile(authentication.getName(), payload);
 
-        if (!authentication.getName().equals(zaktualizowany.username())) {
-            odswiezSesje(zaktualizowany.username(), request, response);
+        if (!authentication.getName().equals(updated.username())) {
+            refreshSession(updated.username(), request, response);
         }
 
-        return ResponseEntity.ok(zaktualizowany);
+        return ResponseEntity.ok(updated);
     }
 
     /**
@@ -102,10 +102,10 @@ public class ProfileController {
         @ApiResponse(responseCode = "422", description = "Bledne obecne haslo albo blad walidacji")
     })
     public ResponseEntity<Void> changePassword(
-            @Valid @RequestBody ChangePasswordRequest zadanie,
+            @Valid @RequestBody ChangePasswordRequest payload,
             Authentication authentication) {
 
-        userService.changePassword(authentication.getName(), zadanie);
+        userService.changePassword(authentication.getName(), payload);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
@@ -123,10 +123,10 @@ public class ProfileController {
         @ApiResponse(responseCode = "422", description = "Plik pusty albo nie jest obrazkiem")
     })
     public ResponseEntity<UserResponse> uploadAvatar(
-            @RequestPart("file") MultipartFile plik,
+            @RequestPart("file") MultipartFile file,
             Authentication authentication) {
 
-        return ResponseEntity.ok(userService.updateAvatar(authentication.getName(), plik));
+        return ResponseEntity.ok(userService.updateAvatar(authentication.getName(), file));
     }
 
     /** Usuniecie zdjecia profilowego - wracamy do kola z inicjalem. */
@@ -140,17 +140,17 @@ public class ProfileController {
      * Podmienia uzytkownika zapisanego w sesji na tego z nowym loginem,
      * zeby zalogowanie przetrwalo zmiane nazwy konta.
      */
-    private void odswiezSesje(String nowyLogin,
+    private void refreshSession(String newUsername,
                               HttpServletRequest request,
                               HttpServletResponse response) {
 
-        UserDetails odswiezony = userDetailsService.loadUserByUsername(nowyLogin);
+        UserDetails refreshed = userDetailsService.loadUserByUsername(newUsername);
 
-        Authentication nowe = new UsernamePasswordAuthenticationToken(
-            odswiezony, null, odswiezony.getAuthorities());
+        Authentication created = new UsernamePasswordAuthenticationToken(
+            refreshed, null, refreshed.getAuthorities());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(nowe);
+        context.setAuthentication(created);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
     }

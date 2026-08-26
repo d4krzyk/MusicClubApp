@@ -6,37 +6,37 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import { useAuth } from '../auth/AuthContext';
-import { opiszBlad } from '../api/client';
-import Pole from '../components/Pole';
+import { describeError } from '../api/client';
+import Field from '../components/Field';
 
 export default function RegisterPage() {
   const { t } = useTranslation();
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [dane, setDane] = useState({
+  const [data, setData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
 
-  const [bledyPol, setBledyPol] = useState({});
-  const [bladOgolny, setBladOgolny] = useState(null);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [generalError, setGeneralError] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
 
-  function ustaw(pole, wartosc) {
-    setDane((poprzednie) => ({ ...poprzednie, [pole]: wartosc }));
+  function ustaw(field, value) {
+    setData((previous) => ({ ...previous, [field]: value }));
   }
 
-  async function wyslij(e) {
+  async function submit(e) {
     e.preventDefault();
-    setBledyPol({});
-    setBladOgolny(null);
+    setFieldErrors({});
+    setGeneralError(null);
     setWysylanie(true);
 
     try {
-      await register(dane);
+      await register(data);
 
       /*
        * Rejestracja nie loguje automatycznie - backend tylko zaklada konto.
@@ -44,7 +44,7 @@ export default function RegisterPage() {
        * zeby pokazal komunikat o sukcesie zamiast pustego formularza
        * bez wyjasnienia, co sie stalo.
        */
-      navigate('/login', { replace: true, state: { zarejestrowano: true } });
+      navigate('/login', { replace: true, state: { registered: true } });
     } catch (error) {
       /*
        * Backend zwraca bledy per pole (422) - podswietlamy konkretne inputy.
@@ -52,9 +52,9 @@ export default function RegisterPage() {
        * Oba teksty przychodza juz w wybranym jezyku, bo wysylamy
        * naglowek Accept-Language.
        */
-      const opis = opiszBlad(error);
-      setBledyPol(opis.fieldErrors);
-      setBladOgolny(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setFieldErrors(details.fieldErrors);
+      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       setWysylanie(false);
     }
@@ -67,47 +67,47 @@ export default function RegisterPage() {
           {t('register.title')}
         </Card.Title>
 
-        {bladOgolny && <Alert variant="danger">{bladOgolny}</Alert>}
+        {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={wyslij} noValidate>
-          <Pole
+        <Form onSubmit={submit} noValidate>
+          <Field
             id="username"
             label={t('register.username')}
-            wartosc={dane.username}
+            value={data.username}
             onChange={(v) => ustaw('username', v)}
-            blad={bledyPol.username}
-            podpowiedz={t('register.usernameHint')}
+            error={fieldErrors.username}
+            suggestion={t('register.usernameHint')}
             autoComplete="username"
           />
 
-          <Pole
+          <Field
             id="email"
             label={t('register.email')}
             typ="email"
-            wartosc={dane.email}
+            value={data.email}
             onChange={(v) => ustaw('email', v)}
-            blad={bledyPol.email}
+            error={fieldErrors.email}
             autoComplete="email"
           />
 
-          <Pole
+          <Field
             id="password"
             label={t('register.password')}
             typ="password"
-            wartosc={dane.password}
+            value={data.password}
             onChange={(v) => ustaw('password', v)}
-            blad={bledyPol.password}
-            podpowiedz={t('register.passwordHint')}
+            error={fieldErrors.password}
+            suggestion={t('register.passwordHint')}
             autoComplete="new-password"
           />
 
-          <Pole
+          <Field
             id="confirmPassword"
             label={t('register.confirmPassword')}
             typ="password"
-            wartosc={dane.confirmPassword}
+            value={data.confirmPassword}
             onChange={(v) => ustaw('confirmPassword', v)}
-            blad={bledyPol.confirmPassword}
+            error={fieldErrors.confirmPassword}
             autoComplete="new-password"
           />
 

@@ -2,6 +2,8 @@ package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.AdminUserResponse;
 import com.musicclubapp.dto.ChangeRoleRequest;
+import com.musicclubapp.dto.PostingBanRequest;
+import com.musicclubapp.service.UserModerationService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,9 +50,11 @@ public class UserController {
     private static final int MAX_SIZE = 100;
 
     private final UserService userService;
+    private final UserModerationService moderationService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, UserModerationService moderationService) {
         this.userService = userService;
+        this.moderationService = moderationService;
     }
 
     @GetMapping
@@ -124,10 +129,59 @@ public class UserController {
     })
     public ResponseEntity<AdminUserResponse> changeRole(
             @PathVariable Long id,
-            @Valid @RequestBody ChangeRoleRequest zadanie,
+            @Valid @RequestBody ChangeRoleRequest payload,
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            userService.changeRole(authentication.getName(), id, zadanie));
+            userService.changeRole(authentication.getName(), id, payload));
+    }
+
+    /**
+     * Zakaz publikowania na okreslony czas albo jego zdjecie.
+     *
+     * <p>PATCH, bo zmieniamy jedno pole. Pusta liczba godzin w tresci zapytania
+     * <b>zdejmuje</b> zakaz - to jedna operacja zamiast dwoch endpointow,
+     * bo w panelu jest to jeden przelacznik.</p>
+     *
+     * <p>Zakaz dotyczy dodawania i edytowania postow. Czytanie, komentowanie
+     * reakcja i usuwanie wlasnych tresci zostaja dozwolone - kara ma
+     * powstrzymac przed publikowaniem, a nie odciac od portalu. Od odciecia
+     * jest usuniecie konta.</p>
+     */
+    @PatchMapping("/{id}/posting-ban")
+    @Operation(summary = "Naklada albo zdejmuje zakaz publikowania (tylko administrator)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Zakaz nalozony albo zdjety"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnien administratora"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika"),
+        @ApiResponse(responseCode = "409", description = "Proba zablokowania samego siebie"),
+        @ApiResponse(responseCode = "422", description = "Liczba godzin poza zakresem 1-8760")
+    })
+    public ResponseEntity<AdminUserResponse> setPostingBan(
+            @PathVariable Long id,
+            @Valid @RequestBody PostingBanRequest payload,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+            moderationService.setPostingBan(authentication.getName(), id, payload));
+    }
+
+    /**
+     * Usuwa konto razem z jego postami, reakcjami, znajomosciami i plikami.
+     *
+     * <p>Odpowiadamy kodem 204 (no content), a nie 200 z trescia - po
+     * usunieciu nie ma juz czego zwrocic (wyklad 4, slajd 32).</p>
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Usuwa konto uzytkownika (tylko administrator)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Konto usuniete"),
+        @ApiResponse(responseCode = "403", description = "Brak uprawnien administratora"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika"),
+        @ApiResponse(responseCode = "409", description = "Proba usuniecia wlasnego konta")
+    })
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        moderationService.deleteUser(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
     }
 }

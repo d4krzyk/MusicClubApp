@@ -4,6 +4,7 @@ import com.musicclubapp.config.I18nConfig;
 import com.musicclubapp.config.SecurityConfig;
 import com.musicclubapp.error.GlobalExceptionHandler;
 import com.musicclubapp.repository.UserRepository;
+import com.musicclubapp.service.UserModerationService;
 import com.musicclubapp.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,9 @@ class UserControllerAccessTest {
     private UserService userService;
 
     @MockBean
+    private UserModerationService moderationService;
+
+    @MockBean
     private AuthenticationManager authenticationManager;
 
     @MockBean
@@ -60,7 +64,7 @@ class UserControllerAccessTest {
 
     @Test
     @DisplayName("niezalogowany dostaje 401")
-    void niezalogowanyDostaje401() throws Exception {
+    void anonymousGets401() throws Exception {
         mockMvc.perform(get("/api/users"))
             .andExpect(status().isUnauthorized());
     }
@@ -68,7 +72,7 @@ class UserControllerAccessTest {
     @Test
     @WithMockUser(username = "anna", roles = "USER")
     @DisplayName("zwykly uzytkownik dostaje 403 - nie widzi listy innych kont")
-    void zwyklyUzytkownikDostaje403() throws Exception {
+    void regularUserGets403() throws Exception {
         mockMvc.perform(get("/api/users"))
             .andExpect(status().isForbidden());
     }
@@ -76,7 +80,7 @@ class UserControllerAccessTest {
     @Test
     @WithMockUser(username = "anna", roles = "USER")
     @DisplayName("zwykly uzytkownik nie podejrzy tez pojedynczego konta po ID")
-    void zwyklyUzytkownikNieWidziKontaPoId() throws Exception {
+    void regularUserCannotSeeAccountById() throws Exception {
         mockMvc.perform(get("/api/users/1"))
             .andExpect(status().isForbidden());
     }
@@ -84,7 +88,7 @@ class UserControllerAccessTest {
     @Test
     @WithMockUser(username = "anna", roles = "USER")
     @DisplayName("zwykly uzytkownik NIE zmieni nikomu roli - to najwazniejsza blokada")
-    void zwyklyUzytkownikNieZmieniRoli() throws Exception {
+    void regularUserCannotChangeRole() throws Exception {
         mockMvc.perform(patch("/api/users/2/role")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -95,9 +99,9 @@ class UserControllerAccessTest {
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("administrator widzi liste")
-    void administratorWidziListe() throws Exception {
-        Page<com.musicclubapp.dto.AdminUserResponse> pusta = new PageImpl<>(List.of());
-        given(userService.search(anyString(), any())).willReturn(pusta);
+    void adminSeesList() throws Exception {
+        Page<com.musicclubapp.dto.AdminUserResponse> empty = new PageImpl<>(List.of());
+        given(userService.search(anyString(), any())).willReturn(empty);
 
         mockMvc.perform(get("/api/users"))
             .andExpect(status().isOk());

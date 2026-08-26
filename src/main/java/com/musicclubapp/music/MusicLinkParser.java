@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  * dokladnie jak zepsuta aplikacja.</p>
  *
  * <p>Teraz nierozpoznany adres konczy sie <b>bledem walidacji</b> -
- * patrz {@code PoprawnyLinkMuzyczny}.</p>
+ * patrz {@code ValidMusicLink}.</p>
  *
  * <p>Obslugiwane postacie:</p>
  * <pre>
@@ -26,16 +26,17 @@ import java.util.regex.Pattern;
  * https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
  * spotify:artist:4tZwfgrHOc3mvqYlEYSvVi
  *
- * https://www.youtube.com/watch?v=dQw4w9WgXcQ&amp;list=cos
- * https://youtu.be/dQw4w9WgXcQ?t=42
- * https://youtube.com/shorts/dQw4w9WgXcQ
- * https://music.youtube.com/watch?v=dQw4w9WgXcQ
+ * https://music.youtube.com/watch?v=dQw4w9WgXcQ&amp;si=cos
  * https://music.youtube.com/playlist?list=OLAK5uy_abc      (album w YT Music)
  *
+ * https://music.apple.com/pl/song/lullaby/1440786034?l=pl
  * https://music.apple.com/pl/album/abbey-road/1441164426
  * https://music.apple.com/pl/album/abbey-road/1441164426?i=1441164468
  * https://music.apple.com/pl/playlist/todays-hits/pl.abc123
  * </pre>
+ *
+ * <p><b>Zwykly YouTube jest odrzucany</b> - przyjmujemy wylacznie adresy
+ * z {@code music.youtube.com}. Dlaczego - patrz {@link #isPlainYouTube}.</p>
  *
  * <p>Klasa nie ma stanu, dlatego jest {@code final} z prywatnym konstruktorem.</p>
  */
@@ -53,17 +54,20 @@ public final class MusicLinkParser {
         "spotify:(track|album|artist|playlist):([A-Za-z0-9]{22})");
 
     /**
-     * Identyfikator filmu YouTube ma 11 znakow i moze zawierac myslnik
-     * oraz podkreslenie - dlatego {@code [\w-]}, a nie sam {@code \w}.
+     * Nagranie w YouTube Music.
+     *
+     * <p>Identyfikator filmu ma 11 znakow i moze zawierac myslnik oraz
+     * podkreslenie - dlatego {@code [\w-]}, a nie sam {@code \w}.</p>
+     *
+     * <p>Czlon {@code music\.} na poczatku jest <b>obowiazkowy</b>. Bez niego
+     * wzorzec lapalby takze zwykly {@code youtube.com/watch}, bo tamten adres
+     * konczy sie tym samym tekstem.</p>
      */
-    private static final List<Pattern> YOUTUBE_UTWOR = List.of(
-        Pattern.compile("youtube\\.com/watch\\?(?:[^\\s]*&)?v=([\\w-]{11})"),
-        Pattern.compile("youtu\\.be/([\\w-]{11})"),
-        Pattern.compile("youtube\\.com/embed/([\\w-]{11})"),
-        Pattern.compile("youtube\\.com/shorts/([\\w-]{11})"));
+    private static final Pattern YT_MUSIC_TRACK = Pattern.compile(
+        "music\\.youtube\\.com/watch\\?(?:[^\\s]*&)?v=([\\w-]{11})");
 
     /**
-     * Playlista na YouTube - a w YouTube Music takze KAZDY ALBUM.
+     * Playlista w YouTube Music - a takze KAZDY ALBUM.
      *
      * <p>Udostepniajac album z YouTube Music dostajemy
      * {@code music.youtube.com/playlist?list=OLAK5uy_...} - tam nie ma czegos
@@ -74,8 +78,8 @@ public final class MusicLinkParser {
      * generowane, albumy), wiec zamiast sztywnej liczby znakow przyjmujemy
      * rozsadny zakres.</p>
      */
-    private static final Pattern YOUTUBE_PLAYLISTA = Pattern.compile(
-        "youtube\\.com/playlist\\?(?:[^\\s]*&)?list=([\\w-]{10,60})");
+    private static final Pattern YT_MUSIC_PLAYLIST = Pattern.compile(
+        "music\\.youtube\\.com/playlist\\?(?:[^\\s]*&)?list=([\\w-]{10,60})");
 
     /**
      * Apple Music. Zapisujemy CALA SCIEZKE, a nie sam identyfikator.
@@ -100,41 +104,79 @@ public final class MusicLinkParser {
      * @return rozpoznany link albo puste {@link Optional}, gdy adres
      *         nie pasuje do zadnego znanego serwisu
      */
-    public static Optional<ParsedMusicLink> rozpoznaj(String adres) {
-        if (adres == null || adres.isBlank()) {
+    public static Optional<ParsedMusicLink> parse(String url) {
+        if (url == null || url.isBlank()) {
             return Optional.empty();
         }
-        String tekst = adres.trim();
+        String text = url.trim();
 
-        Optional<ParsedMusicLink> spotify = spotify(tekst);
+        Optional<ParsedMusicLink> spotify = spotify(text);
         if (spotify.isPresent()) {
             return spotify;
         }
 
-        Matcher playlista = YOUTUBE_PLAYLISTA.matcher(tekst);
-        if (playlista.find()) {
+        Matcher playlist = YT_MUSIC_PLAYLIST.matcher(text);
+        if (playlist.find()) {
             return Optional.of(new ParsedMusicLink(
-                MusicProvider.YOUTUBE, MusicKind.PLAYLIST, playlista.group(1)));
+                MusicProvider.YOUTUBE, MusicKind.PLAYLIST, playlist.group(1)));
         }
 
-        for (Pattern wzorzec : YOUTUBE_UTWOR) {
-            Matcher m = wzorzec.matcher(tekst);
-            if (m.find()) {
-                /*
-                 * Film to zawsze pojedyncze nagranie. "Artysta" bywa na YouTube
-                 * kanalem - to inny byt i nie udajemy, ze umiemy go rozpoznac.
-                 */
-                return Optional.of(new ParsedMusicLink(
-                    MusicProvider.YOUTUBE, MusicKind.TRACK, m.group(1)));
-            }
+        Matcher track = YT_MUSIC_TRACK.matcher(text);
+        if (track.find()) {
+            /*
+             * Nagranie to zawsze pojedynczy utwor. "Artysta" bywa na YouTube
+             * kanalem - to inny byt i nie udajemy, ze umiemy go rozpoznac.
+             */
+            return Optional.of(new ParsedMusicLink(
+                MusicProvider.YOUTUBE, MusicKind.TRACK, track.group(1)));
         }
 
-        return apple(tekst);
+        return apple(text);
     }
 
-    private static Optional<ParsedMusicLink> spotify(String tekst) {
-        for (Pattern wzorzec : List.of(SPOTIFY_URL, SPOTIFY_URI)) {
-            Matcher m = wzorzec.matcher(tekst);
+    /**
+     * Czy to adres ze <b>zwyklego</b> YouTube'a (a wiec taki, ktorego
+     * NIE przyjmujemy)?
+     *
+     * <p><b>Po co osobna metoda, skoro i tak odrzucamy.</b> Zeby powiedziec
+     * uzytkownikowi, <i>co</i> zrobil zle. Komunikat "to nie jest link do
+     * zadnego znanego serwisu" przy adresie z YouTube'a wyglada jak blad
+     * aplikacji - przeciez YouTube jest znany. Dzieki tej metodzie walidator
+     * potrafi napisac wprost: "to zwykly YouTube, otworz to w YouTube Music
+     * i skopiuj adres stamtad".</p>
+     *
+     * <p><b>Dlaczego w ogole odrzucamy zwykly YouTube.</b> To decyzja
+     * o charakterze aplikacji, nie ograniczenie techniczne: film jest ten sam
+     * i ten sam odtwarzacz go pokaze. Chodzi o to, ze na zwyklym YouTube jest
+     * <i>wszystko</i> - vlogi, filmiki ze zwierzetami, wykopki - a tablica ma
+     * byc o muzyce. {@code music.youtube.com} zawiera wylacznie katalog
+     * muzyczny, wiec sam adres jest tu dowodem, ze ktos wrzuca nagranie.</p>
+     *
+     * <p>Uczciwie: nie jest to filtr szczelny. W YouTube Music trafiaja sie
+     * rzeczy, ktore muzyka nie sa, a czesc teledyskow zyje wylacznie na
+     * zwyklym YouTube i tych sie nie da wrzucic. To swiadomy kompromis.</p>
+     */
+    public static boolean isPlainYouTube(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        String text = url.toLowerCase(Locale.ROOT);
+
+        /*
+         * Kolejnosc ma znaczenie: "music.youtube.com" ZAWIERA "youtube.com",
+         * wiec najpierw wykluczamy wersje muzyczna, a dopiero potem pytamy
+         * o zwykla. Odwrotnie kazdy poprawny adres z YT Music bylby uznany
+         * za blad.
+         */
+        if (text.contains("music.youtube.com")) {
+            return false;
+        }
+        return text.contains("youtube.com/") || text.contains("youtu.be/");
+    }
+
+    private static Optional<ParsedMusicLink> spotify(String text) {
+        for (Pattern pattern : List.of(SPOTIFY_URL, SPOTIFY_URI)) {
+            Matcher m = pattern.matcher(text);
             if (m.find()) {
                 return Optional.of(new ParsedMusicLink(
                     MusicProvider.SPOTIFY,
@@ -157,33 +199,33 @@ public final class MusicLinkParser {
      * z parametrem {@code ?i=} to w rzeczywistosci pojedynczy UTWOR z tego
      * albumu - i tak wlasnie Apple udostepnia piosenki.
      */
-    private static Optional<ParsedMusicLink> apple(String tekst) {
-        Matcher m = APPLE.matcher(tekst);
+    private static Optional<ParsedMusicLink> apple(String text) {
+        Matcher m = APPLE.matcher(text);
         if (!m.find()) {
             return Optional.empty();
         }
 
-        String kraj = m.group(1);
-        String typ = m.group(2);
-        String reszta = m.group(3);
-        String utworNaAlbumie = m.group(5);
+        String country = m.group(1);
+        String type = m.group(2);
+        String rest = m.group(3);
+        String trackOnAlbum = m.group(5);
 
         MusicKind kind;
-        String sciezka;
+        String path;
 
-        if ("album".equals(typ) && utworNaAlbumie != null) {
+        if ("album".equals(type) && trackOnAlbum != null) {
             kind = MusicKind.TRACK;
-            sciezka = kraj + "/album/" + reszta + "?i=" + utworNaAlbumie;
+            path = country + "/album/" + rest + "?i=" + trackOnAlbum;
         } else {
-            kind = switch (typ) {
+            kind = switch (type) {
                 case "album" -> MusicKind.ALBUM;
                 case "playlist" -> MusicKind.PLAYLIST;
                 case "artist" -> MusicKind.ARTIST;
                 default -> MusicKind.TRACK;      // "song"
             };
-            sciezka = kraj + "/" + typ + "/" + reszta;
+            path = country + "/" + type + "/" + rest;
         }
 
-        return Optional.of(new ParsedMusicLink(MusicProvider.APPLE_MUSIC, kind, sciezka));
+        return Optional.of(new ParsedMusicLink(MusicProvider.APPLE_MUSIC, kind, path));
     }
 }

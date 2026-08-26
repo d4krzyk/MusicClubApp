@@ -51,22 +51,22 @@ class FriendServiceTest {
     }
 
     /** Oboje istnieja, nie sa znajomymi i nie ma miedzy nimi zadnych zaproszen. */
-    private void obcyDlaSiebie(User a, User b) {
+    private void strangerToSelf(User a, User b) {
         given(userRepository.findByUsername("ala")).willReturn(Optional.of(a));
         given(userRepository.findByUsername("bob")).willReturn(Optional.of(b));
-        given(userRepository.czySaZnajomymi("ala", "bob")).willReturn(false);
-        given(requestRepository.znajdz("ala", "bob")).willReturn(Optional.empty());
-        given(requestRepository.znajdz("bob", "ala")).willReturn(Optional.empty());
+        given(userRepository.areFriends("ala", "bob")).willReturn(false);
+        given(requestRepository.find("ala", "bob")).willReturn(Optional.empty());
+        given(requestRepository.find("bob", "ala")).willReturn(Optional.empty());
     }
 
     @Test
     @DisplayName("zaproszenie tworzy wpis oczekujacy, a nie od razu znajomosc")
-    void zaproszenieTworzyWpis() {
+    void invitationCreatesRow() {
         User a = ala();
         User b = bob();
-        obcyDlaSiebie(a, b);
+        strangerToSelf(a, b);
 
-        boolean odRazu = friendService.zapros("ala", "bob");
+        boolean odRazu = friendService.invite("ala", "bob");
 
         assertThat(odRazu).isFalse();
         verify(requestRepository).save(any(FriendRequest.class));
@@ -77,19 +77,19 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("gdy obie osoby zaprosza sie nawzajem, znajomosc powstaje OD RAZU")
-    void wzajemneZaproszenieLaczyOdRazu() {
+    void mutualInvitationLinksImmediately() {
         User a = ala();
         User b = bob();
         given(userRepository.findByUsername("ala")).willReturn(Optional.of(a));
         given(userRepository.findByUsername("bob")).willReturn(Optional.of(b));
-        given(userRepository.czySaZnajomymi("ala", "bob")).willReturn(false);
-        given(requestRepository.znajdz("ala", "bob")).willReturn(Optional.empty());
+        given(userRepository.areFriends("ala", "bob")).willReturn(false);
+        given(requestRepository.find("ala", "bob")).willReturn(Optional.empty());
 
         // bob juz wczesniej zaprosil ale
         FriendRequest odBoba = new FriendRequest(b, a);
-        given(requestRepository.znajdz("bob", "ala")).willReturn(Optional.of(odBoba));
+        given(requestRepository.find("bob", "ala")).willReturn(Optional.of(odBoba));
 
-        boolean odRazu = friendService.zapros("ala", "bob");
+        boolean odRazu = friendService.invite("ala", "bob");
 
         assertThat(odRazu).isTrue();
         assertThat(a.getFriends()).contains(b);
@@ -101,8 +101,8 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("nie da sie zaprosic samego siebie")
-    void zaproszenieDoSiebieOdrzucone() {
-        assertThatThrownBy(() -> friendService.zapros("ala", "ala"))
+    void invitingYourselfRejected() {
+        assertThatThrownBy(() -> friendService.invite("ala", "ala"))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(requestRepository, never()).save(any(FriendRequest.class));
@@ -110,12 +110,12 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("nie da sie zaprosic kogos, kto juz jest znajomym")
-    void ponowneZaproszenieZnajomegoOdrzucone() {
+    void invitingExistingFriendRejected() {
         given(userRepository.findByUsername("ala")).willReturn(Optional.of(ala()));
         given(userRepository.findByUsername("bob")).willReturn(Optional.of(bob()));
-        given(userRepository.czySaZnajomymi("ala", "bob")).willReturn(true);
+        given(userRepository.areFriends("ala", "bob")).willReturn(true);
 
-        assertThatThrownBy(() -> friendService.zapros("ala", "bob"))
+        assertThatThrownBy(() -> friendService.invite("ala", "bob"))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(requestRepository, never()).save(any(FriendRequest.class));
@@ -123,14 +123,14 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("nie da sie wyslac drugiego zaproszenia do tej samej osoby")
-    void drugieZaproszenieOdrzucone() {
+    void secondInvitationRejected() {
         given(userRepository.findByUsername("ala")).willReturn(Optional.of(ala()));
         given(userRepository.findByUsername("bob")).willReturn(Optional.of(bob()));
-        given(userRepository.czySaZnajomymi("ala", "bob")).willReturn(false);
-        given(requestRepository.znajdz("ala", "bob"))
+        given(userRepository.areFriends("ala", "bob")).willReturn(false);
+        given(requestRepository.find("ala", "bob"))
             .willReturn(Optional.of(new FriendRequest(ala(), bob())));
 
-        assertThatThrownBy(() -> friendService.zapros("ala", "bob"))
+        assertThatThrownBy(() -> friendService.invite("ala", "bob"))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(requestRepository, never()).save(any(FriendRequest.class));
@@ -138,30 +138,30 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("przyjecie zaproszenia dodaje znajomosc PO OBU stronach")
-    void przyjecieDzialaObustronnie() {
+    void acceptingWorksBothWays() {
         User a = ala();
         User b = bob();
-        FriendRequest zaproszenie = new FriendRequest(a, b);   // ala -> bob
-        given(requestRepository.findById(7L)).willReturn(Optional.of(zaproszenie));
+        FriendRequest invitation = new FriendRequest(a, b);   // ala -> bob
+        given(requestRepository.findById(7L)).willReturn(Optional.of(invitation));
 
-        friendService.przyjmij(7L, "bob");
+        friendService.accept(7L, "bob");
 
         assertThat(a.getFriends()).contains(b);
         assertThat(b.getFriends()).contains(a);
-        verify(requestRepository).delete(zaproszenie);
+        verify(requestRepository).delete(invitation);
     }
 
     @Test
     @DisplayName("NIE mozna przyjac zaproszenia skierowanego do kogos innego")
-    void cudzeZaproszenieNieDoPrzyjecia() {
+    void cannotAcceptSomeoneElsesInvitation() {
         User a = ala();
         User b = bob();
-        FriendRequest zaproszenie = new FriendRequest(a, b);   // ala -> bob
+        FriendRequest invitation = new FriendRequest(a, b);   // ala -> bob
 
-        given(requestRepository.findById(7L)).willReturn(Optional.of(zaproszenie));
+        given(requestRepository.findById(7L)).willReturn(Optional.of(invitation));
 
         // probuje przyjac ktos trzeci
-        assertThatThrownBy(() -> friendService.przyjmij(7L, "czarek"))
+        assertThatThrownBy(() -> friendService.accept(7L, "czarek"))
             .isInstanceOf(OperationNotAllowedException.class);
 
         assertThat(a.getFriends()).isEmpty();
@@ -171,22 +171,22 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("nadawca moze anulowac swoje zaproszenie")
-    void nadawcaAnulujeSwoje() {
-        FriendRequest zaproszenie = new FriendRequest(ala(), bob());
-        given(requestRepository.findById(7L)).willReturn(Optional.of(zaproszenie));
+    void senderCancelsOwnInvitation() {
+        FriendRequest invitation = new FriendRequest(ala(), bob());
+        given(requestRepository.findById(7L)).willReturn(Optional.of(invitation));
 
-        friendService.odrzucLubAnuluj(7L, "ala");
+        friendService.rejectOrCancel(7L, "ala");
 
-        verify(requestRepository).delete(zaproszenie);
+        verify(requestRepository).delete(invitation);
     }
 
     @Test
     @DisplayName("osoba postronna nie skasuje cudzego zaproszenia")
-    void postronnyNieKasuje() {
-        FriendRequest zaproszenie = new FriendRequest(ala(), bob());
-        given(requestRepository.findById(7L)).willReturn(Optional.of(zaproszenie));
+    void outsiderCannotDelete() {
+        FriendRequest invitation = new FriendRequest(ala(), bob());
+        given(requestRepository.findById(7L)).willReturn(Optional.of(invitation));
 
-        assertThatThrownBy(() -> friendService.odrzucLubAnuluj(7L, "czarek"))
+        assertThatThrownBy(() -> friendService.rejectOrCancel(7L, "czarek"))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(requestRepository, never()).delete(any(FriendRequest.class));
@@ -194,14 +194,14 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("usuniecie znajomego dziala po obu stronach")
-    void usuniecieObustronne() {
+    void removalIsMutual() {
         User a = ala();
         User b = bob();
-        a.dodajZnajomego(b);
+        a.addFriend(b);
         given(userRepository.findByUsername("ala")).willReturn(Optional.of(a));
         given(userRepository.findByUsername("bob")).willReturn(Optional.of(b));
 
-        friendService.usunZnajomego("ala", "bob");
+        friendService.removeFriend("ala", "bob");
 
         assertThat(a.getFriends()).isEmpty();
         assertThat(b.getFriends()).isEmpty();
@@ -209,23 +209,23 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("status: wlasny profil to SELF")
-    void statusWlasnyProfil() {
+    void statusOnOwnProfile() {
         assertThat(friendService.status("ala", "ala")).isEqualTo(FriendshipStatus.SELF);
     }
 
     @Test
     @DisplayName("status rozroznia zaproszenie WYSLANE od OTRZYMANEGO")
-    void statusRozrozniaKierunek() {
-        given(userRepository.czySaZnajomymi("ala", "bob")).willReturn(false);
-        given(requestRepository.znajdz("ala", "bob"))
+    void statusTellsDirectionApart() {
+        given(userRepository.areFriends("ala", "bob")).willReturn(false);
+        given(requestRepository.find("ala", "bob"))
             .willReturn(Optional.of(new FriendRequest(ala(), bob())));
 
         assertThat(friendService.status("ala", "bob"))
             .isEqualTo(FriendshipStatus.REQUEST_SENT);
 
         // ten sam uklad widziany oczami boba
-        given(userRepository.czySaZnajomymi("bob", "ala")).willReturn(false);
-        given(requestRepository.znajdz("bob", "ala")).willReturn(Optional.empty());
+        given(userRepository.areFriends("bob", "ala")).willReturn(false);
+        given(requestRepository.find("bob", "ala")).willReturn(Optional.empty());
 
         assertThat(friendService.status("bob", "ala"))
             .isEqualTo(FriendshipStatus.REQUEST_RECEIVED);
@@ -233,11 +233,11 @@ class FriendServiceTest {
 
     @Test
     @DisplayName("zaproszenie nieistniejacego uzytkownika konczy sie bledem 'nie znaleziono'")
-    void nieistniejacyUzytkownik() {
+    void unknownUser() {
         given(userRepository.findByUsername("ala")).willReturn(Optional.of(ala()));
         given(userRepository.findByUsername("duch")).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> friendService.zapros("ala", "duch"))
+        assertThatThrownBy(() -> friendService.invite("ala", "duch"))
             .isInstanceOf(NoSuchElementFoundException.class);
     }
 }

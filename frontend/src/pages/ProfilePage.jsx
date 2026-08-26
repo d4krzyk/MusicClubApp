@@ -7,14 +7,15 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
-import client, { opiszBlad } from '../api/client';
+import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import Post from '../components/Post';
-import PasekZnajomych from '../components/PasekZnajomych';
-import TopMuzyka from '../components/TopMuzyka';
-import PrzyciskZnajomosci from '../components/PrzyciskZnajomosci';
-import { sformatujDate } from '../utils/daty';
+import FriendsStrip from '../components/FriendsStrip';
+import TopMusic from '../components/TopMusic';
+import Favorites from '../components/Favorites';
+import FriendshipButton from '../components/FriendshipButton';
+import { formatDate } from '../utils/dates';
 
 /** Ile postow pobieramy za jednym razem. */
 const NA_STRONE = 10;
@@ -39,28 +40,28 @@ export default function ProfilePage() {
   const { user } = useAuth();
 
   // Bez nazwy w adresie ogladamy siebie
-  const kogo = username ?? user?.username;
+  const whose = username ?? user?.username;
 
-  const [profil, setProfil] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [posty, setPosty] = useState([]);
-  const [strona, setStrona] = useState(0);
-  const [ostatnia, setOstatnia] = useState(true);
-  const [ladowanie, setLadowanie] = useState(true);
-  const [blad, setBlad] = useState(null);
+  const [page, setPage] = useState(0);
+  const [lastPage, setLastPage] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   /*
    * Licznik wymuszajacy przeladowanie paska znajomych. Po przyjeciu albo
    * usunieciu znajomosci lista musi sie odswiezyc - a pasek pobiera dane sam,
    * wiec trzeba mu dac znac. Zwykla zmiana liczby wystarczy jako sygnal.
    */
-  const [odswiezZnajomych, setOdswiezZnajomych] = useState(0);
+  const [refreshFriends, setRefreshFriends] = useState(0);
 
-  const pobierzProfil = useCallback(async () => {
-    setLadowanie(true);
-    setBlad(null);
+  const loadProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const odpowiedz = await client.get(`/profiles/${encodeURIComponent(kogo)}`);
-      setProfil(odpowiedz.data);
+      const response = await client.get(`/profiles/${encodeURIComponent(whose)}`);
+      setProfile(response.data);
     } catch (error) {
       /*
        * Przy 404 pokazujemy WLASNY komunikat. Serwer odsyla ogolne
@@ -68,63 +69,63 @@ export default function ProfilePage() {
        * w logach i w Swaggerze, ale odwiedzajacemu profil nic nie mowi -
        * "user" to nazwa z kodu, nie slowo z jego swiata.
        */
-      const opis = opiszBlad(error);
-      setBlad(error.response?.status === 404
+      const details = describeError(error);
+      setError(error.response?.status === 404
         ? t('profile.notFound')
-        : opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
-      setProfil(null);
+        : details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setProfile(null);
     } finally {
-      setLadowanie(false);
+      setLoading(false);
     }
-  }, [kogo, t]);
+  }, [whose, t]);
 
-  const pobierzPosty = useCallback(async (numerStrony, dolacz) => {
+  const loadPosts = useCallback(async (pageNumber, joined) => {
     try {
-      const odpowiedz = await client.get('/posts', {
-        params: { page: numerStrony, size: NA_STRONE, direction: 'desc', author: kogo },
+      const response = await client.get('/posts', {
+        params: { page: pageNumber, size: NA_STRONE, direction: 'desc', author: whose },
       });
-      const dane = odpowiedz.data;
+      const data = response.data;
 
-      setPosty((poprzednie) => (dolacz ? [...poprzednie, ...dane.content] : dane.content));
-      setOstatnia(dane.last);
-      setStrona(dane.number);
+      setPosty((previous) => (joined ? [...previous, ...data.content] : data.content));
+      setLastPage(data.last);
+      setPage(data.number);
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBlad(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     }
-  }, [kogo, t]);
+  }, [whose, t]);
 
   useEffect(() => {
-    if (!kogo) {
+    if (!whose) {
       return;
     }
     // Nowy profil = czyscimy poprzednie posty, inaczej mignelyby cudze wpisy
     setPosty([]);
-    pobierzProfil();
-    pobierzPosty(0, false);
-  }, [kogo, pobierzProfil, pobierzPosty]);
+    loadProfile();
+    loadPosts(0, false);
+  }, [whose, loadProfile, loadPosts]);
 
-  function poZmianiePostu(zaktualizowany) {
-    setPosty((poprzednie) =>
-      poprzednie.map((p) => (p.id === zaktualizowany.id ? zaktualizowany : p)));
+  function afterPostChange(updated) {
+    setPosty((previous) =>
+      previous.map((p) => (p.id === updated.id ? updated : p)));
   }
 
-  async function usunPost(id) {
+  async function deletePost(id) {
     if (!window.confirm(t('common.confirmDelete'))) {
       return;
     }
     try {
       await client.delete(`/posts/${id}`);
-      setPosty((poprzednie) => poprzednie.filter((p) => p.id !== id));
+      setPosty((previous) => previous.filter((p) => p.id !== id));
       // Licznik postow w naglowku musi sie zgadzac z tym, co widac nizej
-      setProfil((p) => (p ? { ...p, postCount: Math.max(p.postCount - 1, 0) } : p));
+      setProfile((p) => (p ? { ...p, postCount: Math.max(p.postCount - 1, 0) } : p));
     } catch (error) {
-      const opis = opiszBlad(error);
-      setBlad(opis.message ?? (opis.messageKey ? t(opis.messageKey) : null));
+      const details = describeError(error);
+      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     }
   }
 
-  if (ladowanie && !profil) {
+  if (loading && !profile) {
     return (
       <div className="text-center py-5 text-body-secondary">
         <Spinner animation="border" size="sm" className="me-2" />
@@ -133,11 +134,11 @@ export default function ProfilePage() {
     );
   }
 
-  if (!profil) {
+  if (!profile) {
     return (
       <Row className="justify-content-center">
         <Col lg={8}>
-          <Alert variant="danger">{blad ?? t('profile.notFound')}</Alert>
+          <Alert variant="danger">{error ?? t('profile.notFound')}</Alert>
           <Link to="/feed" className="btn btn-outline-secondary">
             {t('menu.feed')}
           </Link>
@@ -151,19 +152,19 @@ export default function ProfilePage() {
       <Col lg={8}>
         <Card className="mb-4">
           <Card.Body className="d-flex align-items-center gap-3 flex-wrap">
-            <Avatar avatarUrl={profil.avatarUrl} username={profil.username} rozmiar={80} />
+            <Avatar avatarUrl={profile.avatarUrl} username={profile.username} size={80} />
 
             <div className="flex-grow-1">
-              <h1 className="h4 mb-1">{profil.username}</h1>
+              <h1 className="h4 mb-1">{profile.username}</h1>
               <div className="text-body-secondary small">
                 {t('profile.memberSince', {
-                  date: sformatujDate(profil.createdAt, i18n.language),
+                  date: formatDate(profile.createdAt, i18n.language),
                 })}
               </div>
               <div className="text-body-secondary small">
-                {t('profile.postCount', { count: profil.postCount })}
+                {t('profile.postCount', { count: profile.postCount })}
                 {' · '}
-                {t('friends.count', { count: profil.friendCount })}
+                {t('friends.count', { count: profile.friendCount })}
               </div>
             </div>
 
@@ -173,49 +174,62 @@ export default function ProfilePage() {
               wlasciciel. O tym, czy to jego profil, mowi serwer.
             */}
             <div className="d-flex flex-column align-items-end gap-2">
-              {profil.self && (
+              {profile.self && (
                 <Link to="/settings" className="btn btn-outline-secondary btn-sm">
                   {t('profile.editAccount')}
                 </Link>
               )}
 
-              <PrzyciskZnajomosci
-                profil={profil}
-                onZmiana={async () => {
-                  await pobierzProfil();
-                  setOdswiezZnajomych((n) => n + 1);
+              <FriendshipButton
+                profile={profile}
+                onChange={async () => {
+                  await loadProfile();
+                  setRefreshFriends((n) => n + 1);
                 }}
               />
             </div>
           </Card.Body>
         </Card>
 
-        {/* Tu w kolejnym kroku dojda ULUBIENI artysci - te ponizej sa
-            wyliczone z postow, a nie zaznaczone recznie */}
-        <TopMuzyka username={profil.username} odswiez={odswiezZnajomych} />
+        {/*
+          Dwa bloki obok siebie, ktore latwo pomylic, a mowia co innego:
+
+          ULUBIENI to swiadoma deklaracja - "lubie tych wykonawcow". To na
+          nich opiera sie dopasowywanie ludzi.
+
+          NAJCZESCIEJ WRZUCANE jest wyliczone z postow. Mowi, co ktos
+          wrzuca na tablice - a to nie to samo: cos mozna wrzucic raz
+          dla zartu albo dlatego, ze akurat bylo glosno.
+        */}
+        <Favorites
+          username={profile.username}
+          onChange={() => setRefreshFriends((n) => n + 1)}
+        />
+
+        <TopMusic username={profile.username} refresh={refreshFriends} />
 
         <h2 className="h5 mb-2">{t('friends.title')}</h2>
         <div className="mb-4">
-          <PasekZnajomych username={profil.username} odswiez={odswiezZnajomych} />
+          <FriendsStrip username={profile.username} refresh={refreshFriends} />
         </div>
 
         <h2 className="h5 mb-3">{t('profile.posts')}</h2>
 
-        {blad && <Alert variant="danger">{blad}</Alert>}
+        {error && <Alert variant="danger">{error}</Alert>}
 
         {posty.map((post) => (
-          <Post key={post.id} post={post} onDelete={usunPost} onUpdate={poZmianiePostu} />
+          <Post key={post.id} post={post} onDelete={deletePost} onUpdate={afterPostChange} />
         ))}
 
         {posty.length === 0 && (
           <p className="text-body-secondary text-center py-4">
-            {profil.self ? t('profile.noPostsSelf') : t('profile.noPosts')}
+            {profile.self ? t('profile.noPostsSelf') : t('profile.noPosts')}
           </p>
         )}
 
-        {!ostatnia && (
+        {!lastPage && (
           <div className="text-center">
-            <Button variant="outline-secondary" onClick={() => pobierzPosty(strona + 1, true)}>
+            <Button variant="outline-secondary" onClick={() => loadPosts(page + 1, true)}>
               {t('posts.loadMore')}
             </Button>
           </div>

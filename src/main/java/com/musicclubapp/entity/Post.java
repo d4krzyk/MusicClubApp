@@ -47,7 +47,7 @@ import java.util.Objects;
 public class Post {
 
     /** Gorny limit dlugosci tresci - tyle samo pilnuje walidacja w DTO. */
-    public static final int MAX_DLUGOSC_TRESCI = 2000;
+    public static final int MAX_CONTENT_LENGTH = 2000;
 
     /**
      * Najpozniejszy moment startu utworu, jaki przyjmujemy - 30 minut.
@@ -77,7 +77,7 @@ public class Post {
     private User author;
 
     /** Tresc posta. {@code TEXT} zamiast VARCHAR - dluzsze wpisy sie zmieszcza. */
-    @Column(nullable = false, length = MAX_DLUGOSC_TRESCI, columnDefinition = "TEXT")
+    @Column(nullable = false, length = MAX_CONTENT_LENGTH, columnDefinition = "TEXT")
     private String content;
 
     /**
@@ -126,7 +126,7 @@ public class Post {
      * Sekunda, od ktorej ma zaczac sie utwor. {@code null} = od poczatku.
      *
      * <p>Ma sens WYLACZNIE przy {@link MusicKind#TRACK} - pilnuje tego
-     * walidator {@code PoprawnyLinkMuzyczny}.</p>
+     * walidator {@code ValidMusicLink}.</p>
      */
     @Column(name = "music_start_seconds")
     private Integer musicStartSeconds;
@@ -217,8 +217,8 @@ public class Post {
      * Wyczyszczenie linku kasuje takze tytul, miniaturke i moment startu -
      * bez nagrania nie maja do czego sie odnosic.</p>
      */
-    public void ustawMuzyke(ParsedMusicLink link, Integer startSeconds,
-                            String tytul, String miniaturka) {
+    public void applyMusic(ParsedMusicLink link, Integer startSeconds,
+                            String title, String thumbnailUrl) {
         if (link == null) {
             this.musicProvider = null;
             this.musicKind = null;
@@ -232,14 +232,14 @@ public class Post {
         this.musicProvider = link.provider();
         this.musicKind = link.kind();
         this.musicExternalId = link.externalId();
-        this.musicTitle = tytul;
-        this.musicThumbnailUrl = miniaturka;
+        this.musicTitle = title;
+        this.musicThumbnailUrl = thumbnailUrl;
         // Moment startu ma sens tylko przy utworze
-        this.musicStartSeconds = link.kind().obslugujeMomentStartu() ? startSeconds : null;
+        this.musicStartSeconds = link.kind().supportsStartSeconds() ? startSeconds : null;
     }
 
     /** Czy post ma podpiete jakiekolwiek nagranie. */
-    public boolean maMuzyke() {
+    public boolean hasMusic() {
         return musicProvider != null && musicExternalId != null;
     }
 

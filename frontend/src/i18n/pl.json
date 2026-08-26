@@ -84,7 +84,23 @@
     "roleUser": "Użytkownik",
     "roleAdmin": "Administrator",
     "roleChanged": "Rola została zmieniona.",
-    "selfRoleHint": "Nie możesz zmienić własnej roli"
+    "selfRoleHint": "Nie możesz zmienić własnej roli",
+    "colPostingBan": "Zakaz publikowania",
+    "banNone": "bez zakazu",
+    "banLift": "zdejmij zakaz",
+    "banFor_one": "na {{count}} godzinę",
+    "banFor_few": "na {{count}} godziny",
+    "banFor_many": "na {{count}} godzin",
+    "banFor_other": "na {{count}} godzin",
+    "bannedUntil": "do {{date}}",
+    "banSet": "Zakaz publikowania został nałożony.",
+    "banLifted": "Zakaz publikowania został zdjęty.",
+    "selfDeleteHint": "Nie możesz usunąć własnego konta",
+    "deleteTitle": "Usunąć konto?",
+    "deleteQuestion": "Na pewno usunąć konto „{{username}}”? Tej operacji nie da się cofnąć.",
+    "deleteWhatGoes": "Znikną też wszystkie posty tej osoby, jej zdjęcia, reakcje i znajomości.",
+    "deleteConfirm": "Usuń konto",
+    "deleted": "Konto „{{username}}” zostało usunięte."
   },
   "errors": {
     "network": "Nie można połączyć się z serwerem. Sprawdź, czy backend jest uruchomiony.",
@@ -152,14 +168,15 @@
     "musicUrl": "Link",
     "musicPlaceholder": "Wklej link ze Spotify, YouTube Music albo Apple Music",
     "musicHints": {
-      "TRACK": "Link do utworu — Spotify, YouTube / YouTube Music albo Apple Music",
+      "TRACK": "Link do utworu — Spotify, YouTube Music albo Apple Music",
       "ALBUM": "Link do albumu ze Spotify albo Apple Music (w YouTube Music album to playlista)",
       "ARTIST": "Link do artysty ze Spotify albo Apple Music",
       "PLAYLIST": "Link do playlisty — Spotify, YouTube Music albo Apple Music. Playlisty nie liczą się do statystyk."
     },
     "musicClearHint": "Wyczyść pole, żeby usunąć nagranie z posta.",
     "musicErrors": {
-      "invalid": "To nie jest link do Spotify, YouTube ani Apple Music",
+      "invalid": "To nie jest link do Spotify, YouTube Music ani Apple Music",
+      "youtubeNotMusic": "To link ze zwykłego YouTube. Otwórz to nagranie w YouTube Music (music.youtube.com) i skopiuj adres stamtąd.",
       "mismatch": {
         "TRACK": "To jest link do UTWORU — zmień rodzaj na „Utwór\"",
         "ALBUM": "To jest link do ALBUMU — zmień rodzaj na „Album\"",
@@ -169,7 +186,7 @@
     },
     "providers": {
       "SPOTIFY": "Spotify",
-      "YOUTUBE": "YouTube",
+      "YOUTUBE": "YouTube Music",
       "APPLE_MUSIC": "Apple Music"
     },
     "topTracks": "Najczęściej wrzucane utwory",
@@ -177,6 +194,31 @@
     "postedTimes_few": "{{count}} razy",
     "postedTimes_many": "{{count}} razy",
     "postedTimes_other": "{{count}} razy"
+  },
+  "favorites": {
+    "title": "Ulubieni",
+    "artists": "Ulubieni artyści",
+    "tracks": "Ulubione utwory",
+    "whyItMatters": "To na tej liście opiera się dopasowywanie znajomych — im więcej tu dodasz, tym trafniejsze będą propozycje.",
+    "search": {
+      "artists": "Wyszukaj artystę…",
+      "tracks": "Wyszukaj utwór…"
+    },
+    "noResults": "Brak wyników w katalogu",
+    "noArtists": "Ta osoba nie dodała jeszcze ulubionych artystów",
+    "noArtistsSelf": "Nie masz jeszcze ulubionych artystów. Wyszukaj kogoś poniżej.",
+    "noTracks": "Ta osoba nie dodała jeszcze ulubionych utworów",
+    "noTracksSelf": "Nie masz jeszcze ulubionych utworów. Wyszukaj coś poniżej.",
+    "limitReached": "Osiągnięto limit — usuń coś, żeby zrobić miejsce.",
+    "importLastFm": "Import z Last.fm",
+    "lastFmHint": "Podaj swoją nazwę użytkownika na Last.fm — pobierzemy Twoich najczęściej słuchanych artystów i utwory. Bez hasła i bez logowania.",
+    "lastFmPlaceholder": "nazwa na Last.fm",
+    "importAction": "Pobierz",
+    "importing": "Pobieranie…",
+    "importSummary": "Dodano {{artists}} artystów i {{tracks}} utworów.",
+    "importSkipped": "Pominięto {{count}} pozycji, których nie ma w katalogu.",
+    "importAlready": "{{count}} pozycji już było na liście.",
+    "importLimit": "Zatrzymano się na limicie ulubionych."
   },
   "profile": {
     "visit": "Zobacz profil: {{username}}",
@@ -229,6 +271,20 @@
     "incoming": "Zaproszenia do Ciebie",
     "noIncoming": "Brak nowych zaproszeń.",
     "outgoing": "Twoje zaproszenia",
-    "noOutgoing": "Nie wysłałeś żadnych zaproszeń."
+    "noOutgoing": "Nie wysłałeś żadnych zaproszeń.",
+    "suggestions": "Proponowani znajomi",
+    "noSuggestions": "Nie ma jeszcze innych użytkowników.",
+    "sharedArtists_one": "{{count}} wspólny artysta",
+    "sharedArtists_few": "{{count}} wspólnych artystów",
+    "sharedArtists_many": "{{count}} wspólnych artystów",
+    "sharedArtists_other": "{{count}} wspólnych artystów",
+    "sharedGenres_one": "{{count}} wspólny gatunek",
+    "sharedGenres_few": "{{count}} wspólne gatunki",
+    "sharedGenres_many": "{{count}} wspólnych gatunków",
+    "sharedGenres_other": "{{count}} wspólnych gatunków",
+    "noCommonGround": "nic wspólnego (jeszcze)",
+    "alreadyFriends": "Znajomi",
+    "betterMatchesHint": "Nikt Ci się jeszcze nie dopasował. Dodaj do profilu artystów i utwory, których lubisz — wtedy propozycje przestaną być przypadkowe.",
+    "betterMatchesLink": "Przejdź do swojego profilu"
   }
 }

@@ -27,5 +27,5 @@ public interface TopMusicRow {
 
     String getThumbnailUrl();
 
-    long getIle();
+    long getTimesPosted();
 }

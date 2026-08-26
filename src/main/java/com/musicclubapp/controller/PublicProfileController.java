@@ -3,7 +3,9 @@ package com.musicclubapp.controller;
 import com.musicclubapp.dto.FriendCardResponse;
 import com.musicclubapp.dto.PublicProfileResponse;
 import com.musicclubapp.dto.TopMusicResponse;
+import com.musicclubapp.dto.FavoritesResponse;
 import com.musicclubapp.music.MusicKind;
+import com.musicclubapp.service.FavoritesService;
 import com.musicclubapp.service.FriendService;
 import com.musicclubapp.service.PublicProfileService;
 import com.musicclubapp.service.TopMusicService;
@@ -52,10 +54,13 @@ public class PublicProfileController {
     private final PublicProfileService publicProfileService;
     private final FriendService friendService;
     private final TopMusicService topMusicService;
+    private final FavoritesService favoritesService;
 
     public PublicProfileController(PublicProfileService publicProfileService,
                                    FriendService friendService,
-                                   TopMusicService topMusicService) {
+                                   TopMusicService topMusicService,
+                                   FavoritesService favoritesService) {
+        this.favoritesService = favoritesService;
         this.publicProfileService = publicProfileService;
         this.friendService = friendService;
         this.topMusicService = topMusicService;
@@ -68,12 +73,12 @@ public class PublicProfileController {
         @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
     })
-    public ResponseEntity<PublicProfileResponse> profil(
+    public ResponseEntity<PublicProfileResponse> profile(
             @PathVariable String username,
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            publicProfileService.profil(username, authentication.getName()));
+            publicProfileService.profile(username, authentication.getName()));
     }
 
     /**
@@ -92,7 +97,7 @@ public class PublicProfileController {
         @ApiResponse(responseCode = "200", description = "Strona znajomych"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
     })
-    public ResponseEntity<Page<FriendCardResponse>> znajomi(
+    public ResponseEntity<Page<FriendCardResponse>> friends(
             @PathVariable String username,
 
             @Parameter(description = "Numer strony, liczony od zera")
@@ -108,7 +113,7 @@ public class PublicProfileController {
             Math.min(Math.max(size, 1), MAX_SIZE));
 
         return ResponseEntity.ok(
-            friendService.znajomi(username, authentication.getName(), pageable));
+            friendService.friends(username, authentication.getName(), pageable));
     }
 
     /**
@@ -127,7 +132,7 @@ public class PublicProfileController {
         @ApiResponse(responseCode = "200", description = "Lista, od najczestszych"),
         @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie")
     })
-    public ResponseEntity<List<TopMusicResponse>> najczesciej(
+    public ResponseEntity<List<TopMusicResponse>> mostPosted(
             @PathVariable String username,
 
             @Parameter(description = "Rodzaj: TRACK, ALBUM albo ARTIST")
@@ -136,6 +141,27 @@ public class PublicProfileController {
             @Parameter(description = "Ile pozycji (1-20)")
             @RequestParam(defaultValue = "5") int limit) {
 
-        return ResponseEntity.ok(topMusicService.najczesciej(username, kind, limit));
+        return ResponseEntity.ok(topMusicService.mostPosted(username, kind, limit));
+    }
+
+    @GetMapping("/{username}/favorites")
+    @Operation(summary = "Ulubieni artysci i utwory tej osoby")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Ulubione"),
+        @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
+    })
+    public ResponseEntity<FavoritesResponse> favorites(
+            @PathVariable String username,
+            Authentication authentication) {
+
+        /*
+         * Login ogladajacego idzie do serwisu, bo to on wylicza pole canEdit.
+         * Frontend na tej podstawie rysuje (albo nie) przyciski dodawania -
+         * ale prawdziwa blokada i tak siedzi w FavoritesController, ktory
+         * w ogole nie przyjmuje cudzego loginu.
+         */
+        return ResponseEntity.ok(
+            favoritesService.favorites(username, authentication.getName()));
     }
 }

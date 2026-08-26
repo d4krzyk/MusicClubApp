@@ -12,5 +12,5 @@ import com.musicclubapp.entity.ReactionType;
  * odczytania i wywala sie dopiero w trakcie dzialania, gdy ktos zmieni
  * kolejnosc kolumn w zapytaniu.</p>
  */
-public record ReactionCount(Long postId, ReactionType type, Long ile) {
+public record ReactionCount(Long postId, ReactionType type, Long count) {
 }

@@ -34,7 +34,7 @@ class UserRepositoryTest {
     private UserRepository userRepository;
 
     @BeforeEach
-    void przygotujDane() {
+    void setUpData() {
         userRepository.save(new User("anna", "anna@example.com", "hash1"));
         userRepository.save(new User("bartek", "bartek@example.com", "hash2"));
         userRepository.save(new User("celina", "celina@musicclub.pl", "hash3"));
@@ -42,72 +42,72 @@ class UserRepositoryTest {
 
     @Test
     @DisplayName("zapisany uzytkownik dostaje ID oraz date utworzenia (@PrePersist)")
-    void zapisUstawiaIdIDate() {
-        User zapisany = userRepository.save(new User("dawid", "dawid@example.com", "hash4"));
+    void saveSetsIdAndDate() {
+        User stored = userRepository.save(new User("dawid", "dawid@example.com", "hash4"));
 
-        assertThat(zapisany.getId()).isNotNull();
+        assertThat(stored.getId()).isNotNull();
         // wymaganie nr 4 - encja przechowuje date/czas i faktycznie ja uzupelnia
-        assertThat(zapisany.getCreatedAt()).isNotNull();
+        assertThat(stored.getCreatedAt()).isNotNull();
     }
 
     @Test
     @DisplayName("findByUsername znajduje istniejacego uzytkownika")
-    void findByUsernameZnajduje() {
-        Optional<User> znaleziony = userRepository.findByUsername("anna");
+    void findByUsernameFinds() {
+        Optional<User> found = userRepository.findByUsername("anna");
 
-        assertThat(znaleziony).isPresent();
-        assertThat(znaleziony.get().getEmail()).isEqualTo("anna@example.com");
+        assertThat(found).isPresent();
+        assertThat(found.get().getEmail()).isEqualTo("anna@example.com");
     }
 
     @Test
     @DisplayName("findByUsername zwraca puste Optional gdy uzytkownika nie ma")
-    void findByUsernameZwracaPusteGdyBrak() {
+    void findByUsernameReturnsEmptyWhenMissing() {
         assertThat(userRepository.findByUsername("nieistnieje")).isEmpty();
     }
 
     @Test
     @DisplayName("existsByUsername wykrywa zajety login")
-    void existsByUsernameWykrywaZajetyLogin() {
+    void existsByUsernameDetectsTakenUsername() {
         assertThat(userRepository.existsByUsername("bartek")).isTrue();
         assertThat(userRepository.existsByUsername("wolny")).isFalse();
     }
 
     @Test
     @DisplayName("@Query szuka po fragmencie loginu, ignorujac wielkosc liter")
-    void wlasneZapytanieSzukaPoLoginie() {
-        Page<User> wynik = userRepository.searchByUsernameOrEmail("AN", PageRequest.of(0, 10));
+    void customQuerySearchesByUsername() {
+        Page<User> score = userRepository.searchByUsernameOrEmail("AN", PageRequest.of(0, 10));
 
         // "anna" (login) oraz "celina" (email celina@musicclub.pl nie pasuje,
         // ale login "celina" tez nie zawiera "an") -> spodziewamy sie samej "anny"
-        assertThat(wynik.getContent())
+        assertThat(score.getContent())
             .extracting(User::getUsername)
             .containsExactlyInAnyOrder("anna");
     }
 
     @Test
     @DisplayName("@Query szuka rowniez po fragmencie adresu e-mail")
-    void wlasneZapytanieSzukaPoEmailu() {
-        Page<User> wynik = userRepository.searchByUsernameOrEmail("musicclub.pl", PageRequest.of(0, 10));
+    void customQuerySearchesByEmail() {
+        Page<User> score = userRepository.searchByUsernameOrEmail("musicclub.pl", PageRequest.of(0, 10));
 
-        assertThat(wynik.getContent())
+        assertThat(score.getContent())
             .extracting(User::getUsername)
             .containsExactly("celina");
     }
 
     @Test
     @DisplayName("stronicowanie dziala po stronie bazy - wymaganie nr 3")
-    void stronicowanieDzialaPoStronieBazy() {
-        Page<User> pierwszaStrona = userRepository.searchByUsernameOrEmail("example.com", PageRequest.of(0, 1));
+    void pagingHappensInDatabase() {
+        Page<User> firstPage = userRepository.searchByUsernameOrEmail("example.com", PageRequest.of(0, 1));
 
-        assertThat(pierwszaStrona.getContent()).hasSize(1);   // tyle ile prosilismy
-        assertThat(pierwszaStrona.getTotalElements()).isEqualTo(2); // anna + bartek
-        assertThat(pierwszaStrona.getTotalPages()).isEqualTo(2);
-        assertThat(pierwszaStrona.hasNext()).isTrue();
+        assertThat(firstPage.getContent()).hasSize(1);   // tyle ile prosilismy
+        assertThat(firstPage.getTotalElements()).isEqualTo(2); // anna + bartek
+        assertThat(firstPage.getTotalPages()).isEqualTo(2);
+        assertThat(firstPage.hasNext()).isTrue();
     }
 
     @Test
     @DisplayName("sortowanie dziala po stronie bazy - wymaganie nr 5")
-    void sortowanieDzialaPoStronieBazy() {
+    void sortingHappensInDatabase() {
         Page<User> malejaco = userRepository.searchByUsernameOrEmail(
             "", PageRequest.of(0, 10, Sort.by("username").descending()));
 

@@ -46,7 +46,7 @@ body {
 }
 
 /* Zastepnik awatara, gdy uzytkownik nie wgral zdjecia: inicjal na kolorowym kole */
-.avatar-zastepnik {
+.avatar-placeholder {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -59,7 +59,7 @@ body {
 }
 
 /* Miniatury zdjec w poscie - kwadratowe kafelki */
-.miniatura-postu {
+.post-thumb {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   width: 100%;
@@ -67,7 +67,7 @@ body {
 }
 
 /* Zdjecia w karuzeli nie moga rozpychac karty posta */
-.karuzela-obraz {
+.carousel-image {
   max-height: 480px;
   object-fit: contain;
   /* Tlo widac tylko po bokach zdjecia o innych proporcjach. Zmienna zamiast
@@ -76,37 +76,52 @@ body {
 }
 
 /*
-   Ramka z odtwarzaczem Spotify.
+   Ramka z odtwarzaczem - Spotify, YouTube Music albo Apple Music.
+
+   (Wczesniej nosila nazwe jednego serwisu - Spotify - bo tylko on byl
+   obslugiwany. Nazwa zostala zmieniona, kiedy doszly pozostale: klasa
+   nazwana od jednego serwisu, a uzywana dla trzech, myli przy czytaniu.)
 
    Zaokraglenie MUSI byc na otoczce z overflow: hidden, a nie na samym
-   <iframe>. Strona Spotify w srodku ma wlasne, prostokatne tlo - przy
+   <iframe>. Strona serwisu w srodku ma wlasne, prostokatne tlo - przy
    border-radius nalozonym na iframe wystawalo ono w rogach jako jasne
-   naroznikii. Otoczka przycina wszystko, co wychodzi poza zaokraglenie.
+   narozniki. Otoczka przycina wszystko, co wychodzi poza zaokraglenie.
 */
-.ramka-spotify {
+.player-frame {
   border-radius: 12px;
   overflow: hidden;
   /*
      JEDYNY kolor, ktory CELOWO nie zmienia sie razem z motywem.
 
-     To tlo odtwarzacza Spotify. Sam odtwarzacz jest ciemny niezaleznie od
-     tego, jaki motyw ma nasza strona - Spotify narzuca swoj wyglad wewnatrz
-     ramki i my na to nie mamy wplywu. Gdybysmy w jasnym motywie dali tu jasne
-     tlo, przez ulamek sekundy przed zaladowaniem ramki mignelyby biale rogi -
-     czyli dokladnie ten blad, ktory naprawialismy wczesniej.
+     To tlo pod odtwarzaczem. Odtwarzacze Spotify i YouTube sa ciemne
+     niezaleznie od tego, jaki motyw ma nasza strona - narzucaja swoj wyglad
+     wewnatrz ramki i my na to nie mamy wplywu. Gdybysmy w jasnym motywie dali
+     tu jasne tlo, przez ulamek sekundy przed zaladowaniem ramki mignelyby
+     biale rogi - czyli dokladnie ten blad, ktory naprawialismy wczesniej.
   */
   background: #121212;
   line-height: 0;
 }
 
-.ramka-spotify iframe {
+.player-frame iframe {
   display: block;
   border: 0;
 }
 
+/*
+   Przy proporcji 16:9 (YouTube) wysokosc ustala klasa Bootstrapa "ratio",
+   a ramka ma wypelnic otoczke w calosci. Bootstrap ustawia to sam, ale
+   nasza regula "display: block" wyzej jest bardziej szczegolowa, wiec
+   trzeba tu powtorzyc wymiary.
+*/
+.player-frame.ratio iframe {
+  width: 100%;
+  height: 100%;
+}
+
 /* Kropki pod karuzela - wlasne, bo wbudowane Bootstrapa lezą NA zdjeciu
    i na jasnych obrazkach sa niewidoczne */
-.kropka-galerii {
+.gallery-dot {
   width: 8px;
   height: 8px;
   padding: 0;
@@ -117,32 +132,32 @@ body {
   transition: background 0.15s;
 }
 
-.kropka-galerii:hover {
+.gallery-dot:hover {
   background: var(--bs-secondary-color);
 }
 
-.kropka-galerii.aktywna {
+.gallery-dot.is-active {
   background: var(--bs-primary);
   width: 20px;
   border-radius: 4px;
 }
 
 /* Tekst posta ma zachowywac wpisane przez uzytkownika przejscia do nowej linii */
-.tresc-postu {
+.post-content {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 /* Nazwa autora nad postem - podkreslamy dopiero pod kursorem, zeby naglowek
    posta nie wygladal jak zbior linkow */
-.link-autora:hover {
+.author-link:hover {
   text-decoration: underline;
 }
 
 /* Przyciski reakcji: emotka ma byc czytelna, wiec troche wieksza niz tekst.
    Stala szerokosc minimalna sprawia, ze przyciski nie skacza, gdy licznik
    przechodzi z jednocyfrowego na dwucyfrowy. */
-.przycisk-reakcji {
+.reaction-button {
   min-width: 3rem;
   font-size: 1rem;
   line-height: 1.2;
@@ -150,7 +165,7 @@ body {
 
 /* Pasek znajomych pod profilem. Poziome przewijanie palcem dziala samo,
    strzalki pod spodem sa dla myszy - tak samo jak przy galerii zdjec. */
-.pasek-znajomych {
+.friends-strip {
   display: flex;
   gap: 1rem;
   overflow-x: auto;
@@ -159,7 +174,7 @@ body {
   scrollbar-width: thin;
 }
 
-.kafelek-znajomego {
+.friend-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -168,27 +183,169 @@ body {
   width: 88px;
 }
 
-.kafelek-znajomego:hover .fw-semibold {
+.friend-card:hover .fw-semibold {
   text-decoration: underline;
 }
 
 /* Lista "najczesciej wrzucane" - numerowanie robimy sami, zeby dalo sie
    ustawic obok miniaturki */
-.lista-top {
+.top-list {
   list-style: none;
   padding-left: 0;
   margin-bottom: 0;
 }
 
-.numer-top {
+.top-number {
   width: 1.25rem;
   text-align: right;
   flex-shrink: 0;
 }
 
-.miniatura-top {
+.top-thumb {
   width: 40px;
   height: 40px;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+/* =========================================================================
+   ULUBIENI ARTYSCI I UTWORY
+   ========================================================================= */
+
+/* Otoczka dla listy podpowiedzi, ktora ma sie wysunac NAD reszte strony */
+.position-relative-fix {
+  position: relative;
+}
+
+/*
+   Lista podpowiedzi z katalogu Deezera.
+
+   Wyswietlamy ja NAD trescia (position: absolute), a nie w ukladzie strony.
+   Gdyby wpychala sie miedzy elementy, przy kazdym nacisnieciu klawisza
+   cala strona podskakiwalaby o kilkadziesiat pikseli - i kliknięcie
+   trafialoby w co innego, niz sie celowalo.
+*/
+.suggestion-list {
+  position: absolute;
+  z-index: 20;
+  width: 100%;
+  max-height: 18rem;
+  overflow-y: auto;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: .5rem;
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}
+
+.suggestion-item {
+  background: none;
+  border: 0;
+  padding: .4rem .6rem;
+  color: inherit;
+}
+
+.suggestion-item:hover,
+.suggestion-item:focus-visible {
+  background: var(--bs-secondary-bg);
+}
+
+.catalog-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Kafelek jednej pozycji w ulubionych */
+.favorite-card {
+  position: relative;
+  width: 116px;
+}
+
+.favorite-cover {
+  width: 116px;
+  height: 116px;
+  object-fit: cover;
+  border-radius: .5rem;
+  display: block;
+}
+
+/* Zastepnik dla pozycji bez zdjecia (albo z niedzialajacym adresem) */
+.cover-placeholder {
+  background: var(--bs-secondary-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+}
+
+.favorite-caption {
+  margin-top: .25rem;
+  /* Bez tego dlugie tytuly rozpychaja kafelek i siatka sie rozjezdza */
+  max-width: 116px;
+}
+
+/*
+   Krzyzyk usuwania. Lezy NA okladce, bo miejsca pod spodem nie ma,
+   a osobny wiersz z przyciskiem zmienialby wysokosc kafelkow.
+*/
+.favorite-remove {
+  position: absolute;
+  top: .25rem;
+  right: .25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .6);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.favorite-remove:hover,
+.favorite-remove:focus-visible {
+  background: rgba(220, 53, 69, .9);
+}
+
+/* =========================================================================
+   PROPONOWANI ZNAJOMI
+   ========================================================================= */
+
+/*
+   Pasek przewijany w POZIOMIE - od lewej najlepiej dopasowani.
+   Uklad poziomy jest tu celowy: mowi "to jest lista uporzadkowana,
+   zacznij od lewej", czego pionowa siatka nie przekazuje.
+*/
+.suggestion-strip {
+  display: flex;
+  gap: .75rem;
+  overflow-x: auto;
+  padding-bottom: .5rem;
+  /* Karta zatrzymuje sie rowno przy przewijaniu palcem */
+  scroll-snap-type: x proximity;
+}
+
+.suggestion-card {
+  flex: 0 0 8.5rem;
+  scroll-snap-align: start;
+  padding: .75rem .5rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.match-reasons {
+  font-size: .75rem;
+  color: var(--bs-secondary-color);
+  text-align: center;
+  /*
+     Staly rozmiar, zeby karty mialy rowna wysokosc niezaleznie od tego,
+     ile powodow ma dana osoba. Bez tego pasek wygladalby jak schodki.
+  */
+  min-height: 3rem;
 }

@@ -53,40 +53,40 @@ class UserRoleServiceTest {
 
     @Test
     @DisplayName("nadanie roli ADMIN innemu uzytkownikowi zapisuje zmiane")
-    void nadanieRoliAdmin() {
+    void grantingAdminRole() {
         User anna = new User("anna", "anna@example.com", "hash");
         given(userRepository.findById(2L)).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toAdminResponse(any(User.class))).willReturn(
-            new AdminUserResponse(2L, "anna", "anna@example.com", Role.ADMIN, LocalDateTime.now()));
+            new AdminUserResponse(2L, "anna", "anna@example.com", Role.ADMIN, LocalDateTime.now(), null));
 
         userService.changeRole("admin", 2L, new ChangeRoleRequest(Role.ADMIN));
 
-        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getRole()).isEqualTo(Role.ADMIN);
+        ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(stored.capture());
+        assertThat(stored.getValue().getRole()).isEqualTo(Role.ADMIN);
     }
 
     @Test
     @DisplayName("odebranie roli innemu administratorowi jest dozwolone")
-    void odebranieRoliInnemuAdminowi() {
-        User inny = new User("drugiadmin", "drugi@example.com", "hash");
-        inny.setRole(Role.ADMIN);
-        given(userRepository.findById(3L)).willReturn(Optional.of(inny));
+    void revokingRoleFromAnotherAdmin() {
+        User other = new User("drugiadmin", "drugi@example.com", "hash");
+        other.setRole(Role.ADMIN);
+        given(userRepository.findById(3L)).willReturn(Optional.of(other));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toAdminResponse(any(User.class))).willReturn(
-            new AdminUserResponse(3L, "drugiadmin", "drugi@example.com", Role.USER, LocalDateTime.now()));
+            new AdminUserResponse(3L, "drugiadmin", "drugi@example.com", Role.USER, LocalDateTime.now(), null));
 
         userService.changeRole("admin", 3L, new ChangeRoleRequest(Role.USER));
 
-        ArgumentCaptor<User> zapisany = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getRole()).isEqualTo(Role.USER);
+        ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(stored.capture());
+        assertThat(stored.getValue().getRole()).isEqualTo(Role.USER);
     }
 
     @Test
     @DisplayName("administrator NIE moze zmienic wlasnej roli - inaczej zamknalby sobie panel")
-    void zmianaWlasnejRoliJestZablokowana() {
+    void changingOwnRoleIsBlocked() {
         User admin = new User("admin", "admin@musicclub.local", "hash");
         admin.setRole(Role.ADMIN);
         given(userRepository.findById(1L)).willReturn(Optional.of(admin));
@@ -100,7 +100,7 @@ class UserRoleServiceTest {
 
     @Test
     @DisplayName("zmiana roli nieistniejacego konta konczy sie wyjatkiem 'nie znaleziono'")
-    void nieistniejaceKontoRzucaWyjatek() {
+    void unknownAccountThrows() {
         given(userRepository.findById(999L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.changeRole(

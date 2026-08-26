@@ -41,10 +41,10 @@ public class MusicMetadataService {
     private static final Logger log = LoggerFactory.getLogger(MusicMetadataService.class);
 
     /** Tytul i miniaturka nagrania; oba pola moga byc puste. */
-    public record Opis(String tytul, String miniaturka) {
+    public record Metadata(String title, String thumbnailUrl) {
 
-        public static Opis pusty() {
-            return new Opis(null, null);
+        public static Metadata empty() {
+            return new Metadata(null, null);
         }
     }
 
@@ -59,40 +59,45 @@ public class MusicMetadataService {
          * systemowego - uzytkownik patrzylby w krecace sie kolko przez
          * kilkadziesiat sekund, po czym i tak dostalby blad.
          */
-        SimpleClientHttpRequestFactory fabryka = new SimpleClientHttpRequestFactory();
-        fabryka.setConnectTimeout(Duration.ofMillis(timeoutMs));
-        fabryka.setReadTimeout(Duration.ofMillis(timeoutMs));
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofMillis(timeoutMs));
+        factory.setReadTimeout(Duration.ofMillis(timeoutMs));
 
         this.restClient = RestClient.builder()
-            .requestFactory(fabryka)
+            .requestFactory(factory)
             .build();
     }
 
     /**
-     * @return tytul i miniaturka albo {@link Opis#pusty()}, gdy serwis
+     * @return tytul i miniaturka albo {@link Metadata#pusty()}, gdy serwis
      *         nie odpowiedzial lub odpowiedzial czyms nieoczekiwanym
      */
-    public Opis pobierz(ParsedMusicLink link) {
-        String adres = MusicEmbed.adresOEmbed(link.provider(), link.kind(), link.externalId());
+    public Metadata fetch(ParsedMusicLink link) {
+        String url = MusicEmbed.oEmbedUrl(link.provider(), link.kind(), link.externalId());
 
-        if (adres == null) {
-            // Serwis nie wystawia oEmbed (np. Apple Music) - to nie jest blad
-            return Opis.pusty();
+        if (url == null) {
+            /*
+             * Serwis nie wystawia oEmbed (Apple Music) - to nie jest blad.
+             * Zostaje jedno zrodlo, ktore mamy pod reka: sam adres. Apple
+             * wpisuje w niego nazwe nagrania, wiec da sie ja stamtad odczytac.
+             * Miniaturki w adresie nie ma i niczego nie udajemy.
+             */
+            return new Metadata(MusicEmbed.titleFromUrl(link.provider(), link.externalId()), null);
         }
 
         try {
-            JsonNode odpowiedz = restClient.get()
-                .uri(adres)
+            JsonNode response = restClient.get()
+                .uri(url)
                 .retrieve()
                 .body(JsonNode.class);
 
-            if (odpowiedz == null) {
-                return Opis.pusty();
+            if (response == null) {
+                return Metadata.empty();
             }
 
-            return new Opis(
-                tekst(odpowiedz, "title"),
-                tekst(odpowiedz, "thumbnail_url"));
+            return new Metadata(
+                text(response, "title"),
+                text(response, "thumbnail_url"));
 
         } catch (Exception e) {
             /*
@@ -101,13 +106,13 @@ public class MusicMetadataService {
              * Zaden z tych przypadkow nie jest powodem, zeby uzytkownik nie
              * mogl dodac posta.
              */
-            log.warn("Nie udalo sie pobrac opisu nagrania ({}): {}", adres, e.getMessage());
-            return Opis.pusty();
+            log.warn("Nie udalo sie pobrac opisu nagrania ({}): {}", url, e.getMessage());
+            return Metadata.empty();
         }
     }
 
-    private String tekst(JsonNode wezel, String pole) {
-        JsonNode wartosc = wezel.get(pole);
-        return wartosc == null || wartosc.isNull() ? null : wartosc.asText();
+    private String text(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
     }
 }

@@ -345,6 +345,7 @@ w środku — strona Spotify ma własne, prostokątne tło i wystaje spod zaokr�
 Rozwiązanie: otoczka z `overflow: hidden`, która przycina zawartość:
 
 ```css
+/* dzis ta klasa nazywa sie .player-frame - patrz "Nazwy w kodzie po angielsku" */
 .ramka-spotify { border-radius: 12px; overflow: hidden; background: #121212; line-height: 0; }
 .ramka-spotify iframe { display: block; border: 0; }
 ```
@@ -369,7 +370,7 @@ miejsca startuje, więc powtarzanie tego obok było szumem.
 
 Zwykły `<input type="file" multiple>` przy każdym otwarciu okna **zastępuje**
 poprzedni wybór — zdjęć z dwóch folderów nie dało się dodać, a pomyłka oznaczała
-zaczynanie od zera. `WybieraczZdjec` trzyma listę plików w stanie Reacta i tylko
+zaczynanie od zera. `ImagePicker` trzyma listę plików w stanie Reacta i tylko
 **dokłada** do niej nowe. Dwie rzeczy, o których łatwo zapomnieć:
 
 - **`e.target.value = ''` po każdym wyborze.** Bez tego wybranie tego samego
@@ -411,7 +412,7 @@ Dwa testy Playwrighta „padły" i obie porażki okazały się **błędem samego
 
 - selektor `.btn-outline-secondary` na strzałkę karuzeli łapał też przycisk
   „Edytuj" (ta sama klasa Bootstrapa),
-- `.ramka-spotify` bez zawężenia do karty łapał odtwarzacz z **innego** posta
+- `.ramka-spotify` (dziś `.player-frame`) bez zawężenia do karty łapał odtwarzacz z **innego** posta
   na tej samej stronie.
 
 Wniosek: szukaj po `aria-label` i zawsze zawężaj zapytanie do konkretnej karty.
@@ -453,7 +454,7 @@ Do wyświetlania liczników jej nie używamy — właśnie przez N+1.
 tego, co przed chwilą ustawił. To przeglądarka wie, czy klikam we własną
 reakcję (wtedy `DELETE`), bo to ona trzyma stan ekranu.
 
-Emotki są **wyłącznie we froncie** (`Reakcje.jsx`). Backend zna tylko nazwy,
+Emotki są **wyłącznie we froncie** (`Reactions.jsx`). Backend zna tylko nazwy,
 więc podmiana obrazka nie wymaga ruszania bazy.
 
 ### Publiczne profile
@@ -521,9 +522,9 @@ Podział ról:
 | Kto | Za co odpowiada |
 |-----|-----------------|
 | skrypt w `index.html` | PIERWSZE ustawienie — zapisany wybór, a jak go nie ma, ustawienie systemu |
-| `MotywContext` | przejmuje to, co skrypt ustawił, i pozwala przełączać |
+| `ThemeContext` | przejmuje to, co skrypt ustawił, i pozwala przełączać |
 
-`MotywContext` czyta stan startowy z **atrybutu**, a nie z `localStorage` —
+`ThemeContext` czyta stan startowy z **atrybutu**, a nie z `localStorage` —
 skrypt już rozstrzygnął, co pokazać, a powtarzanie tej samej logiki w dwóch
 miejscach kończy się tym, że z czasem się rozjeżdżają.
 
@@ -541,9 +542,9 @@ na sztywno:
 
 | Miejsce | Co zrobiliśmy |
 |---|---|
-| `.avatar-zastepnik` (biały tekst na fioletowym kole) | zostaje — działa w obu motywach |
-| `.karuzela-obraz` (`#000`) | → `var(--bs-tertiary-bg)`, inaczej w jasnym motywie zdjęcie miałoby czarne pasy po bokach |
-| `.ramka-spotify` (`#121212`) | **zostaje ciemne celowo** — patrz niżej |
+| `.avatar-placeholder` (biały tekst na fioletowym kole) | zostaje — działa w obu motywach |
+| `.carousel-image` (`#000`) | → `var(--bs-tertiary-bg)`, inaczej w jasnym motywie zdjęcie miałoby czarne pasy po bokach |
+| `.ramka-spotify` — dziś `.player-frame` (`#121212`) | **zostaje ciemne celowo** — patrz niżej |
 
 Ramka Spotify to jedyny kolor, który świadomie nie zmienia się z motywem.
 Odtwarzacz w środku jest ciemny niezależnie od naszej strony (Spotify narzuca
@@ -691,7 +692,7 @@ test regresyjny, który nie łapie swojego błędu, jest nic niewart.
 Pasek znajomych sortujemy po liczbie **wspólnych znajomych z oglądającym**.
 To kolumna, której nigdzie nie ma — liczona osobno dla każdego wiersza. JPQL
 operuje na encjach i takich rzeczy nie wyrazi bez przekombinowanych sztuczek,
-więc `znajomiPosortowani` jest w czystym SQL-u (lista wymagań dopuszcza oba
+więc `friendsRanked` jest w czystym SQL-u (lista wymagań dopuszcza oba
 warianty — nr 8).
 
 Wynik trafia do **projekcji** `FriendRow` — interfejsu, który Spring Data
@@ -771,7 +772,7 @@ przełączniku niezgodność to **błąd, który widać od razu**, a komunikat m
 nagrań, a profil artysty w ogóle nie jest nagraniem — „zacznij od 1:30" nic tam
 nie znaczy. Zamiast tłumaczyć to napisem, po prostu chowamy pole.
 
-Pilnuje tego trzecia własna adnotacja: `@PoprawnyLinkMuzyczny` (wymaganie
+Pilnuje tego trzecia własna adnotacja: `@ValidMusicLink` (wymaganie
 nr 10). Jest klasowa, bo porównuje trzy pola naraz, i — jak
 `@PasswordsMatch` — **przypina błąd do konkretnego pola**, żeby frontend
 wiedział, co podświetlić.
@@ -816,7 +817,7 @@ dokładnie tę samą wartość.
 ### Migracja starych postów
 
 `ddl-auto=update` dokłada nowe kolumny, ale **nie przenosi danych** — stare
-posty straciłyby odtwarzacze. `MigracjaLinkowMuzycznych` przepisuje je przy
+posty straciłyby odtwarzacze. `MusicLinkMigration` przepisuje je przy
 starcie. Trzy rzeczy, o które trzeba było zadbać:
 
 - **Idempotencja.** Warunek `music_external_id IS NULL` sprawia, że drugi start
@@ -916,14 +917,14 @@ której nie da się znaleźć inaczej niż uruchomieniem aplikacji na prawdziwyc
 danych — i stąd wniosek ogólniejszy: **zielone testy nie są dowodem, że
 aplikacja działa**, tylko że działa to, co testy sprawdzają.
 
-Naprawia to `OdswiezenieOgraniczenEnum`: przy starcie zrzuca ograniczenie
+Naprawia to `EnumConstraintRefresher`: przy starcie zrzuca ograniczenie
 i zakłada je na nowo, biorąc listę wartości **z samej klasy enuma**. Nie ma
 tu więc żadnej listy do ręcznego pilnowania — dopisanie kolejnego rodzaju
 nagrania automatycznie trafi też do bazy. Gdyby `ALTER TABLE` się nie udał
 (np. użytkownik bazy bez uprawnień), zostaje ostrzeżenie w logu, a aplikacja
 startuje normalnie.
 
-Test (`OdswiezenieOgraniczenEnumTest`) musiał najpierw **cofnąć** ograniczenie
+Test (`EnumConstraintRefresherTest`) musiał najpierw **cofnąć** ograniczenie
 do starej postaci, bo inaczej na H2 nie byłoby czego sprawdzać. Sprawdza trzy
 rzeczy: że stara baza faktycznie odrzuca `PLAYLIST` (czyli błąd jest odtworzony),
 że po odświeżeniu ta sama baza go przyjmuje, i że **ochrona nie zniknęła** —
@@ -949,6 +950,45 @@ to album. Powód: `list=OLAK5uy_…` to identyfikator playlisty i tylko przez
 `embed/videoseries?list=` da się go odtworzyć. Udawanie w bazie, że mamy
 album, skończyłoby się kłamstwem w statystykach.
 
+### Poprawka: zwykły YouTube jednak wypada
+
+Wcześniej napisałem, że YT i YT Music to jeden serwis, więc nie ma sensu ich
+rozdzielać. To była prawda **techniczna**, ale nie o to chodziło w prośbie.
+Prośba brzmiała: „daj tak, aby tylko zezwalało na linki z YT Music, a z YT
+nie" — i ma to sens produktowy, którego wcześniej nie zobaczyłem.
+Na zwykłym YouTube jest **wszystko**: podcasty, vlogi, gameplaye. Statystyki
+gustu i dopasowywanie znajomych liczą to, co ludzie wrzucają, więc wpuszczenie
+tam dowolnego filmu zamieniłoby je w szum.
+
+Teraz `youtube.com/watch`, `youtu.be/…` i `shorts/` są **odrzucane** — ale
+z podpowiedzią, co zrobić („otwórz to nagranie w YouTube Music i skopiuj adres
+stamtąd"), a nie samym „zły link". Nagranie prawie zawsze jest w obu miejscach,
+więc to kwestia jednego kliknięcia, a nie odmowy.
+
+Jedna pułapka warta zapamiętania: **`music.youtube.com` zawiera w sobie
+`youtube.com`**. Sprawdzanie „czy to zwykły YouTube" przez zwykłe
+`contains("youtube.com")` odrzucałoby też te dobre linki. Kolejność w
+`isPlainYouTube` jest więc celowa: najpierw pytamy o YT Music i wychodzimy,
+dopiero potem patrzymy na resztę. Ten sam wzorzec jest po obu stronach —
+w `MusicLinkParser` i w `frontend/src/utils/linkiMuzyczne.js`.
+
+### Odtwarzacz YT Music dostaje duży ekran
+
+Druga część tej samej prośby: „jeśli to jest YT Music, to normalnie dawaj ten
+ekran jak pod YT, bo tak to się chowa jak spotify odtwarzacz, a tam przecież
+leci nagranie z obrazem". Racja — pod tym adresem leci teledysk, a ramka
+wysokości 152 px (dobra dla paska Spotify, gdzie i tak jest tylko okładka)
+ucinała z niego prawie wszystko.
+
+Wysokość odtwarzacza wybiera teraz `playerHeight(provider, kind)`
+w `Post.jsx`. Dla YouTube **nie podajemy wysokości w pikselach w ogóle** —
+otoczka dostaje bootstrapowe klasy `ratio ratio-16x9`, czyli wysokość równą
+56,25% własnej szerokości. Dzięki temu film skaluje się razem z szerokością
+tablicy i na telefonie nie trzeba niczego przeliczać. Spotify i Apple zostają
+przy stałych wysokościach, bo tam faktycznie leci sam dźwięk.
+
+Sprawdzone w przeglądarce: ramka wyszła 702×395 px, czyli dokładnie 16:9.
+
 ### Apple Music: tak. Tidal: nie, i to nie jest kaprys
 
 Apple Music **da się osadzić bez żadnego klucza** — wystarczy zamienić
@@ -959,10 +999,30 @@ Jedna pułapka: adres albumu z doklejonym `?i=…` to w rzeczywistości
 **pojedynczy utwór z tego albumu** — bez tego rozróżnienia każdy utwór
 z Apple lądowałby w bazie jako album.
 
-Apple **nie ma publicznego oEmbed**, więc `adresOEmbed` zwraca tam `null`,
+Apple **nie ma publicznego oEmbed**, więc `oEmbedUrl` zwraca tam `null`,
 a `MusicMetadataService` po prostu nie dzwoni nigdzie. Post powstaje
 z odtwarzaczem, ale bez zapisanego tytułu. **Wolę puste pole niż zmyślony
 tytuł** — zwłaszcza że tytuł służy potem do statystyk.
+
+### Poprawka: tytuł Apple jednak da się poznać — z adresu
+
+Zwrócono mi uwagę, że tytuł **jest w samym linku**:
+`music.apple.com/pl/song/lullaby/1440786034?l=pl` — człon `lullaby` to nazwa
+utworu, a mimo to post wychodził bez podpisu.
+
+To nie jest zgadywanie ani „wyciąganie z niczego": ten człon (slug) generuje
+sam Apple z prawdziwej nazwy nagrania. `MusicEmbed.tytulZAdresu` zamienia
+myślniki na spacje, dekoduje `%XX` (nazwy z ogonkami przychodzą zakodowane)
+i podnosi pierwsze litery — wychodzi „Lullaby".
+
+Jest **jeden przypadek, w którym tego nie robimy**: adres z parametrem `?i=`.
+Taki link to utwór wskazany wewnątrz albumu, a slug nazywa wtedy **album**,
+nie utwór — podpisanie posta nazwą albumu byłoby po prostu błędem. Wtedy
+zostaje puste pole. Zasada „lepsze puste niż mylące" nadal obowiązuje, tylko
+teraz dotyczy o wiele mniejszej liczby przypadków niż wcześniej.
+
+Sprawdzone w przeglądarce na linku z prośby: pod odtwarzaczem stoi
+„Apple Music · Lullaby".
 
 Tidal odpada z konkretnego powodu: ich oficjalne osadzanie **nie jest zwykłą
 ramką `<iframe>`**, tylko wymaga doładowania cudzego skryptu
@@ -989,20 +1049,290 @@ statystyk nikt (łącznie ze mną za miesiąc) nie „naprawił" tego przez pomy
 
 ---
 
-## KROK 7 — właściwa domena aplikacji
+## KROK 7 — właściwa domena aplikacji (zrobione)
 
-Dopiero tutaj dochodzi pomysł na aplikację:
+Dopiero tutaj dochodzi to, o co w tej aplikacji chodzi: **poznawanie ludzi
+o podobnym guście**. Do tej pory był portal z postami; teraz jest powód,
+żeby na nim być.
 
 | Encja | Relacje | Wymaganie |
 |-------|---------|-----------|
 | `Post` (tekst, zdjęcie, link do utworu, `createdAt`) | `Post` N—1 `User` | nr 6 (OneToMany/ManyToOne) |
-| `Artist` | `User` N—N `Artist` (ulubieni) | nr 7 (ManyToMany) |
-| `Genre` | `Artist` N—N `Genre` | — |
-| `Match` (wynik dopasowania, `matchedAt`) | `Match` N—1 `User` ×2 | nr 4 (data/czas) |
+| `Artist` (nazwa, zdjęcie, gatunki) | `User` N—N `Artist` (`user_favorite_artists`) | nr 7 (ManyToMany) |
+| `Track` (tytuł, wykonawca, okładka) | `User` N—N `Track` (`user_favorite_tracks`) | nr 7 |
 
-Algorytm dopasowania: zapytanie `@Query`, które liczy wspólnych artystów
-i wspólne gatunki dwóch użytkowników, sortuje malejąco po wyniku i zwraca
-`Page<...>` — jednym strzałem wymagania nr 3, 5 i 8.
+Gatunki są `@ElementCollection` przy artyście (tabela `artist_genres`),
+a nie osobną encją `Genre`. Osobna encja miałaby sens, gdyby gatunek miał
+własne życie — opis, stronę, relacje. U nas to zwykły napis pomocniczy przy
+liczeniu dopasowania, więc druga tabela z kluczami obcymi byłaby kosztem bez
+zysku.
 
-Integracja ze Spotify (pobieranie ulubionych artystów, podgląd utworu)
-wraca **na końcu** — kod jest w historii gita.
+Nie ma też encji `Match`. Wynik dopasowania **liczymy w locie zapytaniem**,
+zamiast trzymać go w tabeli — inaczej po każdej zmianie ulubionych trzeba by
+go przeliczać dla wszystkich par użytkowników, a nieświeży wynik jest gorszy
+niż żaden.
+
+### Skąd biorą się artyści: Deezer i Last.fm, każdy do czegoś innego
+
+Warunek z prośby był jasny: **nie wolno dodawać nieistniejących wykonawców**,
+bo to „pole do popisu dla trolli internetowych". Stąd zasada: dodać da się
+wyłącznie to, co jest w katalogu. Nie ma pola „wpisz nazwę".
+
+Podział ról:
+
+| Serwis | Odpowiada na pytanie | Klucz | Konto użytkownika |
+|---|---|---|---|
+| **Deezer** | *kto to jest* — identyfikator, zdjęcie, potwierdzenie, że istnieje | nie trzeba | nie podpinamy |
+| **Last.fm** | *czego ktoś słucha* — same nazwy, do jednorazowego importu | opcjonalny | tylko publiczna nazwa |
+
+Dlaczego nie Spotify: ich API bez zatwierdzenia wniosku wpuszcza **25 kont**
+wpisanych ręcznie na listę. Na projekt zaliczeniowy, który ma pokazać
+działającą aplikację, to za mało — i tak wyglądałaby demonstracja z jednym
+kontem. Deezer udostępnia katalog otwarcie, więc wyszukiwarka działa
+u każdego od razu.
+
+**Ochrona nie kończy się na formularzu.** Zapytanie da się wysłać
+z pominięciem przeglądarki, więc metody serwisu przyjmują **wyłącznie
+identyfikator** — nazwy ani zdjęcia nie ma jak przysłać, serwer pobiera je
+sobie sam z katalogu. To jest sedno, dlatego pilnuje tego osobny test
+(`FavoritesServiceTest#serverDoesNotTrustNameFromRequest`). Gdyby serwer przyjmował
+nazwę od klienta, cała reszta byłaby ozdobą formularza.
+
+Wiersz w `artists` jest **wspólny dla wszystkich**: drugie polubienie tego
+samego wykonawcy to samo dopisanie powiązania, bez ani jednego zapytania do
+sieci. Przy popularnym artyście oszczędza to tyle zapytań, ilu jest
+użytkowników — i to też ma swój test.
+
+### Tagi Last.fm to nie są gatunki
+
+Gatunki bierzemy z `artist.gettoptags`, ale wśród najpopularniejszych tagów
+Last.fm są **„seen live" i „favorites"**. Bez odsiania tego dopasowanie
+łączyłoby ludzi na zasadzie „oboje byli na jakimś koncercie". Stąd lista
+wykluczeń i próg popularności (tag z wynikiem 3 to zwykle etykieta wpisana
+przez jedną osobę).
+
+Drugie zaskoczenie: **Last.fm i Deezer sygnalizują błędy z kodem HTTP 200**
+i polem `error` w treści. Kod patrzący tylko na status nie zauważyłby
+niczego — literówka w nazwie użytkownika wyglądałaby jak „nic nie słuchasz".
+Rozróżniamy przy tym dwa przypadki, bo i komunikat ma być inny: nieznany
+użytkownik (`IllegalArgumentException` → „sprawdź pisownię") kontra awaria
+serwisu (`IllegalStateException` → „spróbuj za chwilę").
+
+### Proponowani znajomi — jedno zapytanie, trzy sygnały
+
+Pomysł był Twój: pasek ze **wszystkimi** użytkownikami, posortowany od lewej
+od najlepiej dopasowanych. Liczy to jedno zapytanie natywne
+(`UserRepository.proponowaniZnajomi`) z trzema skorelowanymi podzapytaniami:
+
+| Sygnał | Waga | Dlaczego tyle |
+|---|---|---|
+| wspólny ulubiony artysta | 5 | obie strony świadomie go wybrały |
+| wspólny znajomy | 3 | mocny, ale mówi o kręgu znajomych, nie o guście |
+| wspólny gatunek | 1 | „oboje słuchacie rocka" to prawie nic |
+
+Trzy decyzje, które warto uzasadnić:
+
+- **Na liście są wszyscy, nie tylko dopasowani.** Przy małej aplikacji filtr
+  „tylko pasujący" dawałby pustą stronę dokładnie wtedy, kiedy najbardziej
+  potrzeba kogoś poznać.
+- **Pokazujemy powód, nie punkty.** „2 wspólnych artystów" coś znaczy;
+  „13 punktów" nie znaczy nic i jeszcze zachęca do zgadywania, jak je podbić.
+- **Znajomi zostają na liście**, tylko z innym oznaczeniem — inaczej pasek
+  przeskakiwałby po każdym przyjętym zaproszeniu.
+
+Notka „dodaj więcej ulubionych, a propozycje będą trafniejsze" pokazuje się
+**wyłącznie wtedy, gdy nikt się nie dopasował**. Przy dobrych wynikach byłaby
+zwykłym zrzędzeniem.
+
+### Sprawdzone na działającej aplikacji
+
+Backend: 175 testów (`mvn clean test`), w tym rozmowy z Deezerem i Last.fm na
+**prawdziwym HTTP** — `TestHttpServer` oddaje odpowiedzi w formacie obu
+serwisów, a adresy podstawiamy przez `@DynamicPropertySource`.
+
+Poza testami: cała runda przeszła na **prawdziwym PostgreSQL** (curl) i w
+**prawdziwej przeglądarce** (Chromium) — 23 sprawdzenia dla ulubionych
+i propozycji plus 12 dla linków muzycznych. Sprawdzane były między innymi:
+kolejność w pasku propozycji, podsumowanie po imporcie (ile dodano, ile
+pominięto, ile już było), komunikat przy literówce w nazwie Last.fm oraz to,
+że **na cudzym profilu nie ma ani krzyżyków, ani wyszukiwarki**.
+
+---
+
+## Nazwy w kodzie po angielsku
+
+Projekt powstawał z polskimi nazwami zmiennych i funkcji, obok angielskich
+nazw z Springa i Reacta. Efekt był taki, że w jednej linijce stały obok siebie
+`post.getAuthor()` i `przygotujOpisMuzyki()`. Ta runda to porządkuje:
+**wszystkie nazwy zmiennych, funkcji, klas, plików i klas CSS są po angielsku.
+Komentarze i opisy testów (`@DisplayName`) zostają po polsku** — one są dla
+człowieka i mają tłumaczyć, a nie brzmieć obco.
+
+### Dlaczego nie zwykłe „znajdź i zamień"
+
+Bo polskie nazwy zmiennych to te same słowa, których używają komentarze.
+Zamiana `nazwa` na `name` w całym pliku przerobiłaby komentarz „bierzemy nazwę
+z katalogu" na „bierzemy name z katalogu" — czyli zepsułaby dokładnie to, co
+miało zostać nietknięte.
+
+Narzędzie, którym to zrobiliśmy, rozbija plik na fragmenty **kodu** i **nie-kodu**
+(komentarze, napisy, teksty widoczne dla użytkownika) i podmienia tylko w kodzie.
+Jedyny wyjątek: nazwy **wieloczłonowe** (`dodajArtyste`, `PROG_TAGU`) zamieniamy
+wszędzie — takie słowo nie występuje w polskim zdaniu, więc jeśli stoi
+w komentarzu, to znaczy, że odwołuje się do kodu i ma się zmienić razem z nim.
+
+### Trzy pułapki, które to wyciągnęło
+
+**1. Wstawki w szablonach.** W JavaScripcie wnętrze `` `tekst ${zmienna}` ``
+to kod, a nie tekst. Pierwsza wersja narzędzia traktowała cały szablon jako
+napis i zostawiała w nim stare nazwy — powstawały odwołania do zmiennych,
+których już nie ma. **Nie widać tego ani przy budowaniu frontendu, ani
+w testach backendu**; wyszłoby dopiero użytkownikowi. Znalazł to `eslint`
+z jedną regułą (`no-undef`), puszczony jednorazowo.
+
+**2. Aliasy w zapytaniach natywnych.** Spring dopasowuje metody projekcji do
+**nazw kolumn w wyniku zapytania**, więc alias w SQL-u i nazwa metody muszą się
+zgadzać. Przy jednym zapytaniu alias zmienił się w `SELECT`, a w `ORDER BY`
+został stary — i baza odpowiadała błędem 500 na profilu. **Testy tego nie
+złapały, bo tego zapytania nie miał kto sprawdzić**: nie było na nie żadnego
+testu. Doszedł `TopMusicRepositoryTest`; żeby mieć pewność, że coś naprawdę
+sprawdza, ograniczenie zostało celowo z powrotem zepsute — test wtedy padł,
+i dopiero po naprawie przeszedł.
+
+**3. Nazwy pól w JSON-ie.** Zmiana nazwy pola w rekordzie DTO zmienia nazwę
+pola w odpowiedzi API. Jedno takie pole (`juzByly` → `alreadyPresent`) zmieniło
+się po stronie frontendu, ale nie backendu — podsumowanie importu przestało
+pokazywać, ile pozycji już było na liście. Wyszło przy porównaniu **składu
+wszystkich rekordów DTO przed zmianą i po niej**; od tej pory takie porównanie
+jest częścią sprawdzania.
+
+### Co dokładnie zostało sprawdzone
+
+| Sprawdzenie | Wynik |
+|---|---|
+| `mvn clean test` | 179 testów |
+| `eslint --rule no-undef` na całym froncie | zero błędów |
+| `npm run build` | przechodzi |
+| przejście po **całej** aplikacji w Chromium | 28 sprawdzeń |
+| ulubieni i proponowani znajomi w Chromium | 23 sprawdzenia |
+| linki muzyczne w Chromium | 12 sprawdzeń |
+
+Przejście po całej aplikacji powstało specjalnie na tę rundę: wchodzi na każdy
+ekran (także panel administratora i ustawienia) i klika w każdą ważniejszą
+rzecz — dodanie posta, reakcję, edycję, zmianę hasła, wyszukiwanie kont —
+traktując **każdy błąd w konsoli i każdą odpowiedź 5xx jako błąd testu**.
+Przy zmianie nazw w 150 plikach to jedyny sposób, żeby zobaczyć to, czego
+kompilator nie widzi.
+
+### Czego NIE zmienialiśmy
+
+**Ścieżek w adresach** (`/profil`, `/znajomi`). To nie są nazwy w kodzie, tylko
+adresy, które użytkownik ma w pasku przeglądarki i w zakładkach. Zmiana nazwy
+zmiennej nie powinna zmieniać tego, co widzi ktoś, kto z aplikacji korzysta.
+
+**Tekstów widocznych dla użytkownika** — te i tak są w plikach tłumaczeń,
+osobno po polsku i po angielsku.
+
+---
+
+## Moderacja: zakaz publikowania i usuwanie kont
+
+Ostatnia rzecz, której brakowało administratorowi: dotąd mógł zmieniać role
+i kasować pojedyncze posty, ale nic nie mógł zrobić z **osobą**, która
+konsekwentnie zaśmieca tablicę.
+
+### Zakaz z terminem, a nie flaga „zablokowany"
+
+Najprostsze rozwiązanie to pole `boolean banned`. Odrzuciliśmy je, bo blokada
+bezterminowa wymaga, żeby ktoś pamiętał o jej zdjęciu — a o tym zwykle nikt
+nie pamięta i „tydzień przerwy" zamienia się w kasowanie konta tylnymi
+drzwiami.
+
+Zamiast tego jest `postingBannedUntil` (data i godzina). Kara **wygasa sama**:
+nie ma żadnego zadania w tle ani pola do odświeżania, bo liczy się wyłącznie
+porównanie z bieżącą chwilą. Wpisu po wygaśnięciu **nie kasujemy** —
+administrator widzi w panelu, że ktoś był już kiedyś karany, a to bywa
+ważniejsze niż sam bieżący stan.
+
+Pytanie „czy zakaz obowiązuje" zadajemy **encji** (`user.isPostingBanned()`),
+a nie porównujemy dat w serwisie. Inaczej ta sama reguła („null albo
+przeszłość znaczy: wolno") musiałaby być powtórzona w każdym miejscu, które
+jej pilnuje — a wystarczy pomylić się raz, żeby zakaz dało się obejść.
+
+### Co dokładnie obejmuje kara
+
+| Czynność | Podczas zakazu |
+|---|---|
+| dodanie posta | ❌ |
+| **edycja** własnego posta | ❌ |
+| usunięcie własnego posta | ✅ |
+| reakcje, czytanie, znajomi | ✅ |
+
+Edycja jest zablokowana celowo. Bez tego zakaz nie znaczyłby nic:
+wystarczyłoby wejść w dowolny stary post i podmienić w nim całą treść.
+Usuwanie własnych postów zostaje dozwolone — kara ma powstrzymać przed
+publikowaniem, a nie zmusić do zostawienia czegoś na tablicy.
+
+Ukarany dostaje komunikat z **terminem** końca kary. Samo „nie wolno" byłoby
+dla niego bezużyteczne: nie wiedziałby, czy wrócić za godzinę, czy za tydzień.
+
+### Usunięcie konta: samo `delete()` nie wystarczy
+
+Na koncie wisi sześć rodzajów wierszy w pięciu tabelach. Hibernate sam
+usunie tylko część z nich, a baza odmówi skasowania reszty z powodu klucza
+obcego. Kolejność jest obowiązkowa:
+
+1. reakcje tej osoby pod **cudzymi** postami (same posty zostają),
+2. własne posty — kaskada zabiera ich zdjęcia i cudze reakcje pod nimi,
+3. zaproszenia, w których występuje po **dowolnej** stronie,
+4. znajomości — **w obie strony**,
+5. ulubieni (tu strona właścicielska wystarcza),
+6. dopiero na końcu samo konto.
+
+**Punkt 4 to pułapka.** Znajomość zapisujemy dwoma wierszami, żeby dało się ją
+czytać w każdą stronę jednym zapytaniem. Przy kasowaniu konta Hibernate
+sprząta tylko te wiersze, w których ta osoba jest właścicielem relacji.
+Gdyby została druga połowa, jej znajomi mieliby na liście kogoś, kogo już
+nie ma — i każde wyświetlenie tej listy kończyłoby się błędem.
+
+Kasujemy też **pliki z dysku**: awatar i zdjęcia z postów. Konto usunięte
+z bazy, ale z fotografiami leżącymi dalej na serwerze, to usunięcie tylko
+na niby.
+
+### Błąd, który znowu wyszedł dopiero w przeglądarce
+
+Zakaz działał: post się nie zapisywał, wyjątek leciał, test serwisu był
+zielony. A użytkownik zamiast komunikatu dostawał **błąd 500**.
+
+Powód: komunikat miał w treści `{0,date,dd.MM.yyyy}`, a `MessageFormat`
+(którego używa `MessageSource`) potrafi sformatować `java.util.Date`, ale
+**nie** `LocalDateTime`. Rzucał więc wyjątkiem **w środku obsługi błędu** —
+czyli dokładnie tam, gdzie nie ma już komu go przechwycić.
+
+Test sprawdzający typ wyjątku nie miał szans tego zauważyć, bo wyjątek był
+w porządku; zepsute było dopiero to, co z niego wynika. Datę formatujemy
+teraz w Javie, a doszedł `ErrorMessagesTest`, który **składa każdy komunikat
+tej klasy w obu językach** — z terminem włącznie. Brakujące tłumaczenie
+albo zły zapis formatu nie przejdzie już niezauważony.
+
+### Czego administrator nie może zrobić sobie
+
+Usunąć własnego konta i nałożyć na siebie zakazu. Powód ten sam co przy
+zmianie własnej roli: jedno kliknięcie nie może zostawić portalu bez nikogo,
+kto ma do niego dostęp. Login wykonującego bierzemy **z sesji, nigdy
+z zapytania** — inaczej blokadę dałoby się obejść, podając cudzy login.
+
+### Sprawdzone
+
+197 testów backendu, w tym `UserDeletionTest` na prawdziwej bazie (sprząta
+naprawdę, czy tylko woła odpowiednie metody) i 16 sprawdzeń w przeglądarce:
+nałożenie zakazu, nieudana próba publikacji z komunikatem i terminem,
+zdjęcie zakazu, ponowna publikacja, okno potwierdzenia przy usuwaniu oraz to,
+że po usunięciu konta **jego posty znikają z tablicy**.
+
+---
+
+## Co zostaje na później
+
+- gablotka 5 ulubionych playlist na profilu,
+- potwierdzenie adresu e-mail przy rejestracji (wymaganie nr 16, opcjonalne).
