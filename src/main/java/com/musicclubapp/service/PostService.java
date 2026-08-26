@@ -11,9 +11,10 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
+import com.musicclubapp.music.MusicLinkParser;
+import com.musicclubapp.music.ParsedMusicLink;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.UserRepository;
-import com.musicclubapp.spotify.SpotifyLink;
 import com.musicclubapp.storage.FileStorageService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,17 +43,20 @@ public class PostService {
     private final FileStorageService fileStorage;
     private final PostMapper postMapper;
     private final ReactionService reactionService;
+    private final MusicMetadataService musicMetadata;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
                        FileStorageService fileStorage,
                        PostMapper postMapper,
-                       ReactionService reactionService) {
+                       ReactionService reactionService,
+                       MusicMetadataService musicMetadata) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
         this.postMapper = postMapper;
         this.reactionService = reactionService;
+        this.musicMetadata = musicMetadata;
     }
 
     /**
@@ -68,16 +72,7 @@ public class PostService {
 
         Post post = new Post(autor, request.content().trim());
 
-        /*
-         * Z wklejonego adresu wyciagamy sam identyfikator utworu. Gdy tekst
-         * nie wyglada na link do Spotify, po prostu go pomijamy - post
-         * powstanie bez odtwarzacza, zamiast wywalac sie bledem.
-         */
-        SpotifyLink.wyciagnijIdUtworu(request.spotifyUrl())
-            .ifPresent(id -> {
-                post.setSpotifyTrackId(id);
-                post.setSpotifyStartSeconds(request.spotifyStartSeconds());
-            });
+        ustawMuzyke(post, request.musicUrl(), request.musicStartSeconds());
 
         if (zdjecia != null) {
             List<MultipartFile> doZapisu = zdjecia.stream()
@@ -117,12 +112,10 @@ public class PostService {
         post.setContent(request.content().trim());
 
         /*
-         * Puste pole z linkiem oznacza "usun utwor z posta" - dlatego
-         * ustawiamy wynik parsowania zawsze, takze gdy jest pusty.
+         * Puste pole z linkiem oznacza "usun nagranie z posta" - dlatego
+         * wolamy to zawsze, takze gdy adres jest pusty.
          */
-        post.ustawUtwor(
-            SpotifyLink.wyciagnijIdUtworu(request.spotifyUrl()).orElse(null),
-            request.spotifyStartSeconds());
+        ustawMuzyke(post, request.musicUrl(), request.musicStartSeconds());
 
         User autor = post.getAuthor();
 
@@ -135,6 +128,31 @@ public class PostService {
         ReactionSummary reakcje = reactionService.podsumowania(List.of(id), login).get(id);
 
         return postMapper.toResponse(postRepository.save(post), autor, reakcje);
+    }
+
+    /**
+     * Podpina nagranie do posta - razem z tytulem i miniaturka.
+     *
+     * <p>Poprawnosc adresu sprawdzil juz walidator {@code PoprawnyLinkMuzyczny}
+     * (blad trafia wtedy do konkretnego pola formularza), wiec tutaj
+     * nierozpoznany adres moze znaczyc juz tylko jedno: pole jest puste,
+     * czyli post ma byc bez muzyki.</p>
+     */
+    private void ustawMuzyke(Post post, String adres, Integer startSeconds) {
+        ParsedMusicLink link = MusicLinkParser.rozpoznaj(adres).orElse(null);
+
+        if (link == null) {
+            post.ustawMuzyke(null, null, null, null);
+            return;
+        }
+
+        /*
+         * Tytul i miniaturke pobieramy RAZ, tutaj. Gdy serwis nie odpowie,
+         * wracaja puste wartosci - post i tak powstaje, bo odtwarzacz
+         * laduje sie w przegladarce niezaleznie od tego.
+         */
+        MusicMetadataService.Opis opis = musicMetadata.pobierz(link);
+        post.ustawMuzyke(link, startSeconds, opis.tytul(), opis.miniaturka());
     }
 
     /**

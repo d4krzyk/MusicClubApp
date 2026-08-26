@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
+import FriendsPage from './pages/FriendsPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
@@ -58,6 +59,14 @@ export default function App() {
               element={
                 <TylkoZalogowany>
                   <ProfilePage />
+                </TylkoZalogowany>
+              }
+            />
+            <Route
+              path="/znajomi"
+              element={
+                <TylkoZalogowany>
+                  <FriendsPage />
                 </TylkoZalogowany>
               }
             />

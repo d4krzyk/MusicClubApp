@@ -19,8 +19,8 @@ Nie zaczynamy kolejnego kroku, dopóki poprzedni się nie uruchamia i nie rozumi
 | 3 | Spring Security — rejestracja i logowanie | ✅ zrobione |
 | 4 | Połączenie logowania/rejestracji z bazą | ✅ zrobione |
 | 5 | Frontend React (logowanie, rejestracja, homepage) | ✅ zrobione |
-| 6 | Całość (backend + frontend + baza) na Docker Compose | ⬜ następny |
-| 7 | Domena: artyści, gatunki, posty, algorytm dopasowań | ⬜ |
+| 6 | Całość (backend + frontend + baza) na Docker Compose | ✅ zrobione |
+| 7 | Domena: znajomi ✅, muzyka w postach ✅, ulubieni artyści ⬜ | 🟡 w toku |
 
 Kroki 1–6 to plan od kolegi. Krok 7 dokłada właściwy pomysł na aplikację —
 robimy go **po** tym, jak szkielet już działa, bo inaczej znowu zrobi się bałagan.
@@ -505,11 +505,348 @@ na pewno patrzy tam, gdzie myślisz.
 
 ---
 
-## KROK 6 — całość na Docker Compose
+## Motyw jasny / ciemny
 
-Do `docker-compose.yml` dochodzą usługi `backend` i `frontend`.
-Backend dostanie `DB_HOST=db` i `depends_on: db (service_healthy)`.
-Wtedy jedno `docker compose up` uruchamia cały projekt — to wymaganie nr 18.
+Bootstrap 5.3 przełącza cały wygląd jednym atrybutem `data-bs-theme`
+na `<html>`. Wcześniej był tam wpisany na sztywno `dark`.
+
+**Motyw ustawia skrypt w `index.html`, nie React.** To nie jest kaprys:
+React startuje dopiero po pobraniu i wykonaniu paczki JavaScriptu, więc przy
+jasnym motywie strona zdążyłaby mignąć na ciemno przy każdym odświeżeniu
+(tzw. *flash of wrong theme*). Skrypt w `<head>` wykonuje się, zanim
+przeglądarka cokolwiek narysuje.
+
+Podział ról:
+
+| Kto | Za co odpowiada |
+|-----|-----------------|
+| skrypt w `index.html` | PIERWSZE ustawienie — zapisany wybór, a jak go nie ma, ustawienie systemu |
+| `MotywContext` | przejmuje to, co skrypt ustawił, i pozwala przełączać |
+
+`MotywContext` czyta stan startowy z **atrybutu**, a nie z `localStorage` —
+skrypt już rozstrzygnął, co pokazać, a powtarzanie tej samej logiki w dwóch
+miejscach kończy się tym, że z czasem się rozjeżdżają.
+
+**Dopóki użytkownik nie kliknie**, chodzimy za ustawieniem systemu — także
+gdy zmieni je w trakcie (`matchMedia(...).addEventListener('change')`).
+Po pierwszym kliknięciu jego wybór jest ważniejszy.
+
+Każde sięgnięcie po `localStorage` jest w `try/catch`: w trybie prywatnym
+niektóre przeglądarki rzucają wyjątkiem przy samym odczycie. Wtedy motyw
+po prostu nie jest pamiętany — aplikacja ma działać dalej, a nie się wywalić.
+
+**Kolory, które trzeba było poprawić.** Reszta CSS-a korzysta ze zmiennych
+Bootstrapa i przełączyła się sama, ale trzy miejsca miały kolor wpisany
+na sztywno:
+
+| Miejsce | Co zrobiliśmy |
+|---|---|
+| `.avatar-zastepnik` (biały tekst na fioletowym kole) | zostaje — działa w obu motywach |
+| `.karuzela-obraz` (`#000`) | → `var(--bs-tertiary-bg)`, inaczej w jasnym motywie zdjęcie miałoby czarne pasy po bokach |
+| `.ramka-spotify` (`#121212`) | **zostaje ciemne celowo** — patrz niżej |
+
+Ramka Spotify to jedyny kolor, który świadomie nie zmienia się z motywem.
+Odtwarzacz w środku jest ciemny niezależnie od naszej strony (Spotify narzuca
+swój wygląd wewnątrz `<iframe>` i nie mamy na to wpływu). Jasne tło pod nim
+oznaczałoby białe rogi na ułamek sekundy przed załadowaniem ramki — czyli
+dokładnie ten błąd, który naprawialiśmy wcześniej.
+
+---
+
+## KROK 6 — całość na Docker Compose (zrobione)
+
+Cztery usługi: `db`, `backend`, `frontend`, `adminer`. Jedno
+`docker compose up -d --build` stawia projekt — to **wymaganie nr 18**.
+
+### Jak frontend rozmawia z backendem w kontenerze
+
+Zbudowanego Reacta serwuje **nginx**, który przekazuje `/api` i `/uploads`
+do `backend:8080`. To ta sama sztuczka, co proxy Vite w trybie deweloperskim:
+przeglądarka widzi wszystko pod jednym adresem, więc ciasteczko sesji i token
+CSRF działają bez kombinowania, a **CORS w ogóle nie wchodzi do gry**.
+
+Nazwa `backend` w `nginx.conf` to nazwa usługi z `docker-compose.yml` —
+Docker sam zamienia ją na adres kontenera.
+
+W `nginx.conf` jest też `try_files $uri $uri/ /index.html`. Bez tego
+odświeżenie strony pod adresem `/profil/ala` kończy się błędem 404: taki plik
+nie istnieje na dysku, bo obsługa tras siedzi dopiero w JavaScripcie.
+
+### Healthcheck — po co nam Actuator
+
+`depends_on` bez warunku znaczy tylko „kontener wystartował", a Spring wstaje
+kilkanaście sekund. Frontend ruszyłby w tej dziurze i przez chwilę oddawał
+błędy. Dlatego doszedł `spring-boot-starter-actuator` i endpoint
+`/actuator/health`, na który czeka `condition: service_healthy`.
+
+Dwie rzeczy warte uwagi:
+
+- Actuator domyślnie wystawia też m.in. listę zmiennych środowiskowych
+  i całą konfigurację. Ograniczyliśmy go do jednego endpointu
+  (`management.endpoints.web.exposure.include=health`) i wyłączyliśmy
+  szczegóły (`show-details=never`) — na zewnątrz idzie samo `{"status":"UP"}`.
+- `/actuator/health` musi być `permitAll` w `SecurityConfig`, bo Docker nie ma
+  jak się zalogować. Sprawdzone: `health` zwraca 200 bez logowania,
+  a `env`, `beans`, `configprops` i `mappings` — 401.
+
+`curl` instalujemy w obrazie backendu **jawnie**, zamiast liczyć na to, że
+akurat jest w obrazie bazowym. Inaczej healthcheck zgłaszałby kontener jako
+chory, mimo że aplikacja działa.
+
+### Pułapki, o których łatwo zapomnieć
+
+1. **Wolumen na `uploads/`.** Bez niego wszystkie wgrane zdjęcia i awatary
+   znikają przy `docker compose down`. Kontenery są jednorazowe — co ma
+   przeżyć restart, musi leżeć na wolumenie. Osobny od wolumenu bazy, żeby
+   dało się skasować dane bazy bez tracenia plików.
+   **Uwaga:** `docker compose down -v` kasuje jedno i drugie.
+2. **`.dockerignore`.** Docker kopiuje cały katalog projektu do demona, zanim
+   zacznie budować. Bez tego pliku leciałyby tam `target/` i `node_modules/` —
+   setki megabajtów przy każdym `build`, mimo że i tak są odtwarzane w środku.
+3. **`.env` z hasłami**, a do repo `.env.example`. Wzór pokazuje, jakie
+   zmienne trzeba ustawić, nie zdradzając żadnej prawdziwej wartości.
+4. **`npm ci`, nie `npm install`** w Dockerfile — `ci` instaluje dokładnie
+   wersje z `package-lock.json`. `install` może po cichu podbić wersję, przez
+   co obraz zbudowany dziś różniłby się od wczorajszego z tego samego kodu.
+5. **Do pracy nad kodem to zły tryb.** Każda zmiana wymaga przebudowania
+   obrazu. Na co dzień: `docker compose up -d db` + backend z IntelliJ +
+   `npm run dev`.
+
+### Czego NIE dało się sprawdzić
+
+W środowisku, w którym powstawał ten kod, **nie ma demona Dockera** —
+`docker compose up` nie został uruchomiony ani razu. Sprawdzone zostało:
+struktura `docker-compose.yml` (parsuje się, zależności i wolumeny na
+miejscu), działanie `/actuator/health` na żywej aplikacji wraz z regułami
+dostępu, oraz to, że backend i frontend budują się poprawnie.
+
+Niesprawdzone: samo budowanie obrazów, proxy nginx między kontenerami,
+healthcheck w środku kontenera i trwałość wolumenu z uploadami.
+**Odpal `docker compose up -d --build` u siebie i sprawdź:** czy
+http://localhost:3000 się otwiera, czy da się zalogować, czy po wgraniu
+zdjęcia i `docker compose restart` zdjęcie nadal tam jest.
+
+## Znajomi — tu domknęliśmy wymaganie nr 7
+
+### Model
+
+| Encja / pole | Relacja | Po co |
+|---|---|---|
+| `User.friends` | `User` N—N `User` (tabela `user_friends`) | **wymaganie nr 7 (ManyToMany)** |
+| `FriendRequest` | N—1 `User` ×2 (nadawca, odbiorca) | zaproszenia czekające na odpowiedź |
+
+**Znajomość zapisujemy DWOMA wierszami** (A→B i B→A). Da się inaczej — jeden
+wiersz i `OR` w każdym zapytaniu — ale wtedy każde pytanie o znajomych robi
+się dwa razy trudniejsze do przeczytania. Płacimy jednym wierszem za to,
+że zapytania są proste.
+
+**`FriendRequest` nie ma pola `status`.** W tabeli trzymamy wyłącznie
+zaproszenia oczekujące: akceptacja dopisuje znajomość i kasuje wiersz,
+odrzucenie po prostu go kasuje. Dzięki temu żadne zapytanie nie musi pamiętać
+o `WHERE status = 'PENDING'` — a to jeden z tych warunków, które najłatwiej
+przeoczyć i potem dziwić się, skąd na liście wzięli się ludzie, którzy nas
+odrzucili. Cena: nie wiemy, kto kogo odrzucił. Do działania niepotrzebne.
+
+**Wzajemne zaproszenie łączy od razu.** Gdy zapraszam kogoś, kto wcześniej
+zaprosił mnie, nie tworzymy drugiego lustrzanego zaproszenia — przyjmujemy
+tamto. Obie osoby wyraziły zgodę, więc czekanie na dodatkowe kliknięcie
+byłoby bez sensu.
+
+### Błąd, który kosztował najwięcej: pole kontra getter na proxy
+
+Po przyjęciu zaproszenia znajomość zapisywała się **tylko w jedną stronę**.
+W bazie był wiersz `ala → bob`, ale nie było `bob → ala`. Żadnego wyjątku,
+żadnego ostrzeżenia — testy jednostkowe przechodziły na zielono.
+
+Przyczyna była w tej jednej linijce:
+
+```java
+public void dodajZnajomego(User inny) {
+    this.friends.add(inny);
+    inny.friends.add(this);      // ŹLE
+}
+```
+
+Java pozwala sięgnąć wprost do prywatnego pola innego obiektu tej samej klasy
+— i właśnie na tym można się przejechać. `inny` bywa **leniwym proxy**
+Hibernate'a (tak jest, gdy przychodzi z `zaproszenie.getSender()`). Odczyt
+**pola** na proxy trafia do pustego pola samego proxy, a nie do prawdziwej
+encji. Dopisanie znika bez śladu.
+
+Wywołanie **metody** proxy przekazuje dalej, do właściwego obiektu:
+
+```java
+    inny.getFriends().add(this);  // DOBRZE
+```
+
+**Dlaczego testy jednostkowe tego nie złapały:** pracują na obiektach
+tworzonych przez `new`, gdzie żadnych proxy nie ma. Dlatego dopisaliśmy
+`FriendshipRepositoryTest` (`@DataJpaTest`), który po `entityManager.clear()`
+celowo sięga po encje przez leniwe powiązanie — czyli odtwarza dokładnie tę
+sytuację. Sprawdziliśmy, że po cofnięciu poprawki ten test **faktycznie pada**;
+test regresyjny, który nie łapie swojego błędu, jest nic niewart.
+
+### „Najbardziej powiązani" — jedyne zapytanie natywne w projekcie
+
+Pasek znajomych sortujemy po liczbie **wspólnych znajomych z oglądającym**.
+To kolumna, której nigdzie nie ma — liczona osobno dla każdego wiersza. JPQL
+operuje na encjach i takich rzeczy nie wyrazi bez przekombinowanych sztuczek,
+więc `znajomiPosortowani` jest w czystym SQL-u (lista wymagań dopuszcza oba
+warianty — nr 8).
+
+Wynik trafia do **projekcji** `FriendRow` — interfejsu, który Spring Data
+wypełnia sam po nazwach kolumn. Encja `User` nie ma gdzie przyjąć wyliczonej
+liczby, projekcja — owszem. Kolumny aliasujemy jawnie (`AS avatarFileName`),
+zamiast liczyć na automatyczne dopasowanie `avatar_file_name`.
+
+**To jest miejsce, w które wepnie się Spotify.** Gdy dojdą ulubieni artyści,
+do wyniku doliczymy wspólnych artystów i gatunki — zmieni się **tylko to
+zapytanie**. Metoda, jej typ zwracany, DTO i cały frontend zostają nietknięte.
+
+### Pasek zamiast karuzeli
+
+Strzałki `‹ ›` pobierają **kolejną stronę z serwera**, a nie przesuwają to,
+co już mamy — profil z dwustoma znajomymi nie ściąga dwustu kafelków na wejściu.
+Bootstrapowa karuzela wymagałaby wszystkich slajdów w dokumencie od razu,
+a na telefonie wymuszałaby klikanie zamiast przewijania palcem.
+
+### Dwie pułapki z testów w przeglądarce
+
+1. **`button:has-text("EN")` łapało też „Anuluj zaproszeni**e**"** — `has-text`
+   dopasowuje fragment bez względu na wielkość liter. Ratuje `text-is()`.
+2. **Test „wzajemnego zaproszenia" był źle napisany**: klikał „Zaproś" u osoby,
+   która już nas zaprosiła — a tam interfejs pokazuje (słusznie!) „Przyjmij".
+   Regułę trzeba było sprawdzić zapytaniem HTTP, bo w interfejsie taka
+   sytuacja z definicji nie występuje.
+
+Za każdym razem to test był zepsuty, nie kod. Ale za pierwszym razem
+(jednostronna znajomość) **kod naprawdę był zepsuty** — dlatego warto
+sprawdzać obie możliwości, a nie zakładać z góry którejkolwiek.
+
+---
+
+## Muzyka: koniec ze Spotify-centrycznością
+
+### Błąd, który to uruchomił
+
+Zgłoszenie brzmiało „przy albumie wywala się apka". Odtworzyłem to na żywym
+stosie — i **aplikacja się nie wywalała**. Link do albumu, playlisty, podcastu
+i artysty: wszystkie zwracały 201, post powstawał, zero błędu w konsoli.
+
+Problem był subtelniejszy i gorszy. Stary `SpotifyLink` łapał **wyłącznie**
+`/track/`, więc każdy inny adres był **po cichu połykany**: post pojawiał się
+bez odtwarzacza, wpisany moment startu też znikał, i ani słowa wyjaśnienia.
+Z punktu widzenia użytkownika to wygląda dokładnie jak zepsuta aplikacja —
+i słusznie, bo to defekt. **Przyjmowanie czegoś, czego nie rozumiemy,
+i milczenie o tym jest gorsze niż odmowa.**
+
+### Model: jeden link, wiele serwisów
+
+Zamiast `spotifyTrackId` post ma teraz `provider` + `kind` + `externalId`
+(+ tytuł, miniaturkę i moment startu).
+
+| | Spotify | YouTube |
+|---|---|---|
+| Utwór | ✅ | ✅ |
+| Album | ✅ | — |
+| Artysta | ✅ | — |
+
+YouTube ma **największe pokrycie** — jest tam praktycznie wszystko. Album bywa
+tam playlistą, a artysta kanałem; to inne byty i nie udajemy, że umiemy je
+rozpoznać.
+
+Adresy osadzenia składa **serwer** (`MusicEmbed`), nie React. Każdy serwis ma
+inny format i inny parametr momentu startu (`?t=` kontra `?start=`) — gdyby ta
+wiedza siedziała we froncie, dołożenie trzeciego serwisu wymagałoby zmian
+w dwóch miejscach.
+
+### Rodzaj wybiera użytkownik, my sprawdzamy zgodność
+
+Moglibyśmy rozpoznawać rodzaj z samego adresu. Ale wtedy pomyłka kończy się
+cichą niespodzianką — „wrzucałem album, a wyszedł utwór". Przy jawnym
+przełączniku niezgodność to **błąd, który widać od razu**, a komunikat mówi,
+*co* użytkownik wkleił, a nie tylko „zły link".
+
+**Pole momentu startu pokazuje się wyłącznie przy utworze.** Album to wiele
+nagrań, a profil artysty w ogóle nie jest nagraniem — „zacznij od 1:30" nic tam
+nie znaczy. Zamiast tłumaczyć to napisem, po prostu chowamy pole.
+
+Pilnuje tego trzecia własna adnotacja: `@PoprawnyLinkMuzyczny` (wymaganie
+nr 10). Jest klasowa, bo porównuje trzy pola naraz, i — jak
+`@PasswordsMatch` — **przypina błąd do konkretnego pola**, żeby frontend
+wiedział, co podświetlić.
+
+Walidacja jest **w dwóch miejscach celowo**: w przeglądarce dla natychmiastowej
+reakcji przy wpisywaniu, na serwerze bo zapytanie da się wysłać z pominięciem
+przeglądarki. Ta w JavaScripcie to wygoda, nie zabezpieczenie.
+
+### Tytuł i miniaturka: publiczny oEmbed
+
+`open.spotify.com/oembed` i `youtube.com/oembed` są **publiczne — bez klucza
+i bez tokenu**. To ważne: pełne API Spotify ogranicza aplikację w trybie
+deweloperskim do **pięciu kont**, a oEmbed działa dla każdego.
+
+Trzy decyzje warte zapamiętania:
+
+1. **Pobieramy raz, przy dodawaniu posta.** Gdybyśmy pytali przy każdym
+   wyświetleniu tablicy, dwadzieścia postów = dwadzieścia zapytań do obcego
+   serwera, a tablica ładowałaby się tak wolno jak najwolniejsze z nich.
+2. **Awaria serwisu nie blokuje dodania posta.** Tytuł to ozdoba — odtwarzacz
+   i tak pobiera sobie wszystko sam, bo `<iframe>` ładuje się w przeglądarce.
+   Każdy błąd kończy się pustymi wartościami i wpisem w logu.
+3. **Krótki limit czasu (3 s).** Bez niego zawieszony serwer blokowałby wątek
+   aż do limitu systemowego, a użytkownik patrzyłby w kręcące się kółko przez
+   kilkadziesiąt sekund — po czym i tak dostałby błąd.
+
+Zapytanie idzie **z serwera**: oEmbed Spotify nie wysyła nagłówków CORS, więc
+wywołanie z JavaScriptu i tak by się nie udało.
+
+### „Najczęściej wrzucane" liczone z postów
+
+Top 5 utworów na profilu to `GROUP BY` po identyfikatorze nagrania — **bez
+osobnej tabeli statystyk**. Taka tabela musiałaby być aktualizowana przy
+dodaniu, edycji i usunięciu posta, czyli w trzech miejscach, z których każde
+można przeoczyć. Wtedy licznik cicho rozjeżdża się z rzeczywistością i nikt
+tego nie zauważa. Liczone na bieżąco zestawienie **nie ma jak skłamać**.
+
+Działa to dlatego, że rozkładamy adres na części przy zapisie: ten sam utwór
+wklejony raz przez `youtu.be`, a raz przez `youtube.com/watch` ma w bazie
+dokładnie tę samą wartość.
+
+### Migracja starych postów
+
+`ddl-auto=update` dokłada nowe kolumny, ale **nie przenosi danych** — stare
+posty straciłyby odtwarzacze. `MigracjaLinkowMuzycznych` przepisuje je przy
+starcie. Trzy rzeczy, o które trzeba było zadbać:
+
+- **Idempotencja.** Warunek `music_external_id IS NULL` sprawia, że drugi start
+  nie rusza już przepisanych postów. Aplikacja startuje wiele razy, migracja ma
+  zadziałać raz.
+- **Świeża baza.** `UPDATE` odwołujący się do nieistniejącej kolumny wywaliłby
+  start, więc najpierw pytamy katalog systemowy, czy stara kolumna w ogóle jest.
+- **Nie kasujemy starej kolumny.** Gdyby coś poszło nie tak, dane są na miejscu.
+  Po sprawdzeniu można ją usunąć ręcznie — komenda jest w komentarzu klasy.
+
+Zweryfikowane na prawdziwej bazie: 4 stare posty przepisane, log to potwierdza.
+
+### Pułapka: `toUpperCase()` bez `Locale`
+
+`MusicKind.valueOf(m.group(1).toUpperCase())` wygląda niewinnie. Domyślne
+`toUpperCase()` używa języka systemu, a po turecku „artist" zamienia się na
+„ARTİST" z kropką nad I — i `valueOf()` rzuca wyjątkiem. Błąd ujawniający się
+wyłącznie u części użytkowników, więc trudny do znalezienia. Stąd
+`toUpperCase(Locale.ROOT)`.
+
+### Czego NIE dało się sprawdzić
+
+`open.spotify.com` i `youtube.com` są **niedostępne ze środowiska, w którym
+powstawał ten kod**, więc **prawdziwe wywołanie oEmbed nie zostało wykonane
+ani razu**. Sprawdzone zostało natomiast to, co ważniejsze: **przy
+nieosiągalnym serwisie post i tak powstaje**, a odtwarzacz dostaje poprawny
+adres. Po wgraniu łatki sprawdź u siebie, czy przy postach pojawiają się
+prawdziwe tytuły — jeśli tak, oEmbed działa.
+
+---
 
 ## KROK 7 — właściwa domena aplikacji
 

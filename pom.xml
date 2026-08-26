@@ -58,6 +58,24 @@
         </dependency>
 
         <!--
+            KROK 6: Actuator - wystawia /actuator/health, czyli odpowiedz
+            na pytanie "czy aplikacja juz wstala i widzi baze?".
+
+            Potrzebne Dockerowi: dzieki temu compose wie, kiedy backend jest
+            NAPRAWDE gotowy, i dopiero wtedy uruchamia frontend. Bez tego
+            "kontener wystartowal" znaczy tylko "proces ruszyl" - a Spring
+            wstaje kilkanascie sekund i przez ten czas oddawalby bledy.
+
+            Wystawiamy WYLACZNIE health (patrz application.properties) -
+            reszta endpointow Actuatora pokazuje szczegoly konfiguracji
+            i nie ma po co byc dostepna.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!--
             Swagger / OpenAPI (wymaganie nr 24). Wyklad 4 (slajd 19-20) mowi, ze
             do API w stylu RPC powinna powstac dokumentacja - np. wlasnie Swagger.
             Po uruchomieniu aplikacji: http://localhost:8080/swagger-ui.html

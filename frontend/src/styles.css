@@ -70,7 +70,9 @@ body {
 .karuzela-obraz {
   max-height: 480px;
   object-fit: contain;
-  background: #000;
+  /* Tlo widac tylko po bokach zdjecia o innych proporcjach. Zmienna zamiast
+     czarnego na sztywno, zeby w jasnym motywie nie bylo czarnych pasow */
+  background: var(--bs-tertiary-bg);
 }
 
 /*
@@ -84,8 +86,15 @@ body {
 .ramka-spotify {
   border-radius: 12px;
   overflow: hidden;
-  /* Tlo odtwarzacza Spotify - dzieki temu rogi nie migaja na bialo
-     przez ulamek sekundy, zanim ramka sie zaladuje */
+  /*
+     JEDYNY kolor, ktory CELOWO nie zmienia sie razem z motywem.
+
+     To tlo odtwarzacza Spotify. Sam odtwarzacz jest ciemny niezaleznie od
+     tego, jaki motyw ma nasza strona - Spotify narzuca swoj wyglad wewnatrz
+     ramki i my na to nie mamy wplywu. Gdybysmy w jasnym motywie dali tu jasne
+     tlo, przez ulamek sekundy przed zaladowaniem ramki mignelyby biale rogi -
+     czyli dokladnie ten blad, ktory naprawialismy wczesniej.
+  */
   background: #121212;
   line-height: 0;
 }
@@ -137,4 +146,49 @@ body {
   min-width: 3rem;
   font-size: 1rem;
   line-height: 1.2;
+}
+
+/* Pasek znajomych pod profilem. Poziome przewijanie palcem dziala samo,
+   strzalki pod spodem sa dla myszy - tak samo jak przy galerii zdjec. */
+.pasek-znajomych {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  /* scrollbar-width dziala w Firefoksie, ::-webkit-scrollbar w reszcie */
+  scrollbar-width: thin;
+}
+
+.kafelek-znajomego {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Stala szerokosc = kafelki nie skacza przy roznej dlugosci nazw */
+  flex: 0 0 88px;
+  width: 88px;
+}
+
+.kafelek-znajomego:hover .fw-semibold {
+  text-decoration: underline;
+}
+
+/* Lista "najczesciej wrzucane" - numerowanie robimy sami, zeby dalo sie
+   ustawic obok miniaturki */
+.lista-top {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+.numer-top {
+  width: 1.25rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.miniatura-top {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  flex-shrink: 0;
 }

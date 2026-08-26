@@ -1,0 +1,4 @@
+# Kontekst budowania obrazu frontendu - patrz komentarz w /.dockerignore
+node_modules/
+dist/
+.env

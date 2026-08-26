@@ -11,6 +11,9 @@ import client, { opiszBlad } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import Post from '../components/Post';
+import PasekZnajomych from '../components/PasekZnajomych';
+import TopMuzyka from '../components/TopMuzyka';
+import PrzyciskZnajomosci from '../components/PrzyciskZnajomosci';
 import { sformatujDate } from '../utils/daty';
 
 /** Ile postow pobieramy za jednym razem. */
@@ -44,6 +47,13 @@ export default function ProfilePage() {
   const [ostatnia, setOstatnia] = useState(true);
   const [ladowanie, setLadowanie] = useState(true);
   const [blad, setBlad] = useState(null);
+
+  /*
+   * Licznik wymuszajacy przeladowanie paska znajomych. Po przyjeciu albo
+   * usunieciu znajomosci lista musi sie odswiezyc - a pasek pobiera dane sam,
+   * wiec trzeba mu dac znac. Zwykla zmiana liczby wystarczy jako sygnal.
+   */
+  const [odswiezZnajomych, setOdswiezZnajomych] = useState(0);
 
   const pobierzProfil = useCallback(async () => {
     setLadowanie(true);
@@ -152,6 +162,8 @@ export default function ProfilePage() {
               </div>
               <div className="text-body-secondary small">
                 {t('profile.postCount', { count: profil.postCount })}
+                {' · '}
+                {t('friends.count', { count: profil.friendCount })}
               </div>
             </div>
 
@@ -160,18 +172,32 @@ export default function ProfilePage() {
               dlatego przycisk prowadzi do osobnej strony i widzi go tylko
               wlasciciel. O tym, czy to jego profil, mowi serwer.
             */}
-            {profil.self && (
-              <Link to="/settings" className="btn btn-outline-secondary btn-sm">
-                {t('profile.editAccount')}
-              </Link>
-            )}
+            <div className="d-flex flex-column align-items-end gap-2">
+              {profil.self && (
+                <Link to="/settings" className="btn btn-outline-secondary btn-sm">
+                  {t('profile.editAccount')}
+                </Link>
+              )}
+
+              <PrzyciskZnajomosci
+                profil={profil}
+                onZmiana={async () => {
+                  await pobierzProfil();
+                  setOdswiezZnajomych((n) => n + 1);
+                }}
+              />
+            </div>
           </Card.Body>
         </Card>
 
-        {/*
-          Tu w kolejnych krokach dojda ulubieni artysci i utwory ze Spotify
-          oraz lista znajomych z klikalnymi miniaturami.
-        */}
+        {/* Tu w kolejnym kroku dojda ULUBIENI artysci - te ponizej sa
+            wyliczone z postow, a nie zaznaczone recznie */}
+        <TopMuzyka username={profil.username} odswiez={odswiezZnajomych} />
+
+        <h2 className="h5 mb-2">{t('friends.title')}</h2>
+        <div className="mb-4">
+          <PasekZnajomych username={profil.username} odswiez={odswiezZnajomych} />
+        </div>
 
         <h2 className="h5 mb-3">{t('profile.posts')}</h2>
 

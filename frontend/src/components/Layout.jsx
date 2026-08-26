@@ -1,13 +1,18 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import Container from 'react-bootstrap/Container';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
+import client from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { useMotyw } from '../theme/MotywContext';
 import { JEZYKI, zmienJezyk } from '../i18n';
 import Avatar from './Avatar';
+import { IkonaKsiezyc, IkonaSlonce } from './Ikony';
 
 /**
  * Wspolna rama strony: gorne menu, tresc i stopka.
@@ -21,7 +26,26 @@ import Avatar from './Avatar';
 export default function Layout({ children }) {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const { ciemny, przelacz } = useMotyw();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /*
+   * Ile zaproszen czeka na odpowiedz. Odswiezamy przy kazdej zmianie adresu -
+   * to najprostszy moment, w ktorym liczba moze sie zdezaktualizowac
+   * (np. po przyjeciu zaproszenia na stronie "Znajomi").
+   */
+  const [oczekujace, setOczekujace] = useState(0);
+
+  useEffect(() => {
+    if (!user) {
+      setOczekujace(0);
+      return;
+    }
+    client.get('/friends/requests/count')
+      .then((o) => setOczekujace(o.data.count))
+      .catch(() => setOczekujace(0));   // licznik to dodatek, nie psujemy menu
+  }, [user, location.pathname]);
 
   async function wyloguj() {
     await logout();
@@ -50,6 +74,17 @@ export default function Layout({ children }) {
                   </Nav.Link>
                   <Nav.Link as={NavLink} to="/profil" end>
                     {t('menu.profile')}
+                  </Nav.Link>
+                  <Nav.Link as={NavLink} to="/znajomi">
+                    {t('menu.friends')}
+                    {/*
+                      Liczba oczekujacych zaproszen. Pokazujemy ja tylko, gdy
+                      jest wieksza od zera - stale "0" obok pozycji w menu
+                      to szum, ktory nic nie wnosi.
+                    */}
+                    {oczekujace > 0 && (
+                      <Badge bg="primary" className="ms-1">{oczekujace}</Badge>
+                    )}
                   </Nav.Link>
                   <Nav.Link as={NavLink} to="/settings">
                     {t('menu.settings')}
@@ -92,6 +127,21 @@ export default function Layout({ children }) {
                   </Button>
                 ))}
               </ButtonGroup>
+
+              {/*
+                Przelacznik motywu. Pokazujemy ikone tego, co WLACZYMY po
+                kliknieciu (slonce = "wlacz jasny"), a nie tego, co jest teraz -
+                przycisk ma mowic, co zrobi, a nie opisywac stan.
+              */}
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={przelacz}
+                title={ciemny ? t('menu.themeLight') : t('menu.themeDark')}
+                aria-label={ciemny ? t('menu.themeLight') : t('menu.themeDark')}
+              >
+                {ciemny ? <IkonaSlonce /> : <IkonaKsiezyc />}
+              </Button>
 
               {user && (
                 <>

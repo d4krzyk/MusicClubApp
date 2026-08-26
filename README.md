@@ -7,7 +7,7 @@ ulubionych artystów i utwory ze Spotify; im więcej wspólnych artystów i gatu
 tym wyżej ktoś pojawia się na liście proponowanych znajomych. Do tego posty
 (tekst, zdjęcie, link do podglądu utworu), konta z logowaniem i interfejs PL/EN.
 
-**Stack:** Spring Boot 3.3 (REST API) · PostgreSQL 16 · React (dojdzie w kroku 5) · Docker Compose
+**Stack:** Spring Boot 3.3 (REST API) · PostgreSQL 16 · React + Vite · Docker Compose
 
 ## Dokumentacja
 
@@ -18,13 +18,32 @@ tym wyżej ktoś pojawia się na liście proponowanych znajomych. Do tego posty
 
 ## Jak uruchomić
 
-Potrzebne: **JDK 17+**, **Docker Desktop**, Maven (albo IntelliJ, który ma go wbudowanego).
+Potrzebne: **Docker Desktop**. Do pracy nad kodem dodatkowo **JDK 17+**
+i **Node 20+**.
+
+### Wariant A — całość jedną komendą (wymaganie nr 18)
 
 ```bash
-# 1. Baza danych
-docker compose up -d
+cp .env.example .env      # w PowerShellu: copy .env.example .env
+docker compose up -d --build
+```
 
-# 2. Backend
+Aplikacja: **http://localhost:3000** · Swagger: http://localhost:8080/swagger-ui.html
+· Adminer: http://localhost:8081
+
+Pierwszy start trwa kilka minut (budowanie obrazów). Kolejne są szybkie.
+`docker compose down` zatrzymuje wszystko, `docker compose down -v` kasuje
+też dane **razem ze wgranymi zdjęciami**.
+
+### Wariant B — do codziennej pracy nad kodem
+
+W wariancie A każda zmiana wymaga przebudowania obrazu. Na co dzień wygodniej:
+
+```bash
+# 1. Sama baza
+docker compose up -d db
+
+# 2. Backend (da się debugować z IntelliJ)
 mvn spring-boot:run
 
 # 3. Frontend (w drugim terminalu)
@@ -33,10 +52,9 @@ npm install     # tylko za pierwszym razem
 npm run dev
 ```
 
-Aplikacja: http://localhost:5173
-Backend (API): http://localhost:8080
-Przeglądarka bazy (Adminer): http://localhost:8081 — system `PostgreSQL`,
-serwer `db`, użytkownik / hasło / baza: `musicclub`
+Aplikacja: http://localhost:5173 · Backend: http://localhost:8080
+
+Adminer: system `PostgreSQL`, serwer `db`, użytkownik / hasło / baza: `musicclub`
 
 ```bash
 # Testy - działają nawet przy wyłączonym Dockerze (baza H2 w pamięci)
@@ -46,7 +64,9 @@ mvn test
 ## Struktura
 
 ```
-docker-compose.yml            # KROK 1: PostgreSQL + Adminer
+docker-compose.yml            # KROK 6: baza + backend + frontend + Adminer
+Dockerfile                    # obraz backendu (Maven -> JRE)
+.env.example                  # wzór pliku z hasłami (skopiuj do .env)
 pom.xml                       # zależności Mavena
 docs/                         # plan pracy i checklista wymagań
 src/main/java/com/musicclubapp/
@@ -70,12 +90,15 @@ src/test/
 
 frontend/                        # KROK 5: React + Vite (szczegóły w frontend/README.md)
 ├── vite.config.js               # proxy /api → localhost:8080 (bez CORS-a)
+├── Dockerfile                   # KROK 6: build Vite -> nginx
+├── nginx.conf                   # to samo proxy, ale w kontenerze
 └── src/
     ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy
     ├── auth/                    # kto zalogowany + ochrona tras
+    ├── theme/                   # motyw jasny/ciemny
     ├── i18n/                    # pl.json i en.json
-    ├── components/              # Layout, Post, Reakcje, GaleriaZdjec, WybieraczZdjec
-    └── pages/                   # Login, Register, Home, Feed, Profile, Settings, Users
+    ├── components/              # Layout, Post, Reakcje, PasekZnajomych, GaleriaZdjec
+    └── pages/                   # Login, Register, Home, Feed, Profile, Friends, Settings
 ```
 
 ## API
@@ -90,17 +113,25 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | PUT | `/api/profile` | zmiana własnego loginu i e-maila |
 | PUT | `/api/profile/password` | zmiana własnego hasła (wymaga obecnego) |
 | GET | `/api/posts` | tablica postów, od najnowszych |
-| POST | `/api/posts` | dodanie posta (tekst + zdjęcia + Spotify) |
-| PUT | `/api/posts/{id}` | edycja posta (tekst i utwór) — **tylko autor** |
+| POST | `/api/posts` | dodanie posta (tekst + zdjęcia + muzyka) |
+| PUT | `/api/posts/{id}` | edycja posta (tekst i nagranie) — **tylko autor** |
 | DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
 | PUT | `/api/posts/{id}/reaction` | ustawia reakcję (`FIRE`, `MID`, `MEH`) |
 | DELETE | `/api/posts/{id}/reaction` | cofa własną reakcję |
 | GET | `/api/profiles/{username}` | publiczny profil użytkownika |
+| GET | `/api/profiles/{username}/friends` | znajomi — od najbardziej powiązanych |
+| GET | `/api/profiles/{username}/top-music` | najczęściej wrzucane nagrania (top 5) |
+| GET | `/api/friends/requests` | zaproszenia oczekujące (do mnie i ode mnie) |
+| POST | `/api/friends/requests` | zaproszenie do znajomych |
+| POST | `/api/friends/requests/{id}/accept` | przyjęcie zaproszenia |
+| DELETE | `/api/friends/requests/{id}` | odrzucenie albo anulowanie |
+| DELETE | `/api/friends/{username}` | usunięcie znajomości |
 | PUT | `/api/profile/avatar` | wgranie zdjęcia profilowego |
 | DELETE | `/api/profile/avatar` | usunięcie zdjęcia profilowego |
 | GET | `/api/users` | lista ze stronicowaniem i sortowaniem — **tylko admin** |
 | GET | `/api/users/{id}` | pojedynczy użytkownik — **tylko admin** |
 | PATCH | `/api/users/{id}/role` | zmiana roli — **tylko admin** |
+| GET | `/actuator/health` | czy aplikacja żyje — używa tego healthcheck Dockera |
 
 Dokumentacja: http://localhost:8080/swagger-ui.html
 
@@ -126,6 +157,45 @@ to **czyjś** profil do oglądania: sam login, awatar, data dołączenia i liczb
 postów. Publiczny profil celowo **nie zawiera e-maila ani roli** — to osobne
 DTO, a nie ten sam obiekt z wyciętymi polami.
 
+## Muzyka w postach
+
+Post może mieć podpięte nagranie ze **Spotify** albo **YouTube**. W formularzu
+wybierasz przełącznikiem, co wrzucasz:
+
+| Rodzaj | Spotify | YouTube | Moment startu |
+|---|---|---|---|
+| Utwór | ✅ | ✅ | ✅ opcjonalny |
+| Album | ✅ | — | — |
+| Artysta | ✅ | — | — |
+
+**Zły link zatrzymuje wysyłkę**, zamiast zostać po cichu połkniętym — a komunikat
+mówi, *co* wkleiłeś („to jest link do ALBUMU"), a nie tylko „zły link". Pole
+momentu startu **pokazuje się wyłącznie przy utworze**: album to wiele nagrań,
+a profil artysty w ogóle nie jest nagraniem.
+
+Tytuł i miniaturkę pobieramy **raz, przy dodawaniu posta**, przez publiczne
+**oEmbed** — bez klucza i bez tokenu, więc działa dla każdego użytkownika.
+Gdy serwis nie odpowie, post i tak powstaje: odtwarzacz ładuje się
+w przeglądarce niezależnie od tego.
+
+Na profilu widać **najczęściej wrzucane utwory** — liczone z postów, nie
+z osobnej tabeli statystyk, więc licznik nie ma jak rozjechać się
+z rzeczywistością.
+
+## Znajomi
+
+Znajomość jest **obustronna** i wymaga zgody obu stron: ktoś wysyła zaproszenie,
+druga osoba je przyjmuje. Zaproszenia oczekujące widać na stronie `/znajomi`,
+a liczba nieodebranych pokazuje się przy pozycji w menu.
+
+Jeśli **obie osoby zaproszą się nawzajem**, znajomość powstaje od razu — bez
+czekania na dodatkowe kliknięcie. Obie przecież wyraziły zgodę.
+
+Pasek znajomych pod profilem jest posortowany **od najbardziej powiązanych**:
+dziś liczy się to po wspólnych znajomych, a po integracji ze Spotify dojdą
+wspólni artyści i gatunki. Zmieni się wtedy tylko zapytanie w bazie —
+API i frontend zostają bez zmian.
+
 Kto co może zrobić z postem:
 
 | Kto | Edycja | Usunięcie |
@@ -145,14 +215,33 @@ podmiana tej flagi w przeglądarce niczego nie odblokuje.
 
 Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 
+## Motyw jasny / ciemny
+
+Przełącznik (słońce/księżyc) stoi w menu obok PL/EN i działa też przed
+zalogowaniem. Przy pierwszym wejściu aplikacja **idzie za ustawieniem
+systemu** (`prefers-color-scheme`); po pierwszym kliknięciu pamięta wybór
+w `localStorage`.
+
+Cały wygląd przestawia jeden atrybut `data-bs-theme` na `<html>` — to
+wbudowany mechanizm Bootstrapa 5.3. Ustawia go **skrypt w `index.html`**,
+a nie React: React startuje za późno i przy jasnym motywie strona zdążyłaby
+mignąć na ciemno.
+
+Jeden kolor celowo **nie** zmienia się z motywem — tło ramki odtwarzacza
+Spotify (`.ramka-spotify`). Sam odtwarzacz jest ciemny niezależnie od naszej
+strony, więc jasne tło dawałoby białe rogi na ułamek sekundy przed jego
+załadowaniem.
+
 ## Stan projektu
 
 Kroki 0–5 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
 (rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
 obsługa błędów, Swagger oraz frontend w React. Do tego posty z reakcjami
-(🔥 / 😐 / 🥱) i publiczne profile użytkowników.
-**68 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
+(🔥 / 😐 / 🥱), publiczne profile, znajomi z zaproszeniami, **muzyka ze Spotify
+i YouTube** (utwory, albumy, artyści), zestawienie najczęściej wrzucanych
+utworów, motyw jasny/ciemny oraz cała aplikacja na Docker Compose.
+**115 testów backendu przechodzi**, przepływy frontendu sprawdzone w przeglądarce.
 
-Zaliczone 18 wymagań, w tym **wszystkie 7 czerwonych**. Szczegóły
-w `docs/WYMAGANIA.md`. Następny krok: znajomi (wymaganie nr 7 — ManyToMany),
-potem całość na Docker Compose.
+Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
+Szczegóły w `docs/WYMAGANIA.md`. Następny krok: ulubieni artyści na profilu
+(wyszukiwarka Deezer/iTunes + import z Last.fm).

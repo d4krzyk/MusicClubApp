@@ -11,6 +11,8 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
+import com.musicclubapp.music.MusicKind;
+import com.musicclubapp.music.MusicProvider;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.storage.FileStorageService;
@@ -59,6 +61,14 @@ class PostServiceTest {
     @Mock
     private ReactionService reactionService;
 
+    /**
+     * Pobieranie tytulu przez oEmbed to zapytanie do OBCEGO serwera.
+     * W tescie jednostkowym podstawiamy atrape - inaczej test zalezalby
+     * od tego, czy Spotify akurat odpowiada.
+     */
+    @Mock
+    private MusicMetadataService musicMetadata;
+
     @InjectMocks
     private PostService postService;
 
@@ -74,8 +84,15 @@ class PostServiceTest {
     private void przygotujZapis() {
         given(postRepository.save(any(Post.class))).willAnswer(w -> w.getArgument(0));
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
-            new PostResponse(1L, "anna", null, "tresc", List.of(), null, null,
-                LocalDateTime.now(), true, true, null, ReactionSummary.pusta()));
+            new PostResponse(1L, "anna", null, "tresc", List.of(),
+                null, null, null, null, null, null, null,
+                LocalDateTime.now(), true, true, ReactionSummary.pusta()));
+    }
+
+    /** Serwis oEmbed odpowiada tytulem i miniaturka. */
+    private void przygotujOpisMuzyki() {
+        given(musicMetadata.pobierz(any()))
+            .willReturn(new MusicMetadataService.Opis("Tytul utworu", "https://obrazek/x.jpg"));
     }
 
     /**
@@ -93,7 +110,7 @@ class PostServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         przygotujZapis();
 
-        postService.create("anna", new CreatePostRequest("Dzien dobry", null, null), null);
+        postService.create("anna", new CreatePostRequest("Dzien dobry", null, null, null), null);
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(zapisany.capture());
@@ -108,7 +125,7 @@ class PostServiceTest {
         given(fileStorage.zapiszObrazek(any())).willReturn("a.jpg", "b.jpg", "c.jpg");
         przygotujZapis();
 
-        postService.create("anna", new CreatePostRequest("Galeria", null, null),
+        postService.create("anna", new CreatePostRequest("Galeria", null, null, null),
             List.of(obrazek("1.jpg"), obrazek("2.jpg"), obrazek("3.jpg")));
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
@@ -134,7 +151,7 @@ class PostServiceTest {
             .map(MultipartFile.class::cast)
             .toList();
 
-        postService.create("anna", new CreatePostRequest("Duzo zdjec", null, null), duzo);
+        postService.create("anna", new CreatePostRequest("Duzo zdjec", null, null, null), duzo);
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(zapisany.capture());
@@ -146,32 +163,84 @@ class PostServiceTest {
     void linkSpotifyJestOczyszczany() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         przygotujZapis();
+        przygotujOpisMuzyki();
 
         postService.create("anna", new CreatePostRequest(
             "Polecam",
             "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=tajnyparametr",
+            MusicKind.TRACK,
             42), null);
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getSpotifyTrackId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
-        assertThat(zapisany.getValue().getSpotifyStartSeconds()).isEqualTo(42);
+        Post post = zapisany.getValue();
+
+        assertThat(post.getMusicProvider()).isEqualTo(MusicProvider.SPOTIFY);
+        assertThat(post.getMusicKind()).isEqualTo(MusicKind.TRACK);
+        assertThat(post.getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
+        assertThat(post.getMusicStartSeconds()).isEqualTo(42);
+        // tytul pobrany raz, przy dodawaniu
+        assertThat(post.getMusicTitle()).isEqualTo("Tytul utworu");
     }
 
     @Test
-    @DisplayName("tekst niebedacy linkiem Spotify jest po prostu pomijany")
-    void nieprawidlowyLinkNiePsujePostu() {
+    @DisplayName("link z YouTube zapisuje sie jako utwor tego serwisu")
+    void linkYouTube() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         przygotujZapis();
+        przygotujOpisMuzyki();
 
-        postService.create("anna",
-            new CreatePostRequest("Bez muzyki", "to nie jest link", 10), null);
+        postService.create("anna", new CreatePostRequest(
+            "Polecam", "https://youtu.be/dQw4w9WgXcQ", MusicKind.TRACK, 42), null);
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getSpotifyTrackId()).isNull();
-        // sekunda bez utworu nie ma sensu - tez zostaje pusta
-        assertThat(zapisany.getValue().getSpotifyStartSeconds()).isNull();
+
+        assertThat(zapisany.getValue().getMusicProvider()).isEqualTo(MusicProvider.YOUTUBE);
+        assertThat(zapisany.getValue().getMusicExternalId()).isEqualTo("dQw4w9WgXcQ");
+    }
+
+    @Test
+    @DisplayName("przy ALBUMIE moment startu jest odrzucany, mimo ze przyszedl")
+    void albumIgnorujeMomentStartu() {
+        given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
+        przygotujZapis();
+        przygotujOpisMuzyki();
+
+        postService.create("anna", new CreatePostRequest(
+            "Caly album",
+            "https://open.spotify.com/album/4cOdK2wGLETKBW3PvgPWqT",
+            MusicKind.ALBUM,
+            70), null);
+
+        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(zapisany.capture());
+
+        assertThat(zapisany.getValue().getMusicKind()).isEqualTo(MusicKind.ALBUM);
+        // Przy albumie nie ma czego przewijac - encja czysci te wartosc sama
+        assertThat(zapisany.getValue().getMusicStartSeconds()).isNull();
+    }
+
+    @Test
+    @DisplayName("gdy serwis oEmbed nie odpowie, post i tak powstaje")
+    void awariaOEmbedNieBlokujePosta() {
+        given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
+        przygotujZapis();
+        // Serwis niedostepny -> puste wartosci, a nie wyjatek
+        given(musicMetadata.pobierz(any())).willReturn(MusicMetadataService.Opis.pusty());
+
+        postService.create("anna", new CreatePostRequest(
+            "Polecam",
+            "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+            MusicKind.TRACK,
+            null), null);
+
+        ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(zapisany.capture());
+
+        // odtwarzacz i tak zadziala - iframe pobiera sobie wszystko sam
+        assertThat(zapisany.getValue().getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
+        assertThat(zapisany.getValue().getMusicTitle()).isNull();
     }
 
     @Test
@@ -226,31 +295,39 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
         przygotujEdycje();
 
+        przygotujOpisMuzyki();
         postService.update(5L, "anna", new UpdatePostRequest(
-            "nowa tresc", "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT", 30));
+            "nowa tresc", "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+            MusicKind.TRACK, 30));
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(zapisany.capture());
         assertThat(zapisany.getValue().getContent()).isEqualTo("nowa tresc");
-        assertThat(zapisany.getValue().getSpotifyTrackId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
-        assertThat(zapisany.getValue().getSpotifyStartSeconds()).isEqualTo(30);
+        assertThat(zapisany.getValue().getMusicExternalId()).isEqualTo("4cOdK2wGLETKBW3PvgPWqT");
+        assertThat(zapisany.getValue().getMusicStartSeconds()).isEqualTo(30);
     }
 
     @Test
     @DisplayName("wyczyszczenie linku usuwa utwor RAZEM z wybranym momentem")
     void pustyLinkUsuwaUtwor() {
         Post post = new Post(anna(), "tresc");
-        post.ustawUtwor("4cOdK2wGLETKBW3PvgPWqT", 30);
+        post.ustawMuzyke(new com.musicclubapp.music.ParsedMusicLink(
+            MusicProvider.SPOTIFY, MusicKind.TRACK, "4cOdK2wGLETKBW3PvgPWqT"),
+            30, "Tytul", "https://obrazek/x.jpg");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
         przygotujEdycje();
 
-        postService.update(5L, "anna", new UpdatePostRequest("tresc", "", 30));
+        postService.update(5L, "anna", new UpdatePostRequest("tresc", "", null, null));
 
         ArgumentCaptor<Post> zapisany = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(zapisany.capture());
-        assertThat(zapisany.getValue().getSpotifyTrackId()).isNull();
-        // sekunda bez utworu nie ma sensu - musi zniknac razem z nim
-        assertThat(zapisany.getValue().getSpotifyStartSeconds()).isNull();
+        Post zapisanyPost = zapisany.getValue();
+
+        assertThat(zapisanyPost.maMuzyke()).isFalse();
+        assertThat(zapisanyPost.getMusicExternalId()).isNull();
+        // razem z nagraniem znikaja tytul, miniaturka i moment startu
+        assertThat(zapisanyPost.getMusicTitle()).isNull();
+        assertThat(zapisanyPost.getMusicStartSeconds()).isNull();
     }
 
     @Test
@@ -260,7 +337,7 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
 
         assertThatThrownBy(() -> postService.update(
-            5L, "anna", new UpdatePostRequest("przejete", null, null)))
+            5L, "anna", new UpdatePostRequest("przejete", null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(postRepository, never()).save(any(Post.class));
@@ -273,7 +350,7 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
 
         assertThatThrownBy(() -> postService.update(
-            5L, "admin", new UpdatePostRequest("podmienione", null, null)))
+            5L, "admin", new UpdatePostRequest("podmienione", null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(postRepository, never()).save(any(Post.class));

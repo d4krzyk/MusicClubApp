@@ -28,10 +28,14 @@ public class PublicProfileService {
 
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final FriendService friendService;
 
-    public PublicProfileService(UserRepository userRepository, PostRepository postRepository) {
+    public PublicProfileService(UserRepository userRepository,
+                                PostRepository postRepository,
+                                FriendService friendService) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
+        this.friendService = friendService;
     }
 
     /**
@@ -49,7 +53,9 @@ public class PublicProfileService {
             adresAvatara(user),
             user.getCreatedAt(),
             postRepository.countByAuthorUsername(user.getUsername()),
-            user.getUsername().equals(loginOgladajacego));
+            user.getUsername().equals(loginOgladajacego),
+            userRepository.policzZnajomych(user.getUsername()),
+            friendService.status(loginOgladajacego, user.getUsername()));
     }
 
     /**

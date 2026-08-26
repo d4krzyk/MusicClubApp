@@ -1,14 +1,28 @@
 # =============================================================================
-#  KROK 1 planu: baza danych PostgreSQL na Dockerze
+#  KROK 6 planu: CALA aplikacja na Docker Compose (wymaganie nr 18)
 # =============================================================================
-#  Uruchomienie:   docker compose up -d
-#  Zatrzymanie:    docker compose down
-#  Kasowanie bazy: docker compose down -v   (-v usuwa tez wolumen = dane!)
-#  Podglad logow:  docker compose logs -f db
+#  Uruchomienie:   docker compose up -d --build
+#  Aplikacja:      http://localhost:3000
+#  Podglad bazy:   http://localhost:8081  (Adminer)
 #
-#  Na tym etapie odpalamy TYLKO baze. Backend uruchamiasz z IntelliJ / `mvn
-#  spring-boot:run`, zeby moc go debugowac. Backend i frontend dojda do
-#  compose'a w KROKU 6.
+#  Zatrzymanie:    docker compose down
+#  Kasowanie danych: docker compose down -v
+#                    UWAGA: -v usuwa tez WGRANE ZDJECIA, nie tylko baze!
+#  Podglad logow:  docker compose logs -f backend
+#
+#  Cztery uslugi:
+#    db       - PostgreSQL 16
+#    backend  - Spring Boot (obraz z ./Dockerfile)
+#    frontend - React zbudowany przez Vite, serwowany przez nginx
+#    adminer  - klikalna przegladarka bazy (nieobowiazkowa)
+#
+#  Do pracy nad kodem to NIE jest najwygodniejsza droga: kazda zmiana wymaga
+#  przebudowania obrazu. Na co dzien odpalaj sama baze
+#  (`docker compose up -d db`), a backend i frontend z IntelliJ / `npm run dev`.
+#  Ten plik jest po to, zeby CALOSC dalo sie uruchomic jedna komenda.
+#
+#  Hasla i klucze: skopiuj .env.example do .env i ustaw swoje wartosci.
+#  Plik .env jest w .gitignore i nie trafia do repozytorium.
 # =============================================================================
 
 services:
@@ -35,6 +49,69 @@ services:
       timeout: 5s
       retries: 10
 
+  # --- BACKEND: Spring Boot -------------------------------------------------
+  backend:
+    build: .
+    container_name: musicclub-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        # NIE "service_started" tylko "service_healthy" - kontener bazy zyje
+        # kilka sekund, zanim PostgreSQL zaczyna przyjmowac polaczenia.
+        # Backend wystartowalby w tej dziurze i wywalil sie na polaczeniu.
+        condition: service_healthy
+    environment:
+      # "db" to nazwa uslugi powyzej - Docker sam zamienia ja na adres IP.
+      # Poza kontenerem ta sama aplikacja uzywa domyslnego localhost.
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-musicclub}
+      DB_USER: ${POSTGRES_USER:-musicclub}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-musicclub}
+
+      # Katalog na wgrane pliki - ten sam, ktory nizej montujemy jako wolumen
+      UPLOADS_DIR: /app/uploads
+
+      # Klucz do podpisywania ciasteczka "zapamietaj mnie" i dane pierwszego
+      # administratora. Ustaw wlasne w pliku .env przed oddaniem projektu.
+      REMEMBER_ME_KEY: ${REMEMBER_ME_KEY:-musicclub-dev-key-zmien-mnie}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@musicclub.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+    volumes:
+      # BEZ TEGO WGRANE ZDJECIA ZNIKAJA przy kazdym `docker compose down`.
+      # Kontenery sa jednorazowe - wszystko, co ma przezyc restart, musi lezec
+      # na wolumenie. Dotyczy to zdjec w postach i avatarow.
+      - musicclub-uploads:/app/uploads
+    ports:
+      # Wystawione na zewnatrz glownie po to, zeby dalo sie wejsc na Swaggera
+      # (http://localhost:8080/swagger-ui.html). Sama aplikacja tego nie
+      # potrzebuje - frontend rozmawia z backendem wewnatrz sieci Dockera.
+      - "8080:8080"
+    healthcheck:
+      # Odpowiada na to Actuator (patrz pom.xml i application.properties).
+      # Frontend czeka na wynik tego sprawdzenia, zanim wystartuje.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      # Spring wstaje kilkanascie sekund; przez ten czas nieudane proby
+      # nie licza sie jako porazki.
+      start_period: 40s
+
+  # --- FRONTEND: React + nginx ----------------------------------------------
+  frontend:
+    build: ./frontend
+    container_name: musicclub-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      # 3000 na zewnatrz -> 80 w kontenerze (nginx). Port 5173 nalezy
+      # do trybu deweloperskiego Vite i tutaj nie wystepuje.
+      - "3000:80"
+
   # Klikalna przegladarka bazy - wchodzisz na http://localhost:8081
   # i widzisz tabele, ktore stworzylo JPA. Bardzo pomaga zrozumiec co sie dzieje.
   # Nie jest wymagana do dzialania aplikacji - mozesz ja wylaczyc.
@@ -50,3 +127,6 @@ services:
 
 volumes:
   musicclub-db-data:
+  # Wgrane zdjecia. Osobny wolumen od bazy, zeby dalo sie skasowac same dane
+  # bazy bez tracenia plikow (i odwrotnie).
+  musicclub-uploads:

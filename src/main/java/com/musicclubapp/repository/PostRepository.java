@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -63,4 +64,42 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * ciagneloby przez siec wszystkie wpisy razem z trescia.</p>
      */
     long countByAuthorUsername(String username);
+
+    /**
+     * Najczesciej wrzucane przez uzytkownika nagrania danego rodzaju.
+     *
+     * <p><b>Skad to sie bierze.</b> Nie prowadzimy osobnej tabeli statystyk -
+     * liczymy to z postow, ktore i tak sa w bazie. Grupujemy po identyfikatorze
+     * nagrania, bo to on jest staly: ten sam utwor wklejony raz przez
+     * {@code youtu.be}, a raz przez {@code youtube.com/watch} ma w bazie
+     * dokladnie te sama wartosc, bo adres rozkladamy na czesci przy zapisie.</p>
+     *
+     * <p>{@code MAX(title)} zamiast zwyklego {@code title}: przy {@code GROUP BY}
+     * baza musi wiedziec, ktora z wielu wartosci wybrac. Tytul tego samego
+     * nagrania jest zawsze taki sam, chyba ze przy ktoryms poscie nie udalo
+     * sie go pobrac i jest pusty - a wtedy {@code MAX} wybierze ten
+     * niepusty.</p>
+     *
+     * <p>Zapytanie natywne, bo {@code GROUP BY} z wyliczona kolumna
+     * i sortowaniem po niej jest w SQL-u po prostu czytelniejszy.</p>
+     */
+    @Query(value = """
+           SELECT p.music_provider          AS provider,
+                  p.music_kind              AS kind,
+                  p.music_external_id       AS externalId,
+                  MAX(p.music_title)        AS title,
+                  MAX(p.music_thumbnail_url) AS thumbnailUrl,
+                  COUNT(*)                  AS ile
+             FROM posts p
+             JOIN users u ON u.id = p.author_id
+            WHERE u.username = :username
+              AND p.music_external_id IS NOT NULL
+              AND p.music_kind = :kind
+            GROUP BY p.music_provider, p.music_kind, p.music_external_id
+            ORDER BY ile DESC, MAX(p.created_at) DESC
+            LIMIT :limit
+           """, nativeQuery = true)
+    List<TopMusicRow> najczesciejWrzucane(@Param("username") String username,
+                                          @Param("kind") String kind,
+                                          @Param("limit") int limit);
 }

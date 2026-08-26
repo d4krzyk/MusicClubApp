@@ -1,10 +1,31 @@
-# Nie wysylamy tego do Dockera przy budowaniu obrazu - build jest szybszy
+# Czego NIE wysylac do Dockera przy budowaniu obrazu - build jest szybszy.
+#
+# Docker kopiuje caly katalog projektu ("kontekst budowania") do demona,
+# ZANIM zacznie cokolwiek robic. Bez tego pliku leciałyby tam skompilowane
+# klasy, cache Mavena i node_modules - setki megabajtow przy kazdym `build`,
+# mimo ze i tak sa odtwarzane w srodku kontenera.
+
+# --- wyniki budowania ---
 target/
-.git/
-.idea/
-*.iml
-docs/
 node_modules/
+frontend/node_modules/
 frontend/dist/
 frontend/build/
+
+# --- dane, ktore nalezą do wolumenu, nie do obrazu ---
+# Wgrane przez uzytkownikow zdjecia - w compose montujemy je jako wolumen
+uploads/
+
+# --- IDE i git ---
+.git/
+.gitignore
+.idea/
+*.iml
+
+# --- sekrety: nigdy nie trafiaja do obrazu ---
 .env
+
+# --- dokumentacja: niepotrzebna do uruchomienia aplikacji ---
+docs/
+README.md
+*.patch

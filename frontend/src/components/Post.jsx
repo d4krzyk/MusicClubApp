@@ -5,16 +5,16 @@ import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Avatar from './Avatar';
 import GaleriaZdjec from './GaleriaZdjec';
 import Pole from './Pole';
 import Reakcje from './Reakcje';
+import WyborMuzyki from './WyborMuzyki';
 import { IkonaKosz, IkonaOlowek } from './Ikony';
 import client, { opiszBlad } from '../api/client';
 import { sformatujDate } from '../utils/daty';
 import { naMinuty, naSekundy } from '../utils/czas';
+import { bladLinku } from '../utils/linkiMuzyczne';
 
 /**
  * Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify.
@@ -99,24 +99,7 @@ export default function Post({ post, onDelete, onUpdate }) {
               </div>
             )}
 
-            {post.spotifyEmbedUrl && (
-              /*
-               * Zaokraglenie musi byc na OTOCZCE z overflow: hidden, a nie na
-               * samej ramce. Strona Spotify w srodku ma wlasne, prostokatne tlo -
-               * przy border-radius na iframe wystawalo ono w rogach jako biale
-               * naroznikii.
-               */
-              <div className="ramka-spotify">
-                <iframe
-                  src={post.spotifyEmbedUrl}
-                  title={`Spotify - ${post.authorUsername}`}
-                  width="100%"
-                  height="152"
-                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                  loading="lazy"
-                />
-              </div>
-            )}
+            {post.musicEmbedUrl && <Odtwarzacz post={post} />}
 
             <Reakcje post={post} onZmiana={onUpdate} />
           </>
@@ -131,8 +114,9 @@ function FormularzEdycji({ post, onZapisano, onAnuluj }) {
   const { t } = useTranslation();
 
   const [content, setContent] = useState(post.content);
-  const [spotifyUrl, setSpotifyUrl] = useState(post.spotifyUrl ?? '');
-  const [startAt, setStartAt] = useState(naMinuty(post.spotifyStartSeconds) || '');
+  const [musicUrl, setMusicUrl] = useState(post.musicUrl ?? '');
+  const [musicKind, setMusicKind] = useState(post.musicKind ?? 'TRACK');
+  const [startAt, setStartAt] = useState(naMinuty(post.musicStartSeconds) || '');
 
   const [bledyPol, setBledyPol] = useState({});
   const [bladOgolny, setBladOgolny] = useState(null);
@@ -147,8 +131,9 @@ function FormularzEdycji({ post, onZapisano, onAnuluj }) {
     try {
       const odpowiedz = await client.put(`/posts/${post.id}`, {
         content,
-        spotifyUrl: spotifyUrl || null,
-        spotifyStartSeconds: naSekundy(startAt),
+        musicUrl: musicUrl || null,
+        musicKind: musicUrl ? musicKind : null,
+        musicStartSeconds: musicKind === 'TRACK' ? naSekundy(startAt) : null,
       });
       onZapisano(odpowiedz.data);
     } catch (error) {
@@ -174,39 +159,24 @@ function FormularzEdycji({ post, onZapisano, onAnuluj }) {
         wiersze={3}
       />
 
-      <Row>
-        <Col md={8}>
-          <Pole
-            id={`spotify-${post.id}`}
-            label={t('posts.spotify')}
-            wartosc={spotifyUrl}
-            onChange={setSpotifyUrl}
-            blad={bledyPol.spotifyUrl}
-            podpowiedz={t('posts.spotifyClearHint')}
-            placeholder={t('posts.spotifyPlaceholder')}
-            wymagane={false}
-          />
-        </Col>
-        <Col md={4}>
-          <Pole
-            id={`start-${post.id}`}
-            label={t('posts.startAt')}
-            wartosc={startAt}
-            onChange={setStartAt}
-            blad={bledyPol.spotifyStartSeconds}
-            podpowiedz={t('posts.startAtHint')}
-            placeholder="1:23"
-            wymagane={false}
-          />
-        </Col>
-      </Row>
+      <WyborMuzyki
+        rodzaj={musicKind}
+        onRodzaj={setMusicKind}
+        link={musicUrl}
+        onLink={setMusicUrl}
+        moment={startAt}
+        onMoment={setStartAt}
+        bledySerwera={bledyPol}
+      />
+
+      <p className="text-body-secondary small">{t('posts.musicClearHint')}</p>
 
       {post.imageUrls.length > 0 && (
         <p className="text-body-secondary small">{t('posts.imagesNotEditable')}</p>
       )}
 
       <div className="d-flex gap-2">
-        <Button type="submit" size="sm" disabled={wysylanie}>
+        <Button type="submit" size="sm" disabled={wysylanie || Boolean(bladLinku(musicUrl, musicKind))}>
           {wysylanie ? t('settings.saving') : t('common.save')}
         </Button>
         <Button type="button" size="sm" variant="outline-secondary" onClick={onAnuluj}>
@@ -214,5 +184,52 @@ function FormularzEdycji({ post, onZapisano, onAnuluj }) {
         </Button>
       </div>
     </Form>
+  );
+}
+
+/**
+ * Odtwarzacz nagrania - dziala tak samo dla kazdego serwisu.
+ *
+ * <p><b>Adres skladamy na SERWERZE</b>, nie tutaj. Kazdy serwis ma inny format
+ * adresu osadzenia (i inny parametr momentu startu), a gdyby wiedza o tym
+ * siedziala w Reakcie, dolozenie trzeciego serwisu wymagaloby zmian
+ * w dwoch miejscach.</p>
+ *
+ * <p>Wysokosc zalezy od rodzaju: album i profil artysty pokazuja liste
+ * nagran, wiec potrzebuja wiecej miejsca niz pojedynczy utwor.</p>
+ */
+function Odtwarzacz({ post }) {
+  const { t } = useTranslation();
+
+  const wysokosc = post.musicKind === 'TRACK' ? 152 : 352;
+
+  return (
+    <div>
+      {/*
+        Zaokraglenie musi byc na OTOCZCE z overflow: hidden, a nie na samej
+        ramce. Strona serwisu w srodku ma wlasne, prostokatne tlo - przy
+        border-radius na iframe wystawalo ono w rogach jako biale narozniki.
+      */}
+      <div className="ramka-spotify">
+        <iframe
+          src={post.musicEmbedUrl}
+          title={post.musicTitle ?? `${post.musicProvider} - ${post.authorUsername}`}
+          width="100%"
+          height={wysokosc}
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+        />
+      </div>
+
+      {/*
+        Tytul pobrany przy dodawaniu posta. Moze go nie byc, gdy serwis
+        wtedy nie odpowiedzial - wtedy pokazujemy sama nazwe serwisu,
+        bo odtwarzacz i tak wyswietla wszystko sam.
+      */}
+      <div className="text-body-secondary small mt-1 d-flex gap-2 align-items-center">
+        <span>{t(`posts.providers.${post.musicProvider}`)}</span>
+        {post.musicTitle && <span className="text-truncate">· {post.musicTitle}</span>}
+      </div>
+    </div>
   );
 }

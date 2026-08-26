@@ -12,8 +12,10 @@ import client, { opiszBlad } from '../api/client';
 import Pole from '../components/Pole';
 import Post from '../components/Post';
 import WybieraczZdjec from '../components/WybieraczZdjec';
+import WyborMuzyki from '../components/WyborMuzyki';
 import { IkonaKrzyzyk, IkonaPlus } from '../components/Ikony';
 import { naSekundy } from '../utils/czas';
+import { bladLinku } from '../utils/linkiMuzyczne';
 
 /** Ile postow pobieramy za jednym razem. */
 const NA_STRONE = 10;
@@ -163,7 +165,8 @@ function FormularzPostu({ onDodano }) {
   const { t } = useTranslation();
 
   const [content, setContent] = useState('');
-  const [spotifyUrl, setSpotifyUrl] = useState('');
+  const [musicUrl, setMusicUrl] = useState('');
+  const [musicKind, setMusicKind] = useState('TRACK');
   const [startAt, setStartAt] = useState('');
   const [pliki, setPliki] = useState([]);
 
@@ -173,10 +176,18 @@ function FormularzPostu({ onDodano }) {
 
   function wyczysc() {
     setContent('');
-    setSpotifyUrl('');
+    setMusicUrl('');
+    setMusicKind('TRACK');
     setStartAt('');
     setPliki([]);
   }
+
+  /*
+   * Zly link BLOKUJE wysylke. Wczesniej taki adres byl po cichu polykany:
+   * post powstawal bez odtwarzacza i bez slowa wyjasnienia, co dla
+   * uzytkownika wygladalo jak zepsuta aplikacja.
+   */
+  const blokada = bladLinku(musicUrl, musicKind);
 
   async function wyslij(e) {
     e.preventDefault();
@@ -197,8 +208,10 @@ function FormularzPostu({ onDodano }) {
         new Blob(
           [JSON.stringify({
             content,
-            spotifyUrl: spotifyUrl || null,
-            spotifyStartSeconds: naSekundy(startAt),
+            musicUrl: musicUrl || null,
+            // Bez linku rodzaj nie ma do czego sie odnosic - serwer to odrzuci
+            musicKind: musicUrl ? musicKind : null,
+            musicStartSeconds: musicKind === 'TRACK' ? naSekundy(startAt) : null,
           })],
           { type: 'application/json' }
         )
@@ -242,34 +255,17 @@ function FormularzPostu({ onDodano }) {
             blad={bledyPol.images}
           />
 
-          <Row>
-            <Col md={8}>
-              <Pole
-                id="spotifyUrl"
-                label={t('posts.spotify')}
-                wartosc={spotifyUrl}
-                onChange={setSpotifyUrl}
-                blad={bledyPol.spotifyUrl}
-                podpowiedz={t('posts.spotifyHint')}
-                placeholder={t('posts.spotifyPlaceholder')}
-                wymagane={false}
-              />
-            </Col>
-            <Col md={4}>
-              <Pole
-                id="startAt"
-                label={t('posts.startAt')}
-                wartosc={startAt}
-                onChange={setStartAt}
-                blad={bledyPol.spotifyStartSeconds}
-                podpowiedz={t('posts.startAtHint')}
-                placeholder="1:23"
-                wymagane={false}
-              />
-            </Col>
-          </Row>
+          <WyborMuzyki
+            rodzaj={musicKind}
+            onRodzaj={setMusicKind}
+            link={musicUrl}
+            onLink={setMusicUrl}
+            moment={startAt}
+            onMoment={setStartAt}
+            bledySerwera={bledyPol}
+          />
 
-          <Button type="submit" disabled={wysylanie}>
+          <Button type="submit" disabled={wysylanie || Boolean(blokada)}>
             {wysylanie ? t('posts.publishing') : t('posts.publish')}
           </Button>
         </Form>

@@ -7,11 +7,16 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Uzytkownik aplikacji - jedna encja = jedna tabela w bazie.
@@ -19,12 +24,9 @@ import java.util.Objects;
  * <p><b>Realizuje wymagania z listy:</b></p>
  * <ul>
  *   <li>nr 1 - uzycie JPA (adnotacje {@code @Entity}, {@code @Id}, {@code @Column}),</li>
- *   <li>nr 4 - encja przechowujaca date/czas ({@code createdAt}).</li>
+ *   <li>nr 4 - encja przechowujaca date/czas ({@code createdAt}),</li>
+ *   <li>nr 7 - relacja {@code @ManyToMany} ({@link #friends}).</li>
  * </ul>
- *
- * <p>Na tym etapie (KROK 2) encja jest celowo "chuda" - bez relacji do artystow,
- * postow i dopasowan. Relacje dochodza w kolejnych krokach, zeby na kazdym etapie
- * bylo widac dokladnie, co doszlo do bazy.</p>
  */
 @Entity
 // "user" jest slowem zarezerwowanym w PostgreSQL, dlatego tabela nazywa sie "users".
@@ -87,6 +89,31 @@ public class User {
      */
     @Column(name = "avatar_file_name", length = 120)
     private String avatarFileName;
+
+    /**
+     * Znajomi - <b>wymaganie nr 7 (ManyToMany)</b>.
+     *
+     * <p>Relacja uzytkownika z samym soba: jeden uzytkownik ma wielu znajomych,
+     * a kazdy z nich ma wielu swoich. W bazie powstaje osobna tabela
+     * {@code user_friends} z dwiema kolumnami - kto i z kim.</p>
+     *
+     * <p><b>Znajomosc jest OBUSTRONNA i zapisujemy ja dwoma wierszami</b>
+     * (A→B oraz B→A). Da sie inaczej - trzymac jeden wiersz i w kazdym
+     * zapytaniu sprawdzac obie kolumny przez {@code OR} - ale wtedy KAZDE
+     * pytanie o znajomych robi sie dwa razy trudniejsze do przeczytania.
+     * Tu placimy jednym dodatkowym wierszem za to, ze zapytania sa proste.
+     * Dopisywaniem obu stron zajmuje sie {@link #dodajZnajomego(User)}.</p>
+     *
+     * <p>{@code Set}, a nie {@code List}: tej samej osoby nie da sie miec
+     * w znajomych dwa razy. Dziala to dzieki temu, ze {@code equals} i
+     * {@code hashCode} nizej porownuja po identyfikatorze.</p>
+     */
+    @ManyToMany
+    @JoinTable(
+        name = "user_friends",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "friend_id"))
+    private Set<User> friends = new HashSet<>();
 
     /**
      * Metoda oznaczona {@code @PrePersist} uruchamia sie automatycznie tuz przed
@@ -164,6 +191,37 @@ public class User {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Set<User> getFriends() {
+        return friends;
+    }
+
+    /**
+     * Dodaje znajomego po OBU stronach relacji.
+     *
+     * <p>Gdyby dopisac tylko jedna strone, znajomy widzialby nas na swojej
+     * liscie, a my jego nie - i nikt by nie zauwazyl, bo zadne zapytanie
+     * by sie nie wywalilo.</p>
+     *
+     * <p><b>UWAGA na {@code inny.getFriends()} zamiast {@code inny.friends}.</b>
+     * Java pozwala siegnac wprost do prywatnego pola innego obiektu tej samej
+     * klasy - i wlasnie na tym mozna sie przejechac. {@code inny} bywa
+     * <i>leniwym proxy</i> Hibernate'a (tak jest, gdy przychodzi
+     * z {@code zaproszenie.getSender()}). Odczyt POLA na proxy siega do pustego
+     * pola samego proxy, a nie do prawdziwej encji - dopisanie znika bez sladu
+     * i bez bledu. Wywolanie METODY proxy przekazuje dalej, do wlasciwego
+     * obiektu, wiec dziala poprawnie.</p>
+     */
+    public void dodajZnajomego(User inny) {
+        this.friends.add(inny);
+        inny.getFriends().add(this);
+    }
+
+    /** Usuwa znajomosc po obu stronach - z ta sama uwaga o proxy co wyzej. */
+    public void usunZnajomego(User inny) {
+        this.friends.remove(inny);
+        inny.getFriends().remove(this);
     }
 
     /**

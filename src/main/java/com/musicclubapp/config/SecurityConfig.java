@@ -128,6 +128,18 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
                 /*
+                 * Sprawdzenie zdrowia aplikacji - uzywa go Docker (healthcheck
+                 * w docker-compose.yml), zeby wiedziec, kiedy backend jest
+                 * gotowy przyjmowac zapytania.
+                 *
+                 * Docker nie ma jak sie zalogowac, wiec ten jeden adres musi
+                 * byc otwarty. Nie zdradza niczego wrazliwego: odpowiedzia jest
+                 * samo {"status":"UP"} (patrz management.endpoint.health
+                 * .show-details=never w application.properties).
+                 */
+                .requestMatchers("/actuator/health").permitAll()
+
+                /*
                  * AUTORYZACJA - wyklad 7, slajdy 47-48.
                  *
                  * Przegladanie listy wszystkich kont to funkcja administracyjna.

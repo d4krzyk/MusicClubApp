@@ -6,17 +6,23 @@ import ReactDOM from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import App from './App';
+import { MotywProvider } from './theme/MotywContext';
 import './i18n'; // musi byc zaimportowane PRZED pierwszym uzyciem useTranslation
 import './styles.css';
 
 /*
- * Ciemny motyw Bootstrapa 5.3 - wystarczy jeden atrybut na <html>.
- * Wczesniej mielismy na to wlasne zmienne CSS; teraz robi to framework.
+ * Motyw (jasny/ciemny) ustawia maly skrypt w index.html - jeszcze zanim
+ * przegladarka cokolwiek narysuje. Tutaj celowo go NIE ustawiamy, bo React
+ * startuje za pozno i strona zdazylaby mignac w zlych kolorach.
+ * Przelaczaniem zajmuje sie potem MotywContext.
  */
-document.documentElement.setAttribute('data-bs-theme', 'dark');
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    {/* MotywProvider owija cala aplikacje - motyw dotyczy kazdego ekranu,
+        takze logowania, ktore jest poza routingiem chronionym */}
+    <MotywProvider>
+      <App />
+    </MotywProvider>
   </React.StrictMode>
 );

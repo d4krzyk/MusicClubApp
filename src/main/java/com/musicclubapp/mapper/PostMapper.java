@@ -6,6 +6,7 @@ import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
+import com.musicclubapp.music.MusicEmbed;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,18 +21,6 @@ public class PostMapper {
 
     /** Publiczna sciezka, pod ktora serwer wystawia wgrane pliki. */
     public static final String SCIEZKA_PLIKOW = "/uploads/";
-
-    /**
-     * Adres odtwarzacza Spotify.
-     *
-     * <p>Zwykly link {@code open.spotify.com/track/...} nie wyswietli sie
-     * w ramce - Spotify blokuje osadzanie zwyklych stron. Do tego sluzy
-     * osobny adres z czlonem {@code /embed/}.</p>
-     */
-    private static final String SPOTIFY_EMBED = "https://open.spotify.com/embed/track/";
-
-    /** Zwykly adres utworu - wstawiamy go w formularz edycji. */
-    private static final String SPOTIFY_TRACK = "https://open.spotify.com/track/";
 
     /**
      * @param ogladajacy zalogowany uzytkownik (moze byc {@code null} - wtedy
@@ -52,11 +41,15 @@ public class PostMapper {
             post.getContent(),
             adresyZdjec,
             adresOdtwarzacza(post),
-            post.getSpotifyStartSeconds(),
+            post.getMusicProvider(),
+            post.getMusicKind(),
+            post.getMusicTitle(),
+            post.getMusicThumbnailUrl(),
+            post.getMusicStartSeconds(),
+            adresStrony(post),
             post.getCreatedAt(),
             czyMozeUsunac(post, ogladajacy),
             czyMozeEdytowac(post, ogladajacy),
-            post.getSpotifyTrackId() == null ? null : SPOTIFY_TRACK + post.getSpotifyTrackId(),
             reakcje);
     }
 
@@ -67,20 +60,30 @@ public class PostMapper {
     }
 
     /**
-     * Sklada adres odtwarzacza z zapisanego identyfikatora utworu.
+     * Gotowy adres do {@code <iframe>}.
      *
-     * <p>Parametr {@code t=<sekundy>} ustawia moment, od ktorego zaczyna sie
-     * odtwarzanie - odtwarzacz pokazuje go na pasku postepu.</p>
+     * <p>Sklada go {@link MusicEmbed}, bo kazdy serwis robi to inaczej.
+     * Frontend dostaje wynik i nie musi znac zadnego z tych formatow -
+     * dolozenie trzeciego serwisu nie wymaga wtedy ruszania Reacta.</p>
      */
     private String adresOdtwarzacza(Post post) {
-        if (post.getSpotifyTrackId() == null) {
+        if (!post.maMuzyke()) {
             return null;
         }
+        return MusicEmbed.adresOsadzenia(
+            post.getMusicProvider(),
+            post.getMusicKind(),
+            post.getMusicExternalId(),
+            post.getMusicStartSeconds());
+    }
 
-        String adres = SPOTIFY_EMBED + post.getSpotifyTrackId();
-
-        Integer start = post.getSpotifyStartSeconds();
-        return (start != null && start > 0) ? adres + "?t=" + start : adres;
+    /** Adres strony w serwisie - do formularza edycji i przycisku "otworz". */
+    private String adresStrony(Post post) {
+        if (!post.maMuzyke()) {
+            return null;
+        }
+        return MusicEmbed.adresZwykly(
+            post.getMusicProvider(), post.getMusicKind(), post.getMusicExternalId());
     }
 
     /** Edytowac moze WYLACZNIE autor - administrator moderuje usuwaniem. */

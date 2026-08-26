@@ -12,7 +12,10 @@
     "language": "Language",
     "settings": "Settings",
     "feed": "Feed",
-    "profile": "Profile"
+    "profile": "Profile",
+    "themeLight": "Switch to light theme",
+    "themeDark": "Switch to dark theme",
+    "friends": "Friends"
   },
   "common": {
     "loading": "Loading…",
@@ -21,7 +24,8 @@
     "required": "required",
     "delete": "Delete",
     "confirmDelete": "Delete this post?",
-    "close": "Close"
+    "close": "Close",
+    "of": "of"
   },
   "login": {
     "title": "Sign in",
@@ -121,9 +125,6 @@
     "images": "Images",
     "imagesHint": "You can add images in batches — at most {{max}}, each up to 5 MB",
     "imagesSelected": "Selected {{count}} of {{max}}",
-    "spotify": "Spotify track link",
-    "spotifyPlaceholder": "https://open.spotify.com/track/…",
-    "spotifyHint": "Paste the link from the \"Share\" button in Spotify",
     "startAt": "Start at (min:sec)",
     "startAtHint": "Optional, e.g. 1:23 (at most 30:00)",
     "publish": "Publish",
@@ -140,7 +141,36 @@
     "addMoreImages": "Add more",
     "clearImages": "Remove all",
     "imagesNotEditable": "Images cannot be changed after publishing. To replace them, delete the post and add it again.",
-    "spotifyClearHint": "Clear the field to remove the track from the post"
+    "music": "Music",
+    "musicKind": "Kind of item",
+    "musicKinds": {
+      "TRACK": "Track",
+      "ALBUM": "Album",
+      "ARTIST": "Artist"
+    },
+    "musicUrl": "Link",
+    "musicPlaceholder": "Paste a Spotify or YouTube link",
+    "musicHints": {
+      "TRACK": "A track link - from Spotify or YouTube",
+      "ALBUM": "An album link from Spotify (YouTube has no albums)",
+      "ARTIST": "An artist link from Spotify (YouTube has no artist pages)"
+    },
+    "musicClearHint": "Clear the field to remove the music from this post.",
+    "musicErrors": {
+      "invalid": "This is not a Spotify or YouTube link",
+      "mismatch": {
+        "TRACK": "This is a TRACK link - switch the kind to \"Track\"",
+        "ALBUM": "This is an ALBUM link - switch the kind to \"Album\"",
+        "ARTIST": "This is an ARTIST link - switch the kind to \"Artist\""
+      }
+    },
+    "providers": {
+      "SPOTIFY": "Spotify",
+      "YOUTUBE": "YouTube"
+    },
+    "topTracks": "Most posted tracks",
+    "postedTimes_one": "{{count}} time",
+    "postedTimes_other": "{{count}} times"
   },
   "profile": {
     "visit": "View {{username}}'s profile",
@@ -160,5 +190,31 @@
     "total_one": "{{count}} reaction",
     "total_other": "{{count}} reactions",
     "error": "Could not save the reaction"
+  },
+  "friends": {
+    "title": "Friends",
+    "mine": "My friends",
+    "none": "No friends yet.",
+    "count_one": "{{count}} friend",
+    "count_other": "{{count}} friends",
+    "mutual_one": "{{count}} mutual friend",
+    "mutual_other": "{{count}} mutual friends",
+    "invite": "Add friend",
+    "inviteByName": "Invite by username",
+    "usernamePlaceholder": "e.g. alice123",
+    "inviteHint": "Enter the exact username. If that person invited you earlier, you become friends right away.",
+    "invited": "Invitation sent",
+    "nowFriends": "You are now friends",
+    "cancelInvite": "Cancel invitation",
+    "cancelled": "Invitation cancelled",
+    "accept": "Accept",
+    "reject": "Decline",
+    "rejected": "Invitation declined",
+    "areFriends": "Friends",
+    "remove": "Remove from friends",
+    "incoming": "Invitations to you",
+    "noIncoming": "No new invitations.",
+    "outgoing": "Your invitations",
+    "noOutgoing": "You have not sent any invitations."
   }
 }

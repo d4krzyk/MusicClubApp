@@ -1,8 +1,13 @@
 package com.musicclubapp.entity;
 
+import com.musicclubapp.music.MusicKind;
+import com.musicclubapp.music.MusicProvider;
+import com.musicclubapp.music.ParsedMusicLink;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,7 +25,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Post uzytkownika: tekst, zdjecia i opcjonalnie utwor ze Spotify.
+ * Post uzytkownika: tekst, zdjecia i opcjonalnie nagranie z serwisu
+ * muzycznego (Spotify albo YouTube).
  *
  * <p><b>Realizuje czerwone wymaganie nr 6</b> - relacje OneToMany oraz
  * ManyToOne miedzy dwoma encjami:</p>
@@ -46,11 +52,11 @@ public class Post {
     /**
      * Najpozniejszy moment startu utworu, jaki przyjmujemy - 30 minut.
      *
-     * <p><b>Dlaczego nie sprawdzamy prawdziwej dlugosci utworu?</b> Zeby ja
-     * poznac, trzeba zapytac Spotify Web API o {@code duration_ms}, a to
-     * wymaga tokenu aplikacji, ktorego jeszcze nie mamy (integracja ze Spotify
-     * jest zaplanowana na pozniej). Do tego czasu pilnujemy tylko zakresu,
-     * ktory ma sens dla utworu muzycznego.</p>
+     * <p><b>Dlaczego nie sprawdzamy prawdziwej dlugosci nagrania?</b> Zeby ja
+     * poznac, trzeba pelnego API serwisu - a Spotify ogranicza je do pieciu
+     * kont w trybie deweloperskim. Publiczny oEmbed, z ktorego korzystamy,
+     * oddaje tytul i miniaturke, ale nie czas trwania. Do tego czasu
+     * pilnujemy zakresu, ktory ma sens dla utworu muzycznego.</p>
      */
     public static final int MAX_SEKUNDA_STARTU = 1800;
 
@@ -75,17 +81,55 @@ public class Post {
     private String content;
 
     /**
-     * Identyfikator utworu ze Spotify (sam kod, bez calego adresu), np.
-     * {@code 4cOdK2wGLETKBW3PvgPWqT}. Trzymamy sam kod, bo z niego skladamy
-     * adres odtwarzacza - i nie zapisujemy w bazie tego, co uzytkownik wklei
-     * razem z parametrami sledzacymi.
+     * Serwis, z ktorego pochodzi link - albo {@code null}, gdy post jest
+     * bez muzyki.
+     *
+     * <p>{@code EnumType.STRING} zapisuje w bazie napis, a nie pozycje
+     * na liscie - patrz komentarz przy {@code Reaction.type}.</p>
      */
-    @Column(name = "spotify_track_id", length = 64)
-    private String spotifyTrackId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "music_provider", length = 16)
+    private MusicProvider musicProvider;
 
-    /** Sekunda, od ktorej ma zaczac sie utwor. {@code null} = od poczatku. */
-    @Column(name = "spotify_start_seconds")
-    private Integer spotifyStartSeconds;
+    /** Utwor, album czy artysta. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "music_kind", length = 16)
+    private MusicKind musicKind;
+
+    /**
+     * Identyfikator nagrania w serwisie - sam kod, bez calego adresu.
+     *
+     * <p>Trzymamy sam kod z dwoch powodow: nie zapisujemy parametrow
+     * sledzacych, ktore serwisy dokleja do udostepnianych linkow, a poza tym
+     * ten sam utwor ma zawsze ten sam identyfikator - bez tego liczenie
+     * "najczesciej wrzucanych" rozjezdzaloby sie przy kazdej innej postaci
+     * adresu.</p>
+     */
+    @Column(name = "music_external_id", length = 64)
+    private String musicExternalId;
+
+    /**
+     * Tytul i miniaturka pobrane RAZ, przy dodawaniu posta (oEmbed).
+     *
+     * <p>Zapisujemy je u siebie, zamiast odpytywac serwis przy kazdym
+     * wyswietleniu tablicy. Moga byc puste - gdy serwis akurat nie odpowie,
+     * post i tak powstaje, tylko bez tytulu. Odtwarzacz dziala niezaleznie
+     * od tego, bo {@code <iframe>} pobiera sobie wszystko sam.</p>
+     */
+    @Column(name = "music_title", length = 300)
+    private String musicTitle;
+
+    @Column(name = "music_thumbnail_url", length = 500)
+    private String musicThumbnailUrl;
+
+    /**
+     * Sekunda, od ktorej ma zaczac sie utwor. {@code null} = od poczatku.
+     *
+     * <p>Ma sens WYLACZNIE przy {@link MusicKind#TRACK} - pilnuje tego
+     * walidator {@code PoprawnyLinkMuzyczny}.</p>
+     */
+    @Column(name = "music_start_seconds")
+    private Integer musicStartSeconds;
 
     /**
      * Zdjecia posta - strona OneToMany.
@@ -164,27 +208,63 @@ public class Post {
         this.content = content;
     }
 
-    /** Podmienia utwor i moment startu - uzywane przy edycji posta. */
-    public void ustawUtwor(String trackId, Integer startSeconds) {
-        this.spotifyTrackId = trackId;
-        // Sekunda bez utworu nie ma sensu - czyscimy ja razem z identyfikatorem
-        this.spotifyStartSeconds = trackId == null ? null : startSeconds;
+    /**
+     * Ustawia muzyke posta - albo ja calkowicie usuwa, gdy {@code link}
+     * jest pusty.
+     *
+     * <p>Jedna metoda na wszystkie pola naraz, zeby nie dalo sie zostawic
+     * posta w polowicznym stanie (np. z identyfikatorem, ale bez serwisu).
+     * Wyczyszczenie linku kasuje takze tytul, miniaturke i moment startu -
+     * bez nagrania nie maja do czego sie odnosic.</p>
+     */
+    public void ustawMuzyke(ParsedMusicLink link, Integer startSeconds,
+                            String tytul, String miniaturka) {
+        if (link == null) {
+            this.musicProvider = null;
+            this.musicKind = null;
+            this.musicExternalId = null;
+            this.musicTitle = null;
+            this.musicThumbnailUrl = null;
+            this.musicStartSeconds = null;
+            return;
+        }
+
+        this.musicProvider = link.provider();
+        this.musicKind = link.kind();
+        this.musicExternalId = link.externalId();
+        this.musicTitle = tytul;
+        this.musicThumbnailUrl = miniaturka;
+        // Moment startu ma sens tylko przy utworze
+        this.musicStartSeconds = link.kind().obslugujeMomentStartu() ? startSeconds : null;
     }
 
-    public String getSpotifyTrackId() {
-        return spotifyTrackId;
+    /** Czy post ma podpiete jakiekolwiek nagranie. */
+    public boolean maMuzyke() {
+        return musicProvider != null && musicExternalId != null;
     }
 
-    public void setSpotifyTrackId(String spotifyTrackId) {
-        this.spotifyTrackId = spotifyTrackId;
+    public MusicProvider getMusicProvider() {
+        return musicProvider;
     }
 
-    public Integer getSpotifyStartSeconds() {
-        return spotifyStartSeconds;
+    public MusicKind getMusicKind() {
+        return musicKind;
     }
 
-    public void setSpotifyStartSeconds(Integer spotifyStartSeconds) {
-        this.spotifyStartSeconds = spotifyStartSeconds;
+    public String getMusicExternalId() {
+        return musicExternalId;
+    }
+
+    public String getMusicTitle() {
+        return musicTitle;
+    }
+
+    public String getMusicThumbnailUrl() {
+        return musicThumbnailUrl;
+    }
+
+    public Integer getMusicStartSeconds() {
+        return musicStartSeconds;
     }
 
     public List<PostImage> getImages() {

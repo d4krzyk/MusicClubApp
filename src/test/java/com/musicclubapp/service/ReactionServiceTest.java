@@ -72,8 +72,9 @@ class ReactionServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post()));
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
-            new PostResponse(5L, "bartek", null, "tresc", List.of(), null, null,
-                LocalDateTime.now(), false, false, null, ReactionSummary.pusta()));
+            new PostResponse(5L, "bartek", null, "tresc", List.of(),
+                null, null, null, null, null, null, null,
+                LocalDateTime.now(), false, false, ReactionSummary.pusta()));
     }
 
     @Test

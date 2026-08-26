@@ -23,6 +23,18 @@ public record PublicProfileResponse(
     String avatarUrl,
     LocalDateTime createdAt,
     long postCount,
-    boolean self
+    boolean self,
+    /** Ilu ma znajomych - liczba nad paskiem znajomych. */
+    long friendCount,
+    /**
+     * W jakiej relacji jest z nim ogladajacy.
+     *
+     * <p>Po tym polu frontend wybiera przycisk: "Zapros", "Przyjmij
+     * zaproszenie", "Usun ze znajomych" albo brak. Wylicza je SERWER -
+     * gdyby decydowal o tym warunek w przegladarce, wystarczyloby go obejsc
+     * narzedziami deweloperskimi. Backend i tak sprawdza uprawnienia
+     * ponownie przy kazdej operacji.</p>
+     */
+    FriendshipStatus friendshipStatus
 ) {
 }

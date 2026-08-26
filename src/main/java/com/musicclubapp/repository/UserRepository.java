@@ -70,4 +70,80 @@ public interface UserRepository extends JpaRepository<User, Long> {
               OR LOWER(u.email)    LIKE LOWER(CONCAT('%', :fragment, '%'))
            """)
     Page<User> searchByUsernameOrEmail(@Param("fragment") String fragment, Pageable pageable);
+
+    /**
+     * Znajomi danej osoby, <b>od najbardziej powiazanych z ogladajacym</b>.
+     *
+     * <p>To jedyne zapytanie NATYWNE (czyste SQL) w projekcie - i jest ku temu
+     * powod. Wynik sortujemy po kolumnie, ktorej nigdzie nie ma: liczbie
+     * wspolnych znajomych, liczonej osobno dla kazdego wiersza. JPQL operuje
+     * na encjach i takich rzeczy nie wyrazi bez przekombinowanych sztuczek.
+     * Lista wymagan dopuszcza oba warianty ("wlasne zapytania {@code @Query}
+     * / natywne") - wymaganie nr 8.</p>
+     *
+     * <p><b>Jak liczymy wspolnych znajomych.</b> Tabela {@code user_friends}
+     * trzyma kazda znajomosc dwoma wierszami (A→B i B→A). Laczymy ja wiec
+     * sama ze soba po kolumnie {@code friend_id}: jesli ten sam czlowiek jest
+     * znajomym i kandydata, i ogladajacego, para pasuje i liczy sie do sumy.</p>
+     *
+     * <p><b>Dlaczego to jest wazne.</b> Dzis wynik opiera sie na wspolnych
+     * znajomych, bo tylko takie dane mamy. Gdy dojda ulubieni artysci ze
+     * Spotify, do wyniku doliczymy wspolnych artystow i gatunki - zmieni sie
+     * TYLKO to zapytanie. Metoda, jej typ zwracany i caly frontend zostaja
+     * nietkniete.</p>
+     *
+     * @param wlasciciel czyja liste znajomych ogladamy
+     * @param ogladajacy kto oglada - wzgledem niego liczymy wspolnych znajomych
+     */
+    @Query(
+        value = """
+                SELECT u.username            AS username,
+                       u.avatar_file_name    AS avatarFileName,
+                       (SELECT COUNT(*)
+                          FROM user_friends kandydat
+                          JOIN user_friends widz
+                            ON kandydat.friend_id = widz.friend_id
+                         WHERE kandydat.user_id = u.id
+                           AND widz.user_id = (SELECT id FROM users WHERE username = :ogladajacy)
+                       )                     AS wspolniZnajomi
+                  FROM users u
+                  JOIN user_friends uf ON uf.friend_id = u.id
+                  JOIN users wl ON wl.id = uf.user_id
+                 WHERE wl.username = :wlasciciel
+                 ORDER BY wspolniZnajomi DESC, u.username ASC
+                """,
+        countQuery = """
+                SELECT COUNT(*)
+                  FROM user_friends uf
+                  JOIN users wl ON wl.id = uf.user_id
+                 WHERE wl.username = :wlasciciel
+                """,
+        nativeQuery = true)
+    Page<FriendRow> znajomiPosortowani(@Param("wlasciciel") String wlasciciel,
+                                       @Param("ogladajacy") String ogladajacy,
+                                       Pageable pageable);
+
+    /** Ilu znajomych ma dana osoba - liczba na profilu. */
+    @Query(value = """
+           SELECT COUNT(*)
+             FROM user_friends uf
+             JOIN users wl ON wl.id = uf.user_id
+            WHERE wl.username = :username
+           """, nativeQuery = true)
+    long policzZnajomych(@Param("username") String username);
+
+    /**
+     * Czy dwie osoby sa juz znajomymi.
+     *
+     * <p>Sprawdzamy jeden kierunek, bo znajomosc zawsze zapisujemy dwoma
+     * wierszami naraz (patrz {@code User.dodajZnajomego}).</p>
+     */
+    @Query(value = """
+           SELECT COUNT(*) > 0
+             FROM user_friends uf
+             JOIN users a ON a.id = uf.user_id
+             JOIN users b ON b.id = uf.friend_id
+            WHERE a.username = :pierwszy AND b.username = :drugi
+           """, nativeQuery = true)
+    boolean czySaZnajomymi(@Param("pierwszy") String pierwszy, @Param("drugi") String drugi);
 }

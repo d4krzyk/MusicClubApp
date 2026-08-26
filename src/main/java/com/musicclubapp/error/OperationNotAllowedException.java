@@ -48,6 +48,35 @@ public class OperationNotAllowedException extends RuntimeException {
             "Mozna edytowac tylko wlasne posty", "error.post.notauthor");
     }
 
+    /** Proba zaproszenia samego siebie do znajomych. */
+    public static OperationNotAllowedException zaproszenieDoSiebie() {
+        return new OperationNotAllowedException(
+            "Nie mozna zaprosic samego siebie", "error.friend.self");
+    }
+
+    /** Te osoby juz sa znajomymi - drugie zaproszenie nie ma sensu. */
+    public static OperationNotAllowedException juzZnajomi() {
+        return new OperationNotAllowedException(
+            "Ta osoba jest juz w znajomych", "error.friend.already");
+    }
+
+    /** Zaproszenie do tej osoby juz czeka na odpowiedz. */
+    public static OperationNotAllowedException zaproszenieJuzWyslane() {
+        return new OperationNotAllowedException(
+            "Zaproszenie zostalo juz wyslane", "error.friend.pending");
+    }
+
+    /**
+     * Proba przyjecia albo odrzucenia cudzego zaproszenia.
+     *
+     * <p>Bez tego sprawdzenia wystarczyloby zgadnac identyfikator zaproszenia,
+     * zeby zaakceptowac znajomosc miedzy dwiema obcymi osobami.</p>
+     */
+    public static OperationNotAllowedException cudzeZaproszenie() {
+        return new OperationNotAllowedException(
+            "To nie jest Twoje zaproszenie", "error.friend.notyours");
+    }
+
     public String getMessageKey() {
         return messageKey;
     }

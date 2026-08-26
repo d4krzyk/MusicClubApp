@@ -12,7 +12,10 @@
     "language": "Język",
     "settings": "Ustawienia",
     "feed": "Tablica",
-    "profile": "Profil"
+    "profile": "Profil",
+    "themeLight": "Włącz motyw jasny",
+    "themeDark": "Włącz motyw ciemny",
+    "friends": "Znajomi"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -21,7 +24,8 @@
     "required": "pole wymagane",
     "delete": "Usuń",
     "confirmDelete": "Na pewno usunąć ten post?",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "of": "z"
   },
   "login": {
     "title": "Logowanie",
@@ -121,9 +125,6 @@
     "images": "Zdjęcia",
     "imagesHint": "Możesz dodawać zdjęcia partiami — maksymalnie {{max}}, każde do 5 MB",
     "imagesSelected": "Wybrano {{count}} z {{max}}",
-    "spotify": "Link do utworu ze Spotify",
-    "spotifyPlaceholder": "https://open.spotify.com/track/…",
-    "spotifyHint": "Wklej link z przycisku „Udostępnij\" w Spotify",
     "startAt": "Zacznij od (min:sek)",
     "startAtHint": "Opcjonalnie, np. 1:23 (maksymalnie 30:00)",
     "publish": "Opublikuj",
@@ -140,7 +141,38 @@
     "addMoreImages": "Dodaj kolejne",
     "clearImages": "Usuń wszystkie",
     "imagesNotEditable": "Zdjęć nie można zmienić po opublikowaniu. Aby je wymienić, usuń post i dodaj go ponownie.",
-    "spotifyClearHint": "Wyczyść pole, aby usunąć utwór z posta"
+    "music": "Muzyka",
+    "musicKind": "Rodzaj nagrania",
+    "musicKinds": {
+      "TRACK": "Utwór",
+      "ALBUM": "Album",
+      "ARTIST": "Artysta"
+    },
+    "musicUrl": "Link",
+    "musicPlaceholder": "Wklej link ze Spotify albo YouTube",
+    "musicHints": {
+      "TRACK": "Link do utworu — ze Spotify albo YouTube",
+      "ALBUM": "Link do albumu ze Spotify (YouTube nie ma albumów)",
+      "ARTIST": "Link do artysty ze Spotify (YouTube nie ma profili artystów)"
+    },
+    "musicClearHint": "Wyczyść pole, żeby usunąć nagranie z posta.",
+    "musicErrors": {
+      "invalid": "To nie jest link do Spotify ani YouTube",
+      "mismatch": {
+        "TRACK": "To jest link do UTWORU — zmień rodzaj na „Utwór\"",
+        "ALBUM": "To jest link do ALBUMU — zmień rodzaj na „Album\"",
+        "ARTIST": "To jest link do ARTYSTY — zmień rodzaj na „Artysta\""
+      }
+    },
+    "providers": {
+      "SPOTIFY": "Spotify",
+      "YOUTUBE": "YouTube"
+    },
+    "topTracks": "Najczęściej wrzucane utwory",
+    "postedTimes_one": "{{count}} raz",
+    "postedTimes_few": "{{count}} razy",
+    "postedTimes_many": "{{count}} razy",
+    "postedTimes_other": "{{count}} razy"
   },
   "profile": {
     "visit": "Zobacz profil: {{username}}",
@@ -164,5 +196,35 @@
     "total_many": "{{count}} reakcji",
     "total_other": "{{count}} reakcji",
     "error": "Nie udało się zapisać reakcji"
+  },
+  "friends": {
+    "title": "Znajomi",
+    "mine": "Moi znajomi",
+    "none": "Brak znajomych.",
+    "count_one": "{{count}} znajomy",
+    "count_few": "{{count}} znajomych",
+    "count_many": "{{count}} znajomych",
+    "count_other": "{{count}} znajomych",
+    "mutual_one": "{{count}} wspólny znajomy",
+    "mutual_few": "{{count}} wspólnych znajomych",
+    "mutual_many": "{{count}} wspólnych znajomych",
+    "mutual_other": "{{count}} wspólnych znajomych",
+    "invite": "Zaproś",
+    "inviteByName": "Zaproś po nazwie użytkownika",
+    "usernamePlaceholder": "np. ala123",
+    "inviteHint": "Wpisz dokładną nazwę użytkownika. Jeśli ta osoba zaprosiła Cię wcześniej, od razu zostaniecie znajomymi.",
+    "invited": "Zaproszenie wysłane",
+    "nowFriends": "Jesteście teraz znajomymi",
+    "cancelInvite": "Anuluj zaproszenie",
+    "cancelled": "Zaproszenie anulowane",
+    "accept": "Przyjmij",
+    "reject": "Odrzuć",
+    "rejected": "Zaproszenie odrzucone",
+    "areFriends": "Znajomi",
+    "remove": "Usuń ze znajomych",
+    "incoming": "Zaproszenia do Ciebie",
+    "noIncoming": "Brak nowych zaproszeń.",
+    "outgoing": "Twoje zaproszenia",
+    "noOutgoing": "Nie wysłałeś żadnych zaproszeń."
   }
 }

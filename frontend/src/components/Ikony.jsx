@@ -63,6 +63,42 @@ export function IkonaKrzyzyk(props) {
   );
 }
 
+/** Osoba z plusem - zaproszenie do znajomych. */
+export function IkonaOsobaPlus(props) {
+  return (
+    <Svg {...props}>
+      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 6.5c0-2.2 2.5-3.5 5-3.5.62 0 1.24.08 1.82.24A4.48 4.48 0 0 0 7.5 13c0 .53.09 1.04.26 1.5H1.5a.5.5 0 0 1-.5-.5ZM12 9.5a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0v-1.5h-1.5a.75.75 0 0 1 0-1.5h1.5v-1.5A.75.75 0 0 1 12 9.5Z" />
+    </Svg>
+  );
+}
+
+/** Osoba z ptaszkiem - juz jestescie znajomymi. */
+export function IkonaOsobaCheck(props) {
+  return (
+    <Svg {...props}>
+      <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 6.5c0-2.2 2.5-3.5 5-3.5.62 0 1.24.08 1.82.24A4.48 4.48 0 0 0 7.5 13c0 .53.09 1.04.26 1.5H1.5a.5.5 0 0 1-.5-.5Zm14.28-3.53a.75.75 0 0 1 0 1.06l-3 3a.75.75 0 0 1-1.06 0l-1.5-1.5a.75.75 0 1 1 1.06-1.06l.97.97 2.47-2.47a.75.75 0 0 1 1.06 0Z" />
+    </Svg>
+  );
+}
+
+/** Slonce - przelaczenie na motyw jasny. */
+export function IkonaSlonce(props) {
+  return (
+    <Svg {...props}>
+      <path d="M8 1a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1A.75.75 0 0 1 8 1Zm0 10.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0 1.25a.75.75 0 0 1 .75.75v1a.75.75 0 0 1-1.5 0v-1a.75.75 0 0 1 .75-.75ZM15 8a.75.75 0 0 1-.75.75h-1a.75.75 0 0 1 0-1.5h1A.75.75 0 0 1 15 8ZM2.75 8.75h-1a.75.75 0 0 1 0-1.5h1a.75.75 0 0 1 0 1.5Zm9.9-5.4a.75.75 0 0 1 0 1.06l-.7.71a.75.75 0 1 1-1.07-1.06l.71-.71a.75.75 0 0 1 1.06 0ZM4.12 11.88a.75.75 0 0 1 0 1.06l-.71.71a.75.75 0 0 1-1.06-1.06l.71-.71a.75.75 0 0 1 1.06 0Zm8.53 1.77a.75.75 0 0 1-1.06 0l-.71-.71a.75.75 0 1 1 1.06-1.06l.71.71a.75.75 0 0 1 0 1.06ZM3.35 3.35a.75.75 0 0 1 1.06 0l.71.71a.75.75 0 0 1-1.06 1.06l-.71-.71a.75.75 0 0 1 0-1.06Z" />
+    </Svg>
+  );
+}
+
+/** Ksiezyc - przelaczenie na motyw ciemny. */
+export function IkonaKsiezyc(props) {
+  return (
+    <Svg {...props}>
+      <path d="M6.2 1.4a.75.75 0 0 1 .2.83A5.5 5.5 0 0 0 13.77 9.6a.75.75 0 0 1 1.03.95A6.5 6.5 0 1 1 5.37 1.2a.75.75 0 0 1 .83.2Z" />
+    </Svg>
+  );
+}
+
 /** Zdjecie - przycisk wyboru plikow. */
 export function IkonaZdjecie(props) {
   return (

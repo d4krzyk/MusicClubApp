@@ -10,6 +10,33 @@
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎧</text></svg>"
     />
     <title>MusicClub</title>
+
+    <!--
+      Motyw ustawiamy TU, a nie w Reakcie.
+
+      Ten skrypt wykonuje sie, zanim przegladarka cokolwiek narysuje. Gdyby
+      motyw ustawial dopiero React, przy jasnym motywie przez ulamek sekundy
+      mignelaby ciemna strona (tzw. "flash of wrong theme") - widac to
+      szczegolnie przy odswiezaniu.
+
+      Kolejnosc wyboru: zapisany wybor uzytkownika -> ustawienie systemu.
+      Blok try/catch, bo w trybie prywatnym niektore przegladarki rzucaja
+      wyjatkiem przy samym siegnieciu po localStorage.
+    -->
+    <script>
+      (function () {
+        var zapisany = null;
+        try {
+          zapisany = localStorage.getItem('motyw');
+        } catch (e) {
+          /* brak dostepu do pamieci - lecimy dalej z ustawieniem systemu */
+        }
+        var systemowy = window.matchMedia('(prefers-color-scheme: light)').matches
+          ? 'light'
+          : 'dark';
+        document.documentElement.setAttribute('data-bs-theme', zapisany || systemowy);
+      })();
+    </script>
   </head>
   <body>
     <!-- React wstrzykuje tu cala aplikacje - patrz src/main.jsx -->
