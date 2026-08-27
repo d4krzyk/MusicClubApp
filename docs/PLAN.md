@@ -1332,6 +1332,99 @@ zdjęcie zakazu, ponowna publikacja, okno potwierdzenia przy usuwaniu oraz to,
 
 ---
 
+## Porządki w interfejsie
+
+Runda bez nowych funkcji: to samo, co było, ma być wygodniejsze.
+
+### Menu z czterema pozycjami prowadzącymi donikąd
+
+Pasek na górze miał: Strona główna, Tablica, Profil, Znajomi, Ustawienia
+(+ Użytkownicy u administratora) — i osobno awatar prowadzący na profil.
+Dwa problemy naraz: „Strona główna" pokazywała ekran powitalny z zapowiedzią
+kolejnych kroków (nikt tam nie wchodzi drugi raz), a „Profil" i awatar
+prowadziły w to samo miejsce.
+
+Teraz **stroną główną jest tablica**, a wszystko, co dotyczy własnego konta,
+siedzi w rozwijanym menu pod awatarem. W pasku zostają wyłącznie miejsca
+wspólne dla wszystkich. `HomePage` zniknął razem z kluczami tłumaczeń,
+które go opisywały.
+
+Stary adres `/feed` **zostaje jako przekierowanie**. Ktoś może go mieć
+w zakładkach albo w wysłanym komuś linku — pusta strona byłaby tu najgorszą
+możliwą odpowiedzią.
+
+### Przyklejony pasek
+
+`sticky-top` plus półprzezroczyste tło z rozmyciem. Rozmycie nie jest
+ozdobą: przy w pełni nieprzezroczystym pasku nie widać, że coś pod nim
+przewija się dalej, a przy w pełni przezroczystym napisy w menu robią się
+nieczytelne nad treścią. Przeglądarka bez obsługi `backdrop-filter` dostaje
+pełne tło — inaczej wypadłaby na najgorszy z tych trzech wariantów.
+
+Cień pod paskiem pojawia się **dopiero po przewinięciu**. Przy stronie
+przewiniętej na samą górę wyglądałby jak przypadkowa kreska.
+
+### Jeden komponent na trzy poziome listy
+
+Ulubieni artyści, ulubione utwory i proponowani znajomi to teraz ten sam
+`HorizontalStrip`. Wcześniej ulubieni byli zawijaną siatką, która przy
+dwudziestu pozycjach rozpychała profil na kilka ekranów w dół.
+
+Trzy decyzje w tym komponencie:
+
+- **Strzałki, a nie samo przewijanie.** Palcem przewija się naturalnie,
+  myszką już nie — pasek bez widocznego sterowania wygląda jak lista, która
+  się urywa.
+- **Strzałki tylko wtedy, gdy jest co przewijać**, i wygaszone na końcach.
+  Wygaszona zostaje na miejscu, zamiast znikać: gdyby znikała, pasek
+  przeskakiwałby w bok przy każdym dojechaniu do końca.
+- **Miękkie wygaszenie przy krawędziach.** Mówi, że treść biegnie dalej,
+  i daje strzałce tło, przez które nie przebija się okładka. Musi mieć
+  `pointer-events: none`, inaczej przezroczysta warstwa przechwytywałaby
+  kliknięcia w pierwszy i ostatni kafelek.
+
+Stan strzałek odświeża `ResizeObserver`, a nie samo nasłuchiwanie
+przewijania. Lista zmienia się także przy zwężeniu okna i po dodaniu
+pozycji — bez tego strzałka potrafiła zostać aktywna, choć nie było już
+czego przewijać.
+
+### Pułapka: `scroll-snap` kontra „początek listy"
+
+Pasek nigdy nie stał dokładnie na zerze — startował na `scrollLeft = 2`,
+przez co lewa strzałka wyglądała na aktywną od samego początku. Winne było
+`scroll-snap-type` w połączeniu z poziomym `padding` toru: kafelek
+„przyklejał się" do krawędzi *pola treści*, przesuniętej o te dwa piksele.
+
+Poprawia to `scroll-padding-inline` równe temu paddingowi. **Wyszło to
+dopiero w przeglądarce** — z samego CSS-u nie widać, że dwie reguły ustawione
+niezależnie od siebie się gryzą.
+
+### Warstwa wizualna
+
+Delikatna poświata w kolorze wiodącym pod nagłówkiem, łagodniejsze
+zaokrąglenia kart, przejścia na przyciskach i awatarach, wejście kart na
+tablicy, krzyżyk usuwania ulubionego pokazywany dopiero pod kursorem.
+
+Jedna reguła jest ważniejsza niż cała reszta: **`prefers-reduced-motion`
+wyłącza wszystkie animacje**. Dla części osób ruch na ekranie oznacza
+zawroty głowy albo mdłości, a system ma na to osobne ustawienie — wystarczy
+je uszanować. Reguła stoi na początku pliku, żeby żadna późniejsza jej nie
+przesłoniła.
+
+Żadna z tych reguł nie zmienia **układu** strony — wszystkie dotyczą
+wyłącznie wyglądu, więc nic nie może przez nie zniknąć z widoku.
+
+### Sprawdzone
+
+Doszedł `sprawdz-interfejs.mjs`: 16 sprawdzeń rzeczy, których nie da się
+sprawdzić inaczej niż w przeglądarce — czy pasek naprawdę zostaje na górze
+po przewinięciu (z osobnym sprawdzeniem, że strona faktycznie się
+przewinęła), czy `/feed` przekierowuje, czy menu konta ma wszystkie trzy
+pozycje i czy strzałka faktycznie zmienia `scrollLeft`. Razem z wcześniejszymi
+skryptami daje to **95 sprawdzeń** w Chromium przy 197 testach backendu.
+
+---
+
 ## Co zostaje na później
 
 - gablotka 5 ulubionych playlist na profilu,

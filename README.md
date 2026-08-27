@@ -99,8 +99,8 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── theme/                   # motyw jasny/ciemny
     ├── i18n/                    # pl.json i en.json
-    ├── components/              # Layout, Post, Reactions, Favorites, FriendSuggestions, …
-    └── pages/                   # Login, Register, Home, Feed, Profile, Friends, Settings
+    ├── components/              # Layout, Post, Reactions, Favorites, HorizontalStrip, …
+    └── pages/                   # Login, Register, Feed (strona główna), Profile, Friends, Settings
 ```
 
 ## API
@@ -371,6 +371,39 @@ podmiana tej flagi w przeglądarce niczego nie odblokuje.
 
 Język komunikatów: nagłówek `Accept-Language: pl` albo parametr `?lang=pl`.
 
+## Układ strony
+
+**Stroną główną jest tablica.** Pod adresem `/` od razu widać, co wrzucili
+inni — a nie ekran powitalny z własnym adresem e-mail. Stary adres `/feed`
+przekierowuje na `/`, żeby wysłane komuś linki i zakładki dalej działały.
+
+**Górny pasek jest przyklejony** (`sticky-top`) i półprzezroczysty
+z rozmyciem tła. Bez tego przy dłuższej tablicy trzeba było wracać na sam
+początek strony, żeby gdziekolwiek przejść.
+
+**W menu zostają tylko miejsca wspólne**: Znajomi i — u administratora —
+Użytkownicy. Wszystko, co dotyczy własnego konta, siedzi pod awatarem:
+kliknięcie w nazwę rozwija *Mój profil*, *Ustawienia* i *Wyloguj*. Osobne
+pozycje „Strona główna", „Tablica", „Profil" i „Ustawienia" robiły z paska
+listę odnośników, w której ginęło to, co naprawdę wspólne — a dwie z nich
+prowadziły w to samo miejsce.
+
+### Poziome paski ze strzałkami
+
+Ulubieni artyści, ulubione utwory i proponowani znajomi używają **tego samego
+komponentu** (`HorizontalStrip`): jeden rząd kafelków, przewijany strzałkami
+albo palcem. Jedno zachowanie w trzech miejscach jest celowe — po nim
+poznaje się, że to ten sam rodzaj listy.
+
+Zawijana siatka przy dwudziestu ulubionych rozpychała profil na kilka
+ekranów w dół i wypychała z widoku wszystko, co jest pod spodem. Pasek
+zajmuje zawsze jeden rząd.
+
+Strzałki pojawiają się **tylko wtedy, gdy jest co przewijać**, i wygasają
+na końcach (przycisk, który nic nie robi, jest gorszy niż jego brak).
+Przy krawędziach jest miękkie wygaszenie — mówi, że treść biegnie dalej,
+i daje strzałce tło, przez które nie przebija się okładka.
+
 ## Motyw jasny / ciemny
 
 Przełącznik (słońce/księżyc) stoi w menu obok PL/EN i działa też przed
@@ -416,8 +449,9 @@ z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
 guście**, **moderacja kont (zakaz publikowania, usuwanie)**, motyw
 jasny/ciemny oraz cała aplikacja na Docker Compose. Nazwy w kodzie są
 konsekwentnie angielskie, komentarze — polskie.
-**197 testów backendu przechodzi**, przepływy frontendu sprawdzone
-w przeglądarce.
+**197 testów backendu przechodzi**, a przepływy frontendu — **95 sprawdzeń
+w prawdziwej przeglądarce** (cała aplikacja, ulubieni i propozycje, linki
+muzyczne, moderacja, układ strony).
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
 Szczegóły w `docs/WYMAGANIA.md`. Następny krok: gablotka ulubionych playlist

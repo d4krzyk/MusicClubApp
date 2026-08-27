@@ -6,6 +6,7 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import client, { describeError } from '../api/client';
 import CatalogSearch from './CatalogSearch';
+import HorizontalStrip from './HorizontalStrip';
 
 /**
  * Ulubieni artysci i utwory na profilu.
@@ -243,8 +244,14 @@ function Section({ title, items, emptyText, canEdit, limitReached, kind, onAdd, 
 
       {items.length === 0 && <p className="text-body-secondary small mb-2">{emptyText}</p>}
 
+      {/*
+        Pasek poziomy zamiast zawijanej siatki. Przy dwudziestu pozycjach
+        siatka rozpychala profil na kilka ekranow w dol i wypychala z widoku
+        to, co jest pod spodem. Pasek zajmuje zawsze jeden rzad, a reszte
+        pokazuje na zadanie - strzalkami albo palcem.
+      */}
       {items.length > 0 && (
-        <div className="d-flex flex-wrap gap-2 mb-2">
+        <HorizontalStrip className="mb-2" itemWidth={132}>
           {items.map((p) => (
             <div key={p.externalId} className="favorite-card">
               <Cover url={p.imageUrl} caption={p.name ?? p.title} />
@@ -271,7 +278,7 @@ function Section({ title, items, emptyText, canEdit, limitReached, kind, onAdd, 
               )}
             </div>
           ))}
-        </div>
+        </HorizontalStrip>
       )}
 
       {canEdit && (

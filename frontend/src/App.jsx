@@ -2,7 +2,6 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { RequireAdmin, RequireAnonymous, RequireAuth } from './auth/RouteGuards';
 import Layout from './components/Layout';
-import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
@@ -24,22 +23,27 @@ export default function App() {
       <AuthProvider>
         <Layout>
           <Routes>
+            {/*
+              Strona glowna TO tablica. Wczesniej byla tu osobna strona
+              powitalna z zapowiedzia kolejnych krokow - a po wejsciu do
+              aplikacji chce sie zobaczyc, co nowego u innych, a nie wlasny
+              adres e-mail.
+            */}
             <Route
               path="/"
-              element={
-                <RequireAuth>
-                  <HomePage />
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/feed"
               element={
                 <RequireAuth>
                   <FeedPage />
                 </RequireAuth>
               }
             />
+
+            {/*
+              Stary adres tablicy zostaje jako przekierowanie. Ktos moze go
+              miec w zakladkach albo w wyslanym komus linku - pusta strona
+              bylaby tu najgorsza mozliwa odpowiedzia.
+            */}
+            <Route path="/feed" element={<Navigate to="/" replace />} />
             {/*
               Dwie sciezki, jedna strona: /profil to skrot do wlasnego profilu
               (wygodny link z menu), /profil/:username to czyjs profil.

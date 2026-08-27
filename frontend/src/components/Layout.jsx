@@ -7,12 +7,13 @@ import Container from 'react-bootstrap/Container';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Badge from 'react-bootstrap/Badge';
 import Button from 'react-bootstrap/Button';
+import NavDropdown from 'react-bootstrap/NavDropdown';
 import client from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
 import { LANGUAGES, changeLanguage } from '../i18n';
 import Avatar from './Avatar';
-import { IconMoon, IconSun } from './Icons';
+import { IconGear, IconLogout, IconMoon, IconPerson, IconSun } from './Icons';
 
 /**
  * Wspolna rama strony: gorne menu, tresc i stopka.
@@ -37,6 +38,21 @@ export default function Layout({ children }) {
    */
   const [pending, setPending] = useState(0);
 
+  /*
+   * Czy strona jest przewinieta. Sluzy tylko do dorysowania cienia pod
+   * paskiem: dopoki tresc zaczyna sie tuz pod nim, cien wygladalby jak
+   * przypadkowa kreska, a przy przewinietej stronie pokazuje, ze pasek
+   * faktycznie na czyms lezy.
+   */
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   useEffect(() => {
     if (!user) {
       setPending(0);
@@ -54,7 +70,12 @@ export default function Layout({ children }) {
 
   return (
     <>
-      <Navbar expand="md" bg="body-tertiary" className="border-bottom">
+      {/*
+        sticky-top: pasek zostaje na gorze przy przewijaniu. Bez tego przy
+        dluzszej tablicy trzeba bylo wracac na sam poczatek strony, zeby
+        gdziekolwiek przejsc.
+      */}
+      <Navbar expand="md" sticky="top" className={`top-bar border-bottom${scrolled ? ' is-scrolled' : ''}`}>
         <Container>
           <Navbar.Brand as={Link} to="/" className="fw-bold text-primary">
             {t('app.name')}
@@ -66,15 +87,13 @@ export default function Layout({ children }) {
             <Nav className="me-auto">
               {user ? (
                 <>
-                  <Nav.Link as={NavLink} to="/" end>
-                    {t('menu.home')}
-                  </Nav.Link>
-                  <Nav.Link as={NavLink} to="/feed">
-                    {t('menu.feed')}
-                  </Nav.Link>
-                  <Nav.Link as={NavLink} to="/profil" end>
-                    {t('menu.profile')}
-                  </Nav.Link>
+                  {/*
+                    W menu zostaja WYLACZNIE miejsca wspolne dla wszystkich.
+                    Tablica jest teraz strona glowna (prowadzi do niej logo),
+                    a wszystko, co dotyczy wlasnego konta - profil i ustawienia -
+                    siedzi pod awatarem po prawej. Menu z pozycjami "Strona
+                    glowna" i "Tablica" wskazujacymi na to samo tylko myli.
+                  */}
                   <Nav.Link as={NavLink} to="/znajomi">
                     {t('menu.friends')}
                     {/*
@@ -86,10 +105,6 @@ export default function Layout({ children }) {
                       <Badge bg="primary" className="ms-1">{pending}</Badge>
                     )}
                   </Nav.Link>
-                  <Nav.Link as={NavLink} to="/settings">
-                    {t('menu.settings')}
-                  </Nav.Link>
-
                   {/*
                     Lista uzytkownikow to funkcja administracyjna - zwykly
                     uzytkownik nie widzi nawet linku. Prawdziwa blokada siedzi
@@ -144,24 +159,41 @@ export default function Layout({ children }) {
               </Button>
 
               {user && (
-                <>
-                  {/*
-                    Wlasny awatar prowadzi na PROFIL, nie do ustawien -
-                    tak dziala to w kazdym serwisie spolecznosciowym.
-                    Ustawienia maja swoja pozycje w menu obok.
-                  */}
-                  <Link
-                    to="/profil"
-                    className="d-flex align-items-center gap-2 text-decoration-none text-body"
-                  >
-                    <Avatar avatarUrl={user.avatarUrl} username={user.username} size={32} />
-                    <span className="d-none d-lg-inline">{user.username}</span>
-                  </Link>
+                /*
+                  Wszystko, co dotyczy wlasnego konta, w jednym miejscu:
+                  klikniecie w awatar z nazwa rozwija profil, ustawienia
+                  i wylogowanie. Trzy osobne pozycje w menu robily z paska
+                  na gorze liste odnosnikow, w ktorej ginely te naprawde
+                  wspolne - znajomi i (u administratora) konta.
+                */
+                <NavDropdown
+                  align="end"
+                  className="account-menu"
+                  title={
+                    <span className="d-inline-flex align-items-center gap-2">
+                      <Avatar avatarUrl={user.avatarUrl} username={user.username} size={32} />
+                      <span className="d-none d-lg-inline">{user.username}</span>
+                    </span>
+                  }
+                  id="account-menu"
+                >
+                  <NavDropdown.Item as={Link} to="/profil">
+                    <IconPerson className="me-2" />
+                    {t('menu.myProfile')}
+                  </NavDropdown.Item>
 
-                  <Button variant="outline-secondary" size="sm" onClick={handleLogout}>
+                  <NavDropdown.Item as={Link} to="/settings">
+                    <IconGear className="me-2" />
+                    {t('menu.settings')}
+                  </NavDropdown.Item>
+
+                  <NavDropdown.Divider />
+
+                  <NavDropdown.Item onClick={handleLogout}>
+                    <IconLogout className="me-2" />
                     {t('menu.logout')}
-                  </Button>
-                </>
+                  </NavDropdown.Item>
+                </NavDropdown>
               )}
             </div>
           </Navbar.Collapse>

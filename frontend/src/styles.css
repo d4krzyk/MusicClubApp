@@ -319,15 +319,6 @@ body {
    Uklad poziomy jest tu celowy: mowi "to jest lista uporzadkowana,
    zacznij od lewej", czego pionowa siatka nie przekazuje.
 */
-.suggestion-strip {
-  display: flex;
-  gap: .75rem;
-  overflow-x: auto;
-  padding-bottom: .5rem;
-  /* Karta zatrzymuje sie rowno przy przewijaniu palcem */
-  scroll-snap-type: x proximity;
-}
-
 .suggestion-card {
   flex: 0 0 8.5rem;
   scroll-snap-align: start;
@@ -348,4 +339,322 @@ body {
      ile powodow ma dana osoba. Bez tego pasek wygladalby jak schodki.
   */
   min-height: 3rem;
+}
+
+/* =========================================================================
+   POZIOMY PASEK ZE STRZALKAMI  (komponent HorizontalStrip)
+
+   Uzywaja go ulubieni i proponowani znajomi. Jedno zachowanie w obu
+   miejscach jest tu celowe: po nim uzytkownik poznaje, ze ma do czynienia
+   z tym samym rodzajem listy.
+   ========================================================================= */
+
+.strip {
+  position: relative;
+}
+
+.strip-track {
+  display: flex;
+  gap: .75rem;
+  overflow-x: auto;
+  padding: .25rem .125rem .5rem;
+  scroll-behavior: smooth;
+  /* Kafelek zatrzymuje sie rowno przy przewijaniu palcem */
+  scroll-snap-type: x proximity;
+  /*
+     scroll-padding MUSI odpowiadac poziomemu padding-owi wyzej. Bez tego
+     pierwszy kafelek "przyklejal sie" o te dwa piksele dalej i pasek nigdy
+     nie stal dokladnie na zerze - a wtedy lewa strzalka wygladala na
+     aktywna, choc nie bylo juz czego przewijac w lewo.
+  */
+  scroll-padding-inline: .125rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-border-color) transparent;
+}
+
+.strip-track > * {
+  scroll-snap-align: start;
+  /* Bez tego kafelki kurcza sie, zeby zmiescic sie w jednym rzedzie -
+     i zamiast paska do przewijania powstaje rzad scisnietych obrazkow */
+  flex: 0 0 auto;
+}
+
+.strip-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.strip-track::-webkit-scrollbar-thumb {
+  background: var(--bs-border-color);
+  border-radius: 3px;
+}
+
+/*
+   Miekkie wygaszenie przy krawedziach. Pelni dwie role naraz: mowi, ze tresc
+   nie konczy sie na krawedzi, tylko biegnie dalej, i daje strzalce tlo, przez
+   ktore nie przebija sie kafelek. Bez tego strzalka lezala wprost na okladce
+   i przy jasnym zdjeciu robila sie nieczytelna.
+
+   pointer-events: none jest tu konieczne - bez tego przezroczysta warstwa
+   przechwytywalaby klikniecia w pierwszy i ostatni kafelek.
+*/
+.strip::before,
+.strip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: .5rem;
+  /* Waskie i lagodne: ma zasugerowac dalszy ciag, a nie zamazac podpis
+     pod kafelkiem tak, ze wyglada to na usterke */
+  width: 2rem;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+
+.strip::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bs-body-bg) 25%, transparent);
+}
+
+.strip::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bs-body-bg) 25%, transparent);
+}
+
+/* Wygaszenie pokazujemy tylko z tej strony, z ktorej faktycznie cos jeszcze
+   jest - inaczej sugerowaloby dalszy ciag listy tam, gdzie jej nie ma */
+.strip.can-left::before,
+.strip.can-right::after {
+  opacity: 1;
+}
+
+/*
+   Strzalki lezą NA pasku, przy jego krawedziach. Umieszczenie ich pod spodem
+   (jak przy galerii zdjec) zabieraloby kolejny rzad wysokosci w miejscu,
+   gdzie na profilu i tak jest gesto.
+*/
+.strip-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 50%;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  box-shadow: 0 .125rem .5rem rgba(0, 0, 0, .15);
+  transition: opacity .15s ease, background-color .15s ease, transform .15s ease;
+}
+
+.strip-arrow:hover:not(:disabled) {
+  background: var(--bs-secondary-bg);
+  transform: translateY(-50%) scale(1.08);
+}
+
+/*
+   Na koncu listy strzalka blednie, ale ZOSTAJE na swoim miejscu. Gdyby
+   znikala, pasek przeskakiwalby w bok przy kazdym dojechaniu do konca.
+*/
+.strip-arrow:disabled {
+  opacity: .25;
+  cursor: default;
+}
+
+.strip-arrow-left {
+  left: -.25rem;
+}
+
+.strip-arrow-right {
+  right: -.25rem;
+}
+
+/* Na waskich ekranach strzalek nie ma - tam przewija sie palcem, a przyciski
+   zaslanialyby kafelki */
+@media (max-width: 575.98px) {
+  .strip-arrow {
+    display: none;
+  }
+}
+
+/* =========================================================================
+   WARSTWA WIZUALNA
+
+   Kilka drobiazgow, ktorych Bootstrap nie robi sam: przyklejony pasek
+   z rozmyciem, lagodniejsze karty i przejscia. Zadna z tych regul nie
+   zmienia UKLADU strony - wszystkie dotycza wylacznie wygladu, wiec nic
+   nie moze przez nie "uciec" z widoku.
+   ========================================================================= */
+
+/*
+   WSZYSTKIE animacje wylaczamy, gdy uzytkownik prosi o ograniczenie ruchu.
+   To nie jest ozdoba dostepnosciowa: dla czesci osob ruch na ekranie
+   oznacza zawroty glowy albo mdlosci, a system ma na to osobne ustawienie.
+   Regula stoi na poczatku, zeby zadna pozniejsza jej nie przeslonila.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- Tlo strony ---------------------------------------------------------- */
+
+/*
+   Delikatna poswiata w kolorze wiodacym zamiast plaskiego tla. Jest
+   przypieta do gory strony (a nie powtarzana), wiec przy przewijaniu
+   znika - dokladnie tak, jak zachowywalby sie naglowek.
+*/
+body {
+  background-image:
+    radial-gradient(60rem 24rem at 50% -8rem, rgba(var(--bs-primary-rgb), .10), transparent 70%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* --- Przyklejony pasek gorny --------------------------------------------- */
+
+.top-bar {
+  /*
+     Poltransparentne tlo z rozmyciem: tresc przewijana pod paskiem jest
+     ledwie widoczna, dzieki czemu widac, ze cos sie tam rusza, a napisy
+     w menu pozostaja czytelne.
+  */
+  background-color: rgba(var(--bs-body-bg-rgb), .85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: box-shadow .2s ease;
+}
+
+/* Cien pojawia sie dopiero, gdy pasek faktycznie na czyms lezy */
+.top-bar.is-scrolled {
+  box-shadow: 0 .25rem 1rem rgba(0, 0, 0, .12);
+}
+
+/*
+   Przegladarka bez obslugi rozmycia dostaje pelne tlo. Bez tego napisy
+   nakladalyby sie na przewijana tresc i pasek bylby nieczytelny.
+*/
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .top-bar {
+    background-color: var(--bs-body-bg);
+  }
+}
+
+/*
+   Kotwice (#cos) i przewijanie do elementu musza uwzglednic wysokosc
+   przyklejonego paska - inaczej docelowy element chowa sie pod nim.
+*/
+:root {
+  scroll-padding-top: 5rem;
+}
+
+.account-menu .dropdown-toggle::after {
+  margin-left: .4rem;
+}
+
+/* --- Karty --------------------------------------------------------------- */
+
+.card {
+  border-radius: .875rem;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+
+/*
+   Uniesienie karty pod kursorem TYLKO na tablicy. Na formularzach byloby
+   to rozpraszajace, a przy poscie podpowiada, ze karta jest calostka.
+*/
+.feed-page .card:hover {
+  box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .10);
+}
+
+/* --- Przejscia ----------------------------------------------------------- */
+
+.btn,
+.form-control,
+.form-select,
+.nav-link {
+  transition: background-color .15s ease, border-color .15s ease,
+              color .15s ease, box-shadow .15s ease;
+}
+
+.avatar,
+.avatar-placeholder {
+  transition: transform .15s ease;
+}
+
+a:hover > .avatar,
+a:hover > .avatar-placeholder,
+.friend-card:hover .avatar,
+.friend-card:hover .avatar-placeholder {
+  transform: scale(1.06);
+}
+
+.favorite-cover {
+  transition: transform .2s ease;
+}
+
+.favorite-card:hover .favorite-cover {
+  transform: scale(1.04);
+}
+
+/*
+   Krzyzyk usuwania pokazuje sie dopiero pod kursorem. Przy kilkunastu
+   kafelkach naraz stale widoczne krzyzyki wygladaly jak lista bledow.
+   Na dotyku (brak kursora) zostaje widoczny zawsze - inaczej nie dalo by
+   sie go uzyc.
+*/
+@media (hover: hover) {
+  .favorite-remove {
+    opacity: 0;
+    transition: opacity .15s ease, background-color .15s ease;
+  }
+
+  .favorite-card:hover .favorite-remove,
+  .favorite-remove:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* --- Pojawianie sie tresci ----------------------------------------------- */
+
+/*
+   Delikatne wejscie kart na tablicy. Bez tego doladowane starsze posty
+   pojawiaja sie skokiem i przez moment nie wiadomo, co sie zmienilo.
+*/
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(.5rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+.feed-page > * {
+  animation: fade-in-up .25s ease both;
+}
+
+/* --- Drobiazgi ----------------------------------------------------------- */
+
+/* Wyrazny obrys przy poruszaniu sie klawiatura - Bootstrap daje go tylko
+   niektorym elementom */
+:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+.suggestion-card,
+.favorite-card {
+  transition: transform .15s ease;
+}
+
+.suggestion-card:hover {
+  transform: translateY(-.125rem);
 }

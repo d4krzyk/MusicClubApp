@@ -37,7 +37,7 @@ const MAX_IMAGES = 10;
 export default function FeedPage() {
   const { t } = useTranslation();
 
-  const [posty, setPosty] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(0);
   const [lastPage, setLastPage] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,7 @@ export default function FeedPage() {
       });
       const data = response.data;
 
-      setPosty((previous) => (joined ? [...previous, ...data.content] : data.content));
+      setPosts((previous) => (joined ? [...previous, ...data.content] : data.content));
       setLastPage(data.last);
       setPage(data.number);
     } catch (error) {
@@ -71,13 +71,13 @@ export default function FeedPage() {
 
   function afterAdd(created) {
     // Nowy post ma byc na gorze - to najszybszy sposob, bez ponownego pobierania
-    setPosty((previous) => [created, ...previous]);
+    setPosts((previous) => [created, ...previous]);
     setMessage(t('posts.published'));
     setFormOpen(false);
   }
 
-  function poEdycji(updated) {
-    setPosty((previous) =>
+  function afterEdit(updated) {
+    setPosts((previous) =>
       previous.map((p) => (p.id === updated.id ? updated : p)));
     setMessage(t('posts.updated'));
   }
@@ -88,7 +88,7 @@ export default function FeedPage() {
     }
     try {
       await client.delete(`/posts/${id}`);
-      setPosty((previous) => previous.filter((p) => p.id !== id));
+      setPosts((previous) => previous.filter((p) => p.id !== id));
       setMessage(t('posts.deleted'));
     } catch (error) {
       const details = describeError(error);
@@ -98,7 +98,7 @@ export default function FeedPage() {
 
   return (
     <Row className="justify-content-center">
-      <Col lg={8}>
+      <Col lg={8} className="feed-page">
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h1 className="h4 mb-0">{t('posts.title')}</h1>
 
@@ -122,7 +122,7 @@ export default function FeedPage() {
 
         <Collapse in={formOpen}>
           <div id="formularz-postu">
-            <PostForm onDodano={afterAdd} />
+            <PostForm onAdded={afterAdd} />
           </div>
         </Collapse>
 
@@ -133,11 +133,11 @@ export default function FeedPage() {
         )}
         {listError && <Alert variant="danger">{listError}</Alert>}
 
-        {posty.map((post) => (
-          <Post key={post.id} post={post} onDelete={remove} onUpdate={poEdycji} />
+        {posts.map((post) => (
+          <Post key={post.id} post={post} onDelete={remove} onUpdate={afterEdit} />
         ))}
 
-        {!loading && posty.length === 0 && !listError && (
+        {!loading && posts.length === 0 && !listError && (
           <p className="text-body-secondary text-center py-4">{t('posts.empty')}</p>
         )}
 
@@ -161,7 +161,7 @@ export default function FeedPage() {
 }
 
 /** Formularz dodawania posta: tekst, zdjecia i utwor ze Spotify. */
-function PostForm({ onDodano }) {
+function PostForm({ onAdded }) {
   const { t } = useTranslation();
 
   const [content, setContent] = useState('');
@@ -172,7 +172,7 @@ function PostForm({ onDodano }) {
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
-  const [wysylanie, setWysylanie] = useState(false);
+  const [sending, setSending] = useState(false);
 
   function clear() {
     setContent('');
@@ -193,7 +193,7 @@ function PostForm({ onDodano }) {
     e.preventDefault();
     setFieldErrors({});
     setGeneralError(null);
-    setWysylanie(true);
+    setSending(true);
 
     try {
       /*
@@ -221,13 +221,13 @@ function PostForm({ onDodano }) {
       const response = await client.post('/posts', formData);
 
       clear();
-      onDodano(response.data);
+      onAdded(response.data);
     } catch (error) {
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
       setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
-      setWysylanie(false);
+      setSending(false);
     }
   }
 
@@ -265,8 +265,8 @@ function PostForm({ onDodano }) {
             serverErrors={fieldErrors}
           />
 
-          <Button type="submit" disabled={wysylanie || Boolean(blokada)}>
-            {wysylanie ? t('posts.publishing') : t('posts.publish')}
+          <Button type="submit" disabled={sending || Boolean(blokada)}>
+            {sending ? t('posts.publishing') : t('posts.publish')}
           </Button>
         </Form>
       </Card.Body>

@@ -4,7 +4,6 @@
     "tagline": "Poznawaj ludzi o podobnym guście muzycznym"
   },
   "menu": {
-    "home": "Strona główna",
     "users": "Użytkownicy",
     "login": "Zaloguj się",
     "register": "Załóż konto",
@@ -12,10 +11,10 @@
     "language": "Język",
     "settings": "Ustawienia",
     "feed": "Tablica",
-    "profile": "Profil",
     "themeLight": "Włącz motyw jasny",
     "themeDark": "Włącz motyw ciemny",
-    "friends": "Znajomi"
+    "friends": "Znajomi",
+    "myProfile": "Mój profil"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -25,7 +24,9 @@
     "delete": "Usuń",
     "confirmDelete": "Na pewno usunąć ten post?",
     "close": "Zamknij",
-    "of": "z"
+    "of": "z",
+    "scrollLeft": "Przewiń w lewo",
+    "scrollRight": "Przewiń w prawo"
   },
   "login": {
     "title": "Logowanie",
@@ -50,16 +51,6 @@
     "submitting": "Zakładanie konta…",
     "haveAccount": "Masz już konto?",
     "goToLogin": "Zaloguj się"
-  },
-  "home": {
-    "welcome": "Cześć, {{username}}!",
-    "yourAccount": "Twoje konto",
-    "email": "E-mail",
-    "memberSince": "Członek od",
-    "nextSteps": "Kolejne kroki",
-    "nextStepsText": "Ulubieni artyści, posty i propozycje znajomych dojdą w następnym etapie.",
-    "goToSettings": "Zmień dane konta w ustawieniach →",
-    "goToFeed": "Przejdź na tablicę →"
   },
   "users": {
     "title": "Użytkownicy",

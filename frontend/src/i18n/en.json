@@ -4,7 +4,6 @@
     "tagline": "Meet people who share your taste in music"
   },
   "menu": {
-    "home": "Home",
     "users": "Users",
     "login": "Sign in",
     "register": "Sign up",
@@ -12,10 +11,10 @@
     "language": "Language",
     "settings": "Settings",
     "feed": "Feed",
-    "profile": "Profile",
     "themeLight": "Switch to light theme",
     "themeDark": "Switch to dark theme",
-    "friends": "Friends"
+    "friends": "Friends",
+    "myProfile": "My profile"
   },
   "common": {
     "loading": "Loading…",
@@ -25,7 +24,9 @@
     "delete": "Delete",
     "confirmDelete": "Delete this post?",
     "close": "Close",
-    "of": "of"
+    "of": "of",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right"
   },
   "login": {
     "title": "Sign in",
@@ -50,16 +51,6 @@
     "submitting": "Creating account…",
     "haveAccount": "Already have an account?",
     "goToLogin": "Sign in"
-  },
-  "home": {
-    "welcome": "Hi, {{username}}!",
-    "yourAccount": "Your account",
-    "email": "Email",
-    "memberSince": "Member since",
-    "nextSteps": "Coming next",
-    "nextStepsText": "Favourite artists, posts and friend suggestions arrive in the next stage.",
-    "goToSettings": "Change your account details in settings →",
-    "goToFeed": "Go to the feed →"
   },
   "users": {
     "title": "Users",

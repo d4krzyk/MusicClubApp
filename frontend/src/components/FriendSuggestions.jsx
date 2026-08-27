@@ -6,6 +6,7 @@ import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import client, { describeError } from '../api/client';
 import Avatar from './Avatar';
+import HorizontalStrip from './HorizontalStrip';
 import { IconPersonCheck, IconPersonPlus } from './Icons';
 
 /**
@@ -29,7 +30,7 @@ import { IconPersonCheck, IconPersonPlus } from './Icons';
 export default function FriendSuggestions({ refresh, onChange }) {
   const { t } = useTranslation();
 
-  const [osoby, setOsoby] = useState([]);
+  const [people, setPeople] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sent, setSent] = useState({});
@@ -38,7 +39,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
     setLoading(true);
     try {
       const response = await client.get('/friends/suggestions', { params: { limit: 24 } });
-      setOsoby(response.data);
+      setPeople(response.data);
     } catch (error) {
       const details = describeError(error);
       setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
@@ -51,16 +52,16 @@ export default function FriendSuggestions({ refresh, onChange }) {
     fetch();
   }, [fetch, refresh]);
 
-  async function invite(login) {
+  async function invite(username) {
     setError(null);
     try {
-      const { data } = await client.post('/friends/requests', { username: login });
+      const { data } = await client.post('/friends/requests', { username: username });
       /*
        * Karta zmienia sie od razu, bez czekania na ponowne pobranie listy.
        * Przy pelnym odswiezeniu kolejnosc kart moglaby sie przesunac
        * dokladnie w chwili klikniecia - i palec wyladowalby na kims innym.
        */
-      setSent((p) => ({ ...p, [login]: data.friendsNow ? 'friends' : 'sent' }));
+      setSent((p) => ({ ...p, [username]: data.friendsNow ? 'friends' : 'sent' }));
       onChange?.();
     } catch (error) {
       const details = describeError(error);
@@ -77,11 +78,11 @@ export default function FriendSuggestions({ refresh, onChange }) {
     );
   }
 
-  if (osoby.length === 0) {
+  if (people.length === 0) {
     return <p className="text-body-secondary small">{t('friends.noSuggestions')}</p>;
   }
 
-  const anyoneMatched = osoby.some((o) => o.matched);
+  const anyoneMatched = people.some((o) => o.matched);
 
   return (
     <div>
@@ -99,9 +100,9 @@ export default function FriendSuggestions({ refresh, onChange }) {
         </Alert>
       )}
 
-      <div className="suggestion-strip">
-        {osoby.map((o) => {
-          const stan = sent[o.username]
+      <HorizontalStrip itemWidth={160}>
+        {people.map((o) => {
+          const state = sent[o.username]
             ?? (o.alreadyFriend ? 'friends' : null);
 
           return (
@@ -127,17 +128,17 @@ export default function FriendSuggestions({ refresh, onChange }) {
                 {!o.matched && <div>{t('friends.noCommonGround')}</div>}
               </div>
 
-              {stan === 'friends' && (
+              {state === 'friends' && (
                 <span className="text-success small d-block text-center">
                   <IconPersonCheck /> {t('friends.alreadyFriends')}
                 </span>
               )}
-              {stan === 'sent' && (
+              {state === 'sent' && (
                 <span className="text-body-secondary small d-block text-center">
                   {t('friends.invited')}
                 </span>
               )}
-              {stan === null && (
+              {state === null && (
                 <Button
                   size="sm"
                   variant="outline-primary"
@@ -150,7 +151,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
             </div>
           );
         })}
-      </div>
+      </HorizontalStrip>
     </div>
   );
 }

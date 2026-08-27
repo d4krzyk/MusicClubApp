@@ -139,7 +139,7 @@ export default function ProfilePage() {
       <Row className="justify-content-center">
         <Col lg={8}>
           <Alert variant="danger">{error ?? t('profile.notFound')}</Alert>
-          <Link to="/feed" className="btn btn-outline-secondary">
+          <Link to="/" className="btn btn-outline-secondary">
             {t('menu.feed')}
           </Link>
         </Col>
