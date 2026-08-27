@@ -291,8 +291,14 @@ Domyślny limit to **30 artystów i 30 utworów** (`app.favorites.max-artists`,
 
 Jeśli w `.env` jest `LASTFM_API_KEY`, na profilu pojawia się przycisk
 **Import z Last.fm**: podajesz swoją nazwę użytkownika stamtąd i aplikacja
-zaciąga najczęściej słuchanych artystów i utwory. Bez klucza przycisku po
-prostu nie ma — to lepsze niż przycisk, który zawsze kończy się błędem.
+zaciąga najczęściej słuchanych artystów i utwory.
+
+**Bez klucza przycisku nie ma** — to lepsze niż przycisk, który zawsze kończy
+się błędem. Sam brak przycisku nie jest jednak informacją, tylko zagadką,
+więc na własnym profilu widać wtedy krótką notkę, że import jest wyłączony;
+**administrator dostaje dodatkowo nazwę zmiennej**, bo tylko on może to
+włączyć. Klucz zakłada się w minutę na
+<https://www.last.fm/api/account/create> — wystarczy sam „API key".
 
 Podział ról między serwisami jest celowy: **Last.fm mówi, *czego* ktoś
 słucha** (samych nazw — ich API od 2019 roku nie oddaje użytecznych zdjęć),
@@ -381,11 +387,24 @@ przekierowuje na `/`, żeby wysłane komuś linki i zakładki dalej działały.
 z rozmyciem tła. Bez tego przy dłuższej tablicy trzeba było wracać na sam
 początek strony, żeby gdziekolwiek przejść.
 
-**W menu zostają tylko miejsca wspólne**: Znajomi i — u administratora —
-Użytkownicy. Wszystko, co dotyczy własnego konta, siedzi pod awatarem:
-kliknięcie w nazwę rozwija *Mój profil*, *Ustawienia* i *Wyloguj*. Osobne
-pozycje „Strona główna", „Tablica", „Profil" i „Ustawienia" robiły z paska
-listę odnośników, w której ginęło to, co naprawdę wspólne — a dwie z nich
+**Pasek ma trzy kolumny**: logo — ikony — konto. Skrajne mają tę samą
+szerokość, więc ikony wypadają dokładnie na środku *strony*, a nie na środku
+tego, co zostało po bokach (inaczej przy dłuższym loginie przesuwałyby się
+u każdego inaczej).
+
+**Nawigacja to same ikony**: tablica (nuty), znajomi (dwie osoby) i — u
+administratora — panel (tarcza). Aktywna pozycja dostaje gradient marki;
+przy samych ikonach to jedyne, co mówi, gdzie się jest. Każda ma `aria-label`
+i dymek, bo ikona bez podpisu musi się jakoś przedstawić.
+
+Nie ma „hamburgera" — po zamianie pozycji na ikony cały środek mieści się
+nawet na telefonie, a chowanie nawigacji za dodatkowym kliknięciem tylko by
+ją oddaliło.
+
+**Wszystko, co dotyczy własnego konta, siedzi pod awatarem**: kliknięcie
+w nazwę rozwija *Mój profil*, *Ustawienia* i *Wyloguj*. Osobne pozycje
+„Strona główna", „Tablica", „Profil" i „Ustawienia" robiły z paska listę
+odnośników, w której ginęło to, co naprawdę wspólne — a dwie z nich
 prowadziły w to samo miejsce.
 
 ### Poziome paski ze strzałkami
@@ -403,6 +422,32 @@ Strzałki pojawiają się **tylko wtedy, gdy jest co przewijać**, i wygasają
 na końcach (przycisk, który nic nie robi, jest gorszy niż jego brak).
 Przy krawędziach jest miękkie wygaszenie — mówi, że treść biegnie dalej,
 i daje strzałce tło, przez które nie przebija się okładka.
+
+## Wygląd
+
+Cały wygląd opiera się na **jednym zestawie zmiennych** na górze
+`styles.css` — kolorach, cieniach i krzywej czasowej. Kolor dopisany „na oko"
+w jednym miejscu jest tańszy w tej chwili, ale po kilku takich okazuje się,
+że fiolet w aplikacji ma pięć odcieni i żaden nie pasuje do pozostałych.
+
+**Gradient marki** (fiolet → fuksja → róż) pojawia się wszędzie tam, gdzie coś
+ma przyciągać wzrok: logo, główny przycisk, aktywna ikona w menu, obrączka
+własnego awatara, wskaźnik języka. Jedno źródło sprawia, że te miejsca czytają
+się jako jedna rodzina, a nie zbiór ozdób.
+
+**Głębia bierze się z trzech rzeczy naraz**: tło strony ma lekki odcień,
+powierzchnie (karty, pasek) są od niego jaśniejsze, a cienie są warstwowe —
+bliższy i ostry plus dalszy i rozmyty. Pojedynczy cień wygląda jak naklejka;
+dwa dają wrażenie, że element faktycznie unosi się nad tłem. Dopóki tło było
+białe i karty też białe, żadne cienie nie mogły tego naprawić.
+
+W ciemnym motywie cienie są **mocniejsze**, nie słabsze — czarny cień na
+ciemnym tle prawie nie istnieje. Zamiast tego rozjaśniamy górę karty, tak jak
+zachowuje się światło padające z góry.
+
+**Wszystkie animacje wyłącza `prefers-reduced-motion`.** Dla części osób ruch
+na ekranie oznacza zawroty głowy albo mdłości, a system ma na to osobne
+ustawienie — wystarczy je uszanować.
 
 ## Motyw jasny / ciemny
 
@@ -449,7 +494,7 @@ z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
 guście**, **moderacja kont (zakaz publikowania, usuwanie)**, motyw
 jasny/ciemny oraz cała aplikacja na Docker Compose. Nazwy w kodzie są
 konsekwentnie angielskie, komentarze — polskie.
-**197 testów backendu przechodzi**, a przepływy frontendu — **95 sprawdzeń
+**197 testów backendu przechodzi**, a przepływy frontendu — **96 sprawdzeń
 w prawdziwej przeglądarce** (cała aplikacja, ulubieni i propozycje, linki
 muzyczne, moderacja, układ strony).
 

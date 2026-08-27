@@ -1425,6 +1425,92 @@ skryptami daje to **95 sprawdzeń** w Chromium przy 197 testach backendu.
 
 ---
 
+## Wygląd: od „płaskiego" do czegoś z głębią
+
+Uwaga brzmiała: wszystko jest minimalistyczne i płaskie. Trafna — i warto
+nazwać powód, bo nie był oczywisty.
+
+### Płaskości nie da się naprawić cieniami
+
+Tło strony było białe. Karty też były białe. **Nie było czego od czego
+odróżnić**, więc żaden cień nie mógł tego uratować — cień pod białą kartą na
+białym tle to szara smuga, a nie głębia.
+
+Naprawa jest jednym wierszem i to ona zrobiła największą różnicę: tło dostało
+lekki odcień, a karty zostały przy czystym `--bs-body-bg`. Teraz to karty są
+„nad" stroną, a nie odwrotnie. W ciemnym motywie ta sama zasada działa
+odwrotnie: tło jest **ciemniejsze** niż powierzchnie, a nie jednolicie szare.
+
+Do tego cienie warstwowe — bliższy i ostry plus dalszy i rozmyty. Pojedynczy
+cień wygląda jak naklejka; dopiero dwa dają wrażenie uniesienia. W ciemnym
+motywie muszą być **mocniejsze**, nie słabsze, bo czarny cień na ciemnym tle
+prawie nie istnieje.
+
+### Jeden gradient zamiast pięciu fioletów
+
+Wszystkie kolory, cienie i czasy przejść siedzą teraz w jednym zestawie
+zmiennych na górze `styles.css`. Gradient marki (fiolet → fuksja → róż)
+pojawia się w logo, głównym przycisku, aktywnej ikonie menu, obrączce
+własnego awatara i wskaźniku języka — dzięki jednemu źródłu te miejsca czytają
+się jako jedna rodzina.
+
+Kolor dopisany „na oko" w jednym miejscu jest tańszy w tej chwili, ale po
+kilku takich okazuje się, że fiolet w aplikacji ma pięć odcieni i żaden nie
+pasuje do pozostałych.
+
+### Pasek: trzy kolumny i same ikony
+
+Ikony są wyśrodkowane **względem strony**, a nie względem tego, co zostało po
+bokach — stąd siatka `1fr auto 1fr`, a nie `mx-auto`. Przy różnej długości
+loginu ikony przesuwałyby się u każdego inaczej.
+
+Zamiana pozycji na ikony pozwoliła **wyrzucić „hamburgera"**: trzy ikony
+mieszczą się nawet na telefonie, a chowanie nawigacji za dodatkowym
+kliknięciem tylko by ją oddaliło. Aktywna pozycja dostaje gradient — przy
+samych ikonach to jedyne, co mówi, gdzie się jest.
+
+### Przełączniki, które pokazują, co się stało
+
+Język: jedna pigułka z **jednym** wskaźnikiem, który przesuwa się pod wybraną
+opcję. Dwa osobne przyciski nie mówiły, że wybór jest jeden z dwóch —
+wyglądały jak dwie niezależne akcje. Szerokość wskaźnika liczy się z liczby
+opcji, więc dołożenie trzeciego języka nie wymaga ruszania CSS-a.
+
+Motyw: słońce i księżyc **obie są w DOM-ie przez cały czas**, jedna nad drugą,
+i wymieniają się obrotem. Gdyby React podmieniał je warunkowo, nie byłoby
+czego animować — element znika i pojawia się nowy, więc przejście nie ma
+punktu zaczepienia.
+
+### Błąd, który przy okazji wyszedł: sprawdzenia „na pusto"
+
+Przy dokładaniu postów do zrzutów ekranu okazało się, że
+`POST /api/posts` przyjmuje **multipart**, a nie JSON (bo obok treści idą
+zdjęcia). Skrypty sprawdzające wysyłały JSON i dostawały 415 — czego nie
+sprawdzały. Skutek: post nigdy nie powstawał, a dwie asercje przechodziły
+**na pusto**:
+
+- „posty usuniętego konta znikły z tablicy" — nie było czego usuwać,
+- „przy cudzym poście nie ma przycisku Edytuj" — nie było cudzego posta.
+
+Obie wyglądały na zielone i obie nic nie sprawdzały. Pomocnik `wyslijPost`
+wysyła teraz multipart i **rzuca wyjątkiem przy statusie innym niż 201** —
+to ta druga część jest istotna: bez niej ten sam błąd wróciłby przy
+następnej zmianie API.
+
+### Dlaczego nie było przycisku importu z Last.fm
+
+Bo nie był ustawiony `LASTFM_API_KEY` — i tak to było zaprojektowane:
+bez klucza przycisk się nie pokazuje, żeby nikt nie klikał w coś, co zawsze
+kończy się błędem.
+
+Tyle że **sam brak przycisku nie jest informacją, tylko zagadką**. Właściciel
+profilu widzi teraz krótką notkę, że import jest wyłączony, a administrator
+dostaje dodatkowo nazwę zmiennej — bo tylko on może to włączyć. Zwykłemu
+użytkownikowi nazwy zmiennej nie pokazujemy; osobne sprawdzenie pilnuje,
+żeby to się nie zmieniło przez przypadek.
+
+---
+
 ## Co zostaje na później
 
 - gablotka 5 ulubionych playlist na profilu,

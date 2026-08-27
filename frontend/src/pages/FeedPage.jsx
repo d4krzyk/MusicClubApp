@@ -100,7 +100,7 @@ export default function FeedPage() {
     <Row className="justify-content-center">
       <Col lg={8} className="feed-page">
         <div className="d-flex align-items-center justify-content-between mb-3">
-          <h1 className="h4 mb-0">{t('posts.title')}</h1>
+          <h1 className="h4 mb-0 page-title">{t('posts.title')}</h1>
 
           <Button
             variant={formOpen ? 'outline-secondary' : 'primary'}

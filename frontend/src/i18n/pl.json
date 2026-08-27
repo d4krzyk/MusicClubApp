@@ -209,7 +209,9 @@
     "importSummary": "Dodano {{artists}} artystów i {{tracks}} utworów.",
     "importSkipped": "Pominięto {{count}} pozycji, których nie ma w katalogu.",
     "importAlready": "{{count}} pozycji już było na liście.",
-    "importLimit": "Zatrzymano się na limicie ulubionych."
+    "importLimit": "Zatrzymano się na limicie ulubionych.",
+    "importDisabled": "Import z Last.fm jest teraz wyłączony.",
+    "importDisabledAdmin": "Aby go włączyć, ustaw zmienną LASTFM_API_KEY (klucz zakładasz na last.fm/api/account/create) i uruchom aplikację ponownie."
   },
   "profile": {
     "visit": "Zobacz profil: {{username}}",

@@ -205,7 +205,9 @@
     "importSummary": "Added {{artists}} artists and {{tracks}} tracks.",
     "importSkipped": "Skipped {{count}} entries that are not in the catalogue.",
     "importAlready": "{{count}} entries were already on the list.",
-    "importLimit": "Stopped at the favourites limit."
+    "importLimit": "Stopped at the favourites limit.",
+    "importDisabled": "Last.fm import is currently switched off.",
+    "importDisabledAdmin": "To enable it, set the LASTFM_API_KEY variable (get a key at last.fm/api/account/create) and restart the app."
   },
   "profile": {
     "visit": "View {{username}}'s profile",

@@ -35,7 +35,7 @@ export default function FriendsPage() {
   const [refreshFriends, setRefreshFriends] = useState(0);
 
   const [searched, setSearched] = useState('');
-  const [wysylanie, setWysylanie] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -73,7 +73,7 @@ export default function FriendsPage() {
     if (!searched.trim()) {
       return;
     }
-    setWysylanie(true);
+    setSending(true);
     try {
       const { data } = await client.post('/friends/requests', { username: searched.trim() });
       await fetch();
@@ -91,7 +91,7 @@ export default function FriendsPage() {
       setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
       setMessage(null);
     } finally {
-      setWysylanie(false);
+      setSending(false);
     }
   }
 
@@ -136,7 +136,13 @@ export default function FriendsPage() {
                   onChange={(e) => setSearched(e.target.value)}
                   placeholder={t('friends.usernamePlaceholder')}
                 />
-                <Button type="submit" disabled={wysylanie || !searched.trim()}>
+                {/* text-nowrap: bez tego ikona i napis lamia sie na dwa
+                    wiersze i przycisk robi sie dwa razy wyzszy niz pole obok */}
+                <Button
+                  type="submit"
+                  className="text-nowrap"
+                  disabled={sending || !searched.trim()}
+                >
                   <IconPersonPlus /> {t('friends.invite')}
                 </Button>
               </div>

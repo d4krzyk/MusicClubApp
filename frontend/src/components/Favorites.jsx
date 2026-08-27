@@ -5,6 +5,7 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import client, { describeError } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import CatalogSearch from './CatalogSearch';
 import HorizontalStrip from './HorizontalStrip';
 
@@ -30,6 +31,7 @@ import HorizontalStrip from './HorizontalStrip';
  */
 export default function Favorites({ username, onChange }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
@@ -124,6 +126,20 @@ export default function Favorites({ username, onChange }) {
 
       {canEdit && (
         <p className="text-body-secondary small">{t('favorites.whyItMatters')}</p>
+      )}
+
+      {/*
+        Gdy importu nie ma, przycisk sie nie pojawia - i wlasciciel profilu
+        nie ma jak sie domyslic, dlaczego. Sam brak przycisku nie jest
+        informacja, tylko zagadka. Krotka notka mowi, ze funkcja istnieje
+        i jest wylaczona; administrator dostaje dodatkowo nazwe zmiennej,
+        bo tylko on moze to wlaczyc.
+      */}
+      {canEdit && !importAvailable && (
+        <p className="text-body-secondary small mb-2">
+          {t('favorites.importDisabled')}
+          {user?.admin && ' ' + t('favorites.importDisabledAdmin')}
+        </p>
       )}
 
       {error && <Alert variant="danger" className="py-2">{error}</Alert>}

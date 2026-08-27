@@ -6,25 +6,105 @@
    Zostawiamy wylacznie rzeczy, ktorych Bootstrap nie ma gotowych.
    ============================================================================= */
 
-/* Delikatny fiolet jako kolor wiodacy - podmieniamy zmienne Bootstrapa,
-   zamiast pisac wlasne klasy przyciskow. */
+/* =============================================================================
+   PALETA I GLEBIA
+
+   Jeden zestaw zmiennych, z ktorego korzysta cala reszta pliku. Kolor
+   dopisany "na oko" w jednym miejscu jest tanszy w tej chwili, ale po kilku
+   takich okazuje sie, ze fiolet w aplikacji ma piec odcieni i zaden nie
+   pasuje do pozostalych.
+   ============================================================================= */
+
 :root,
 [data-bs-theme='dark'] {
-  --bs-primary: #7c5cff;
-  --bs-primary-rgb: 124, 92, 255;
-  --bs-link-color: #9b83ff;
-  --bs-link-hover-color: #b7a5ff;
+  /* Kolor wiodacy zostaje fioletowy - zmienia sie to, co z niego robimy */
+  --bs-primary: #8b5cf6;
+  --bs-primary-rgb: 139, 92, 246;
+  --bs-link-color: #a78bfa;
+  --bs-link-hover-color: #c4b5fd;
+
+  /*
+     Trzy punkty gradientu marki: fiolet -> fuksja -> roz. Uzywamy go
+     WSZEDZIE tam, gdzie cos ma przyciagac wzrok (logo, glowny przycisk,
+     aktywna pozycja menu, obreczka wlasnego awatara) - dzieki jednemu
+     zrodlu te miejsca czytaja sie jako jedna rodzina, a nie zbior ozdob.
+  */
+  --mc-1: #8b5cf6;
+  --mc-2: #c026d3;
+  --mc-3: #f472b6;
+  --mc-gradient: linear-gradient(135deg, var(--mc-1), var(--mc-2) 55%, var(--mc-3));
+
+  /*
+     Cienie warstwowe: blizszy i ostry + dalszy i rozmyty. Pojedynczy cien
+     wyglada jak naklejka; dwa daja wrazenie, ze element faktycznie unosi
+     sie nad tlem. Skala jest trzystopniowa i to wystarcza - wiecej
+     poziomow nikt nie odroznia, a latwo sie w nich pogubic.
+  */
+  --mc-shadow-sm: 0 1px 2px rgba(15, 12, 30, .06), 0 2px 8px rgba(15, 12, 30, .05);
+  --mc-shadow-md: 0 2px 6px rgba(15, 12, 30, .08), 0 12px 28px rgba(15, 12, 30, .10);
+  --mc-shadow-lg: 0 4px 12px rgba(15, 12, 30, .10), 0 24px 48px rgba(15, 12, 30, .14);
+
+  /* Poswiata w kolorze marki - do stanow aktywnych i najechania */
+  --mc-glow: 0 4px 16px rgba(var(--bs-primary-rgb), .35);
+
+  /* Jedna krzywa czasowa na cala aplikacje. Lekkie "wyprzedzenie" na koncu
+     sprawia, ze ruch wyglada na sprezysty, a nie na oprogramowany. */
+  --mc-ease: cubic-bezier(.2, .8, .3, 1);
+  --mc-fast: .16s var(--mc-ease);
+  --mc-slow: .28s var(--mc-ease);
+
+  --mc-radius: .875rem;
 }
 
+/*
+   W ciemnym motywie cienie musza byc MOCNIEJSZE, nie slabsze. Na ciemnym tle
+   czarny cien niemal nie istnieje, wiec glebia znika - stad wieksza
+   nieprzezroczystosc i dodatkowa jasna krawedz u gory elementu.
+*/
+[data-bs-theme='dark'] {
+  --mc-shadow-sm: 0 1px 2px rgba(0, 0, 0, .30), 0 2px 8px rgba(0, 0, 0, .24);
+  --mc-shadow-md: 0 2px 6px rgba(0, 0, 0, .35), 0 12px 28px rgba(0, 0, 0, .40);
+  --mc-shadow-lg: 0 4px 12px rgba(0, 0, 0, .40), 0 24px 48px rgba(0, 0, 0, .50);
+}
+
+/* --- Przycisk glowny: gradient zamiast plaskiego wypelnienia ------------- */
+
 .btn-primary {
-  --bs-btn-bg: #7c5cff;
-  --bs-btn-border-color: #7c5cff;
-  --bs-btn-hover-bg: #9b83ff;
-  --bs-btn-hover-border-color: #9b83ff;
-  --bs-btn-active-bg: #6a49f2;
-  --bs-btn-active-border-color: #6a49f2;
-  --bs-btn-disabled-bg: #7c5cff;
-  --bs-btn-disabled-border-color: #7c5cff;
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-bg: transparent;
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-border-color: transparent;
+
+  position: relative;
+  background-image: var(--mc-gradient);
+  /*
+     Gradient jest wiekszy niz przycisk i przy najechaniu przesuwamy go
+     w bok. Podmiana kolorow dawalaby skok; przesuniecie tego samego
+     gradientu jest plynne i nie wymaga drugiego zestawu kolorow.
+  */
+  background-size: 180% 100%;
+  background-position: 0% 50%;
+  border: 0;
+  box-shadow: var(--mc-shadow-sm);
+  transition: background-position var(--mc-slow), box-shadow var(--mc-fast),
+              transform var(--mc-fast);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-position: 100% 50%;
+  box-shadow: var(--mc-glow);
+  transform: translateY(-1px);
+}
+
+/* Wcisniecie ma byc widoczne od razu - to jedyne potwierdzenie, ze klikniecie
+   w ogole doszlo, zanim serwer zdazy odpowiedziec */
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0) scale(.98);
+  box-shadow: var(--mc-shadow-sm);
 }
 
 /* Strona ma wypelniac okno, ze stopka zawsze na dole */
@@ -511,15 +591,62 @@ body {
 /* --- Tlo strony ---------------------------------------------------------- */
 
 /*
-   Delikatna poswiata w kolorze wiodacym zamiast plaskiego tla. Jest
-   przypieta do gory strony (a nie powtarzana), wiec przy przewijaniu
-   znika - dokladnie tak, jak zachowywalby sie naglowek.
+   NAJWAZNIEJSZA regula dla wrazenia glebi w calej aplikacji.
+
+   Dopoki tlo strony bylo bialе, a karty tez biale, nie bylo czego od czego
+   odroznic - stad wrazenie plaskosci, ktorego nie da sie naprawic samymi
+   cieniami. Tlo dostaje wiec lekki odcien, a karty zostaja przy czystym
+   {@code --bs-body-bg}: to one sa "nad" strona, nie odwrotnie.
+
+   Do tego poswiata w kolorze marki przy gorze strony - przypieta, a nie
+   powtarzana, wiec przy przewijaniu znika tak jak naglowek.
 */
 body {
+  background-color: #f4f2fa;
   background-image:
-    radial-gradient(60rem 24rem at 50% -8rem, rgba(var(--bs-primary-rgb), .10), transparent 70%);
+    radial-gradient(70rem 28rem at 50% -10rem, rgba(var(--bs-primary-rgb), .16), transparent 70%),
+    radial-gradient(40rem 20rem at 85% 5%, rgba(244, 114, 182, .10), transparent 70%);
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+[data-bs-theme='dark'] body {
+  /* Ciemniej niz karty i z fioletowym podkladem - inaczej ciemny motyw jest
+     jednolita szaroscia, w ktorej nic sie nie wyroznia */
+  background-color: #131019;
+  background-image:
+    radial-gradient(70rem 28rem at 50% -10rem, rgba(var(--bs-primary-rgb), .22), transparent 70%),
+    radial-gradient(40rem 20rem at 85% 5%, rgba(192, 38, 211, .12), transparent 70%);
+}
+
+/*
+   Karty i pasek gorny maja byc JASNIEJSZE od tla, wiec w ciemnym motywie
+   podnosimy powierzchnie zamiast przyciemniac tlo pod nia.
+*/
+[data-bs-theme='dark'] {
+  --bs-body-bg: #1c1826;
+  --bs-body-bg-rgb: 28, 24, 38;
+  --bs-secondary-bg: #262032;
+  --bs-tertiary-bg: #2e2740;
+  --bs-border-color: #322b42;
+}
+
+/* Naglowek strony z akcentem w kolorach marki - zamiast samego napisu */
+.page-title {
+  position: relative;
+  display: inline-block;
+  padding-bottom: .35rem;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2.5rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--mc-gradient);
 }
 
 /* --- Przyklejony pasek gorny --------------------------------------------- */
@@ -530,15 +657,18 @@ body {
      ledwie widoczna, dzieki czemu widac, ze cos sie tam rusza, a napisy
      w menu pozostaja czytelne.
   */
-  background-color: rgba(var(--bs-body-bg-rgb), .85);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition: box-shadow .2s ease;
+  background-color: rgba(var(--bs-body-bg-rgb), .78);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border-bottom: 1px solid transparent;
+  transition: box-shadow var(--mc-slow), border-color var(--mc-slow),
+              background-color var(--mc-slow);
 }
 
-/* Cien pojawia sie dopiero, gdy pasek faktycznie na czyms lezy */
+/* Krawedz i cien pojawiaja sie dopiero, gdy pasek faktycznie na czyms lezy */
 .top-bar.is-scrolled {
-  box-shadow: 0 .25rem 1rem rgba(0, 0, 0, .12);
+  border-bottom-color: var(--bs-border-color);
+  box-shadow: var(--mc-shadow-md);
 }
 
 /*
@@ -552,22 +682,361 @@ body {
 }
 
 /*
-   Kotwice (#cos) i przewijanie do elementu musza uwzglednic wysokosc
-   przyklejonego paska - inaczej docelowy element chowa sie pod nim.
+   Trzy kolumny: logo | ikony | konto. Skrajne maja te sama szerokosc (1fr),
+   wiec srodkowa wypada dokladnie na srodku STRONY - niezaleznie od tego,
+   jak dlugi jest login po prawej.
 */
-:root {
-  scroll-padding-top: 5rem;
+.nav-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: .5rem;
+}
+
+/* --- Logo ----------------------------------------------------------------- */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: 0;
+  justify-self: start;
+}
+
+/* Znaczek: kwadracik z gradientem i nuta w srodku */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: .625rem;
+  background: var(--mc-gradient);
+  color: #fff;
+  box-shadow: var(--mc-glow);
+  transition: transform var(--mc-slow), box-shadow var(--mc-slow);
+}
+
+/*
+   Napis wypelniony gradientem. background-clip: text przycina tlo do
+   ksztaltu liter; kolor tekstu musi byc przezroczysty, zeby tlo bylo widac.
+*/
+.brand-text {
+  font-weight: 800;
+  letter-spacing: -.02em;
+  font-size: 1.25rem;
+  background: var(--mc-gradient);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transition: background-position var(--mc-slow);
+}
+
+.brand:hover .brand-mark {
+  transform: rotate(-8deg) scale(1.06);
+}
+
+.brand:hover .brand-text {
+  background-position: 100% 50%;
+}
+
+/* --- Ikony nawigacji ------------------------------------------------------ */
+
+.nav-icons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: .25rem;
+  padding: .25rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  /* Wglebienie zamiast plaskiego prostokata - grupa ikon czyta sie wtedy
+     jako jeden element sterujacy, a nie trzy luzne linki */
+  box-shadow: inset 0 1px 2px rgba(15, 12, 30, .06);
+}
+
+[data-bs-theme='dark'] .nav-icons {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.nav-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: var(--bs-secondary-color);
+  transition: color var(--mc-fast), background-color var(--mc-fast),
+              transform var(--mc-fast);
+}
+
+.nav-icon:hover {
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+  transform: translateY(-1px);
+}
+
+.nav-icon:active {
+  transform: translateY(0) scale(.94);
+}
+
+/*
+   Aktywna pozycja dostaje gradient marki - ten sam, co logo i glowny
+   przycisk. Przy samych ikonach to jedyne, co mowi, gdzie sie jest.
+*/
+.nav-icon.active {
+  background: var(--mc-gradient);
+  color: #fff;
+  box-shadow: var(--mc-glow);
+}
+
+/* Licznik zaproszen - male kolo w rogu ikony */
+.nav-badge {
+  position: absolute;
+  top: .05rem;
+  right: .15rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 .25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--mc-3);
+  color: #1a0d16;
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1;
+  /* Obwodka w kolorze tla oddziela licznik od ikony pod spodem */
+  box-shadow: 0 0 0 2px var(--bs-secondary-bg);
+}
+
+.nav-icon.active .nav-badge {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .9);
+}
+
+.nav-text-link {
+  border-radius: 999px;
+  padding: .35rem .9rem;
+}
+
+/* --- Prawa strona paska --------------------------------------------------- */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  justify-self: end;
+}
+
+/* --- Przelacznik jezyka --------------------------------------------------- */
+
+.lang-switch {
+  position: relative;
+  display: inline-flex;
+  padding: .175rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  box-shadow: inset 0 1px 2px rgba(15, 12, 30, .06);
+}
+
+[data-bs-theme='dark'] .lang-switch {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+/*
+   Wskaznik jezyka. Jest JEDEN i przesuwa sie pod wybrana opcje - dzieki temu
+   zmiana jezyka to widoczny ruch, a nie podmiana dwoch kolorow naraz.
+   Szerokosc liczymy z liczby opcji, wiec dolozenie trzeciego jezyka nie
+   wymaga ruszania CSS-a.
+*/
+.lang-thumb {
+  position: absolute;
+  top: .175rem;
+  left: .175rem;
+  width: calc((100% - .35rem) / var(--lang-count, 2));
+  height: calc(100% - .35rem);
+  border-radius: 999px;
+  background: var(--mc-gradient);
+  box-shadow: var(--mc-shadow-sm);
+  transition: transform var(--mc-slow);
+}
+
+.lang-option {
+  position: relative;
+  z-index: 1;
+  min-width: 2.25rem;
+  padding: .2rem .5rem;
+  border: 0;
+  background: none;
+  border-radius: 999px;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  color: var(--bs-secondary-color);
+  transition: color var(--mc-fast);
+}
+
+.lang-option.is-active {
+  color: #fff;
+}
+
+.lang-option:hover:not(.is-active) {
+  color: var(--bs-body-color);
+}
+
+/* --- Przelacznik motywu --------------------------------------------------- */
+
+.theme-toggle {
+  position: relative;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(15, 12, 30, .06);
+  transition: background-color var(--mc-fast), transform var(--mc-fast);
+}
+
+[data-bs-theme='dark'] .theme-toggle {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.theme-toggle:hover {
+  transform: translateY(-1px);
+}
+
+.theme-toggle:active {
+  transform: scale(.94);
+}
+
+/*
+   Obie ikony sa w DOM-ie przez caly czas, jedna nad druga. Nieaktywna jest
+   obrocona i zsunieta poza przycisk; przelaczenie zamienia je ruchem
+   po luku. Warunkowe renderowanie w Reakcie nie dawaloby czego animowac.
+*/
+.theme-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--mc-slow), opacity var(--mc-slow);
+}
+
+.theme-icon-sun {
+  color: #f59e0b;
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+}
+
+.theme-icon-moon {
+  color: #a78bfa;
+  transform: translateY(120%) rotate(-90deg);
+  opacity: 0;
+}
+
+.theme-toggle.is-dark .theme-icon-sun {
+  transform: translateY(-120%) rotate(90deg);
+  opacity: 0;
+}
+
+.theme-toggle.is-dark .theme-icon-moon {
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+}
+
+/* --- Menu konta ----------------------------------------------------------- */
+
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 600;
+}
+
+/*
+   Obreczka wokol WLASNEGO awatara w pasku - w kolorach marki. Jedyne
+   miejsce, gdzie awatar ma obwodke, wiec od razu widac, ze to "ja",
+   a nie kolejny uzytkownik na liscie.
+*/
+.avatar-ring {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 50%;
+  background: var(--mc-gradient);
+  transition: box-shadow var(--mc-fast), transform var(--mc-fast);
+}
+
+.avatar-ring .avatar,
+.avatar-ring .avatar-placeholder {
+  border: 2px solid var(--bs-body-bg);
+}
+
+.account-menu:hover .avatar-ring {
+  box-shadow: var(--mc-glow);
+  transform: scale(1.04);
+}
+
+.account-menu .dropdown-menu {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mc-radius);
+  box-shadow: var(--mc-shadow-lg);
+  padding: .35rem;
+  /* Menu wjezdza z gory zamiast pojawiac sie skokiem */
+  animation: menu-in .18s var(--mc-ease) both;
+}
+
+@keyframes menu-in {
+  from { opacity: 0; transform: translateY(-.375rem) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+.account-menu .dropdown-item {
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  transition: background-color var(--mc-fast), color var(--mc-fast);
+}
+
+.account-menu .dropdown-item:active {
+  background: var(--bs-primary);
 }
 
 .account-menu .dropdown-toggle::after {
   margin-left: .4rem;
 }
 
-/* --- Karty --------------------------------------------------------------- */
+/* --- Karty ---------------------------------------------------------------- */
 
+/*
+   Karta stoi na trzech rzeczach naraz: delikatnym gradiencie powierzchni,
+   cienkiej krawedzi i warstwowym cieniu. Sam cien bez krawedzi rozmywa sie
+   na jasnym tle, sama krawedz bez cienia wyglada plasko - dopiero razem
+   daja wrazenie, ze karta lezy NAD strona.
+*/
 .card {
-  border-radius: .875rem;
-  transition: box-shadow .2s ease, transform .2s ease;
+  border-radius: var(--mc-radius);
+  border: 1px solid var(--bs-border-color);
+  background-image: linear-gradient(180deg,
+    rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 120px);
+  box-shadow: var(--mc-shadow-sm);
+  transition: box-shadow var(--mc-slow), transform var(--mc-slow),
+              border-color var(--mc-slow);
+}
+
+/*
+   W ciemnym motywie rozjasniamy GORE karty zamiast ja przyciemniac -
+   tak zachowuje sie swiatlo padajace z gory i to wystarcza, zeby karta
+   odkleila sie od tla bez zadnej dodatkowej ramki.
+*/
+[data-bs-theme='dark'] .card {
+  background-image: linear-gradient(180deg,
+    rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 120px);
 }
 
 /*
@@ -575,22 +1044,75 @@ body {
    to rozpraszajace, a przy poscie podpowiada, ze karta jest calostka.
 */
 .feed-page .card:hover {
-  box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .10);
+  box-shadow: var(--mc-shadow-md);
+  transform: translateY(-2px);
+  border-color: rgba(var(--bs-primary-rgb), .35);
 }
 
-/* --- Przejscia ----------------------------------------------------------- */
+/* --- Pola formularzy ------------------------------------------------------ */
 
-.btn,
 .form-control,
-.form-select,
+.form-select {
+  border-radius: .625rem;
+  transition: border-color var(--mc-fast), box-shadow var(--mc-fast),
+              background-color var(--mc-fast);
+}
+
+/*
+   Poswiata w kolorze marki zamiast domyslnej niebieskiej. To jedyne
+   miejsce, w ktorym uzytkownik dowiaduje sie, gdzie wlasnie pisze -
+   warto, zeby bylo widoczne i spojne z reszta.
+*/
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 .2rem rgba(var(--bs-primary-rgb), .22);
+}
+
+/* --- Przyciski drugoplanowe ----------------------------------------------- */
+
+.btn {
+  border-radius: .625rem;
+  transition: background-color var(--mc-fast), border-color var(--mc-fast),
+              color var(--mc-fast), box-shadow var(--mc-fast),
+              transform var(--mc-fast);
+}
+
+.btn:not(.btn-primary):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.btn:not(.btn-primary):active:not(:disabled) {
+  transform: translateY(0) scale(.98);
+}
+
+/* --- Komunikaty ----------------------------------------------------------- */
+
+.alert {
+  border-radius: .75rem;
+  border: 1px solid var(--bs-border-color);
+  box-shadow: var(--mc-shadow-sm);
+  /* Komunikat wjezdza z gory - inaczej pojawia sie znikad i latwo go przeoczyc */
+  animation: fade-in-up .22s var(--mc-ease) both;
+}
+
+/* --- Przejscia ------------------------------------------------------------ */
+
 .nav-link {
-  transition: background-color .15s ease, border-color .15s ease,
-              color .15s ease, box-shadow .15s ease;
+  transition: background-color var(--mc-fast), color var(--mc-fast),
+              box-shadow var(--mc-fast);
 }
 
 .avatar,
 .avatar-placeholder {
-  transition: transform .15s ease;
+  transition: transform var(--mc-fast), box-shadow var(--mc-fast);
+}
+
+/* Zastepnik awatara tez dostaje gradient - inicjal na plaskim kole byl
+   najbardziej "minimalistycznym" elementem calej strony */
+.avatar-placeholder {
+  background: var(--mc-gradient);
 }
 
 a:hover > .avatar,
@@ -598,14 +1120,45 @@ a:hover > .avatar-placeholder,
 .friend-card:hover .avatar,
 .friend-card:hover .avatar-placeholder {
   transform: scale(1.06);
+  box-shadow: var(--mc-glow);
 }
 
 .favorite-cover {
-  transition: transform .2s ease;
+  transition: transform var(--mc-slow), box-shadow var(--mc-slow);
+  box-shadow: var(--mc-shadow-sm);
 }
 
 .favorite-card:hover .favorite-cover {
   transform: scale(1.04);
+  box-shadow: var(--mc-shadow-md);
+}
+
+/* Okladka bez zdjecia: gradient zamiast szarego kwadratu */
+.cover-placeholder {
+  background: linear-gradient(145deg,
+    rgba(var(--bs-primary-rgb), .22), rgba(var(--bs-primary-rgb), .06));
+  color: rgba(var(--bs-primary-rgb), .85);
+}
+
+/* Odtwarzacz tez ma lezec na stronie, a nie byc w niej wycietym prostokatem */
+.player-frame {
+  box-shadow: var(--mc-shadow-sm);
+}
+
+/* Przyciski reakcji - wyrazniejsze wcisniecie, bo to najczestsza interakcja */
+.reaction-button {
+  border-radius: 999px;
+  transition: transform var(--mc-fast), background-color var(--mc-fast),
+              border-color var(--mc-fast), box-shadow var(--mc-fast);
+}
+
+.reaction-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.reaction-button:active:not(:disabled) {
+  transform: scale(.92);
 }
 
 /*
@@ -617,12 +1170,15 @@ a:hover > .avatar-placeholder,
 @media (hover: hover) {
   .favorite-remove {
     opacity: 0;
-    transition: opacity .15s ease, background-color .15s ease;
+    transform: scale(.8);
+    transition: opacity var(--mc-fast), transform var(--mc-fast),
+                background-color var(--mc-fast);
   }
 
   .favorite-card:hover .favorite-remove,
   .favorite-remove:focus-visible {
     opacity: 1;
+    transform: scale(1);
   }
 }
 
