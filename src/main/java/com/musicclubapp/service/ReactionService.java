@@ -1,6 +1,7 @@
 package com.musicclubapp.service;
 
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.ReactionAuthorResponse;
 import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.Reaction;
@@ -41,15 +42,18 @@ public class ReactionService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PostMapper postMapper;
+    private final NotificationService notifications;
 
     public ReactionService(ReactionRepository reactionRepository,
                            PostRepository postRepository,
                            UserRepository userRepository,
-                           PostMapper postMapper) {
+                           PostMapper postMapper,
+                           NotificationService notifications) {
         this.reactionRepository = reactionRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.postMapper = postMapper;
+        this.notifications = notifications;
     }
 
     /**
@@ -66,6 +70,10 @@ public class ReactionService {
             existing -> existing.setType(type),
             () -> reactionRepository.save(new Reaction(post, user, type)));
 
+        // Autor posta dowiaduje sie, ze ktos zareagowal. Reakcja na wlasny
+        // post nie powiadamia - decyduje o tym NotificationService.
+        notifications.reactionAdded(post, user, type);
+
         return responseWithFreshCounts(postId, post, user);
     }
 
@@ -77,7 +85,37 @@ public class ReactionService {
 
         reactionRepository.find(postId, username).ifPresent(reactionRepository::delete);
 
+        // Cofnieta reakcja nie moze zostawiac po sobie powiadomienia -
+        // prowadziloby do posta, pod ktorym nie ma juz po niej sladu
+        notifications.reactionRemoved(post, user);
+
         return responseWithFreshCounts(postId, post, user);
+    }
+
+    /**
+     * Kto i jak zareagowal na dany post.
+     *
+     * <p><b>Widzi to kazdy, nie tylko autor.</b> W serwisie spolecznosciowym
+     * reakcja jest gestem publicznym - ukrywanie jej przed pozostalymi
+     * czytelnikami byloby zaskakujace, a i tak dalo by sie ja policzyc
+     * z licznika. Ograniczenie do autora dodaloby regule, ktora nic
+     * nie chroni.</p>
+     */
+    @Transactional(readOnly = true)
+    public List<ReactionAuthorResponse> authors(Long postId) {
+        // Sprawdzamy istnienie posta, zeby na nieistniejacy odpowiedziec 404,
+        // a nie pusta lista - to dwie rozne rzeczy
+        post(postId);
+
+        return reactionRepository.findForPost(postId).stream()
+            .map(r -> new ReactionAuthorResponse(
+                r.getUser().getUsername(),
+                r.getUser().getAvatarFileName() == null
+                    ? null
+                    : PostMapper.UPLOADS_PATH + r.getUser().getAvatarFileName(),
+                r.getType(),
+                r.getCreatedAt()))
+            .toList();
     }
 
     /**

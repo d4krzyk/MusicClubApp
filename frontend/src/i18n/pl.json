@@ -184,7 +184,8 @@
     "postedTimes_one": "{{count}} raz",
     "postedTimes_few": "{{count}} razy",
     "postedTimes_many": "{{count}} razy",
-    "postedTimes_other": "{{count}} razy"
+    "postedTimes_other": "{{count}} razy",
+    "backToFeed": "Wróć na tablicę"
   },
   "favorites": {
     "title": "Ulubieni",
@@ -234,7 +235,14 @@
     "total_few": "{{count}} reakcje",
     "total_many": "{{count}} reakcji",
     "total_other": "{{count}} reakcji",
-    "error": "Nie udało się zapisać reakcji"
+    "error": "Nie udało się zapisać reakcji",
+    "whoTitle": "Kto zareagował",
+    "whoEmpty": "Nikt jeszcze nie zareagował.",
+    "emoji": {
+      "FIRE": "🔥",
+      "MID": "😐",
+      "MEH": "🥱"
+    }
   },
   "friends": {
     "title": "Znajomi",
@@ -279,5 +287,13 @@
     "alreadyFriends": "Znajomi",
     "betterMatchesHint": "Nikt Ci się jeszcze nie dopasował. Dodaj do profilu artystów i utwory, których lubisz — wtedy propozycje przestaną być przypadkowe.",
     "betterMatchesLink": "Przejdź do swojego profilu"
+  },
+  "notifications": {
+    "title": "Powiadomienia",
+    "empty": "Nic nowego. Gdy ktoś zareaguje na Twój post albo zaprosi Cię do znajomych, zobaczysz to tutaj.",
+    "markAllRead": "Oznacz wszystkie",
+    "reaction": "{{username}} zareagował(a) {{emoji}} na Twój post",
+    "friendRequest": "{{username}} wysłał(a) Ci zaproszenie do znajomych",
+    "friendAccepted": "{{username}} jest teraz Twoim znajomym"
   }
 }

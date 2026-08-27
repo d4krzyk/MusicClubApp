@@ -14,6 +14,7 @@ import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 import com.musicclubapp.repository.PostRepository;
+import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.storage.FileStorageService;
 import org.junit.jupiter.api.DisplayName;
@@ -68,6 +69,12 @@ class PostServiceTest {
      */
     @Mock
     private MusicMetadataService musicMetadata;
+
+    @Mock
+    private NotificationService notifications;
+
+    @Mock
+    private ReactionRepository reactionRepository;
 
     @InjectMocks
     private PostService postService;

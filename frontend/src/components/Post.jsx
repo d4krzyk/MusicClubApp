@@ -24,12 +24,17 @@ import { linkError } from '../utils/musicLinks';
  * O tym, ktore przyciski sie pokazuja, decyduja pola {@code canEdit}
  * i {@code canDelete} wyliczane przez SERWER.</p>
  */
-export default function Post({ post, onDelete, onUpdate }) {
+export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }) {
   const { t, i18n } = useTranslation();
   const [edycja, setEdycja] = useState(false);
 
   return (
-    <Card className="mb-3">
+    /*
+      --i steruje opoznieniem wejscia karty (patrz styles.css). Liczy sie od
+      poczatku PARTII, a nie od poczatku listy - inaczej dwudziesty post
+      czekalby prawie sekunde, zanim by sie pokazal.
+    */
+    <Card className="mb-3 post-card" style={{ '--i': index }}>
       <Card.Body>
         <div className="d-flex align-items-center gap-2 mb-3">
           {/*
@@ -101,7 +106,13 @@ export default function Post({ post, onDelete, onUpdate }) {
 
             {post.musicEmbedUrl && <Player post={post} />}
 
-            <Reactions post={post} onChange={onUpdate} />
+            {/*
+              Reakcja NIE jest edycja posta. Wczesniej obie rzeczy szly tym
+              samym wywolaniem i klikniecie emotki pod CUDZYM postem pokazywalo
+              komunikat "Post zostal zaktualizowany" - czyli aplikacja mowila,
+              ze zmienilismy cudza tresc.
+            */}
+            <Reactions post={post} onChange={onReaction ?? onUpdate} />
           </>
         )}
       </Card.Body>

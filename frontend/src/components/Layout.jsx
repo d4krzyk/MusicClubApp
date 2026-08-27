@@ -8,8 +8,9 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import client from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
-import { IconFeed, IconFriends, IconGear, IconLogout, IconPerson, IconShield } from './Icons';
+import { IconBoard, IconFriends, IconGear, IconLogout, IconPerson, IconShield } from './Icons';
 import LanguageSwitch from './LanguageSwitch';
+import NotificationsBell from './NotificationsBell';
 import ThemeToggle from './ThemeToggle';
 
 /**
@@ -84,7 +85,7 @@ export default function Layout({ children }) {
         <Container className="nav-grid">
           <Navbar.Brand as={Link} to="/" className="brand" aria-label={t('app.name')}>
             <span className="brand-mark" aria-hidden="true">
-              <IconFeed size={18} />
+              <IconBoard size={18} />
             </span>
             <span className="brand-text">{t('app.name')}</span>
           </Navbar.Brand>
@@ -93,7 +94,7 @@ export default function Layout({ children }) {
             {user ? (
               <>
                 <NavIcon to="/" end label={t('menu.feed')}>
-                  <IconFeed size={20} />
+                  <IconBoard size={20} />
                 </NavIcon>
 
                 <NavIcon to="/znajomi" label={t('menu.friends')} badge={pending}>
@@ -124,6 +125,10 @@ export default function Layout({ children }) {
           </Nav>
 
           <div className="nav-right">
+            {/* Dzwonek stoi przy awatarze, bo jedno i drugie dotyczy MNIE -
+                w odroznieniu od jezyka i motywu, ktore dotycza calej strony */}
+            {user && <NotificationsBell />}
+
             <LanguageSwitch />
             <ThemeToggle />
 

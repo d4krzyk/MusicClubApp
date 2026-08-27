@@ -65,6 +65,6 @@ public class PublicProfileService {
     private String avatarUrl(User user) {
         return user.getAvatarFileName() == null
             ? null
-            : PostMapper.SCIEZKA_PLIKOW + user.getAvatarFileName();
+            : PostMapper.UPLOADS_PATH + user.getAvatarFileName();
     }
 }

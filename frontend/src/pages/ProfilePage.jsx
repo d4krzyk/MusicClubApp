@@ -18,7 +18,7 @@ import FriendshipButton from '../components/FriendshipButton';
 import { formatDate } from '../utils/dates';
 
 /** Ile postow pobieramy za jednym razem. */
-const NA_STRONE = 10;
+const PAGE_SIZE = 10;
 
 /**
  * Profil uzytkownika - wlasny albo cudzy.
@@ -43,7 +43,7 @@ export default function ProfilePage() {
   const whose = username ?? user?.username;
 
   const [profile, setProfile] = useState(null);
-  const [posty, setPosty] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(0);
   const [lastPage, setLastPage] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -82,11 +82,11 @@ export default function ProfilePage() {
   const loadPosts = useCallback(async (pageNumber, joined) => {
     try {
       const response = await client.get('/posts', {
-        params: { page: pageNumber, size: NA_STRONE, direction: 'desc', author: whose },
+        params: { page: pageNumber, size: PAGE_SIZE, direction: 'desc', author: whose },
       });
       const data = response.data;
 
-      setPosty((previous) => (joined ? [...previous, ...data.content] : data.content));
+      setPosts((previous) => (joined ? [...previous, ...data.content] : data.content));
       setLastPage(data.last);
       setPage(data.number);
     } catch (error) {
@@ -99,14 +99,14 @@ export default function ProfilePage() {
     if (!whose) {
       return;
     }
-    // Nowy profil = czyscimy poprzednie posty, inaczej mignelyby cudze wpisy
-    setPosty([]);
+    // Nowy profil = czyscimy poprzednie posts, inaczej mignelyby cudze wpisy
+    setPosts([]);
     loadProfile();
     loadPosts(0, false);
   }, [whose, loadProfile, loadPosts]);
 
   function afterPostChange(updated) {
-    setPosty((previous) =>
+    setPosts((previous) =>
       previous.map((p) => (p.id === updated.id ? updated : p)));
   }
 
@@ -116,7 +116,7 @@ export default function ProfilePage() {
     }
     try {
       await client.delete(`/posts/${id}`);
-      setPosty((previous) => previous.filter((p) => p.id !== id));
+      setPosts((previous) => previous.filter((p) => p.id !== id));
       // Licznik postow w naglowku musi sie zgadzac z tym, co widac nizej
       setProfile((p) => (p ? { ...p, postCount: Math.max(p.postCount - 1, 0) } : p));
     } catch (error) {
@@ -217,11 +217,11 @@ export default function ProfilePage() {
 
         {error && <Alert variant="danger">{error}</Alert>}
 
-        {posty.map((post) => (
+        {posts.map((post) => (
           <Post key={post.id} post={post} onDelete={deletePost} onUpdate={afterPostChange} />
         ))}
 
-        {posty.length === 0 && (
+        {posts.length === 0 && (
           <p className="text-body-secondary text-center py-4">
             {profile.self ? t('profile.noPostsSelf') : t('profile.noPosts')}
           </p>

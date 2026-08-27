@@ -1511,6 +1511,127 @@ użytkownikowi nazwy zmiennej nie pokazujemy; osobne sprawdzenie pilnuje,
 
 ---
 
+## Powiadomienia
+
+Do tej pory nie dalo sie zauwazyc, ze cos sie w aplikacji wydarzylo. Reakcja
+pod postem, zaproszenie do znajomych, przyjecie zaproszenia — wszystko to
+trzeba bylo znalezc samemu.
+
+### Powiadomienie, ktore nigdzie nie prowadzi, jest bezuzyteczne
+
+To zalozenie ustawilo caly projekt tego mechanizmu. Kazdy rodzaj powiadomienia
+ma przypisane miejsce docelowe:
+
+| Zdarzenie | Prowadzi do |
+|---|---|
+| reakcja na Twój post | **tego konkretnego posta** (`/post/{id}`) |
+| nowe zaproszenie | strony znajomych |
+| przyjęte zaproszenie | profilu tej osoby |
+
+Reakcja **nie** prowadzi na tablicę: post może być setny od góry, więc
+odesłanie na tablicę znaczyłoby „poszukaj sobie". Stąd wzięła się też nowa
+strona `/post/{id}` i endpoint `GET /api/posts/{id}` — wcześniej nie było jak
+pokazać jednego wpisu.
+
+**Adres wylicza serwer**, nie frontend. Gdyby robił to frontend, przy każdym
+nowym rodzaju powiadomienia trzeba by pamiętać o dopisaniu warunku w drugim
+miejscu — a wystarczy raz zapomnieć, żeby powstało powiadomienie prowadzące
+donikąd.
+
+### Trzy reguły, bez których dzwonek przestaje cokolwiek znaczyć
+
+Wszystkie siedzą w jednym `NotificationService`, a nie w serwisach, które go
+wołają — inaczej każdy z trzech musiałby je powtarzać u siebie.
+
+1. **Reakcja na własny post nie powiadamia.** Wiadomo, co się samemu zrobiło.
+2. **Zmiana zdania odświeża wpis zamiast dokładać drugi.** Jedna osoba
+   klikająca kolejno trzy emotki zostawia jedno powiadomienie, nie trzy.
+3. **Cofnięta reakcja zabiera swoje powiadomienie**, tak samo jak odrzucone
+   albo przyjęte zaproszenie. Inaczej klik prowadziłby do czegoś, co się
+   już „odstało".
+
+### Klucz obcy zamiast luźnego numeru
+
+`Notification.post` to prawdziwa relacja, a nie kolumna `Long`. Różnica jest
+istotna: baza sama pilnuje, że powiadomienie nie wskaże posta, którego już
+nie ma. Kosztuje to jedną linijkę sprzątania przed usunięciem posta —
+i **właśnie ta linijka wyciągnęła istniejący od dawna błąd** (niżej).
+
+### Błąd, który przy okazji wyszedł: nie dało się usunąć posta z reakcjami
+
+Pierwszy test usuwania posta z powiadomieniem wywalił się nie na
+powiadomieniach, tylko na **reakcjach**: baza odmawiała skasowania posta,
+pod którym ktoś zareagował.
+
+Encja ma `cascade = ALL` na reakcjach, więc wyglądało to na załatwione.
+Tyle że **kaskada opiera się na kolekcji załadowanej do pamięci**, a reakcja
+dopisana w tej samej transakcji przez `reactionRepository.save(...)` do niej
+nie trafia — Hibernate o niej nie wie.
+
+Testy na atrapach nie miały szans tego zobaczyć: atrapa repozytorium zgadza
+się na wszystko. Wychodzi to dopiero na prawdziwej bazie. Naprawia to jawny
+`DELETE`, a pilnuje osobny test
+(`UserDeletionTest#postWithSomeoneElsesReactionsCanBeDeleted`).
+
+### Reakcja to nie edycja posta
+
+Kliknięcie emotki pod **cudzym** postem pokazywało komunikat „Post został
+zaktualizowany" — czyli aplikacja twierdziła, że zmieniliśmy cudzą treść.
+
+Powód był prosty: `Post` dostawał jedno wywołanie `onUpdate` i używał go do
+dwóch różnych rzeczy — „post został wyedytowany przeze mnie" i „zmieniły się
+liczniki reakcji". Teraz to dwa osobne wywołania; reakcja odświeża kartę
+bez żadnego komunikatu.
+
+### Kto zareagował
+
+Podsumowanie pod postem („3 reakcje") jest teraz przyciskiem otwierającym
+okienko z listą osób, pogrupowaną po rodzaju reakcji. Liczba mówi ILE osób,
+ale nie mówi KTO — a przy paru reakcjach to właśnie druga rzecz jest ciekawa.
+
+Listę pobieramy **dopiero po otwarciu**: gdyby każdy post na tablicy ciągnął
+ją od razu, dwadzieścia postów oznaczałoby dwadzieścia dodatkowych zapytań
+po to, żeby pokazać coś, w co prawie nikt nie kliknie.
+
+### Wyścig, który wracał kropką na dzwonek
+
+Otwarcie powiadomienia zmniejsza licznik od razu, a oznaczenie „przeczytane"
+szło początkowo w tle. Efekt: przejście pod nowy adres uruchamiało ponowne
+pobranie licznika, serwer nie zdążył jeszcze zapisać oznaczenia i wracała
+**stara liczba** — kropka wracała na dzwonek zaraz po tym, jak z niego znikła.
+
+Teraz na oznaczenie czekamy przed przejściem. Błąd przy oznaczaniu nie może
+jednak zablokować przejścia: nieprzeczytany wpis jest mniejszym problemem
+niż kliknięcie, które nigdzie nie prowadzi.
+
+### Płynność
+
+- **Ikony w pasku** przełączały się skokowo, bo aktywna dostawała gradient
+  przez podmianę `background-image` — a tego przeglądarka nie animuje.
+  Gradient siedzi teraz w warstwie pod ikoną i wygasza się przezroczystością.
+- **Posty wchodzą po kolei**, z opóźnieniem liczonym od początku *partii*,
+  a nie całej listy — inaczej dwudziesty post czekałby prawie sekundę.
+- **Doładowywanie** ma trzy pulsujące kropki zamiast kółka: to moment,
+  w którym coś *dokłada się* do listy, a nie zwykłe ładowanie strony.
+
+### Migotliwe sprawdzenie to fałszywy alarm
+
+Przy sześciu skryptach pod rząd jedno sprawdzenie („czy na cudzym profilu
+jest przycisk zaproszenia") zaczęło raz przechodzić, raz nie — stan
+znajomości dociąga się osobnym zapytaniem i przy obciążonej maszynie nie
+zdążył. Zamiast wydłużać pauzę, sprawdzenie **czeka na przycisk**.
+Sprawdzenie, które miga, uczy ignorować czerwone wyniki — a to gorsze niż
+jego brak.
+
+### Sprawdzone
+
+209 testów backendu (w tym 11 na same powiadomienia, na prawdziwej bazie)
+i 117 sprawdzeń w Chromium. Doszedł `sprawdz-powiadomienia.mjs`: 21 asercji,
+w których najważniejsze są te o **przenoszeniu we właściwe miejsce** —
+reakcja do posta, zaproszenie na stronę znajomych, przyjęcie na profil.
+
+---
+
 ## Co zostaje na później
 
 - gablotka 5 ulubionych playlist na profilu,

@@ -38,10 +38,14 @@ public class FriendService {
     private final UserRepository userRepository;
     private final FriendRequestRepository requestRepository;
 
+    private final NotificationService notifications;
+
     public FriendService(UserRepository userRepository,
-                         FriendRequestRepository requestRepository) {
+                         FriendRequestRepository requestRepository,
+                         NotificationService notifications) {
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
+        this.notifications = notifications;
     }
 
     /**
@@ -80,6 +84,7 @@ public class FriendService {
         }
 
         requestRepository.save(new FriendRequest(ja, on));
+        notifications.friendRequestSent(on, ja);
         return false;
     }
 
@@ -119,6 +124,13 @@ public class FriendService {
         }
 
         requestRepository.delete(invitation);
+
+        /*
+         * Powiadomienie o zaproszeniu ma zniknac razem z nim. Zostawione
+         * prowadziloby na strone znajomych, gdzie nic juz nie czeka -
+         * a to wyglada jak usterka aplikacji.
+         */
+        notifications.friendRequestGone(invitation.getRecipient(), invitation.getSender());
     }
 
     /** Usuwa znajomosc - u obu osob naraz. */
@@ -233,11 +245,19 @@ public class FriendService {
 
     // ----------------------------------------------------------------------
 
-    /** Laczy dwie osoby w znajomych i kasuje zuzyte zaproszenie. */
+    /**
+     * Laczy dwie osoby w znajomych i kasuje zuzyte zaproszenie.
+     *
+     * @param a nadawca zaproszenia - to ON czekal, wiec to jemu nalezy sie
+     *          powiadomienie o tym, ze znajomosc doszla do skutku
+     * @param b odbiorca, czyli osoba, ktora wlasnie to potwierdzila
+     */
     private void merge(User a, User b, FriendRequest invitation) {
         a.addFriend(b);
         userRepository.save(a);
         userRepository.save(b);
+
+        notifications.friendshipFormed(a, b);
 
         /*
          * Zaproszenie znika po przyjeciu - tabela friend_requests trzyma
@@ -264,7 +284,7 @@ public class FriendService {
 
     /** Baza trzyma nazwe pliku, na zewnatrz wychodzi gotowy adres - jak przy postach. */
     private String avatarUrl(String fileName) {
-        return fileName == null ? null : PostMapper.SCIEZKA_PLIKOW + fileName;
+        return fileName == null ? null : PostMapper.UPLOADS_PATH + fileName;
     }
 
     private User user(String username) {

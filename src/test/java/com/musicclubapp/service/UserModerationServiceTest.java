@@ -53,6 +53,7 @@ class UserModerationServiceTest {
     @Mock private FriendRequestRepository requestRepository;
     @Mock private FileStorageService fileStorage;
     @Mock private UserMapper userMapper;
+    @Mock private NotificationService notifications;
 
     @InjectMocks private UserModerationService moderationService;
 

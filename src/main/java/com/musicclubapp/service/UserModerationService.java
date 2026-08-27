@@ -46,19 +46,22 @@ public class UserModerationService {
     private final FriendRequestRepository requestRepository;
     private final FileStorageService fileStorage;
     private final UserMapper userMapper;
+    private final NotificationService notifications;
 
     public UserModerationService(UserRepository userRepository,
                                  PostRepository postRepository,
                                  ReactionRepository reactionRepository,
                                  FriendRequestRepository requestRepository,
                                  FileStorageService fileStorage,
-                                 UserMapper userMapper) {
+                                 UserMapper userMapper,
+                                 NotificationService notifications) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.reactionRepository = reactionRepository;
         this.requestRepository = requestRepository;
         this.fileStorage = fileStorage;
         this.userMapper = userMapper;
+        this.notifications = notifications;
     }
 
     /**
@@ -84,10 +87,17 @@ public class UserModerationService {
             throw OperationNotAllowedException.ownAccount();
         }
 
-        // 1. Reakcje tej osoby pod CUDZYMI postami - te posty maja zostac
+        /*
+         * 1. Powiadomienia w OBIE strony - te, ktore dostala, i te, ktore
+         * wywolala u innych. Musza pojsc pierwsze, bo wskazuja kluczami
+         * obcymi zarowno na konto, jak i na posty kasowane nizej.
+         */
+        notifications.userDeleted(target.getId());
+
+        // 2. Reakcje tej osoby pod CUDZYMI postami - te posty maja zostac
         reactionRepository.deleteByUserId(target.getId());
 
-        // 2. Wlasne posty; kaskada zabiera ich zdjecia i cudze reakcje pod nimi
+        // 3. Wlasne posty; kaskada zabiera ich zdjecia i cudze reakcje pod nimi
         List<Post> posts = postRepository.findByAuthorId(target.getId());
         for (Post post : posts) {
             for (PostImage image : post.getImages()) {
@@ -96,11 +106,11 @@ public class UserModerationService {
         }
         postRepository.deleteAll(posts);
 
-        // 3. Zaproszenia w obie strony
+        // 4. Zaproszenia w obie strony
         requestRepository.deleteBySenderIdOrRecipientId(target.getId(), target.getId());
 
         /*
-         * 4. Znajomosci. Wiersz w user_friends powstaje w OBIE strony, a
+         * 5. Znajomosci. Wiersz w user_friends powstaje w OBIE strony, a
          * Hibernate przy kasowaniu encji sprzata tylko te, w ktorych ta osoba
          * jest wlascicielem relacji. Drugiej polowy trzeba pozbyc sie recznie -
          * inaczej u znajomych zostalby wpis wskazujacy na nieistniejace konto.
@@ -108,7 +118,7 @@ public class UserModerationService {
         userRepository.removeFriendshipsWith(target.getId());
         target.getFriends().clear();
 
-        // 5. Ulubieni - tu strona wlascicielska wystarczy
+        // 6. Ulubieni - tu strona wlascicielska wystarczy
         target.getFavoriteArtists().clear();
         target.getFavoriteTracks().clear();
 

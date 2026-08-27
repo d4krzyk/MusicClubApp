@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
 import client from '../api/client';
+import ReactionAuthors from './ReactionAuthors';
 
 /**
- * Trzy reakcje pod postem: ogien, "mid" i "meh".
+ * Trzy summary pod postem: ogien, "mid" i "meh".
  *
  * <p><b>Emotki sa TYLKO tutaj.</b> Backend zna wylacznie nazwy
  * ({@code FIRE}, {@code MID}, {@code MEH}) - dzieki temu podmiana obrazka
@@ -17,34 +18,35 @@ import client from '../api/client';
 
 /** Kolejnosc na ekranie - od najbardziej pozytywnej. */
 const KINDS = [
-  { code: 'FIRE', emotka: '🔥' },
-  { code: 'MID', emotka: '😐' },
+  { code: 'FIRE', emoji: '🔥' },
+  { code: 'MID', emoji: '😐' },
   // Ziewniecie zamiast lapki w dol - "nie porwalo mnie", a nie "to jest zle"
-  { code: 'MEH', emotka: '🥱' },
+  { code: 'MEH', emoji: '🥱' },
 ];
 
 export default function Reactions({ post, onChange }) {
   const { t } = useTranslation();
-  const [wysylanie, setWysylanie] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState(false);
+  const [showAuthors, setShowAuthors] = useState(false);
 
-  const reakcje = post.reactions;
+  const summary = post.reactions;
 
   async function react(code) {
-    if (wysylanie) {
+    if (sending) {
       return;
     }
-    setWysylanie(true);
+    setSending(true);
     setError(false);
 
     try {
       /*
-       * Klikniecie we WLASNA reakcje ja cofa, klikniecie w inna - podmienia.
+       * Klikniecie we WLASNA summary ja cofa, klikniecie w inna - podmienia.
        * Decyzje podejmujemy tutaj, bo to przegladarka wie, co jest aktualnie
        * zaznaczone. Backend zostaje prosty: PUT ustawia, DELETE kasuje,
        * i oba mozna wyslac dwa razy bez niespodzianek.
        */
-      const response = reakcje.mine === code
+      const response = summary.mine === code
         ? await client.delete(`/posts/${post.id}/reaction`)
         : await client.put(`/posts/${post.id}/reaction`, { type: code });
 
@@ -53,42 +55,58 @@ export default function Reactions({ post, onChange }) {
     } catch {
       setError(true);
     } finally {
-      setWysylanie(false);
+      setSending(false);
     }
   }
 
   return (
     <div className="d-flex align-items-center gap-2 flex-wrap mt-2">
-      {KINDS.map(({ code, emotka }) => {
-        const moja = reakcje.mine === code;
-        const ile = reakcje.counts[code] ?? 0;
+      {KINDS.map(({ code, emoji }) => {
+        const mine = summary.mine === code;
+        const count = summary.counts[code] ?? 0;
 
         return (
           <Button
             key={code}
             type="button"
             size="sm"
-            variant={moja ? 'primary' : 'outline-secondary'}
-            disabled={wysylanie}
+            variant={mine ? 'primary' : 'outline-secondary'}
+            disabled={sending}
             onClick={() => react(code)}
-            aria-pressed={moja}
+            aria-pressed={mine}
             title={t(`reactions.${code}`)}
             className="reaction-button"
           >
-            <span aria-hidden="true">{emotka}</span>
+            <span aria-hidden="true">{emoji}</span>
             <span className="visually-hidden">{t(`reactions.${code}`)}</span>
-            {ile > 0 && <span className="ms-1">{ile}</span>}
+            {count > 0 && <span className="ms-1">{count}</span>}
           </Button>
         );
       })}
 
-      {reakcje.total > 0 && (
-        <span className="text-body-secondary small ms-1">
-          {t('reactions.total', { count: reakcje.total })}
-        </span>
+      {/*
+        Podsumowanie jest przyciskiem, a nie napisem. Liczba mowi ILE osob,
+        ale nie mowi KTO - a przy paru reakcjach to wlasnie druga rzecz jest
+        ciekawa. Okienko otwiera sie na zadanie, wiec lista osob nie jest
+        pobierana dla kazdego posta na tablicy z osobna.
+      */}
+      {summary.total > 0 && (
+        <button
+          type="button"
+          className="reaction-total"
+          onClick={() => setShowAuthors(true)}
+        >
+          {t('reactions.total', { count: summary.total })}
+        </button>
       )}
 
       {error && <span className="text-danger small">{t('reactions.error')}</span>}
+
+      <ReactionAuthors
+        postId={post.id}
+        show={showAuthors}
+        onHide={() => setShowAuthors(false)}
+      />
     </div>
   );
 }

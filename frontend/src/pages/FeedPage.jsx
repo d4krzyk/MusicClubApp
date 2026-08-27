@@ -18,7 +18,7 @@ import { toSeconds } from '../utils/time';
 import { linkError } from '../utils/musicLinks';
 
 /** Ile postow pobieramy za jednym razem. */
-const NA_STRONE = 10;
+const PAGE_SIZE = 10;
 
 /** Limit zdjec w jednym poscie - taki sam jak po stronie backendu. */
 const MAX_IMAGES = 10;
@@ -50,7 +50,7 @@ export default function FeedPage() {
     setListError(null);
     try {
       const response = await client.get('/posts', {
-        params: { page: pageNumber, size: NA_STRONE, direction: 'desc' },
+        params: { page: pageNumber, size: PAGE_SIZE, direction: 'desc' },
       });
       const data = response.data;
 
@@ -77,9 +77,23 @@ export default function FeedPage() {
   }
 
   function afterEdit(updated) {
+    replacePost(updated);
+    setMessage(t('posts.updated'));
+  }
+
+  /*
+   * Reakcja tez zwraca odswiezonego posta (ze swiezymi licznikami), ale
+   * NIE jest zmiana tresci - wiec zadnego komunikatu. Wczesniej obie rzeczy
+   * szly tym samym wywolaniem i klikniecie emotki pod cudzym postem
+   * oglaszalo "Post zostal zaktualizowany".
+   */
+  function afterReaction(updated) {
+    replacePost(updated);
+  }
+
+  function replacePost(updated) {
     setPosts((previous) =>
       previous.map((p) => (p.id === updated.id ? updated : p)));
-    setMessage(t('posts.updated'));
   }
 
   async function remove(id) {
@@ -133,8 +147,15 @@ export default function FeedPage() {
         )}
         {listError && <Alert variant="danger">{listError}</Alert>}
 
-        {posts.map((post) => (
-          <Post key={post.id} post={post} onDelete={remove} onUpdate={afterEdit} />
+        {posts.map((post, i) => (
+          <Post
+            key={post.id}
+            post={post}
+            index={i % PAGE_SIZE}
+            onDelete={remove}
+            onUpdate={afterEdit}
+            onReaction={afterReaction}
+          />
         ))}
 
         {!loading && posts.length === 0 && !listError && (
@@ -142,8 +163,10 @@ export default function FeedPage() {
         )}
 
         {loading && (
-          <div className="text-center py-3 text-body-secondary">
-            <Spinner animation="border" size="sm" className="me-2" />
+          <div className="text-center py-3 text-body-secondary small">
+            <span className="loading-dots me-2" aria-hidden="true">
+              <span /><span /><span />
+            </span>
             {t('common.loading')}
           </div>
         )}

@@ -92,11 +92,29 @@ public class PostController {
 
         String username = authentication.getName();
 
-        Page<PostResponse> score = (author == null || author.isBlank())
+        Page<PostResponse> result = (author == null || author.isBlank())
             ? postService.feed(username, pageable)
             : postService.byAuthor(author, username, pageable);
 
-        return ResponseEntity.ok(score);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Jeden post po identyfikatorze.
+     *
+     * <p>Uzywaja tego powiadomienia ("ktos zareagowal na Twoj post" prowadzi
+     * do tego konkretnego wpisu) i zwykly link do posta wyslany komus.</p>
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "Zwraca jeden post")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Post"),
+        @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego posta")
+    })
+    public ResponseEntity<PostResponse> getOne(@PathVariable Long id,
+                                               Authentication authentication) {
+        return ResponseEntity.ok(postService.getOne(id, authentication.getName()));
     }
 
     /**

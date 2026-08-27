@@ -32,7 +32,7 @@ public class UserMapper {
             user.getRole() == Role.ADMIN,
             user.getAvatarFileName() == null
                 ? null
-                : PostMapper.SCIEZKA_PLIKOW + user.getAvatarFileName(),
+                : PostMapper.UPLOADS_PATH + user.getAvatarFileName(),
             user.getCreatedAt());
     }
 

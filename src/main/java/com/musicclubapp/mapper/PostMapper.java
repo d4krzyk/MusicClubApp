@@ -20,7 +20,7 @@ import java.util.List;
 public class PostMapper {
 
     /** Publiczna sciezka, pod ktora serwer wystawia wgrane pliki. */
-    public static final String SCIEZKA_PLIKOW = "/uploads/";
+    public static final String UPLOADS_PATH = "/uploads/";
 
     /**
      * @param ogladajacy zalogowany uzytkownik (moze byc {@code null} - wtedy
@@ -31,7 +31,7 @@ public class PostMapper {
     public PostResponse toResponse(Post post, User viewer, ReactionSummary reactions) {
         List<String> imageUrls = post.getImages().stream()
             .map(PostImage::getFileName)
-            .map(name -> SCIEZKA_PLIKOW + name)
+            .map(name -> UPLOADS_PATH + name)
             .toList();
 
         return new PostResponse(
@@ -56,7 +56,7 @@ public class PostMapper {
     private String avatarUrl(User user) {
         return user.getAvatarFileName() == null
             ? null
-            : SCIEZKA_PLIKOW + user.getAvatarFileName();
+            : UPLOADS_PATH + user.getAvatarFileName();
     }
 
     /**

@@ -29,16 +29,16 @@ import java.nio.file.Paths;
 @Configuration
 public class UploadsWebConfig implements WebMvcConfigurer {
 
-    private final Path catalog;
+    private final Path directory;
 
     public UploadsWebConfig(@Value("${app.uploads.dir:uploads}") String uploadsDirectory) {
-        this.catalog = Paths.get(uploadsDirectory).toAbsolutePath().normalize();
+        this.directory = Paths.get(uploadsDirectory).toAbsolutePath().normalize();
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry
-            .addResourceHandler(PostMapper.SCIEZKA_PLIKOW + "**")
-            .addResourceLocations("file:" + catalog + "/");
+            .addResourceHandler(PostMapper.UPLOADS_PATH + "**")
+            .addResourceLocations("file:" + directory + "/");
     }
 }

@@ -14,6 +14,7 @@ import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.music.MusicLinkParser;
 import com.musicclubapp.music.ParsedMusicLink;
 import com.musicclubapp.repository.PostRepository;
+import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.storage.FileStorageService;
 import org.springframework.data.domain.Page;
@@ -44,19 +45,25 @@ public class PostService {
     private final PostMapper postMapper;
     private final ReactionService reactionService;
     private final MusicMetadataService musicMetadata;
+    private final NotificationService notifications;
+    private final ReactionRepository reactionRepository;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
                        FileStorageService fileStorage,
                        PostMapper postMapper,
                        ReactionService reactionService,
-                       MusicMetadataService musicMetadata) {
+                       MusicMetadataService musicMetadata,
+                       NotificationService notifications,
+                       ReactionRepository reactionRepository) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
         this.postMapper = postMapper;
         this.reactionService = reactionService;
         this.musicMetadata = musicMetadata;
+        this.notifications = notifications;
+        this.reactionRepository = reactionRepository;
     }
 
     /**
@@ -185,6 +192,28 @@ public class PostService {
         return withReactions(postRepository.findFeed(pageable), viewerUsername);
     }
 
+    /**
+     * Jeden post po identyfikatorze.
+     *
+     * <p>Powstal dla powiadomien: klikniecie w "ktos zareagowal" ma prowadzic
+     * do <b>tego</b> posta, a nie na tablice. Post moze byc setny od gory,
+     * wiec odeslanie na tablice znaczyloby "poszukaj sobie".</p>
+     *
+     * <p>Przydaje sie tez do wyslania komus linku do konkretnego wpisu.</p>
+     */
+    @Transactional(readOnly = true)
+    public PostResponse getOne(Long id, String viewerUsername) {
+        Post post = postRepository.findByIdWithAuthor(id)
+            .orElseThrow(() -> new NoSuchElementFoundException("post", id));
+
+        User viewer = userRepository.findByUsername(viewerUsername).orElse(null);
+        ReactionSummary summary = reactionService
+            .summaries(List.of(id), viewerUsername)
+            .getOrDefault(id, ReactionSummary.empty());
+
+        return postMapper.toResponse(post, viewer, summary);
+    }
+
     /** Posty jednego uzytkownika - do jego profilu. */
     @Transactional(readOnly = true)
     public Page<PostResponse> byAuthor(String author, String viewerUsername, Pageable pageable) {
@@ -240,6 +269,23 @@ public class PostService {
          * files znikna, a post zostanie - i tablica pokazalaby puste ramki.
          */
         List<String> files = post.getImages().stream().map(PostImage::getFileName).toList();
+
+        /*
+         * Powiadomienia o reakcjach wskazuja na posta KLUCZEM OBCYM, wiec
+         * musza zniknac przed nim - inaczej baza odmowi skasowania.
+         * To akurat zaleta: gdyby byl to luzny numer, powiadomienie
+         * przezyloby posta i prowadziloby donikad.
+         */
+        notifications.postDeleted(post.getId());
+
+        /*
+         * Cudze reakcje pod tym postem kasujemy WPROST, mimo ze encja ma
+         * cascade = ALL. Kaskada opiera sie na kolekcji zaladowanej do
+         * pamieci, a reakcja dopisana w tej samej transakcji do niej nie
+         * trafia - baza odmawia wtedy skasowania posta z powodu klucza
+         * obcego. Blad byl niewidoczny w testach na atrapach.
+         */
+        reactionRepository.deleteByPostId(post.getId());
 
         postRepository.delete(post);
         files.forEach(fileStorage::remove);

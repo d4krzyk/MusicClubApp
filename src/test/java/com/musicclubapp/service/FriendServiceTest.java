@@ -39,6 +39,9 @@ class FriendServiceTest {
     @Mock
     private FriendRequestRepository requestRepository;
 
+    @Mock
+    private NotificationService notifications;
+
     @InjectMocks
     private FriendService friendService;
 

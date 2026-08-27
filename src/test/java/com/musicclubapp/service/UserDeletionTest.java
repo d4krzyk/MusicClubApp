@@ -43,6 +43,7 @@ class UserDeletionTest {
     @Autowired private ReactionRepository reactionRepository;
     @Autowired private FriendRequestRepository requestRepository;
     @Autowired private ReactionService reactionService;
+    @Autowired private PostService postService;
     @Autowired private FriendService friendService;
     @Autowired private EntityManager entityManager;
 
@@ -140,5 +141,28 @@ class UserDeletionTest {
 
         assertThat(userRepository.findByUsername("troll")).isEmpty();
         assertThat(userRepository.findByUsername("ala")).isPresent();
+    }
+
+    @Test
+    @DisplayName("da sie usunac post, pod ktorym sa CUDZE reakcje")
+    void postWithSomeoneElsesReactionsCanBeDeleted() {
+        /*
+         * Wyglada na oczywiste, a przez dlugi czas nie dzialalo. Encja posta
+         * ma cascade = ALL na reakcjach, wiec wydawalo sie, ze temat jest
+         * zalatwiony - tyle ze kaskada opiera sie na kolekcji zaladowanej do
+         * pamieci. Reakcja dopisana w tej samej transakcji do niej nie trafia
+         * i baza odrzucala skasowanie posta z powodu klucza obcego.
+         *
+         * Testy na atrapach nie mialy szans tego zobaczyc: atrapa repozytorium
+         * zgadza sie na wszystko. Wychodzi to dopiero na prawdziwej bazie.
+         */
+        Post post = postRepository.save(new Post(ala, "post z reakcjami"));
+        reactionService.set(post.getId(), "troll", ReactionType.FIRE);
+        entityManager.flush();
+
+        postService.delete(post.getId(), "ala");
+        entityManager.flush();
+
+        assertThat(postRepository.findById(post.getId())).isEmpty();
     }
 }

@@ -1,0 +1,112 @@
+package com.musicclubapp.repository;
+
+import com.musicclubapp.entity.Notification;
+import com.musicclubapp.entity.NotificationType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+/**
+ * Dostep do powiadomien.
+ *
+ * <p>Zapytania celowo pobieraja od razu sprawce ({@code JOIN FETCH}) - lista
+ * powiadomien zawsze pokazuje, KTO cos zrobil, wiec bez tego kazdy wiersz
+ * dociagalby uzytkownika osobnym zapytaniem (problem N+1).</p>
+ */
+@Repository
+public interface NotificationRepository extends JpaRepository<Notification, Long> {
+
+    /** Powiadomienia jednej osoby, od najnowszych. */
+    @Query(value = """
+           SELECT n FROM Notification n
+           JOIN FETCH n.actor
+           LEFT JOIN FETCH n.post
+           WHERE n.recipient.username = :username
+           ORDER BY n.createdAt DESC
+           """,
+           countQuery = "SELECT COUNT(n) FROM Notification n WHERE n.recipient.username = :username")
+    Page<Notification> forUser(@Param("username") String username, Pageable pageable);
+
+    /** Ile nieprzeczytanych - to liczba przy dzwonku. */
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.recipient.username = :username AND n.readAt IS NULL")
+    long countUnread(@Param("username") String username);
+
+    /**
+     * Istniejace powiadomienie o tej samej rzeczy.
+     *
+     * <p>Sluzy do <b>odswiezania zamiast dokladania</b>: gdy ta sama osoba
+     * zmienia reakcje pod tym samym postem, ma zostac jeden wpis.</p>
+     */
+    @Query("""
+           SELECT n FROM Notification n
+           WHERE n.recipient.id = :recipientId
+             AND n.actor.id = :actorId
+             AND n.post.id = :postId
+             AND n.type = :type
+           """)
+    Optional<Notification> find(@Param("recipientId") Long recipientId,
+                                @Param("actorId") Long actorId,
+                                @Param("postId") Long postId,
+                                @Param("type") NotificationType type);
+
+    /**
+     * Kasuje powiadomienie o reakcji, ktora zostala cofnieta.
+     *
+     * <p>Bez tego zostawaloby powiadomienie o czyms, co juz sie "odstalo" -
+     * klikniecie prowadziloby do posta bez sladu po tej reakcji.</p>
+     */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.recipient.id = :recipientId
+             AND n.actor.id = :actorId
+             AND n.post.id = :postId
+             AND n.type = :type
+           """)
+    void deleteMatching(@Param("recipientId") Long recipientId,
+                        @Param("actorId") Long actorId,
+                        @Param("postId") Long postId,
+                        @Param("type") NotificationType type);
+
+    /**
+     * Kasuje powiadomienia o zaproszeniu, ktore przestalo istniec
+     * (zostalo odrzucone albo anulowane).
+     */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.recipient.id = :recipientId
+             AND n.actor.id = :actorId
+             AND n.type = :type
+           """)
+    void deleteByType(@Param("recipientId") Long recipientId,
+                      @Param("actorId") Long actorId,
+                      @Param("type") NotificationType type);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.readAt = CURRENT_TIMESTAMP "
+         + "WHERE n.recipient.username = :username AND n.readAt IS NULL")
+    int markAllRead(@Param("username") String username);
+
+    /** Wszystkie powiadomienia o danym poscie - przed jego usunieciem. */
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.post.id = :postId")
+    void deleteByPostId(@Param("postId") Long postId);
+
+    /**
+     * Powiadomienia zwiazane z kontem - w OBIE strony.
+     *
+     * <p>Przy kasowaniu konta trzeba usunac zarowno to, co ta osoba dostala,
+     * jak i to, co wywolala u innych. Pominiecie drugiej strony konczy sie
+     * odmowa bazy z powodu klucza obcego.</p>
+     */
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.recipient.id = :userId OR n.actor.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
+}

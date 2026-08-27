@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import FeedPage from './pages/FeedPage';
+import PostPage from './pages/PostPage';
 import FriendsPage from './pages/FriendsPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
@@ -34,6 +35,19 @@ export default function App() {
               element={
                 <RequireAuth>
                   <FeedPage />
+                </RequireAuth>
+              }
+            />
+
+            {/*
+              Pojedynczy post pod wlasnym adresem - tu prowadza powiadomienia
+              o reakcjach i taki link da sie komus wyslac.
+            */}
+            <Route
+              path="/post/:id"
+              element={
+                <RequireAuth>
+                  <PostPage />
                 </RequireAuth>
               }
             />

@@ -118,8 +118,14 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | POST | `/api/posts` | dodanie posta (tekst + zdjęcia + muzyka) |
 | PUT | `/api/posts/{id}` | edycja posta (tekst i nagranie) — **tylko autor** |
 | DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
+| GET | `/api/posts/{id}` | jeden post — tu prowadzą powiadomienia o reakcjach |
 | PUT | `/api/posts/{id}/reaction` | ustawia reakcję (`FIRE`, `MID`, `MEH`) |
 | DELETE | `/api/posts/{id}/reaction` | cofa własną reakcję |
+| GET | `/api/posts/{id}/reactions` | kto zareagował i jak |
+| GET | `/api/notifications` | powiadomienia, od najnowszych |
+| GET | `/api/notifications/unread-count` | liczba nieprzeczytanych (to ona wisi przy dzwonku) |
+| POST | `/api/notifications/{id}/read` | oznacza jedno jako przeczytane |
+| POST | `/api/notifications/read-all` | oznacza wszystkie |
 | GET | `/api/profiles/{username}` | publiczny profil użytkownika |
 | GET | `/api/profiles/{username}/friends` | znajomi — od najbardziej powiązanych |
 | GET | `/api/profiles/{username}/top-music` | najczęściej wrzucane nagrania (top 5) |
@@ -317,6 +323,50 @@ zasadzie „oboje byli na jakimś koncercie". Gatunki zapisujemy **przy artyści
 nie przy użytkowniku**, więc kosztują jedno zapytanie na wykonawcę — raz,
 na zawsze, dla wszystkich.
 
+## Powiadomienia
+
+Dzwonek w pasku z liczbą nieprzeczytanych. Powiadamiamy o trzech rzeczach:
+ktoś **zareagował na Twój post**, ktoś **wysłał Ci zaproszenie**, ktoś
+**przyjął Twoje zaproszenie**.
+
+**Każde powiadomienie gdzieś prowadzi** — i to jest w nich najważniejsze.
+Powiadomienie, po którym trzeba samemu szukać, co się właściwie stało,
+łatwiej zignorować niż obsłużyć:
+
+| Zdarzenie | Klik prowadzi do |
+|---|---|
+| reakcja na Twój post | **tego konkretnego posta** (`/post/{id}`) |
+| nowe zaproszenie | strony znajomych, gdzie się je przyjmuje |
+| przyjęte zaproszenie | profilu tej osoby |
+
+Adres wylicza **serwer** (pole `link`), a nie frontend. Gdyby robił to
+frontend, przy każdym nowym rodzaju powiadomienia trzeba by pamiętać
+o dopisaniu warunku w drugim miejscu — i prędzej czy później powstałoby
+powiadomienie, które nigdzie nie prowadzi.
+
+Trzy reguły, bez których dzwonek szybko przestałby cokolwiek znaczyć:
+
+- **Reakcja na własny post nie powiadamia.** Wiadomo, co się samemu zrobiło.
+- **Zmiana zdania odświeża wpis zamiast dokładać drugi.** Jedna osoba
+  klikająca kolejno trzy emotki zostawia jedno powiadomienie, nie trzy.
+- **Cofnięta reakcja zabiera swoje powiadomienie.** Inaczej klik prowadziłby
+  do posta, pod którym nie ma po niej śladu. Tak samo znika powiadomienie
+  o zaproszeniu, które zostało odrzucone albo przyjęte.
+
+Powiadomienie o reakcji pokazuje **początek treści posta** — bez tego
+wszystkie wyglądałyby tak samo i nie dałoby się poznać, którego dotyczą.
+
+### Kto zareagował
+
+Kliknięcie w podsumowanie pod postem („3 reakcje") otwiera okienko z listą
+osób, pogrupowaną po rodzaju reakcji. Listę pobieramy **dopiero po
+otwarciu** — gdyby każdy post na tablicy ciągnął ją od razu, dwadzieścia
+postów oznaczałoby dwadzieścia dodatkowych zapytań po to, żeby pokazać coś,
+w co prawie nikt nie kliknie.
+
+Widzi to każdy, nie tylko autor posta: reakcja jest gestem publicznym,
+a i tak dałoby się ją policzyć z licznika obok emotki.
+
 ## Znajomi
 
 Znajomość jest **obustronna** i wymaga zgody obu stron: ktoś wysyła zaproszenie,
@@ -494,9 +544,9 @@ z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
 guście**, **moderacja kont (zakaz publikowania, usuwanie)**, motyw
 jasny/ciemny oraz cała aplikacja na Docker Compose. Nazwy w kodzie są
 konsekwentnie angielskie, komentarze — polskie.
-**197 testów backendu przechodzi**, a przepływy frontendu — **96 sprawdzeń
+**209 testów backendu przechodzi**, a przepływy frontendu — **117 sprawdzeń
 w prawdziwej przeglądarce** (cała aplikacja, ulubieni i propozycje, linki
-muzyczne, moderacja, układ strony).
+muzyczne, moderacja, układ strony, powiadomienia).
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
 Szczegóły w `docs/WYMAGANIA.md`. Następny krok: gablotka ulubionych playlist

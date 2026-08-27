@@ -69,4 +69,36 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
     @Modifying
     @Query("DELETE FROM Reaction r WHERE r.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    /**
+     * Kto zareagowal na dany post - do okienka "kto zareagowal".
+     *
+     * <p>{@code JOIN FETCH} pobiera od razu uzytkownika: lista bez nazw
+     * bylaby bezuzyteczna, a bez tego kazdy wiersz dociagalby ja osobnym
+     * zapytaniem (problem N+1).</p>
+     *
+     * <p>Kolejnosc od najnowszych - tak samo jak wszedzie indziej
+     * w aplikacji.</p>
+     */
+    @Query("""
+           SELECT r FROM Reaction r
+           JOIN FETCH r.user
+           WHERE r.post.id = :postId
+           ORDER BY r.createdAt DESC
+           """)
+    List<Reaction> findForPost(@Param("postId") Long postId);
+
+    /**
+     * Kasuje wszystkie reakcje pod danym postem - przed jego usunieciem.
+     *
+     * <p><b>Dlaczego wprost, skoro encja ma {@code cascade = ALL}.</b>
+     * Kaskada dziala na kolekcji zaladowanej do pamieci. Reakcje dopisane
+     * w tej samej transakcji przez {@code reactionRepository.save(...)} nie
+     * trafiaja do niej automatycznie, wiec Hibernate o nich nie wie i baza
+     * odrzuca skasowanie posta z powodu klucza obcego. Jawny {@code DELETE}
+     * nie zalezy od tego, co akurat jest zaladowane.</p>
+     */
+    @Modifying
+    @Query("DELETE FROM Reaction r WHERE r.post.id = :postId")
+    void deleteByPostId(@Param("postId") Long postId);
 }

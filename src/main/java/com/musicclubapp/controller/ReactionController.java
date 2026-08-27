@@ -1,6 +1,7 @@
 package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.ReactionAuthorResponse;
 import com.musicclubapp.dto.ReactionRequest;
 import com.musicclubapp.service.ReactionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,11 +12,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Reakcje na posty.
@@ -32,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
  * sobie {@code +1} na wlasna reke i rozjezdzac sie z serwerem.</p>
  */
 @RestController
-@RequestMapping("/api/posts/{postId}/reaction")
+@RequestMapping("/api/posts/{postId}")
 @Tag(name = "Reakcje", description = "Ogien, mid i meh pod postami")
 public class ReactionController {
 
@@ -42,7 +46,7 @@ public class ReactionController {
         this.reactionService = reactionService;
     }
 
-    @PutMapping
+    @PutMapping("/reaction")
     @Operation(summary = "Ustawia (albo podmienia) reakcje zalogowanego uzytkownika")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Post z przeliczonymi licznikami"),
@@ -58,7 +62,7 @@ public class ReactionController {
             reactionService.set(postId, authentication.getName(), payload.type()));
     }
 
-    @DeleteMapping
+    @DeleteMapping("/reaction")
     @Operation(summary = "Cofa wlasna reakcje")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Post z przeliczonymi licznikami"),
@@ -69,5 +73,22 @@ public class ReactionController {
             Authentication authentication) {
 
         return ResponseEntity.ok(reactionService.revert(postId, authentication.getName()));
+    }
+
+    /**
+     * Kto zareagowal na ten post i jak.
+     *
+     * <p>Adres jest w liczbie mnogiej ({@code /reactions}), bo zwraca liste -
+     * w odroznieniu od {@code /reaction}, ktore dotyczy JEDNEJ, wlasnej
+     * reakcji zalogowanego uzytkownika.</p>
+     */
+    @GetMapping("/reactions")
+    @Operation(summary = "Lista osob, ktore zareagowaly na post")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Kto i jak zareagowal"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego posta")
+    })
+    public ResponseEntity<List<ReactionAuthorResponse>> authors(@PathVariable Long postId) {
+        return ResponseEntity.ok(reactionService.authors(postId));
     }
 }

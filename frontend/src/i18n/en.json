@@ -180,7 +180,8 @@
     },
     "topTracks": "Most posted tracks",
     "postedTimes_one": "{{count}} time",
-    "postedTimes_other": "{{count}} times"
+    "postedTimes_other": "{{count}} times",
+    "backToFeed": "Back to the feed"
   },
   "favorites": {
     "title": "Favourites",
@@ -226,7 +227,14 @@
     "MEH": "Meh",
     "total_one": "{{count}} reaction",
     "total_other": "{{count}} reactions",
-    "error": "Could not save the reaction"
+    "error": "Could not save the reaction",
+    "whoTitle": "Who reacted",
+    "whoEmpty": "Nobody has reacted yet.",
+    "emoji": {
+      "FIRE": "🔥",
+      "MID": "😐",
+      "MEH": "🥱"
+    }
   },
   "friends": {
     "title": "Friends",
@@ -263,5 +271,13 @@
     "alreadyFriends": "Friends",
     "betterMatchesHint": "Nobody matches you yet. Add the artists and tracks you like to your profile - then the suggestions will stop being random.",
     "betterMatchesLink": "Go to your profile"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Nothing new. When someone reacts to your post or sends you a friend request, it shows up here.",
+    "markAllRead": "Mark all read",
+    "reaction": "{{username}} reacted {{emoji}} to your post",
+    "friendRequest": "{{username}} sent you a friend request",
+    "friendAccepted": "{{username}} is now your friend"
   }
 }

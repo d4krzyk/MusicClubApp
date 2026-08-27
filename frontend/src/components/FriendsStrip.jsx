@@ -7,13 +7,13 @@ import client from '../api/client';
 import Avatar from './Avatar';
 
 /** Ilu znajomych mieści sie na jednym "ekranie" paska. */
-const NA_STRONE = 6;
+const PAGE_SIZE = 6;
 
 /**
  * Poziomy pasek znajomych pod profilem.
  *
  * <p><b>Dlaczego nie karuzela Bootstrapa?</b> Karuzela wymaga wszystkich
- * slajdow w dokumencie od razu, a my chcemy doczytywac kolejne osoby dopiero
+ * slajdow w dokumencie from razu, a my chcemy doczytywac kolejne osoby dopiero
  * po kliknieciu strzalki. Poza tym na telefonie pasek przewija sie palcem
  * sam z siebie, a karuzela wymusza klikanie.</p>
  *
@@ -22,7 +22,7 @@ const NA_STRONE = 6;
  * kafelkow na wejsciu - wykorzystujemy stronicowanie, ktore backend i tak ma
  * (wymagania nr 3 i 5).</p>
  *
- * <p>Kolejnosc ustala serwer: od osob najbardziej powiazanych z ogladajacym.
+ * <p>Kolejnosc ustala serwer: from osob najbardziej powiazanych z ogladajacym.
  * Dzis liczy sie to po wspolnych znajomych; gdy dojda artysci ze Spotify,
  * zmieni sie samo zapytanie w bazie, a ten komponent zostanie bez zmian.</p>
  */
@@ -32,20 +32,20 @@ export default function FriendsStrip({ username, refresh }) {
   const [friends, setFriends] = useState([]);
   const [page, setPage] = useState(0);
   const [pages, setPages] = useState(0);
-  const [ile, setIle] = useState(0);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async (numer) => {
+  const fetch = useCallback(async (pageNumber) => {
     setLoading(true);
     try {
       const response = await client.get(
         `/profiles/${encodeURIComponent(username)}/friends`,
-        { params: { page: numer, size: NA_STRONE } });
+        { params: { page: pageNumber, size: PAGE_SIZE } });
 
       setFriends(response.data.content);
       setPage(response.data.number);
       setPages(response.data.totalPages);
-      setIle(response.data.totalElements);
+      setTotal(response.data.totalElements);
     } catch {
       // Pasek znajomych to dodatek - gdy padnie, profil ma dzialac dalej
       setFriends([]);
@@ -67,13 +67,13 @@ export default function FriendsStrip({ username, refresh }) {
     );
   }
 
-  if (ile === 0) {
+  if (total === 0) {
     return <p className="text-body-secondary small">{t('friends.none')}</p>;
   }
 
   // Pierwszy i ostatni element na tej stronie - do napisu "1-6 z 23"
-  const od = page * NA_STRONE + 1;
-  const until = od + friends.length - 1;
+  const from = page * PAGE_SIZE + 1;
+  const until = from + friends.length - 1;
 
   return (
     <div>
@@ -116,7 +116,7 @@ export default function FriendsStrip({ username, refresh }) {
           </Button>
 
           <span className="text-body-secondary small">
-            {od}–{until} {t('common.of')} {ile}
+            {from}–{until} {t('common.of')} {total}
           </span>
 
           <Button

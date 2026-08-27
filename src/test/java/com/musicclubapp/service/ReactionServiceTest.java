@@ -56,6 +56,9 @@ class ReactionServiceTest {
     @Mock
     private PostMapper postMapper;
 
+    @Mock
+    private NotificationService notifications;
+
     @InjectMocks
     private ReactionService reactionService;
 
