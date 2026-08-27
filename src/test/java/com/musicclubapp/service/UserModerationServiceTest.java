@@ -7,6 +7,7 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.UserMapper;
+import com.musicclubapp.repository.FavoritePlaylistRepository;
 import com.musicclubapp.repository.FriendRequestRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
@@ -51,6 +52,7 @@ class UserModerationServiceTest {
     @Mock private PostRepository postRepository;
     @Mock private ReactionRepository reactionRepository;
     @Mock private FriendRequestRepository requestRepository;
+    @Mock private FavoritePlaylistRepository playlistRepository;
     @Mock private FileStorageService fileStorage;
     @Mock private UserMapper userMapper;
     @Mock private NotificationService notifications;

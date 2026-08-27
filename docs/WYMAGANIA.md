@@ -24,10 +24,10 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 |---|-----------|-------------|--------|
 | 1 | Użycie JPA | `entity/User.java`, `repository/UserRepository.java` | ✅ KROK 2 |
 | 2 | Wsparcie min. 2 języków (PL/EN) | backend: `lang/messages*.properties` + `I18nConfig`; front: `i18next` + przełącznik PL/EN w menu | ✅ KROK 5 |
-| 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User`, `Post` 1—N `PostImage`, `Post` 1—N `Reaction`, `Notification` N—1 `User` ×2 i N—1 `Post` | ✅ posty |
+| 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User`, `Post` 1—N `PostImage`, `Post` 1—N `Reaction`, `Notification` N—1 `User` ×2 i N—1 `Post`, `FavoritePlaylist` N—1 `User` | ✅ posty |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
 | 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — tablica, profile, znajomi, ustawienia, panel administratora | ✅ KROK 5 |
-| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest`, `FriendServiceTest` (Mockito) + `DeezerCatalogServiceTest`, `LastFmServiceTest`, `FavoritesServiceTest`, `UserModerationServiceTest` | ✅ KROK 3 |
+| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest`, `FriendServiceTest` (Mockito) + `DeezerCatalogServiceTest`, `LastFmServiceTest`, `FavoritesServiceTest`, `UserModerationServiceTest`, `PlaylistServiceTest`, `PostVisibilityTest` | ✅ KROK 3 |
 | 15 | Rejestracja + logowanie, Spring Security (config NIE deprecated) | `config/SecurityConfig` — `SecurityFilterChain` + lambda DSL, sesja + BCrypt | ✅ KROK 3 |
 
 ## ⚪ Do wyboru — dla wszystkich typów projektów
@@ -38,7 +38,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 4 | Encja z datą/czasem i jej wykorzystanie | `User.createdAt` (data dołączenia na profilu), `Post.createdAt` (sortowanie tablicy), `Reaction.createdAt` | ✅ KROK 2 |
 | 5 | Sortowanie (backend) | `Sort` w `Pageable` + wybór pola i kierunku na `/users` | ✅ KROK 2 + 5 |
 | 7 | OneToOne **lub** ManyToMany | `User` N—N `User` — znajomi (`user_friends`); `User` N—N `Artist` (`user_favorite_artists`); `User` N—N `Track` (`user_favorite_tracks`) | ✅ znajomi + ulubieni |
-| 8 | Własne zapytania `@Query` / natywne | JPQL: `searchByUsernameOrEmail`, `findFeed` (JOIN FETCH), `countForPosts` (GROUP BY); **natywne**: `friendsRanked` oraz `friendSuggestions` (trzy skorelowane podzapytania + sortowanie po wyliczonym dopasowaniu) | ✅ KROK 2 |
+| 8 | Własne zapytania `@Query` / natywne | JPQL: `searchByUsernameOrEmail`, `findFeed` (JOIN FETCH + `ORDER BY CASE` stawiające znajomych na górze), `countForPosts` (GROUP BY); **natywne**: `friendsRanked`, `circleIds` (UNION) oraz `friendSuggestions` (trzy skorelowane podzapytania + sortowanie po wyliczonym dopasowaniu) | ✅ KROK 2 |
 | 10 | **Własna** adnotacja walidacyjna | `@UniqueUsername` (pole), `@PasswordsMatch` (klasa), `@ValidMusicLink` (klasa — link + rodzaj + moment startu) | ✅ KROK 3 |
 | 11 | `@ControllerAdvice` + wyjątek gdy brak elementu | `error/GlobalExceptionHandler` + `NoSuchElementFoundException` | ✅ KROK 3 |
 | 14 | `@DataJpaTest` do testów zapytań | `UserRepositoryTest`, `FriendshipRepositoryTest` (zapytanie natywne + symetria relacji), `FriendSuggestionsTest` (kolejność dopasowań), `TopMusicRepositoryTest` (zapytanie z `GROUP BY`) | ✅ KROK 2 |
@@ -53,7 +53,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 22 | Używanie `ResponseEntity` | każda metoda każdego kontrolera (Auth, Post, Reaction, Profile, Users, Favorites, MusicCatalog, Friend) | ✅ KROK 3 |
 | 23 | HATEOAS (Spring RESTful) | — | ⬜ opcjonalne (nie planujemy) |
 | 24 | Swagger (Spring RPC) | `springdoc-openapi` → `/swagger-ui.html`, wszystkie endpointy z opisami | ✅ KROK 3 |
-| 25 | `@WebMvcTest` **oraz** `@SpringBootTest` | `AuthControllerTest` (8 testów) + `MusicClubAppApplicationTests` | ✅ KROK 3 |
+| 25 | `@WebMvcTest` **oraz** `@SpringBootTest` | `AuthControllerTest`, `UserControllerAccessTest`, `PostControllerRoutingTest` + `MusicClubAppApplicationTests`, `PostVisibilityTest`, `PlaylistServiceTest` | ✅ KROK 3 |
 
 ---
 
@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 209 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 237 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -82,5 +82,22 @@ od zera, a na prawdziwym PostgreSQL została stara reguła `CHECK` po
 `ddl-auto=update` (Hibernate nigdy nie poprawia istniejącego ograniczenia).
 125 testów było wtedy zielonych. Dlatego każdą rundę sprawdzamy dodatkowo
 na prawdziwej bazie i w prawdziwej przeglądarce.
+
+Kilka rzeczy, których żaden zielony test by nie zauważył, a które wyszły
+dopiero na uruchomionej aplikacji:
+
+- **kolizja adresów** — `GET /api/posts/reactions` obok `GET /api/posts/{id}`;
+  gdyby wygrał wzorzec ze zmienną, odświeżanie liczników kończyłoby się
+  błędem 400 „nie umiem zamienić `reactions` na liczbę". Pilnuje tego teraz
+  `PostControllerRoutingTest`, o którym sprawdziliśmy, że faktycznie czerwienieje
+  po zmianie adresu;
+- **ta sama reguła zapisana dwa razy** — widoczność posta jest w JPQL-u (dla
+  tablicy) i w Javie (dla pojedynczego posta). Obie wersje są potrzebne, więc
+  zamiast usuwać powtórzenie, test `PostVisibilityTest#theRuleInJavaAndInTheDatabaseAgree`
+  sprawdza, że mówią to samo;
+- **kolumna `NOT NULL` dokładana do tabeli z danymi** — Hibernate w trybie
+  `ddl-auto=update` dostaje wtedy od bazy odmowę, kolumna w ogóle nie powstaje
+  i przestają działać wszystkie zapytania o posty. Stąd `visibility` jest
+  w bazie nullowalna, a stare wiersze uzupełnia `PostVisibilityMigration`.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

@@ -8,6 +8,7 @@ import com.musicclubapp.entity.Reaction;
 import com.musicclubapp.entity.ReactionType;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionCount;
@@ -65,6 +66,7 @@ public class ReactionService {
     public PostResponse set(Long postId, String username, ReactionType type) {
         Post post = post(postId);
         User user = user(username);
+        checkVisible(post, user);
 
         reactionRepository.find(postId, username).ifPresentOrElse(
             existing -> existing.setType(type),
@@ -82,6 +84,7 @@ public class ReactionService {
     public PostResponse revert(Long postId, String username) {
         Post post = post(postId);
         User user = user(username);
+        checkVisible(post, user);
 
         reactionRepository.find(postId, username).ifPresent(reactionRepository::delete);
 
@@ -102,10 +105,10 @@ public class ReactionService {
      * nie chroni.</p>
      */
     @Transactional(readOnly = true)
-    public List<ReactionAuthorResponse> authors(Long postId) {
+    public List<ReactionAuthorResponse> authors(Long postId, String viewerUsername) {
         // Sprawdzamy istnienie posta, zeby na nieistniejacy odpowiedziec 404,
         // a nie pusta lista - to dwie rozne rzeczy
-        post(postId);
+        checkVisible(post(postId), user(viewerUsername));
 
         return reactionRepository.findForPost(postId).stream()
             .map(r -> new ReactionAuthorResponse(
@@ -181,6 +184,23 @@ public class ReactionService {
             summaries(List.of(postId), viewer.getUsername()).get(postId);
 
         return postMapper.toResponse(post, viewer, summary);
+    }
+
+    /**
+     * Nie da sie zareagowac na post, ktorego nie wolno nam zobaczyc.
+     *
+     * <p><b>Samo ukrycie posta na tablicy nie wystarcza.</b> Identyfikatory
+     * postow sa kolejnymi liczbami, wiec bez tego sprawdzenia wystarczyloby
+     * wyslac {@code PUT /api/posts/57/reaction} z pominieciem przegladarki,
+     * zeby autor dostal powiadomienie "ktos zareagowal" od osoby, ktora nie
+     * miala prawa tego posta przeczytac. To samo dotyczy listy "kto
+     * zareagowal" - pokazuje ona nazwy uzytkownikow, wiec podlega tej samej
+     * regule co sama tresc.</p>
+     */
+    private void checkVisible(Post post, User viewer) {
+        if (!post.isVisibleTo(viewer)) {
+            throw OperationNotAllowedException.friendsOnlyPost();
+        }
     }
 
     private Post post(Long id) {

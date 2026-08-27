@@ -3,6 +3,7 @@ package com.musicclubapp.service;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.entity.Post;
+import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.entity.Reaction;
 import com.musicclubapp.entity.ReactionType;
 import com.musicclubapp.entity.User;
@@ -77,7 +78,7 @@ class ReactionServiceTest {
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(5L, "bartek", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), false, false, ReactionSummary.empty()));
+                LocalDateTime.now(), false, false, ReactionSummary.empty(), PostVisibility.PUBLIC, false));
     }
 
     @Test

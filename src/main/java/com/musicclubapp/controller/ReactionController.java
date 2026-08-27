@@ -86,9 +86,11 @@ public class ReactionController {
     @Operation(summary = "Lista osob, ktore zareagowaly na post")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Kto i jak zareagowal"),
-        @ApiResponse(responseCode = "404", description = "Nie ma takiego posta")
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego posta"),
+        @ApiResponse(responseCode = "409", description = "Post jest tylko dla znajomych autora")
     })
-    public ResponseEntity<List<ReactionAuthorResponse>> authors(@PathVariable Long postId) {
-        return ResponseEntity.ok(reactionService.authors(postId));
+    public ResponseEntity<List<ReactionAuthorResponse>> authors(@PathVariable Long postId,
+                                                                Authentication authentication) {
+        return ResponseEntity.ok(reactionService.authors(postId, authentication.getName()));
     }
 }

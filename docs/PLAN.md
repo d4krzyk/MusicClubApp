@@ -1632,7 +1632,136 @@ reakcja do posta, zaproszenie na stronę znajomych, przyjęcie na profil.
 
 ---
 
+# KROK 9 — kto co widzi, gablotka playlist i puste stany
+
+## Widoczność postów
+
+Post jest **publiczny** albo **tylko dla znajomych** — wybór przy pisaniu,
+zmienialny później przy edycji (ze świadomością, że działa to tylko na
+przyszłość: kto przeczytał, ten przeczytał).
+
+**Domyślnie publiczny.** Aplikacja służy do poznawania *nowych* ludzi
+o podobnym guście; domyślne ukrywanie wpisów przed wszystkimi poza obecnymi
+znajomymi działałoby przeciwko temu, po co ona jest.
+
+**Dwie wartości, nie pięć.** Kusiło, żeby dołożyć „tylko ja" i „znajomi
+znajomych", ale każda kolejna możliwość to kolejna reguła do pilnowania
+w *każdym* zapytaniu o posty — a użytkownik i tak musi za każdym razem
+zdecydować, którą wybrać.
+
+### Kolumna dokładana do tabeli z danymi
+
+`visibility` jest w bazie **nullowalna**, choć w Javie nigdy nie jest pusta.
+Powód jest konkretny: Hibernate w trybie `ddl-auto=update`, dokładając do
+tabeli z wierszami kolumnę `NOT NULL`, dostaje od bazy odmowę — kolumna
+w ogóle nie powstaje, a wtedy przestaje działać *każde* zapytanie o posty.
+Kolumna wchodzi więc nullowalna, a stare wiersze uzupełnia
+`PostVisibilityMigration` przy pierwszym starcie (wszystkie jako publiczne,
+bo takie były w chwili pisania — ustawienie ich na „tylko znajomi" zmieniałoby
+decyzję ich autorów, a nie odtwarzało).
+
+Doszła też pozycja w `EnumConstraintRefresher`. Dziś jest niepotrzebna
+(kolumna dopiero powstaje, więc ograniczenie `CHECK` jest poprawne) — chodzi
+o dzień, w którym dojdzie trzecia wartość i nikt nie będzie pamiętał,
+że trzeba tam zajrzeć.
+
+### Reguła obowiązuje wszędzie
+
+Ukrycie posta na tablicy to nie jest zabezpieczenie. Identyfikatory są
+kolejnymi liczbami, więc bez sprawdzenia w `PostService.getOne`
+i `ReactionService` wystarczyłoby wpisać adres z ręki albo wysłać `PUT`
+z pominięciem przeglądarki. Liczbę postów na profilu też liczymy **dla
+konkretnego oglądającego** — napis „2 posty" nad jednym wpisem wygląda jak
+zepsuta strona.
+
+## Tablica: najpierw znajomi
+
+`ORDER BY CASE WHEN autor ∈ mój_krąg THEN 0 ELSE 1 END, data DESC` —
+sortowanie po kolumnie, której w tabeli nie ma.
+
+**Dlaczego nie przesiać tego w Reakcie.** Bo wtedy stronicowanie zaczyna
+kłamać: każda strona zawierałaby inny zestaw wpisów, a licznik stron liczyłby
+coś innego niż to, co widać. Ta sama myśl co przy „proponowanych znajomych".
+
+Sortowanie przekazane z kontrolera **odrzucamy** na samej tablicy. Kolejność
+nie jest tu ustawieniem użytkownika, tylko treścią funkcji; gdyby przepuścić
+`Sort` z adresu, Spring Data dokleiłby je do `ORDER BY` z zapytania i wyszłaby
+kolejność, której nikt nie zamawiał. Parametr `direction` działa dalej tam,
+gdzie ma sens — przy postach jednego autora.
+
+**„Mój krąg"** (`UserRepository.circleIds`) to jedno pojęcie załatwiające trzy
+sprawy: kolejność, dostęp do postów dla znajomych i zawężenie tablicy. Własny
+identyfikator jest w nim celowo — także dlatego, że `IN ()` z pustą listą jest
+w SQL-u błędem składni i wywracałoby tablicę użytkownikowi bez znajomych.
+
+Postulat brzmiał: „posty obcych albo pod spodem, albo wcale". To dwie różne
+odpowiedzi na dwie różne sytuacje, więc jest to **przełącznik**, a nie decyzja
+podjęta za użytkownika. Domyślnie szeroko: konto założone przed chwilą nie ma
+ani jednego znajomego.
+
+## Gablotka playlist
+
+Do pięciu playlist na profilu. Osobna encja `FavoritePlaylist`, a nie kolejne
+pole przy użytkowniku — playlista ma serwis, identyfikator, tytuł, okładkę
+i miejsce w kolejności, a usuwanie z gablotki potrzebuje odwołania do wiersza
+po identyfikatorze.
+
+**Osobny serwis, nie `FavoritesService`.** Tamten pilnuje jednej twardej
+zasady: do ulubionych trafia wyłącznie to, co istnieje w katalogu Deezera.
+Playlista przez ten katalog przejść nie może i **celowo nie liczy się do
+żadnego dopasowania**. Wciśnięcie tego do tamtej klasy oznaczałoby wyjątek od
+jej jedynej zasady — a wyjątek od zasady to najkrótsza droga do tego, żeby
+przestała obowiązywać.
+
+Ograniczenie `UNIQUE` obejmuje **parę właściciel–playlista**, a nie samą
+playlistę: inaczej pierwsza osoba, która wystawi popularną składankę,
+zablokowałaby ją wszystkim pozostałym.
+
+## Reakcje bez przeładowania
+
+`GET /api/posts/reactions?ids=…` oddaje same liczniki dla postów, które są na
+ekranie. Wywołujemy to po powrocie do karty i co 45 sekund przy widocznej
+karcie. Bez WebSocketa (stałe połączenie plus rozgłaszanie zdarzeń to spory
+kawałek maszynerii do utrzymania — a chodzi o kilka liczb) i bez pobierania
+tablicy od nowa (to przestawiłoby widok i zgubiło miejsce, w którym ktoś
+czytał).
+
+Nowy adres stoi obok `GET /api/posts/{id}` i oba wzorce mają dwa człony.
+Spring wybiera ten z dosłownym członem — ale gdyby kiedyś przestał, objawiłoby
+się to błędem 400 przy odświeżaniu liczników, czyli w miejscu, którego nikt by
+z tym nie połączył. Stąd `PostControllerRoutingTest`; sprawdziliśmy, że po
+zmianie adresu faktycznie czerwienieje.
+
+## Puste stany i szkielety
+
+Cztery różne szare linijki zastąpił jeden komponent `EmptyState`: ikona,
+co tu będzie, dlaczego jeszcze tego nie ma i **jedno konkretne działanie**.
+Pusto to nie awaria, tylko początek — i wtedy właśnie aplikacja ma jedyną
+okazję powiedzieć, co dalej.
+
+Przy pierwszym ładowaniu tablicy i profilu idą **szkielety postów** zamiast
+kółka: zajmują to samo miejsce co prawdziwe wpisy, więc po wczytaniu nic nie
+skacze. Przy doładowywaniu zostają trzy kropki — tam jest już co oglądać,
+a pół ekranu szarych prostokątów wyglądałoby jak awaria.
+
+## Sprawdzone
+
+237 testów backendu (28 nowych: widoczność i kolejność tablicy na prawdziwej
+bazie, gablotka playlist, kierowanie adresów) oraz nowy zestaw
+`sprawdz-widocznosc.mjs` — **35 sprawdzeń w Chromium**, przepuszczony dwa razy
+z tym samym wynikiem. Doszły do tego zrzuty ekranu do README, robione tą samą
+drogą: prawdziwa przeglądarka na danych zakładanych przez API.
+
+**Czego nie dało się sprawdzić w tej rundzie.** Kontener, w którym powstawała
+ta runda, nie ma dostępu do Deezera — a bez niego nie da się dodać ulubionego
+artysty, więc `sprawdz-ulubione.mjs` i trzy sprawdzenia z pozostałych
+zestawów nie mają na czym pracować. Sama logika ulubionych ma pokrycie
+w 11 testach `FavoritesServiceTest`, które chodzą na własnym serwerze HTTP,
+i nic w tej rundzie jej nie dotykało — ale uczciwiej jest to zapisać niż
+podać liczbę, która sugerowałaby, że sprawdziliśmy wszystko.
+
+---
+
 ## Co zostaje na później
 
-- gablotka 5 ulubionych playlist na profilu,
 - potwierdzenie adresu e-mail przy rejestracji (wymaganie nr 16, opcjonalne).

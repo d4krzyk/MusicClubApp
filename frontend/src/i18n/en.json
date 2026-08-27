@@ -136,7 +136,6 @@
     "publishing": "Publishing…",
     "published": "Your post has been published.",
     "deleted": "The post has been deleted.",
-    "empty": "No posts yet. Be the first!",
     "gallery": "Photo gallery ({{count}})",
     "showMore": "Show more",
     "loadMore": "Show older posts",
@@ -181,7 +180,30 @@
     "topTracks": "Most posted tracks",
     "postedTimes_one": "{{count}} time",
     "postedTimes_other": "{{count}} times",
-    "backToFeed": "Back to the feed"
+    "backToFeed": "Back to the feed",
+    "visibility": {
+      "label": "Who can see this",
+      "PUBLIC": "Public",
+      "FRIENDS": "Friends only",
+      "PUBLICHint": "Everyone can see it, including people you have not met yet. That is how you meet them.",
+      "FRIENDSHint": "Only your friends can see it - the ones you have now and the ones you add later."
+    },
+    "scope": {
+      "label": "What to show in the feed",
+      "ALL": "Everything",
+      "FRIENDS": "Friends only"
+    },
+    "strangersBelow": "Below: people you have not met yet",
+    "emptyAll": {
+      "title": "Nobody has posted anything yet",
+      "text": "The feed shows your friends' posts first and public posts from everyone else below them. There are none of either yet, so the first post is yours."
+    },
+    "emptyFriends": {
+      "title": "Your friends have not posted anything yet",
+      "text": "You narrowed the feed down to friends. You can widen it to the whole community or look for people with a similar taste.",
+      "showAll": "Show every post",
+      "findFriends": "Find people"
+    }
   },
   "favorites": {
     "title": "Favourites",
@@ -219,7 +241,9 @@
     "noPosts": "This user has not written any posts yet.",
     "noPostsSelf": "You have no posts yet. Write your first one on the feed!",
     "editAccount": "Account settings",
-    "notFound": "No such user."
+    "notFound": "No such user.",
+    "noPostsHint": "When {{username}} posts something, it will show up here and in your feed.",
+    "noPostsSelfHint": "Share a track, an album or a playlist and say why that one. This is where conversations start."
   },
   "reactions": {
     "FIRE": "Fire",
@@ -270,7 +294,10 @@
     "noCommonGround": "nothing in common (yet)",
     "alreadyFriends": "Friends",
     "betterMatchesHint": "Nobody matches you yet. Add the artists and tracks you like to your profile - then the suggestions will stop being random.",
-    "betterMatchesLink": "Go to your profile"
+    "betterMatchesLink": "Go to your profile",
+    "noneSelf": "You have no friends yet",
+    "noneSelfHint": "Add favourite artists and tracks to your profile - then the suggestions stop being random and you will find someone who listens to what you do.",
+    "findPeople": "Find people"
   },
   "notifications": {
     "title": "Notifications",
@@ -279,5 +306,18 @@
     "reaction": "{{username}} reacted {{emoji}} to your post",
     "friendRequest": "{{username}} sent you a friend request",
     "friendAccepted": "{{username}} is now your friend"
+  },
+  "playlists": {
+    "title": "Playlist showcase",
+    "whatItIs": "Up to five mixes you want someone to hear. This does not affect friend matching - that is what the favourite artists above are for.",
+    "emptySelf": "Nothing here yet. Paste a playlist link from Spotify, YouTube Music or Apple Music.",
+    "add": "Add",
+    "adding": "Adding...",
+    "addHint": "Playlist link - Spotify, YouTube Music or Apple Music",
+    "placeholder": "https://open.spotify.com/playlist/...",
+    "full": "The showcase is full. Remove one item to make room.",
+    "play": "Listen",
+    "untitled": "Playlist",
+    "openInService": "Open in {{service}}"
   }
 }

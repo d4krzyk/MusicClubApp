@@ -56,21 +56,21 @@ class ValidMusicLinkValidatorTest {
     @Test
     @DisplayName("post bez muzyki przechodzi")
     void noMusicIsFine() {
-        assertThat(bledneP0la(new CreatePostRequest("tresc", null, null, null))).isEmpty();
+        assertThat(bledneP0la(new CreatePostRequest("tresc", null, null, null, null))).isEmpty();
     }
 
     @Test
     @DisplayName("poprawny utwor z momentem startu przechodzi")
     void validTrack() {
         assertThat(bledneP0la(
-            new CreatePostRequest("tresc", UTWOR, MusicKind.TRACK, 70))).isEmpty();
+            new CreatePostRequest("tresc", UTWOR, MusicKind.TRACK, 70, null))).isEmpty();
     }
 
     @Test
     @DisplayName("BELKOT zamiast linku zatrzymuje wysylke")
     void gibberishRejected() {
         assertThat(bledneP0la(
-            new CreatePostRequest("tresc", "to nie jest link", MusicKind.TRACK, null)))
+            new CreatePostRequest("tresc", "to nie jest link", MusicKind.TRACK, null, null)))
             .contains("musicUrl");
     }
 
@@ -78,7 +78,7 @@ class ValidMusicLinkValidatorTest {
     @DisplayName("link do albumu przy wybranym rodzaju 'utwor' jest odrzucany")
     void mismatchedKind() {
         assertThat(bledneP0la(
-            new CreatePostRequest("tresc", ALBUM, MusicKind.TRACK, null)))
+            new CreatePostRequest("tresc", ALBUM, MusicKind.TRACK, null, null)))
             .contains("musicUrl");
     }
 
@@ -90,7 +90,7 @@ class ValidMusicLinkValidatorTest {
          * polegac - zapytanie da sie wyslac z pominieciem przegladarki.
          */
         assertThat(bledneP0la(
-            new CreatePostRequest("tresc", ALBUM, MusicKind.ALBUM, 70)))
+            new CreatePostRequest("tresc", ALBUM, MusicKind.ALBUM, 70, null)))
             .contains("musicStartSeconds");
     }
 
@@ -98,27 +98,27 @@ class ValidMusicLinkValidatorTest {
     @DisplayName("album BEZ momentu startu przechodzi")
     void albumWithoutStartSeconds() {
         assertThat(bledneP0la(
-            new CreatePostRequest("tresc", ALBUM, MusicKind.ALBUM, null))).isEmpty();
+            new CreatePostRequest("tresc", ALBUM, MusicKind.ALBUM, null, null))).isEmpty();
     }
 
     @Test
     @DisplayName("link bez wybranego rodzaju zatrzymuje wysylke")
     void missingKind() {
-        assertThat(bledneP0la(new CreatePostRequest("tresc", UTWOR, null, null)))
+        assertThat(bledneP0la(new CreatePostRequest("tresc", UTWOR, null, null, null)))
             .contains("musicKind");
     }
 
     @Test
     @DisplayName("wybrany rodzaj bez linku zatrzymuje wysylke")
     void missingLink() {
-        assertThat(bledneP0la(new CreatePostRequest("tresc", null, MusicKind.TRACK, null)))
+        assertThat(bledneP0la(new CreatePostRequest("tresc", null, MusicKind.TRACK, null, null)))
             .contains("musicUrl");
     }
 
     @Test
     @DisplayName("moment startu bez zadnego linku zatrzymuje wysylke")
     void startSecondsWithoutLink() {
-        assertThat(bledneP0la(new CreatePostRequest("tresc", null, null, 70)))
+        assertThat(bledneP0la(new CreatePostRequest("tresc", null, null, 70, null)))
             .contains("musicStartSeconds");
     }
 
@@ -126,7 +126,7 @@ class ValidMusicLinkValidatorTest {
     @DisplayName("link z YouTube Music przechodzi jako utwor")
     void youtubeAsTrack() {
         assertThat(bledneP0la(new CreatePostRequest(
-            "tresc", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.TRACK, 42))).isEmpty();
+            "tresc", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.TRACK, 42, null))).isEmpty();
     }
 
     @Test
@@ -134,7 +134,7 @@ class ValidMusicLinkValidatorTest {
     void youtubeIsNotAnAlbum() {
         // Na YouTube album bywa playlista - to inny byt i nie udajemy, ze go umiemy
         assertThat(bledneP0la(new CreatePostRequest(
-            "tresc", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.ALBUM, null)))
+            "tresc", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.ALBUM, null, null)))
             .contains("musicUrl");
     }
 
@@ -148,7 +148,7 @@ class ValidMusicLinkValidatorTest {
          */
         Set<ConstraintViolation<CreatePostRequest>> naruszenia = validator.validate(
             new CreatePostRequest(
-                "tresc", "https://youtu.be/dQw4w9WgXcQ", MusicKind.TRACK, null));
+                "tresc", "https://youtu.be/dQw4w9WgXcQ", MusicKind.TRACK, null, null));
 
         assertThat(naruszenia).hasSize(1);
         ConstraintViolation<CreatePostRequest> error = naruszenia.iterator().next();
@@ -167,7 +167,7 @@ class ValidMusicLinkValidatorTest {
     @DisplayName("tekst, ktory nie jest zadnym linkiem, dostaje komunikat ogolny")
     void nonLinkGetsGeneralMessage() {
         Set<ConstraintViolation<CreatePostRequest>> naruszenia = validator.validate(
-            new CreatePostRequest("tresc", "zupelnie cos innego", MusicKind.TRACK, null));
+            new CreatePostRequest("tresc", "zupelnie cos innego", MusicKind.TRACK, null, null));
 
         assertThat(naruszenia).hasSize(1);
         // Tu podpowiedz o YouTube Music byloby myląca - nikt YouTube'a nie wklejal

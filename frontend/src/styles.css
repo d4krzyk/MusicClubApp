@@ -1568,3 +1568,283 @@ a:hover > .avatar-placeholder,
   0%, 80%, 100% { transform: scale(.6); opacity: .45; }
   40%           { transform: scale(1);  opacity: 1; }
 }
+
+/* =========================================================================
+   PUSTE STANY
+
+   Puste miejsce to nie awaria, tylko poczatek - i wlasnie wtedy aplikacja
+   ma jedyna okazje powiedziec, co dalej. Stad ramka z ikona, zdaniem
+   i JEDNYM konkretnym dzialaniem zamiast szarej linijki tekstu.
+   ========================================================================= */
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+  border-radius: var(--mc-radius);
+  border: 1px dashed var(--bs-border-color);
+  /* Ledwie widoczny odcien marki - ma sie odrozniac od tla, ale nie
+     udawac karty z trescia */
+  background: linear-gradient(180deg,
+    rgba(var(--bs-primary-rgb), .05), transparent 70%);
+}
+
+.empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: .75rem;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--mc-gradient);
+  box-shadow: var(--mc-glow);
+}
+
+.empty-state-title {
+  font-weight: 600;
+  margin-bottom: .35rem;
+}
+
+.empty-state-text {
+  color: var(--bs-secondary-color);
+  font-size: .9375rem;
+  /* Wiersz dluzszy niz ok. 60 znakow czyta sie gorzej - a to jest tekst,
+     ktory ma byc przeczytany, a nie ominiety */
+  max-width: 42ch;
+  margin: 0 auto .9rem;
+}
+
+.empty-state-action {
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* =========================================================================
+   SZKIELETY LADOWANIA
+
+   Zajmuja TO SAMO miejsce, co prawdziwe posty - dzieki temu po wczytaniu
+   nic nie skacze. Kolko Bootstrapa zostawialo pusta strone, a tresc
+   wskakiwala potem, przesuwajac wszystko w dol.
+   ========================================================================= */
+
+.skeleton-card {
+  /* Szkielet nie jest trescia, wiec nie udaje jej cieniem */
+  box-shadow: var(--mc-shadow-sm);
+  opacity: .85;
+}
+
+.skeleton {
+  display: block;
+  border-radius: .5rem;
+  /*
+     Pasek swiatla przesuwajacy sie w prawo. Sam szary prostokat wyglada
+     jak element, ktory sie nie wczytal; ruch mowi "to zaraz bedzie".
+  */
+  background: linear-gradient(90deg,
+    var(--bs-secondary-bg) 25%,
+    var(--bs-tertiary-bg) 37%,
+    var(--bs-secondary-bg) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-line {
+  height: .75rem;
+  margin-bottom: .5rem;
+}
+
+.skeleton-line-sm {
+  height: .625rem;
+  margin-bottom: 0;
+}
+
+.skeleton-player {
+  height: 152px;
+  margin-top: .75rem;
+}
+
+.skeleton-pill {
+  width: 3.25rem;
+  height: 1.75rem;
+  border-radius: 999px;
+}
+
+@keyframes skeleton-sweep {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+/* =========================================================================
+   PRZELACZNIK Z DWOMA MOZLIWOSCIAMI (segmented control)
+
+   Uzywamy go w dwoch miejscach: zakres tablicy i widocznosc posta. Oba
+   pytania maja dokladnie dwie odpowiedzi i obie warto pokazac naraz -
+   lista rozwijana chowalaby druga za klknieciem, a przelacznik wl./wyl.
+   wymagalby czytania podpisu, zeby wiedziec, co znaczy jego stan.
+   ========================================================================= */
+
+.segmented {
+  display: inline-flex;
+  padding: .25rem;
+  gap: .25rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  box-shadow: inset 0 1px 2px rgba(15, 12, 30, .08);
+}
+
+.segmented-option {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  padding: .35rem .85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  font-size: .875rem;
+  font-weight: 500;
+  transition: color var(--mc-fast), background-color var(--mc-fast),
+              box-shadow var(--mc-fast);
+}
+
+.segmented-option:hover:not(.is-active) {
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+}
+
+.segmented-option.is-active {
+  color: #fff;
+  background: var(--mc-gradient);
+  box-shadow: var(--mc-glow);
+}
+
+/* =========================================================================
+   WIDOCZNOSC POSTA
+   ========================================================================= */
+
+/*
+   Plakietka pojawia sie WYLACZNIE przy postach dla znajomych. Publiczny
+   jest domyslny, wiec podpisywanie go przy kazdym wpisie byloby szumem -
+   a plakietka ma zwracac uwage wtedy, gdy cos odbiega od normy.
+*/
+.visibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .125rem .5rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 500;
+  color: rgba(var(--bs-primary-rgb), .95);
+  background: rgba(var(--bs-primary-rgb), .12);
+  border: 1px solid rgba(var(--bs-primary-rgb), .25);
+}
+
+/* =========================================================================
+   KRESKA MIEDZY KREGIEM A RESZTA SWIATA
+
+   Bez niej przejscie od postow znajomych do postow obcych osob jest
+   niewidoczne - tablica wyglada wtedy jak zwykla lista w przypadkowej
+   kolejnosci, a to wlasnie kolejnosc jest tu cala rzecza.
+   ========================================================================= */
+
+.feed-divider {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 1.75rem 0 1rem;
+  color: var(--bs-secondary-color);
+  font-size: .8125rem;
+}
+
+.feed-divider::before,
+.feed-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bs-border-color);
+}
+
+.feed-divider > span {
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   GABLOTKA PLAYLIST
+   ========================================================================= */
+
+.playlist-card {
+  position: relative;
+  width: 132px;
+}
+
+/*
+   Cala okladka jest przyciskiem, bo caly kafelek robi jedna rzecz:
+   otwiera odtwarzacz. Osobny maly przycisk "posluchaj" pod spodem
+   dawalby dwa cele klikniecia o tym samym znaczeniu.
+*/
+.playlist-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+}
+
+.playlist-cover {
+  width: 132px;
+  height: 132px;
+  object-fit: cover;
+  border-radius: .5rem;
+  display: block;
+  box-shadow: var(--mc-shadow-sm);
+  transition: transform var(--mc-slow), box-shadow var(--mc-slow);
+}
+
+.playlist-open:hover .playlist-cover,
+.playlist-open:focus-visible .playlist-cover {
+  transform: scale(1.04);
+  box-shadow: var(--mc-shadow-md);
+}
+
+.playlist-caption {
+  display: block;
+  margin-top: .25rem;
+  max-width: 132px;
+}
+
+/* Krzyzyk usuwania zachowuje sie tak samo jak w ulubionych */
+@media (hover: hover) {
+  .playlist-card .favorite-remove {
+    opacity: 0;
+  }
+
+  .playlist-card:hover .favorite-remove,
+  .playlist-card .favorite-remove:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/*
+   Zastepnik okladki playlisty. Reguly .cover-placeholder stoja w tym pliku
+   WYZEJ, wiec przy tej samej wadze wygralby z nimi display:block
+   z .playlist-cover - i ikona przestalaby byc wysrodkowana.
+*/
+.playlist-cover.cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

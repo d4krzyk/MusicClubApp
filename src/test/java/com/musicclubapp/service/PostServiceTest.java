@@ -6,6 +6,7 @@ import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
+import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
@@ -93,7 +94,7 @@ class PostServiceTest {
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(1L, "anna", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), true, true, ReactionSummary.empty()));
+                LocalDateTime.now(), true, true, ReactionSummary.empty(), PostVisibility.PUBLIC, false));
     }
 
     /** Serwis oEmbed odpowiada tytulem i miniaturka. */
@@ -117,7 +118,7 @@ class PostServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
         prepareSave();
 
-        postService.create("anna", new CreatePostRequest("Dzien dobry", null, null, null), null);
+        postService.create("anna", new CreatePostRequest("Dzien dobry", null, null, null, null), null);
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -132,7 +133,7 @@ class PostServiceTest {
         given(fileStorage.saveImage(any())).willReturn("a.jpg", "b.jpg", "c.jpg");
         prepareSave();
 
-        postService.create("anna", new CreatePostRequest("Galeria", null, null, null),
+        postService.create("anna", new CreatePostRequest("Galeria", null, null, null, null),
             List.of(image("1.jpg"), image("2.jpg"), image("3.jpg")));
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
@@ -158,7 +159,7 @@ class PostServiceTest {
             .map(MultipartFile.class::cast)
             .toList();
 
-        postService.create("anna", new CreatePostRequest("Duzo zdjec", null, null, null), duzo);
+        postService.create("anna", new CreatePostRequest("Duzo zdjec", null, null, null, null), duzo);
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -176,7 +177,7 @@ class PostServiceTest {
             "Polecam",
             "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT?si=tajnyparametr",
             MusicKind.TRACK,
-            42), null);
+            42, null), null);
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -198,7 +199,7 @@ class PostServiceTest {
         buildMusicDetails();
 
         postService.create("anna", new CreatePostRequest(
-            "Polecam", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.TRACK, 42), null);
+            "Polecam", "https://music.youtube.com/watch?v=dQw4w9WgXcQ", MusicKind.TRACK, 42, null), null);
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -218,7 +219,7 @@ class PostServiceTest {
             "Caly album",
             "https://open.spotify.com/album/4cOdK2wGLETKBW3PvgPWqT",
             MusicKind.ALBUM,
-            70), null);
+            70, null), null);
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -240,7 +241,7 @@ class PostServiceTest {
             "Polecam",
             "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
             MusicKind.TRACK,
-            null), null);
+            null, null), null);
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -305,7 +306,7 @@ class PostServiceTest {
         buildMusicDetails();
         postService.update(5L, "anna", new UpdatePostRequest(
             "nowa tresc", "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
-            MusicKind.TRACK, 30));
+            MusicKind.TRACK, 30, null));
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -324,7 +325,7 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
         prepareEdit();
 
-        postService.update(5L, "anna", new UpdatePostRequest("tresc", "", null, null));
+        postService.update(5L, "anna", new UpdatePostRequest("tresc", "", null, null, null));
 
         ArgumentCaptor<Post> stored = ArgumentCaptor.forClass(Post.class);
         verify(postRepository).save(stored.capture());
@@ -344,7 +345,7 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
 
         assertThatThrownBy(() -> postService.update(
-            5L, "anna", new UpdatePostRequest("przejete", null, null, null)))
+            5L, "anna", new UpdatePostRequest("przejete", null, null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(postRepository, never()).save(any(Post.class));
@@ -357,7 +358,7 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(cudzy));
 
         assertThatThrownBy(() -> postService.update(
-            5L, "admin", new UpdatePostRequest("podmienione", null, null, null)))
+            5L, "admin", new UpdatePostRequest("podmienione", null, null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
 
         verify(postRepository, never()).save(any(Post.class));
@@ -380,7 +381,7 @@ class PostServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(banned));
 
         assertThatThrownBy(() -> postService.create(
-                "anna", new CreatePostRequest("mimo bana", null, null, null), null))
+                "anna", new CreatePostRequest("mimo bana", null, null, null, null), null))
             .isInstanceOf(OperationNotAllowedException.class);
 
         // Kluczowe: nic nie trafilo do bazy - kara ma zatrzymac zapis,
@@ -402,7 +403,7 @@ class PostServiceTest {
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
 
         assertThatThrownBy(() -> postService.update(
-                5L, "anna", new UpdatePostRequest("nowa tresc", null, null, null)))
+                5L, "anna", new UpdatePostRequest("nowa tresc", null, null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
 
         assertThat(post.getContent()).isEqualTo("stara tresc");
@@ -416,7 +417,7 @@ class PostServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(byly));
         prepareSave();
 
-        postService.create("anna", new CreatePostRequest("juz moge", null, null, null), null);
+        postService.create("anna", new CreatePostRequest("juz moge", null, null, null, null), null);
 
         verify(postRepository).save(any(Post.class));
     }

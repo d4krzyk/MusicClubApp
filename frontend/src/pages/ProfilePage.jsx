@@ -11,10 +11,14 @@ import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import Post from '../components/Post';
+import PostSkeleton from '../components/PostSkeleton';
+import EmptyState from '../components/EmptyState';
 import FriendsStrip from '../components/FriendsStrip';
 import TopMusic from '../components/TopMusic';
 import Favorites from '../components/Favorites';
+import Playlists from '../components/Playlists';
 import FriendshipButton from '../components/FriendshipButton';
+import { IconInbox, IconPlus } from '../components/Icons';
 import { formatDate } from '../utils/dates';
 
 /** Ile postow pobieramy za jednym razem. */
@@ -47,6 +51,7 @@ export default function ProfilePage() {
   const [page, setPage] = useState(0);
   const [lastPage, setLastPage] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [postsLoading, setPostsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   /*
@@ -80,6 +85,7 @@ export default function ProfilePage() {
   }, [whose, t]);
 
   const loadPosts = useCallback(async (pageNumber, joined) => {
+    setPostsLoading(true);
     try {
       const response = await client.get('/posts', {
         params: { page: pageNumber, size: PAGE_SIZE, direction: 'desc', author: whose },
@@ -92,6 +98,8 @@ export default function ProfilePage() {
     } catch (error) {
       const details = describeError(error);
       setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+    } finally {
+      setPostsLoading(false);
     }
   }, [whose, t]);
 
@@ -206,25 +214,55 @@ export default function ProfilePage() {
           onChange={() => setRefreshFriends((n) => n + 1)}
         />
 
+        {/*
+          GABLOTKA PLAYLIST to trzeci, jeszcze inny rodzaj informacji.
+          Ulubieni sluza dopasowywaniu ludzi, "najczesciej wrzucane" jest
+          statystyka z postow, a playlisty sa po prostu zaproszeniem:
+          "posluchaj tego, co ja". Celowo nie licza sie do zadnego
+          dopasowania - ta sama skladanka u dwoch osob moze znaczyc
+          zupelnie co innego.
+        */}
+        <Playlists username={profile.username} />
+
         <TopMusic username={profile.username} refresh={refreshFriends} />
 
         <h2 className="h5 mb-2">{t('friends.title')}</h2>
         <div className="mb-4">
-          <FriendsStrip username={profile.username} refresh={refreshFriends} />
+          <FriendsStrip username={profile.username} refresh={refreshFriends} self={profile.self} />
         </div>
 
         <h2 className="h5 mb-3">{t('profile.posts')}</h2>
 
         {error && <Alert variant="danger">{error}</Alert>}
 
-        {posts.map((post) => (
-          <Post key={post.id} post={post} onDelete={deletePost} onUpdate={afterPostChange} />
-        ))}
+        {postsLoading && <PostSkeleton count={2} />}
 
-        {posts.length === 0 && (
-          <p className="text-body-secondary text-center py-4">
-            {profile.self ? t('profile.noPostsSelf') : t('profile.noPosts')}
-          </p>
+        <div className="feed-page">
+          {posts.map((post, i) => (
+            <Post
+              key={post.id}
+              post={post}
+              index={i % PAGE_SIZE}
+              onDelete={deletePost}
+              onUpdate={afterPostChange}
+              onReaction={afterPostChange}
+            />
+          ))}
+        </div>
+
+        {!postsLoading && posts.length === 0 && (
+          <EmptyState
+            icon={IconInbox}
+            title={profile.self ? t('profile.noPostsSelf') : t('profile.noPosts')}
+            text={profile.self
+              ? t('profile.noPostsSelfHint')
+              : t('profile.noPostsHint', { username: profile.username })}
+            action={profile.self && (
+              <Link to="/" className="btn btn-primary">
+                <IconPlus /> {t('posts.newPost')}
+              </Link>
+            )}
+          />
         )}
 
         {!lastPage && (

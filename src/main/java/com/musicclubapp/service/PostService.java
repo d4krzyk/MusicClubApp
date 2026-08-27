@@ -1,6 +1,7 @@
 package com.musicclubapp.service;
 
 import com.musicclubapp.dto.CreatePostRequest;
+import com.musicclubapp.dto.FeedScope;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
@@ -18,11 +19,13 @@ import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.storage.FileStorageService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -88,6 +91,10 @@ public class PostService {
 
         Post post = new Post(author, request.content().trim());
 
+        // Pusta wartosc = publiczny; setter na encji sam pilnuje, zeby post
+        // nigdy nie zostal bez widocznosci
+        post.setVisibility(request.visibility());
+
         applyMusic(post, request.musicUrl(), request.musicStartSeconds());
 
         if (images != null) {
@@ -138,6 +145,7 @@ public class PostService {
         }
 
         post.setContent(request.content().trim());
+        post.setVisibility(request.visibility());
 
         /*
          * Puste pole z linkiem oznacza "usun nagranie z posta" - dlatego
@@ -184,12 +192,28 @@ public class PostService {
     }
 
     /**
-     * Tablica - wszystkie posty od najnowszych, stronicowane
-     * (wymagania nr 3 i 5).
+     * <b>Tablica: najpierw znajomi, pod nimi reszta.</b>
+     *
+     * <p>Stronicowana po stronie bazy (wymagania nr 3 i 5).</p>
+     *
+     * <p><b>Sortowanie z {@code Pageable} celowo odrzucamy.</b> Kolejnosc
+     * tablicy nie jest tu ustawieniem uzytkownika, tylko trescia funkcji:
+     * najpierw krag, potem swiat, a w kazdej z tych grup - od najnowszych.
+     * Gdyby przepuscic tu sortowanie z adresu, Spring Data dokleilby je do
+     * {@code ORDER BY} zapisanego w zapytaniu i wyszlaby kolejnosc, ktorej
+     * nikt nie zamawial. Parametr {@code direction} dziala nadal tam, gdzie
+     * ma sens - przy postach jednego autora.</p>
      */
     @Transactional(readOnly = true)
-    public Page<PostResponse> feed(String viewerUsername, Pageable pageable) {
-        return withReactions(postRepository.findFeed(pageable), viewerUsername);
+    public Page<PostResponse> feed(String viewerUsername, FeedScope scope, Pageable pageable) {
+        List<Long> circle = userRepository.circleIds(viewerUsername);
+        Pageable byOurOrder = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<Post> page = scope == FeedScope.FRIENDS
+            ? postRepository.findCircleFeed(circle, byOurOrder)
+            : postRepository.findFeed(circle, byOurOrder);
+
+        return withReactions(page, viewerUsername, circle);
     }
 
     /**
@@ -207,6 +231,17 @@ public class PostService {
             .orElseThrow(() -> new NoSuchElementFoundException("post", id));
 
         User viewer = userRepository.findByUsername(viewerUsername).orElse(null);
+
+        /*
+         * Bez tego sprawdzenia caly wybor "tylko dla znajomych" bylby ozdoba:
+         * wystarczyloby wpisac /post/12 z reki, zeby przeczytac cokolwiek.
+         * Adres pojedynczego posta jest publiczna droga do kazdego wpisu,
+         * wiec regula musi obowiazywac tu tak samo jak na tablicy.
+         */
+        if (!post.isVisibleTo(viewer)) {
+            throw OperationNotAllowedException.friendsOnlyPost();
+        }
+
         ReactionSummary summary = reactionService
             .summaries(List.of(id), viewerUsername)
             .getOrDefault(id, ReactionSummary.empty());
@@ -217,7 +252,24 @@ public class PostService {
     /** Posty jednego uzytkownika - do jego profilu. */
     @Transactional(readOnly = true)
     public Page<PostResponse> byAuthor(String author, String viewerUsername, Pageable pageable) {
-        return withReactions(postRepository.findByAuthorUsername(author, pageable), viewerUsername);
+        List<Long> circle = userRepository.circleIds(viewerUsername);
+        return withReactions(
+            postRepository.findByAuthorUsername(author, circle, pageable),
+            viewerUsername,
+            circle);
+    }
+
+    /**
+     * Liczniki reakcji dla wskazanych postow - <b>bez pobierania ich tresci</b>.
+     *
+     * <p>Uzywa tego tablica, zeby odswiezyc emotki pod postami, ktore
+     * uzytkownik ma akurat na ekranie (po powrocie do karty przegladarki).
+     * Pobieranie w tym celu calej tablicy od nowa oznaczaloby przeskok widoku
+     * i utrate miejsca, w ktorym ktos wlasnie czytal.</p>
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, ReactionSummary> reactionSummaries(List<Long> postIds, String viewerUsername) {
+        return reactionService.summaries(postIds, viewerUsername);
     }
 
     /**
@@ -227,8 +279,13 @@ public class PostService {
      * potem rozdajemy je poszczegolnym postom. Gdyby kazdy post pytal o swoje
      * reakcje sam, przy dwudziestu wpisach byloby dwadziescia dodatkowych
      * zapytan do bazy (problem N+1).</p>
+     *
+     * <p>Z tego samego powodu <b>krag przekazujemy gotowy</b>: mapper umie
+     * sprawdzic znajomosc sam, ale robi to doczytujac liste znajomych autora -
+     * czyli raz na post.</p>
      */
-    private Page<PostResponse> withReactions(Page<Post> page, String viewerUsername) {
+    private Page<PostResponse> withReactions(Page<Post> page, String viewerUsername,
+                                             Collection<Long> circle) {
         User viewer = userRepository.findByUsername(viewerUsername).orElse(null);
 
         List<Long> postIds = page.getContent().stream().map(Post::getId).toList();
@@ -238,7 +295,8 @@ public class PostService {
         return page.map(post -> postMapper.toResponse(
             post,
             viewer,
-            reactions.getOrDefault(post.getId(), ReactionSummary.empty())));
+            reactions.getOrDefault(post.getId(), ReactionSummary.empty()),
+            circle.contains(post.getAuthor().getId())));
     }
 
     /**

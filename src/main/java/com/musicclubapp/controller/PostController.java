@@ -1,7 +1,9 @@
 package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.CreatePostRequest;
+import com.musicclubapp.dto.FeedScope;
 import com.musicclubapp.dto.PostResponse;
+import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,6 +35,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Posty uzytkownikow: tekst, zdjecia i utwor ze Spotify.
@@ -57,11 +60,17 @@ public class PostController {
     }
 
     /**
-     * Tablica - posty wszystkich uzytkownikow, od najnowszych.
-     * Stronicowanie i sortowanie po stronie backendu (wymagania nr 3 i 5).
+     * Tablica - <b>najpierw posty znajomych, potem publiczne posty pozostalych</b>.
+     * Stronicowanie po stronie backendu (wymagania nr 3 i 5).
+     *
+     * <p><b>Parametr {@code direction} dotyczy postow jednego autora</b>
+     * (czyli wywolania z {@code author=...}). Na samej tablicy kolejnosc jest
+     * ustalona - krag na gorze, w kazdej grupie od najnowszych - bo to nie jest
+     * ustawienie uzytkownika, tylko sens tej strony. Widoczne sortowanie
+     * z wyborem pola i kierunku ma lista uzytkownikow ({@code /api/users}).</p>
      */
     @GetMapping
-    @Operation(summary = "Tablica postow, od najnowszych")
+    @Operation(summary = "Tablica: najpierw znajomi, potem reszta")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Strona postow"),
         @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie")
@@ -73,11 +82,14 @@ public class PostController {
             @Parameter(description = "Ile postow na stronie (max 50)")
             @RequestParam(defaultValue = "10") int size,
 
-            @Parameter(description = "Kierunek: desc = najnowsze pierwsze")
+            @Parameter(description = "Kierunek dla postow jednego autora: desc = najnowsze pierwsze")
             @RequestParam(defaultValue = "desc") String direction,
 
-            @Parameter(description = "Login autora - gdy pusty, zwracamy posty wszystkich")
+            @Parameter(description = "Login autora - gdy pusty, zwracamy tablice")
             @RequestParam(required = false) String author,
+
+            @Parameter(description = "ALL = znajomi i reszta, FRIENDS = tylko krag znajomych")
+            @RequestParam(defaultValue = "ALL") FeedScope scope,
 
             Authentication authentication) {
 
@@ -93,10 +105,38 @@ public class PostController {
         String username = authentication.getName();
 
         Page<PostResponse> result = (author == null || author.isBlank())
-            ? postService.feed(username, pageable)
+            ? postService.feed(username, scope, pageable)
             : postService.byAuthor(author, username, pageable);
 
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Same liczniki reakcji dla wskazanych postow.
+     *
+     * <p>Tablica wola to po powrocie do karty przegladarki, zeby odswiezyc
+     * emotki pod postami, ktore uzytkownik ma na ekranie. Pobranie w tym celu
+     * calej tablicy od nowa przestawiloby widok i zgubilo miejsce, w ktorym
+     * ktos czytal - a chodzi o kilka liczb.</p>
+     *
+     * <p><b>Adres {@code /api/posts/reactions} nie kloci sie z
+     * {@code /api/posts/{id}}</b>: przy dwoch pasujacych wzorcach Spring
+     * wybiera ten z dosłownym czlonem, a nie ze zmienna. Pilnuje tego test
+     * {@code PostControllerRoutingTest}.</p>
+     */
+    @GetMapping("/reactions")
+    @Operation(summary = "Liczniki reakcji dla wskazanych postow")
+    public ResponseEntity<Map<Long, ReactionSummary>> reactions(
+            @Parameter(description = "Identyfikatory postow, po przecinku")
+            @RequestParam List<Long> ids,
+            Authentication authentication) {
+
+        // Gorny limit taki sam jak przy stronie postow - i tak wiecej naraz
+        // nigdy nie ma na ekranie
+        List<Long> limited = ids.stream().limit(MAX_SIZE).toList();
+
+        return ResponseEntity.ok(
+            postService.reactionSummaries(limited, authentication.getName()));
     }
 
     /**

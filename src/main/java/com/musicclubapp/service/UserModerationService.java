@@ -8,6 +8,7 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.UserMapper;
+import com.musicclubapp.repository.FavoritePlaylistRepository;
 import com.musicclubapp.repository.FriendRequestRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
@@ -44,6 +45,7 @@ public class UserModerationService {
     private final PostRepository postRepository;
     private final ReactionRepository reactionRepository;
     private final FriendRequestRepository requestRepository;
+    private final FavoritePlaylistRepository playlistRepository;
     private final FileStorageService fileStorage;
     private final UserMapper userMapper;
     private final NotificationService notifications;
@@ -52,6 +54,7 @@ public class UserModerationService {
                                  PostRepository postRepository,
                                  ReactionRepository reactionRepository,
                                  FriendRequestRepository requestRepository,
+                                 FavoritePlaylistRepository playlistRepository,
                                  FileStorageService fileStorage,
                                  UserMapper userMapper,
                                  NotificationService notifications) {
@@ -59,6 +62,7 @@ public class UserModerationService {
         this.postRepository = postRepository;
         this.reactionRepository = reactionRepository;
         this.requestRepository = requestRepository;
+        this.playlistRepository = playlistRepository;
         this.fileStorage = fileStorage;
         this.userMapper = userMapper;
         this.notifications = notifications;
@@ -121,6 +125,13 @@ public class UserModerationService {
         // 6. Ulubieni - tu strona wlascicielska wystarczy
         target.getFavoriteArtists().clear();
         target.getFavoriteTracks().clear();
+
+        /*
+         * 7. Gablotka playlist. Wprost, a nie kaskada: wiersze wskazuja na
+         * konto kluczem obcym, a encja User nic o nich nie wie - gdyby
+         * zostaly, baza odmowilaby skasowania konta.
+         */
+        playlistRepository.deleteByOwnerId(target.getId());
 
         if (target.getAvatarFileName() != null) {
             fileStorage.remove(target.getAvatarFileName());

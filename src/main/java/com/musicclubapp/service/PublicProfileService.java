@@ -52,7 +52,10 @@ public class PublicProfileService {
             user.getUsername(),
             avatarUrl(user),
             user.getCreatedAt(),
-            postRepository.countByAuthorUsername(user.getUsername()),
+            // Liczba ma sie zgadzac z tym, co widac nizej na stronie - wiec
+            // liczymy posty widoczne dla TEGO ogladajacego, a nie wszystkie
+            postRepository.countVisibleFor(
+                user.getUsername(), userRepository.circleIds(viewerUsername)),
             user.getUsername().equals(viewerUsername),
             userRepository.countFriends(user.getUsername()),
             friendService.status(viewerUsername, user.getUsername()));

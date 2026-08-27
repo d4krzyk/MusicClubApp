@@ -164,10 +164,32 @@ public class Post {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * Kto moze ten post zobaczyc - patrz {@link PostVisibility}.
+     *
+     * <p><b>Kolumna jest w bazie NULLOWALNA, choc w Javie nigdy nie jest pusta</b>,
+     * i to jest swiadoma decyzja. Projekt chodzi na {@code ddl-auto=update}:
+     * Hibernate dokladajac kolumne oznaczona {@code nullable = false} do tabeli,
+     * w ktorej sa juz wiersze, dostaje od bazy odmowe - kolumna wtedy w ogole
+     * nie powstaje, a kazde zapytanie o posty konczy sie bledem. Dlatego
+     * kolumna wchodzi jako nullowalna, a stare wiersze uzupelnia
+     * {@code PostVisibilityMigration} przy pierwszym starcie.</p>
+     *
+     * <p>Domyslna wartosc jest ustawiona przy polu, wiec kazdy <b>nowy</b> post
+     * ma ja od razu - takze taki, ktory powstaje w tescie przez konstruktor.</p>
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility", length = 16)
+    private PostVisibility visibility = PostVisibility.PUBLIC;
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        // Zabezpieczenie na wypadek encji odtworzonej z pominieciem konstruktora
+        if (visibility == null) {
+            visibility = PostVisibility.PUBLIC;
         }
     }
 
@@ -277,6 +299,42 @@ public class Post {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /** Nigdy nie zwraca {@code null} - patrz komentarz przy polu. */
+    public PostVisibility getVisibility() {
+        return visibility == null ? PostVisibility.PUBLIC : visibility;
+    }
+
+    /** Pusta wartosc znaczy "zostaw jak jest" - post nie moze byc bez widocznosci. */
+    public void setVisibility(PostVisibility visibility) {
+        if (visibility != null) {
+            this.visibility = visibility;
+        }
+    }
+
+    /**
+     * Czy dana osoba ma prawo zobaczyc ten post.
+     *
+     * <p><b>Ta sama regula jest zapisana dwa razy</b> - tutaj i w JPQL-u
+     * {@code PostRepository.findFeed}. Nie da sie inaczej: pojedynczy post
+     * sprawdzamy w Javie, a cala tablice musi odsiac baza, bo inaczej trzeba by
+     * sciagnac wszystkie posty i odrzucic wiekszosc juz po stronie aplikacji -
+     * razem ze stronicowaniem liczacym wtedy zle. Zgodnosc obu zapisow pilnuje
+     * test {@code PostVisibilityTest#regulaWJavieIWBazieDajaToSamo}.</p>
+     *
+     * @param viewer zalogowany uzytkownik; {@code null} = nikt niezalogowany
+     */
+    public boolean isVisibleTo(User viewer) {
+        if (getVisibility() == PostVisibility.PUBLIC) {
+            return true;
+        }
+        if (viewer == null) {
+            return false;
+        }
+        // Autor zawsze widzi swoje - nawet gdyby nie mial ani jednego znajomego
+        return author.getId().equals(viewer.getId())
+            || author.getFriends().contains(viewer);
     }
 
     @Override

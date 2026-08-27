@@ -1,5 +1,6 @@
 package com.musicclubapp.dto;
 
+import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 
@@ -49,6 +50,18 @@ public record PostResponse(
      */
     boolean canEdit,
     /** Liczniki reakcji i informacja, ktora z nich wybral ogladajacy. */
-    ReactionSummary reactions
+    ReactionSummary reactions,
+    /** Publiczny czy tylko dla znajomych - frontend rysuje przy nim plakietke. */
+    PostVisibility visibility,
+    /**
+     * Czy autor jest w kregu ogladajacego (jego znajomym albo nim samym).
+     *
+     * <p>Po co to na zewnatrz: tablica rysuje po ostatnim takim poscie
+     * kreske "dalej: osoby, ktorych jeszcze nie znasz". <b>Frontend nie ma
+     * z czego tego wyliczyc</b> - listy znajomych ogladajacego w ogole nie
+     * pobiera, a nawet gdyby, byloby to drugie miejsce liczace to samo,
+     * ktore predzej czy pozniej rozjechaloby sie z kolejnoscia z bazy.</p>
+     */
+    boolean fromFriend
 ) {
 }

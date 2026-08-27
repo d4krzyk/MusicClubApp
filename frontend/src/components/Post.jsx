@@ -10,9 +10,11 @@ import ImageGallery from './ImageGallery';
 import Field from './Field';
 import Reactions from './Reactions';
 import MusicPicker from './MusicPicker';
-import { IconTrash, IconPencil } from './Icons';
+import VisibilityPicker from './VisibilityPicker';
+import { IconTrash, IconPencil, IconLock } from './Icons';
 import client, { describeError } from '../api/client';
 import { formatDate } from '../utils/dates';
+import { playerHeight } from '../utils/player';
 import { toMinutes, toSeconds } from '../utils/time';
 import { linkError } from '../utils/musicLinks';
 
@@ -51,10 +53,23 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
             <span className="fw-semibold author-link">{post.authorUsername}</span>
           </Link>
 
-          <div className="flex-grow-1">
-            <div className="text-body-secondary small">
+          <div className="flex-grow-1 d-flex align-items-center gap-2 flex-wrap">
+            <span className="text-body-secondary small">
               {formatDate(post.createdAt, i18n.language)}
-            </div>
+            </span>
+
+            {/*
+              Plakietke pokazujemy TYLKO przy postach dla znajomych.
+              Publiczny jest domyslny, wiec podpisywanie go "publiczny"
+              byloby szumem przy kazdym wpisie na tablicy - a plakietka
+              ma zwracac uwage wtedy, gdy cos odbiega od normy.
+            */}
+            {post.visibility === 'FRIENDS' && (
+              <span className="visibility-badge" title={t('posts.visibility.FRIENDSHint')}>
+                <IconLock size={11} />
+                {t('posts.visibility.FRIENDS')}
+              </span>
+            )}
           </div>
 
           {!edycja && (
@@ -128,6 +143,7 @@ function EditForm({ post, onSaved, onAnuluj }) {
   const [musicUrl, setMusicUrl] = useState(post.musicUrl ?? '');
   const [musicKind, setMusicKind] = useState(post.musicKind ?? 'TRACK');
   const [startAt, setStartAt] = useState(toMinutes(post.musicStartSeconds) || '');
+  const [visibility, setVisibility] = useState(post.visibility ?? 'PUBLIC');
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
@@ -145,6 +161,7 @@ function EditForm({ post, onSaved, onAnuluj }) {
         musicUrl: musicUrl || null,
         musicKind: musicUrl ? musicKind : null,
         musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
+        visibility,
       });
       onSaved(response.data);
     } catch (error) {
@@ -182,6 +199,17 @@ function EditForm({ post, onSaved, onAnuluj }) {
 
       <p className="text-body-secondary small">{t('posts.musicClearHint')}</p>
 
+      {/*
+        Widocznosc da sie zmienic takze po opublikowaniu - ale dziala to
+        WYLACZNIE na przyszlosc: kto post juz przeczytal, ten go przeczytal.
+        To nie jest wada tego rozwiazania, tylko wlasciwosc kazdej publikacji.
+      */}
+      <VisibilityPicker
+        id={`visibility-${post.id}`}
+        value={visibility}
+        onChange={setVisibility}
+      />
+
       {post.imageUrls.length > 0 && (
         <p className="text-body-secondary small">{t('posts.imagesNotEditable')}</p>
       )}
@@ -196,28 +224,6 @@ function EditForm({ post, onSaved, onAnuluj }) {
       </div>
     </Form>
   );
-}
-
-/**
- * Wysokosc odtwarzacza w pikselach - albo `null`, gdy ma byc proporcja 16:9.
- *
- * <p><b>YouTube dostaje PROPORCJE, nie wysokosc.</b> W tamtym odtwarzaczu
- * leci obraz - teledysk, koncert, wizualizacja - a przy sztywnych 152 px
- * film robil sie paskiem wysokosci wiersza tekstu. Sztywna wysokosc pasuje
- * do Spotify i Apple, bo tam odtwarzacz to okladka plus pasek postepu
- * i wiecej miejsca po prostu nie potrzebuje.</p>
- *
- * <p>Wartosci dla Apple sa te, ktore Apple podaje we wlasnym generatorze
- * kodu do osadzania (175 px dla utworu, 450 px dla albumu i playlisty).</p>
- */
-function playerHeight(provider, kind) {
-  if (provider === 'YOUTUBE') {
-    return null;                       // proporcja 16:9, patrz nizej
-  }
-  if (provider === 'APPLE_MUSIC') {
-    return kind === 'TRACK' ? 175 : 450;
-  }
-  return kind === 'TRACK' ? 152 : 352; // Spotify
 }
 
 /**

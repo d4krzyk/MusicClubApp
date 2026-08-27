@@ -10,6 +10,36 @@ i interfejs PL/EN.
 
 **Stack:** Spring Boot 3.3 (REST API) · PostgreSQL 16 · React + Vite · Docker Compose
 
+## Jak to wygląda
+
+![Tablica](docs/zrzuty/tablica-ciemna.jpg)
+
+Tablica pokazuje **najpierw posty znajomych**, a pod nimi publiczne wpisy
+pozostałych osób — granicę widać wyraźnie:
+
+![Granica między znajomymi a resztą](docs/zrzuty/tablica-jasna.jpg)
+
+| | |
+|---|---|
+| ![Powiadomienia](docs/zrzuty/powiadomienia.jpg) | ![Kto zareagował](docs/zrzuty/kto-zareagowal.jpg) |
+| Dzwonek — każde powiadomienie prowadzi do konkretnego zdarzenia | Okienko „kto zareagował", pogrupowane po rodzaju |
+| ![Profil](docs/zrzuty/profil.jpg) | ![Pusty stan](docs/zrzuty/pusty-stan.jpg) |
+| Profil: ulubieni, gablotka playlist, znajomi, posty | Pusto ≠ awaria — każdy pusty stan mówi, co dalej |
+
+<details>
+<summary>Skąd te zrzuty i czego na nich nie ma</summary>
+
+Zrobione **prawdziwą przeglądarką** (Chromium sterowany Playwrightem) na
+danych demonstracyjnych zakładanych przez zwykłe API aplikacji — skrypt
+`zrzuty-do-readme.mjs`. Zdjęcia w postach to wygenerowane gradienty, a nie
+czyjeś fotografie: chodzi o pokazanie układu strony, nie o ilustracje.
+
+Nie ma na nich **odtwarzaczy muzyki ani okładek playlist**. Środowisko,
+w którym powstawały, nie ma dostępu do Spotify, YouTube ani Deezera, więc
+ramka `<iframe>` zostałaby pusta, a okładki zastąpione są ikoną. U Ciebie,
+z normalnym dostępem do sieci, wczytają się same.
+</details>
+
 ## Dokumentacja
 
 | Plik | Co zawiera |
@@ -70,6 +100,7 @@ Dockerfile                    # obraz backendu (Maven -> JRE)
 .env.example                  # wzór pliku z hasłami (skopiuj do .env)
 pom.xml                       # zależności Mavena
 docs/                         # plan pracy i checklista wymagań
+docs/zrzuty/                  # zrzuty ekranu do tego pliku
 src/main/java/com/musicclubapp/
 ├── MusicClubAppApplication.java   # punkt wejścia
 ├── config/                        # SecurityConfig, I18nConfig
@@ -99,8 +130,11 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── theme/                   # motyw jasny/ciemny
     ├── i18n/                    # pl.json i en.json
-    ├── components/              # Layout, Post, Reactions, Favorites, HorizontalStrip, …
-    └── pages/                   # Login, Register, Feed (strona główna), Profile, Friends, Settings
+    ├── hooks/                   # useLiveReactions - odświeżanie liczników reakcji
+    ├── components/              # Layout, Post, Reactions, Favorites, Playlists,
+    │                            #   EmptyState, PostSkeleton, HorizontalStrip, …
+    └── pages/                   # Login, Register, Feed (strona główna), Post, Profile,
+                                 #   Friends, Settings
 ```
 
 ## API
@@ -114,11 +148,12 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/auth/me` | dane zalogowanego użytkownika |
 | PUT | `/api/profile` | zmiana własnego loginu i e-maila |
 | PUT | `/api/profile/password` | zmiana własnego hasła (wymaga obecnego) |
-| GET | `/api/posts` | tablica postów, od najnowszych |
-| POST | `/api/posts` | dodanie posta (tekst + zdjęcia + muzyka) |
-| PUT | `/api/posts/{id}` | edycja posta (tekst i nagranie) — **tylko autor** |
+| GET | `/api/posts?scope=ALL\|FRIENDS` | tablica — najpierw znajomi, potem reszta |
+| POST | `/api/posts` | dodanie posta (tekst + zdjęcia + muzyka + widoczność) |
+| PUT | `/api/posts/{id}` | edycja posta (treść, nagranie, widoczność) — **tylko autor** |
 | DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
 | GET | `/api/posts/{id}` | jeden post — tu prowadzą powiadomienia o reakcjach |
+| GET | `/api/posts/reactions?ids=` | same liczniki reakcji dla wskazanych postów |
 | PUT | `/api/posts/{id}/reaction` | ustawia reakcję (`FIRE`, `MID`, `MEH`) |
 | DELETE | `/api/posts/{id}/reaction` | cofa własną reakcję |
 | GET | `/api/posts/{id}/reactions` | kto zareagował i jak |
@@ -130,6 +165,10 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/profiles/{username}/friends` | znajomi — od najbardziej powiązanych |
 | GET | `/api/profiles/{username}/top-music` | najczęściej wrzucane nagrania (top 5) |
 | GET | `/api/profiles/{username}/favorites` | czyjeś ulubione — do oglądania |
+| GET | `/api/profiles/{username}/playlists` | czyjaś gablotka playlist |
+| GET | `/api/profile/playlists` | **moja** gablotka playlist |
+| POST | `/api/profile/playlists` | dodanie playlisty (w treści sam adres) |
+| DELETE | `/api/profile/playlists/{id}` | usunięcie playlisty z gablotki |
 | GET | `/api/profile/favorites` | **moje** ulubione |
 | POST | `/api/profile/favorites/artists` | dodanie artysty z katalogu (w treści sam `externalId`) |
 | DELETE | `/api/profile/favorites/artists/{externalId}` | usunięcie artysty z własnej listy |
@@ -323,6 +362,59 @@ zasadzie „oboje byli na jakimś koncercie". Gatunki zapisujemy **przy artyści
 nie przy użytkowniku**, więc kosztują jedno zapytanie na wykonawcę — raz,
 na zawsze, dla wszystkich.
 
+## Kto co widzi: tablica i widoczność postów
+
+Dwie osobne rzeczy, które łatwo pomylić.
+
+**Widoczność** ustawia autor przy pisaniu: post jest *publiczny* albo *tylko
+dla znajomych*. **Kolejność** ustala aplikacja: posty z Twojego kręgu
+(znajomi i Ty) idą na górę, publiczne wpisy pozostałych osób pod nie.
+Nad tablicą jest przełącznik, którym można zawęzić ją do samych znajomych.
+
+### Domyślnie szeroko, i to jest decyzja
+
+Nowe konto nie ma ani jednego znajomego. Aplikacja, która wita takiego
+użytkownika pustą stroną, jest bezużyteczna dokładnie wtedy, kiedy najbardziej
+potrzebuje go przekonać — dlatego tablica domyślnie pokazuje też ludzi
+spoza kręgu, a **nowy post domyślnie jest publiczny**. Cały sens tej
+aplikacji to poznawanie *nowych* osób o podobnym guście; domyślne ukrywanie
+wpisów przed wszystkimi poza obecnymi znajomymi działałoby przeciwko temu,
+po co ona w ogóle jest. Kto chce inaczej, wybiera to jednym kliknięciem.
+
+### Kolejność liczy baza, nie przeglądarka
+
+W zapytaniu siedzi `ORDER BY CASE WHEN autor ∈ mój_krąg THEN 0 ELSE 1 END,
+data DESC` — sortujemy po kolumnie, której w tabeli nie ma. Kuszące byłoby
+pobrać wszystko i poprzestawiać w Reakcie, ale wtedy **stronicowanie zaczyna
+kłamać**: każda strona zawierałaby inny zestaw wpisów, a licznik stron
+liczyłby coś zupełnie innego niż to, co widać.
+
+„Mój krąg" to jedno pojęcie (`UserRepository.circleIds`) załatwiające trzy
+sprawy naraz: kogo posty idą na górę, czyje posty „tylko dla znajomych" wolno
+mi zobaczyć i co zostaje po zawężeniu tablicy. Gdyby liczyły się osobno,
+mogłyby się rozjechać. **Własny identyfikator jest w tym zbiorze celowo** —
+merytorycznie, bo własne posty należą do kręgu, i technicznie, bo `IN ()`
+z pustą listą jest w SQL-u błędem składni i wywracałoby tablicę
+użytkownikowi bez znajomych.
+
+### Ta sama reguła w dwóch miejscach
+
+„Kto może zobaczyć post" jest zapisane **dwa razy**: w JPQL-u dla całej
+tablicy i w Javie (`Post.isVisibleTo`) dla pojedynczego posta. Nie da się
+tego uniknąć — bazę trzeba odsiać u niej, a pojedynczy post sprawdza się
+w kodzie. Da się za to sprawdzić, że oba zapisy mówią to samo, i robi to
+test `PostVisibilityTest#theRuleInJavaAndInTheDatabaseAgree`.
+
+Reguła obowiązuje **wszędzie**, nie tylko na tablicy: wpisanie z ręki adresu
+`/post/{id}` cudzego posta dla znajomych kończy się odmową, tak samo jak
+próba zareagowania na niego z pominięciem przeglądarki. Ukrycie czegoś
+w interfejsie nie jest zabezpieczeniem.
+
+**Administrator też nie widzi cudzych postów dla znajomych.** To nie jest
+przeoczenie: interfejs obiecuje „tylko znajomi", a obietnica z cichym
+wyjątkiem dla obsługi serwisu nie jest obietnicą. Moderacja przez usunięcie
+posta po identyfikatorze działa niezależnie od tego.
+
 ## Powiadomienia
 
 Dzwonek w pasku z liczbą nieprzeczytanych. Powiadamiamy o trzech rzeczach:
@@ -366,6 +458,66 @@ w co prawie nikt nie kliknie.
 
 Widzi to każdy, nie tylko autor posta: reakcja jest gestem publicznym,
 a i tak dałoby się ją policzyć z licznika obok emotki.
+
+### Liczniki reakcji odświeżają się same
+
+Po powrocie do karty przeglądarki (i co 45 sekund, gdy karta jest na wierzchu)
+tablica pobiera **same liczniki** dla postów, które są akurat na ekranie —
+jednym zapytaniem `GET /api/posts/reactions?ids=…`.
+
+Dwie rzeczy, których świadomie tu nie robimy. **Nie ma WebSocketa**: stałe
+połączenie plus rozgłaszanie zdarzeń po stronie serwera to spory kawałek
+maszynerii do utrzymania, a chodzi o kilka liczb pod postami. **Nie
+pobieramy tablicy od nowa**: doszłyby nowe posty, kolejność by się zmieniła
+i czytający straciłby miejsce, w którym był. Zegar chodzi tylko przy
+widocznej karcie — zapytania wysyłane do zminimalizowanego okna nikomu nic
+nie pokazują, a zużywają baterię.
+
+## Gablotka playlist
+
+Do pięciu playlist na profilu, dodawanych przez wklejenie adresu ze Spotify,
+YouTube Music albo Apple Music. Kliknięcie kafelka otwiera odtwarzacz
+w okienku.
+
+**To jest trzeci, jeszcze inny rodzaj informacji na profilu** — i warto go
+odróżnić od dwóch pozostałych:
+
+| Blok | Skąd się bierze | Do czego służy |
+|---|---|---|
+| Ulubieni artyści i utwory | świadomy wybór z katalogu Deezera | **dopasowywanie ludzi** |
+| Najczęściej wrzucane | wyliczone z postów | statystyka, co ktoś publikuje |
+| Gablotka playlist | wklejony adres | zaproszenie: „posłuchaj tego, co ja" |
+
+Playlista **celowo nie liczy się do żadnego dopasowania**: dwie osoby mogą
+wystawić tę samą składankę, mając na myśli zupełnie co innego, a jej
+zawartość zmienia się w czasie. To ta sama myśl, dla której playlisty nie
+wchodzą do zestawienia „najczęściej wrzucane".
+
+Pięć, bo to gablotka, a nie archiwum — lista dwudziestu pozycji nie mówi już
+nic o guście właściciela. **Odtwarzacz wczytuje się dopiero po kliknięciu**:
+pięć ramek `<iframe>` od razu to pięć połączeń do obcych serwisów przy każdym
+wejściu na profil.
+
+Tytuł i okładka **nie przychodzą z zapytania** — pobiera je serwer z serwisu
+muzycznego. Gdyby nazwa pochodziła od użytkownika, wystarczyłoby wysłać
+zapytanie z pominięciem przeglądarki, żeby podpisać cudzą playlistę
+czymkolwiek. Ta sama zasada co przy ulubionych artystach.
+
+## Puste stany
+
+Pusto to nie awaria, tylko początek — i wtedy właśnie aplikacja ma jedyną
+okazję powiedzieć, co dalej. Każdy pusty stan składa się z trzech części:
+co tu będzie, dlaczego jeszcze tego nie ma i **jedno konkretne działanie**.
+
+Zastąpiło to cztery różne szare linijki („Nie ma jeszcze żadnych postów",
+„Brak znajomych", …), z których każda kończyła rozmowę z użytkownikiem
+dokładnie w momencie, gdy miał najwięcej pytań.
+
+Przy pierwszym ładowaniu tablicy i profilu pokazujemy **szkielety postów**,
+a nie kręcące się kółko. Szkielet zajmuje to samo miejsce co prawdziwy post,
+więc po wczytaniu nic nie skacze; kółko zostawiało pustą stronę, a treść
+wskakiwała potem, przesuwając wszystko w dół. Przy doładowywaniu kolejnych
+postów zostają trzy kropki — tam jest już co oglądać.
 
 ## Znajomi
 
@@ -541,13 +693,18 @@ obsługa błędów, Swagger oraz frontend w React. Do tego posty z reakcjami
 YouTube Music i Apple Music** (utwory, albumy, artyści, playlisty),
 zestawienie najczęściej wrzucanych utworów, **ulubieni artyści i utwory
 z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
-guście**, **moderacja kont (zakaz publikowania, usuwanie)**, motyw
-jasny/ciemny oraz cała aplikacja na Docker Compose. Nazwy w kodzie są
-konsekwentnie angielskie, komentarze — polskie.
-**209 testów backendu przechodzi**, a przepływy frontendu — **117 sprawdzeń
-w prawdziwej przeglądarce** (cała aplikacja, ulubieni i propozycje, linki
-muzyczne, moderacja, układ strony, powiadomienia).
+guście**, **posty publiczne albo tylko dla znajomych**, **tablica ze znajomymi
+na górze**, **gablotka pięciu playlist na profilu**, **moderacja kont (zakaz
+publikowania, usuwanie)**, motyw jasny/ciemny oraz cała aplikacja na Docker
+Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
+
+**237 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
+w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność
+postów i kolejność tablicy, powiadomienia, linki muzyczne, moderacja,
+układ strony.
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
-Szczegóły w `docs/WYMAGANIA.md`. Następny krok: gablotka ulubionych playlist
-na profilu.
+Szczegóły w `docs/WYMAGANIA.md`.
+
+Przed oddaniem: ustaw własny `REMEMBER_ME_KEY` i własne hasło administratora
+(`ADMIN_PASSWORD`) — domyślne wartości są wyłącznie do nauki.

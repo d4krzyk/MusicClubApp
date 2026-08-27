@@ -138,7 +138,6 @@
     "publishing": "Publikowanie…",
     "published": "Post został opublikowany.",
     "deleted": "Post został usunięty.",
-    "empty": "Nie ma jeszcze żadnych postów. Napisz pierwszy!",
     "gallery": "Galeria zdjęć ({{count}})",
     "showMore": "Pokaż więcej",
     "loadMore": "Pokaż starsze posty",
@@ -185,7 +184,30 @@
     "postedTimes_few": "{{count}} razy",
     "postedTimes_many": "{{count}} razy",
     "postedTimes_other": "{{count}} razy",
-    "backToFeed": "Wróć na tablicę"
+    "backToFeed": "Wróć na tablicę",
+    "visibility": {
+      "label": "Kto to zobaczy",
+      "PUBLIC": "Publiczny",
+      "FRIENDS": "Tylko znajomi",
+      "PUBLICHint": "Zobaczą wszyscy — także osoby, których jeszcze nie znasz. Tak poznaje się nowych ludzi.",
+      "FRIENDSHint": "Zobaczą tylko Twoi znajomi — dzisiejsi i ci, których dodasz później."
+    },
+    "scope": {
+      "label": "Co pokazać na tablicy",
+      "ALL": "Wszystko",
+      "FRIENDS": "Tylko znajomi"
+    },
+    "strangersBelow": "Dalej: osoby, których jeszcze nie znasz",
+    "emptyAll": {
+      "title": "Tu jeszcze nikt nic nie napisał",
+      "text": "Tablica pokazuje najpierw posty znajomych, a pod nimi publiczne wpisy pozostałych osób. Na razie nie ma ani jednych, ani drugich — więc pierwszy post jest Twój."
+    },
+    "emptyFriends": {
+      "title": "Twoi znajomi nic tu jeszcze nie napisali",
+      "text": "Zawęziłeś tablicę do znajomych. Możesz ją rozszerzyć na całą społeczność albo poszukać osób o podobnym guście.",
+      "showAll": "Pokaż wszystkie posty",
+      "findFriends": "Znajdź ludzi"
+    }
   },
   "favorites": {
     "title": "Ulubieni",
@@ -225,7 +247,9 @@
     "noPosts": "Ten użytkownik nie napisał jeszcze żadnego posta.",
     "noPostsSelf": "Nie masz jeszcze żadnych postów. Napisz pierwszy na tablicy!",
     "editAccount": "Ustawienia konta",
-    "notFound": "Nie znaleziono takiego użytkownika."
+    "notFound": "Nie znaleziono takiego użytkownika.",
+    "noPostsHint": "Kiedy {{username}} coś wrzuci, zobaczysz to tutaj i na swojej tablicy.",
+    "noPostsSelfHint": "Wrzuć utwór, album albo playlistę i napisz, dlaczego akurat to. Od tego zaczynają się rozmowy."
   },
   "reactions": {
     "FIRE": "Ogień",
@@ -286,7 +310,10 @@
     "noCommonGround": "nic wspólnego (jeszcze)",
     "alreadyFriends": "Znajomi",
     "betterMatchesHint": "Nikt Ci się jeszcze nie dopasował. Dodaj do profilu artystów i utwory, których lubisz — wtedy propozycje przestaną być przypadkowe.",
-    "betterMatchesLink": "Przejdź do swojego profilu"
+    "betterMatchesLink": "Przejdź do swojego profilu",
+    "noneSelf": "Nie masz jeszcze znajomych",
+    "noneSelfHint": "Dodaj do profilu ulubionych artystów i utwory — wtedy propozycje przestaną być przypadkowe i znajdziesz kogoś, kto słucha tego co Ty.",
+    "findPeople": "Znajdź ludzi"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -295,5 +322,18 @@
     "reaction": "{{username}} zareagował(a) {{emoji}} na Twój post",
     "friendRequest": "{{username}} wysłał(a) Ci zaproszenie do znajomych",
     "friendAccepted": "{{username}} jest teraz Twoim znajomym"
+  },
+  "playlists": {
+    "title": "Gablotka playlist",
+    "whatItIs": "Do pięciu składanek, których chcesz komuś posłuchać. To nie wpływa na dopasowywanie znajomych — od tego są ulubieni artyści powyżej.",
+    "emptySelf": "Nie masz tu jeszcze nic. Wklej link do playlisty ze Spotify, YouTube Music albo Apple Music.",
+    "add": "Dodaj",
+    "adding": "Dodawanie…",
+    "addHint": "Link do playlisty — Spotify, YouTube Music albo Apple Music",
+    "placeholder": "https://open.spotify.com/playlist/…",
+    "full": "Gablotka jest pełna. Usuń jedną pozycję, żeby zrobić miejsce.",
+    "play": "Posłuchaj",
+    "untitled": "Playlista",
+    "openInService": "Otwórz w {{service}}"
   }
 }

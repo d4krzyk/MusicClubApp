@@ -1,5 +1,6 @@
 package com.musicclubapp.config;
 
+import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 import jakarta.persistence.EntityManager;
@@ -70,7 +71,14 @@ public class EnumConstraintRefresher implements ApplicationRunner {
      */
     private static final List<EnumColumn> COLUMNS = List.of(
         new EnumColumn("posts", "music_kind", MusicKind.class),
-        new EnumColumn("posts", "music_provider", MusicProvider.class)
+        new EnumColumn("posts", "music_provider", MusicProvider.class),
+        /*
+         * Widocznosc dopisujemy tu od razu, choc kolumna dopiero powstaje -
+         * czyli dzis ograniczenie i tak jest poprawne. Chodzi o dzien,
+         * w ktorym dojdzie trzecia wartosc: wtedy nikt juz nie bedzie
+         * pamietal, ze trzeba tu zajrzec.
+         */
+        new EnumColumn("posts", "visibility", PostVisibility.class)
     );
 
     private final EntityManager entityManager;

@@ -1,6 +1,7 @@
 package com.musicclubapp.dto;
 
 import com.musicclubapp.entity.Post;
+import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.validation.MusicLinkToValidate;
 import com.musicclubapp.validation.ValidMusicLink;
@@ -38,7 +39,18 @@ public record CreatePostRequest(
      */
     @Min(value = 0, message = "{validation.post.start.range}")
     @Max(value = Post.MAX_SEKUNDA_STARTU, message = "{validation.post.start.range}")
-    Integer musicStartSeconds
+    Integer musicStartSeconds,
+
+    /**
+     * Kto ma zobaczyc ten post. {@code null} znaczy {@code PUBLIC}.
+     *
+     * <p><b>Domyslnie publiczny, a nie "tylko znajomi".</b> Aplikacja sluzy do
+     * poznawania NOWYCH ludzi o podobnym guscie - domyslne ukrywanie wpisow
+     * przed wszystkimi poza obecnymi znajomymi dzialaloby przeciwko temu,
+     * po co ona w ogole jest. Kto chce inaczej, wybiera to jednym klknieciem
+     * przy pisaniu.</p>
+     */
+    PostVisibility visibility
 
 ) implements MusicLinkToValidate {
 }

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
@@ -6,14 +7,17 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Spinner from 'react-bootstrap/Spinner';
 import Collapse from 'react-bootstrap/Collapse';
 import client, { describeError } from '../api/client';
 import Field from '../components/Field';
 import Post from '../components/Post';
+import PostSkeleton from '../components/PostSkeleton';
+import EmptyState from '../components/EmptyState';
 import ImagePicker from '../components/ImagePicker';
 import MusicPicker from '../components/MusicPicker';
-import { IconCross, IconPlus } from '../components/Icons';
+import VisibilityPicker from '../components/VisibilityPicker';
+import useLiveReactions from '../hooks/useLiveReactions';
+import { IconCross, IconPlus, IconFriends, IconGlobe, IconInbox } from '../components/Icons';
 import { toSeconds } from '../utils/time';
 import { linkError } from '../utils/musicLinks';
 
@@ -26,9 +30,16 @@ const MAX_IMAGES = 10;
 /**
  * Tablica: przycisk dodawania posta i lista wpisow.
  *
- * <p>Formularz jest domyslnie SCHOWANY za przyciskiem "Nowy post". Wczesniej
- * zajmowal pol ekranu nad tablica, przez co do pierwszego wpisu trzeba bylo
- * przewijac - a przez wieksza czesc czasu uzytkownik chce czytac, nie pisac.</p>
+ * <p><b>Kolejnosc ustala serwer</b>: najpierw posty znajomych (i wlasne),
+ * pod nimi publiczne posty pozostalych osob. Nie da sie tego zrobic po
+ * stronie przegladarki - przesiewanie po pobraniu psuloby stronicowanie,
+ * bo kazda strona zawieralaby wtedy inny zestaw wpisow.</p>
+ *
+ * <p>Przelacznik nad tablica pozwala zawezic ja do samych znajomych.
+ * <b>Domyslnie jest szeroka</b>, bo konto zalozone przed chwila nie ma
+ * jeszcze ani jednego znajomego - a aplikacja, ktora wita takiego
+ * uzytkownika pusta strona, jest bezuzyteczna dokladnie wtedy, kiedy
+ * najbardziej potrzebuje go przekonac.</p>
  *
  * <p>Posty doladowujemy przyciskiem "pokaz starsze" zamiast klasycznego
  * stronicowania z numerami - na tablicy naturalniej jest doklejac kolejne
@@ -41,16 +52,18 @@ export default function FeedPage() {
   const [page, setPage] = useState(0);
   const [lastPage, setLastPage] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [firstLoad, setFirstLoad] = useState(true);
   const [listError, setListError] = useState(null);
   const [message, setMessage] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [scope, setScope] = useState('ALL');
 
-  const fetch = useCallback(async (pageNumber, joined) => {
+  const fetch = useCallback(async (pageNumber, joined, wantedScope) => {
     setLoading(true);
     setListError(null);
     try {
       const response = await client.get('/posts', {
-        params: { page: pageNumber, size: PAGE_SIZE, direction: 'desc' },
+        params: { page: pageNumber, size: PAGE_SIZE, scope: wantedScope },
       });
       const data = response.data;
 
@@ -62,12 +75,35 @@ export default function FeedPage() {
       setListError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
     } finally {
       setLoading(false);
+      setFirstLoad(false);
     }
   }, [t]);
 
   useEffect(() => {
-    fetch(0, false);
-  }, [fetch]);
+    fetch(0, false, scope);
+  }, [fetch, scope]);
+
+  /*
+   * Odswiezanie licznikow reakcji po powrocie do karty. Wywolanie MUSI byc
+   * stabilne (useCallback bez zaleznosci), inaczej zegar w srodku
+   * przestawialby sie przy kazdym renderze - czyli po kazdym kliknieciu.
+   */
+  const applyCounts = useCallback((counts) => {
+    setPosts((previous) => previous.map((post) =>
+      (counts[post.id] ? { ...post, reactions: counts[post.id] } : post)));
+  }, []);
+
+  useLiveReactions(posts, applyCounts);
+
+  function changeScope(next) {
+    if (next === scope) {
+      return;
+    }
+    // Nowy zakres = inna lista; bez wyczyszczenia mignelyby stare wpisy
+    setPosts([]);
+    setFirstLoad(true);
+    setScope(next);
+  }
 
   function afterAdd(created) {
     // Nowy post ma byc na gorze - to najszybszy sposob, bez ponownego pobierania
@@ -110,10 +146,22 @@ export default function FeedPage() {
     }
   }
 
+  /*
+   * Gdzie konczy sie krag, a zaczyna reszta swiata. Liczymy to z pola
+   * fromFriend wyliczonego przez SERWER - przegladarka nie zna listy naszych
+   * znajomych i nie ma z czego tego odtworzyc.
+   *
+   * Kreske rysujemy tylko wtedy, gdy NAD nia cos jest: u kogos bez znajomych
+   * napis "dalej: osoby, ktorych jeszcze nie znasz" na samej gorze tablicy
+   * brzmialby jak wyrzut.
+   */
+  const strangersStartAt = posts.findIndex((post) => !post.fromFriend);
+  const showDivider = scope === 'ALL' && strangersStartAt > 0;
+
   return (
     <Row className="justify-content-center">
       <Col lg={8} className="feed-page">
-        <div className="d-flex align-items-center justify-content-between mb-3">
+        <div className="d-flex align-items-center justify-content-between mb-3 gap-2 flex-wrap">
           <h1 className="h4 mb-0 page-title">{t('posts.title')}</h1>
 
           <Button
@@ -134,6 +182,27 @@ export default function FeedPage() {
           </Button>
         </div>
 
+        <div className="segmented mb-3" role="group" aria-label={t('posts.scope.label')}>
+          <button
+            type="button"
+            className={`segmented-option${scope === 'ALL' ? ' is-active' : ''}`}
+            aria-pressed={scope === 'ALL'}
+            onClick={() => changeScope('ALL')}
+          >
+            <IconGlobe size={14} />
+            <span>{t('posts.scope.ALL')}</span>
+          </button>
+          <button
+            type="button"
+            className={`segmented-option${scope === 'FRIENDS' ? ' is-active' : ''}`}
+            aria-pressed={scope === 'FRIENDS'}
+            onClick={() => changeScope('FRIENDS')}
+          >
+            <IconFriends size={14} />
+            <span>{t('posts.scope.FRIENDS')}</span>
+          </button>
+        </div>
+
         <Collapse in={formOpen}>
           <div id="formularz-postu">
             <PostForm onAdded={afterAdd} />
@@ -147,22 +216,59 @@ export default function FeedPage() {
         )}
         {listError && <Alert variant="danger">{listError}</Alert>}
 
+        {firstLoad && loading && <PostSkeleton count={3} />}
+
         {posts.map((post, i) => (
-          <Post
-            key={post.id}
-            post={post}
-            index={i % PAGE_SIZE}
-            onDelete={remove}
-            onUpdate={afterEdit}
-            onReaction={afterReaction}
-          />
+          /* Fragment, a nie <div> - dodatkowy element popsulby odstepy miedzy kartami */
+          <Fragment key={post.id}>
+            {showDivider && i === strangersStartAt && (
+              <div className="feed-divider">
+                <span>{t('posts.strangersBelow')}</span>
+              </div>
+            )}
+
+            <Post
+              post={post}
+              index={i % PAGE_SIZE}
+              onDelete={remove}
+              onUpdate={afterEdit}
+              onReaction={afterReaction}
+            />
+          </Fragment>
         ))}
 
         {!loading && posts.length === 0 && !listError && (
-          <p className="text-body-secondary text-center py-4">{t('posts.empty')}</p>
+          scope === 'FRIENDS' ? (
+            <EmptyState
+              icon={IconFriends}
+              title={t('posts.emptyFriends.title')}
+              text={t('posts.emptyFriends.text')}
+              action={
+                <>
+                  <Button variant="primary" onClick={() => changeScope('ALL')}>
+                    {t('posts.emptyFriends.showAll')}
+                  </Button>
+                  <Link to="/znajomi" className="btn btn-outline-secondary">
+                    {t('posts.emptyFriends.findFriends')}
+                  </Link>
+                </>
+              }
+            />
+          ) : (
+            <EmptyState
+              icon={IconInbox}
+              title={t('posts.emptyAll.title')}
+              text={t('posts.emptyAll.text')}
+              action={
+                <Button variant="primary" onClick={() => setFormOpen(true)}>
+                  <IconPlus /> {t('posts.newPost')}
+                </Button>
+              }
+            />
+          )
         )}
 
-        {loading && (
+        {loading && !firstLoad && (
           <div className="text-center py-3 text-body-secondary small">
             <span className="loading-dots me-2" aria-hidden="true">
               <span /><span /><span />
@@ -173,7 +279,7 @@ export default function FeedPage() {
 
         {!loading && !lastPage && (
           <div className="text-center">
-            <Button variant="outline-secondary" onClick={() => fetch(page + 1, true)}>
+            <Button variant="outline-secondary" onClick={() => fetch(page + 1, true, scope)}>
               {t('posts.loadMore')}
             </Button>
           </div>
@@ -183,7 +289,7 @@ export default function FeedPage() {
   );
 }
 
-/** Formularz dodawania posta: tekst, zdjecia i utwor ze Spotify. */
+/** Formularz dodawania posta: tekst, zdjecia, utwor i wybor widocznosci. */
 function PostForm({ onAdded }) {
   const { t } = useTranslation();
 
@@ -192,6 +298,7 @@ function PostForm({ onAdded }) {
   const [musicKind, setMusicKind] = useState('TRACK');
   const [startAt, setStartAt] = useState('');
   const [files, setFiles] = useState([]);
+  const [visibility, setVisibility] = useState('PUBLIC');
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
@@ -203,6 +310,12 @@ function PostForm({ onAdded }) {
     setMusicKind('TRACK');
     setStartAt('');
     setFiles([]);
+    /*
+     * Widocznosci NIE resetujemy. Kto raz wybral "tylko dla znajomych",
+     * najpewniej chce tak pisac dalej - a ciche przestawienie z powrotem
+     * na publiczny przy drugim poscie byloby ujawnieniem tresci wbrew
+     * decyzji, ktora ta osoba przed chwila podjela.
+     */
   }
 
   /*
@@ -235,6 +348,7 @@ function PostForm({ onAdded }) {
             // Bez linku rodzaj nie ma do czego sie odnosic - serwer to odrzuci
             musicKind: musicUrl ? musicKind : null,
             musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
+            visibility,
           })],
           { type: 'application/json' }
         )
@@ -287,6 +401,8 @@ function PostForm({ onAdded }) {
             onStartSeconds={setStartAt}
             serverErrors={fieldErrors}
           />
+
+          <VisibilityPicker value={visibility} onChange={setVisibility} />
 
           <Button type="submit" disabled={sending || Boolean(blokada)}>
             {sending ? t('posts.publishing') : t('posts.publish')}

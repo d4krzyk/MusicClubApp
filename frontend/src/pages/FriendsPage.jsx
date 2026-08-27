@@ -235,7 +235,7 @@ export default function FriendsPage() {
 
         {/* Moja lista znajomych - ten sam komponent co na profilu */}
         <h2 className="h5 mb-2">{t('friends.mine')}</h2>
-        {user && <FriendsStrip username={user.username} refresh={refreshFriends} />}
+        {user && <FriendsStrip username={user.username} refresh={refreshFriends} self />}
       </Col>
     </Row>
   );

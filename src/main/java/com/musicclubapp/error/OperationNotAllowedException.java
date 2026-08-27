@@ -50,6 +50,18 @@ public class OperationNotAllowedException extends RuntimeException {
             "Mozna edytowac tylko wlasne posty", "error.post.notauthor");
     }
 
+    /**
+     * Proba siegniecia po post przeznaczony tylko dla znajomych autora.
+     *
+     * <p>Dotyczy tez administratora - patrz {@code PostVisibility.FRIENDS}.
+     * Obietnica "widza to tylko znajomi" z cichym wyjatkiem dla obslugi
+     * serwisu nie jest obietnica.</p>
+     */
+    public static OperationNotAllowedException friendsOnlyPost() {
+        return new OperationNotAllowedException(
+            "Ten post jest widoczny tylko dla znajomych autora", "error.post.friendsonly");
+    }
+
     /** Proba zaproszenia samego siebie do znajomych. */
     public static OperationNotAllowedException invitationToSelf() {
         return new OperationNotAllowedException(
@@ -101,6 +113,29 @@ public class OperationNotAllowedException extends RuntimeException {
     public static OperationNotAllowedException notInCatalog() {
         return new OperationNotAllowedException(
             "Takiej pozycji nie ma w katalogu", "error.favorite.notincatalog");
+    }
+
+    /** Gablotka playlist jest pelna - piec pozycji to jej caly sens. */
+    public static OperationNotAllowedException playlistLimit() {
+        return new OperationNotAllowedException(
+            "Gablotka playlist jest pelna", "error.playlist.limit");
+    }
+
+    /**
+     * Wklejony adres prowadzi gdzie indziej niz do playlisty.
+     *
+     * <p>Mowimy wprost, co jest nie tak, bo to najczestsza pomylka:
+     * link do pojedynczego utworu wyglada bardzo podobnie.</p>
+     */
+    public static OperationNotAllowedException notAPlaylist() {
+        return new OperationNotAllowedException(
+            "To nie jest link do playlisty", "error.playlist.notplaylist");
+    }
+
+    /** Ta playlista juz jest w gablotce. */
+    public static OperationNotAllowedException playlistAlreadyThere() {
+        return new OperationNotAllowedException(
+            "Ta playlista juz jest w gablotce", "error.playlist.duplicate");
     }
 
     /** Proba importu z Last.fm przy niewpisanym kluczu API. */

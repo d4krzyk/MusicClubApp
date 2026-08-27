@@ -5,6 +5,8 @@ import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import client from '../api/client';
 import Avatar from './Avatar';
+import EmptyState from './EmptyState';
+import { IconFriends, IconPersonPlus } from './Icons';
 
 /** Ilu znajomych mieści sie na jednym "ekranie" paska. */
 const PAGE_SIZE = 6;
@@ -26,7 +28,7 @@ const PAGE_SIZE = 6;
  * Dzis liczy sie to po wspolnych znajomych; gdy dojda artysci ze Spotify,
  * zmieni sie samo zapytanie w bazie, a ten komponent zostanie bez zmian.</p>
  */
-export default function FriendsStrip({ username, refresh }) {
+export default function FriendsStrip({ username, refresh, self = false }) {
   const { t } = useTranslation();
 
   const [friends, setFriends] = useState([]);
@@ -68,7 +70,26 @@ export default function FriendsStrip({ username, refresh }) {
   }
 
   if (total === 0) {
-    return <p className="text-body-secondary small">{t('friends.none')}</p>;
+    /*
+     * Samo "Brak znajomych." konczy rozmowe w miejscu, w ktorym uzytkownik
+     * ma najwiecej pytan. Na WLASNYM profilu mowimy wiec, co z tym zrobic,
+     * i dajemy jedno klikniecie; na cudzym wystarcza zdanie - tam nie ma
+     * czego zaproponowac.
+     */
+    return self ? (
+      <EmptyState
+        icon={IconFriends}
+        title={t('friends.noneSelf')}
+        text={t('friends.noneSelfHint')}
+        action={
+          <Link to="/znajomi" className="btn btn-primary">
+            <IconPersonPlus /> {t('friends.findPeople')}
+          </Link>
+        }
+      />
+    ) : (
+      <p className="text-body-secondary small">{t('friends.none')}</p>
+    );
   }
 
   // Pierwszy i ostatni element na tej stronie - do napisu "1-6 z 23"

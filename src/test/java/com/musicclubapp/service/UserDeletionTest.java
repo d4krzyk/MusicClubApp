@@ -1,8 +1,11 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.entity.FavoritePlaylist;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.ReactionType;
 import com.musicclubapp.entity.User;
+import com.musicclubapp.music.MusicProvider;
+import com.musicclubapp.repository.FavoritePlaylistRepository;
 import com.musicclubapp.repository.FriendRequestRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
@@ -42,6 +45,7 @@ class UserDeletionTest {
     @Autowired private PostRepository postRepository;
     @Autowired private ReactionRepository reactionRepository;
     @Autowired private FriendRequestRepository requestRepository;
+    @Autowired private FavoritePlaylistRepository playlistRepository;
     @Autowired private ReactionService reactionService;
     @Autowired private PostService postService;
     @Autowired private FriendService friendService;
@@ -108,6 +112,32 @@ class UserDeletionTest {
          * konczyloby sie bledem.
          */
         assertThat(userRepository.countFriends("ala")).isZero();
+    }
+
+    @Test
+    @DisplayName("gablotka playlist znika razem z kontem")
+    void playlistShowcaseIsRemoved() {
+        /*
+         * Wiersze gablotki wskazuja na konto kluczem obcym, a encja User
+         * nic o nich nie wie - kaskada ich nie zabierze. Gdyby zostaly,
+         * baza po prostu odmowilaby skasowania konta.
+         *
+         * Wiersz zakladamy WPROST, a nie przez PlaylistService: tamten
+         * poszedlby do Spotify po tytul playlisty, czyli test zalezalby od
+         * cudzego serwera. Tu chodzi wylacznie o sprzatanie przy usuwaniu.
+         */
+        playlistRepository.save(new FavoritePlaylist(
+            troll, MusicProvider.SPOTIFY, "37i9dQZF1DXcBWIGoYBM5M", "Skladanka", null, 0));
+        entityManager.flush();
+
+        assertThat(playlistRepository.countByOwnerUsername("troll")).isEqualTo(1);
+
+        moderationService.deleteUser("admin", troll.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(playlistRepository.findAll()).isEmpty();
+        assertThat(userRepository.findByUsername("troll")).isEmpty();
     }
 
     @Test

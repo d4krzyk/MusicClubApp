@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +22,7 @@ import java.util.Optional;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     /**
-     * Tablica postow - wszystkie wpisy, od najnowszych.
+     * <b>Tablica: najpierw znajomi, potem reszta swiata.</b>
      *
      * <p><b>Po co {@code JOIN FETCH p.author}?</b> Autor jest ladowany leniwie
      * ({@code FetchType.LAZY}), wiec bez tego Hibernate pobralby najpierw
@@ -31,22 +32,84 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * <p>Zdjec celowo NIE dolaczamy tutaj przez {@code JOIN FETCH}: laczenie
      * dwoch kolekcji naraz kazaloby bazie zwrocic iloczyn wierszy, przez co
      * stronicowanie liczyloby zle. Zdjecia doczytujemy osobno w serwisie.</p>
+     *
+     * <p><b>Kolejnosc robi {@code ORDER BY CASE}</b>, a nie sortowanie
+     * przekazane z kontrolera. Interesuje nas kolejnosc po polu, ktorego
+     * w tabeli nie ma: "czy ten autor jest w moim kregu". Baza wylicza z tego
+     * zero albo jedynke i po niej sortuje w pierwszej kolejnosci, a dopiero
+     * w drugiej po dacie. Dzieki temu stronicowanie dziala normalnie: druga
+     * strona zaczyna sie dokladnie tam, gdzie skonczyla pierwsza. Gdyby
+     * przesiewac to w Javie po pobraniu, licznik stron klamalby przy kazdym
+     * zapytaniu.</p>
+     *
+     * <p><b>{@code visibility IS NULL} traktujemy jak PUBLIC.</b> Pustka moze
+     * zostac wylacznie po postach sprzed dolozenia tej kolumny; uzupelnia je
+     * {@code PostVisibilityMigration} przy starcie. Warunek jest tu na wypadek,
+     * gdyby to przepisanie nie doszlo do skutku - bez niego cala dotychczasowa
+     * tablica zniknelaby uzytkownikom z oczu. Ta sama zasada jest zapisana
+     * w {@code Post.getVisibility()}.</p>
+     *
+     * @param circle identyfikatory: moj i moich znajomych ({@code UserRepository.circleIds})
      */
     @Query(value = """
            SELECT p FROM Post p
-           JOIN FETCH p.author
+           JOIN FETCH p.author a
+           WHERE p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+              OR p.visibility IS NULL
+              OR a.id IN :circle
+           ORDER BY CASE WHEN a.id IN :circle THEN 0 ELSE 1 END, p.createdAt DESC
            """,
-           countQuery = "SELECT COUNT(p) FROM Post p")
-    Page<Post> findFeed(Pageable pageable);
+           countQuery = """
+           SELECT COUNT(p) FROM Post p
+           WHERE p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+              OR p.visibility IS NULL
+              OR p.author.id IN :circle
+           """)
+    Page<Post> findFeed(@Param("circle") Collection<Long> circle, Pageable pageable);
 
-    /** Posty jednego uzytkownika - do jego profilu. */
+    /**
+     * Tablica zawezona do wlasnego kregu - wybor uzytkownika w przelaczniku
+     * nad tablica.
+     *
+     * <p>Tu <b>nie ma juz warunku widocznosci</b> i nie jest to niedopatrzenie:
+     * wszystko, co napisali moi znajomi i ja, moge zobaczyc niezaleznie od
+     * tego, dla kogo bylo przeznaczone. Doklejenie tego warunku niczego by nie
+     * zmienilo poza dluzszym zapytaniem.</p>
+     */
+    @Query(value = """
+           SELECT p FROM Post p
+           JOIN FETCH p.author a
+           WHERE a.id IN :circle
+           ORDER BY p.createdAt DESC
+           """,
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.author.id IN :circle")
+    Page<Post> findCircleFeed(@Param("circle") Collection<Long> circle, Pageable pageable);
+
+    /**
+     * Posty jednego uzytkownika - do jego profilu.
+     *
+     * <p>Posty "tylko dla znajomych" widac tu wylacznie wtedy, gdy autor jest
+     * w moim kregu. Bez tego warunku profil byloby najprostsza obejsciem calej
+     * reguly: wystarczyloby wejsc na czyjs profil zamiast na tablice.</p>
+     */
     @Query(value = """
            SELECT p FROM Post p
            JOIN FETCH p.author a
            WHERE a.username = :username
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR a.id IN :circle)
            """,
-           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.author.username = :username")
-    Page<Post> findByAuthorUsername(@Param("username") String username, Pageable pageable);
+           countQuery = """
+           SELECT COUNT(p) FROM Post p
+           WHERE p.author.username = :username
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR p.author.id IN :circle)
+           """)
+    Page<Post> findByAuthorUsername(@Param("username") String username,
+                                    @Param("circle") Collection<Long> circle,
+                                    Pageable pageable);
 
     /**
      * Post razem z autorem - uzywane przy usuwaniu, zeby sprawdzic wlasciciela
@@ -64,6 +127,25 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * ciagneloby przez siec wszystkie wpisy razem z trescia.</p>
      */
     long countByAuthorUsername(String username);
+
+    /**
+     * Ile postow tej osoby <b>widzi konkretny ogladajacy</b> - liczba na profilu.
+     *
+     * <p>Osobna metoda obok {@link #countByAuthorUsername(String)}, bo obie
+     * odpowiadaja na inne pytanie. Tamta mowi, ile ktos napisal (uzywamy jej
+     * przy sprzataniu konta); ta - ile z tego mam prawo zobaczyc. Gdyby profil
+     * pokazywal tamta liczbe, obok "12 postow" widnialoby siedem wpisow i cala
+     * strona wygladalaby na zepsuta.</p>
+     */
+    @Query("""
+           SELECT COUNT(p) FROM Post p
+           WHERE p.author.username = :username
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR p.author.id IN :circle)
+           """)
+    long countVisibleFor(@Param("username") String username,
+                         @Param("circle") Collection<Long> circle);
 
     /**
      * Najczesciej wrzucane przez uzytkownika nagrania danego rodzaju.

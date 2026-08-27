@@ -1,12 +1,14 @@
 package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.FriendCardResponse;
+import com.musicclubapp.dto.PlaylistsResponse;
 import com.musicclubapp.dto.PublicProfileResponse;
 import com.musicclubapp.dto.TopMusicResponse;
 import com.musicclubapp.dto.FavoritesResponse;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.service.FavoritesService;
 import com.musicclubapp.service.FriendService;
+import com.musicclubapp.service.PlaylistService;
 import com.musicclubapp.service.PublicProfileService;
 import com.musicclubapp.service.TopMusicService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,15 +57,18 @@ public class PublicProfileController {
     private final FriendService friendService;
     private final TopMusicService topMusicService;
     private final FavoritesService favoritesService;
+    private final PlaylistService playlistService;
 
     public PublicProfileController(PublicProfileService publicProfileService,
                                    FriendService friendService,
                                    TopMusicService topMusicService,
-                                   FavoritesService favoritesService) {
+                                   FavoritesService favoritesService,
+                                   PlaylistService playlistService) {
         this.favoritesService = favoritesService;
         this.publicProfileService = publicProfileService;
         this.friendService = friendService;
         this.topMusicService = topMusicService;
+        this.playlistService = playlistService;
     }
 
     @GetMapping("/{username}")
@@ -163,5 +168,20 @@ public class PublicProfileController {
          */
         return ResponseEntity.ok(
             favoritesService.favorites(username, authentication.getName()));
+    }
+
+    @GetMapping("/{username}/playlists")
+    @Operation(summary = "Gablotka playlist tej osoby")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Do pieciu playlist"),
+        @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
+    })
+    public ResponseEntity<PlaylistsResponse> playlists(
+            @PathVariable String username,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+            playlistService.playlists(username, authentication.getName()));
     }
 }

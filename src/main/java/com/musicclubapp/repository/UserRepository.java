@@ -231,6 +231,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean areFriends(@Param("pierwszy") String first, @Param("drugi") String second);
 
     /**
+     * <b>"Moj krag"</b> - identyfikatory: moj wlasny i wszystkich moich znajomych.
+     *
+     * <p>Jedno pojecie, ktore zalatwia trzy sprawy naraz na tablicy: kogo posty
+     * ida na gore, czyje posty "tylko dla znajomych" wolno mi zobaczyc i co
+     * zostaje po zawezeniu tablicy do znajomych. Gdyby te trzy rzeczy liczyly
+     * sie osobno, kazda mogla by sie rozjechac z pozostalymi.</p>
+     *
+     * <p><b>Wlasny identyfikator jest w wyniku celowo</b>, z dwoch powodow.
+     * Merytorycznie: wlasne posty maja byc na gorze razem z postami znajomych,
+     * a nie w czesci "obcy ludzie". Technicznie: dzieki temu zbior nigdy nie
+     * jest pusty, a {@code IN ()} z pusta lista jest w SQL-u bledem skladni -
+     * uzytkownik bez znajomych wywracalby cala tablice.</p>
+     *
+     * <p>{@code UNION} (a nie {@code UNION ALL}) usuwa ewentualne powtorzenia.</p>
+     */
+    @Query(value = """
+           SELECT u.id FROM users u WHERE u.username = :username
+           UNION
+           SELECT uf.friend_id
+             FROM user_friends uf
+             JOIN users a ON a.id = uf.user_id
+            WHERE a.username = :username
+           """, nativeQuery = true)
+    List<Long> circleIds(@Param("username") String username);
+
+    /**
      * Kasuje wiersze znajomosci wskazujace na dane konto - <b>z obu stron</b>.
      *
      * <p>Znajomosc zapisujemy dwoma wierszami, zeby dalo sie ja czytac

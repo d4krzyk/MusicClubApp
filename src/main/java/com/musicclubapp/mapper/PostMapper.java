@@ -23,12 +23,30 @@ public class PostMapper {
     public static final String UPLOADS_PATH = "/uploads/";
 
     /**
-     * @param ogladajacy zalogowany uzytkownik (moze byc {@code null} - wtedy
-     *                   nikt nie moze nic kasowac)
-     * @param reakcje    policzone reakcje tego posta; dla swiezo utworzonego
-     *                   wpisu podaj {@link ReactionSummary#pusta()}
+     * Wersja dla <b>pojedynczego</b> posta.
+     *
+     * <p>Sama sprawdza, czy autor jest znajomym ogladajacego - a to znaczy
+     * doczytanie jego listy znajomych z bazy. Przy jednym poscie to jedno
+     * dodatkowe zapytanie i nie ma o czym mowic; przy calej tablicy byloby
+     * to jedno zapytanie NA POST (problem N+1), dlatego stamtad wolamy
+     * {@link #toResponse(Post, User, ReactionSummary, boolean)} z gotowa
+     * odpowiedzia policzona raz dla calej strony.</p>
+     *
+     * @param viewer    zalogowany uzytkownik (moze byc {@code null} - wtedy
+     *                  nikt nie moze nic kasowac)
+     * @param reactions policzone reakcje tego posta; dla swiezo utworzonego
+     *                  wpisu podaj {@link ReactionSummary#empty()}
      */
     public PostResponse toResponse(Post post, User viewer, ReactionSummary reactions) {
+        return toResponse(post, viewer, reactions, inCircle(post, viewer));
+    }
+
+    /**
+     * @param fromFriend czy autor jest w kregu ogladajacego; przy tablicy
+     *                   liczone raz dla calej strony w {@code PostService}
+     */
+    public PostResponse toResponse(Post post, User viewer, ReactionSummary reactions,
+                                   boolean fromFriend) {
         List<String> imageUrls = post.getImages().stream()
             .map(PostImage::getFileName)
             .map(name -> UPLOADS_PATH + name)
@@ -50,7 +68,18 @@ public class PostMapper {
             post.getCreatedAt(),
             canDelete(post, viewer),
             canEdit(post, viewer),
-            reactions);
+            reactions,
+            post.getVisibility(),
+            fromFriend);
+    }
+
+    /** Czy autor posta to ogladajacy albo ktos z jego znajomych. */
+    private boolean inCircle(Post post, User viewer) {
+        if (viewer == null) {
+            return false;
+        }
+        return post.getAuthor().getId().equals(viewer.getId())
+            || post.getAuthor().getFriends().contains(viewer);
     }
 
     private String avatarUrl(User user) {
