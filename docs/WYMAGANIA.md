@@ -27,7 +27,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User`, `Post` 1—N `PostImage`, `Post` 1—N `Reaction`, `Notification` N—1 `User` ×2 i N—1 `Post`, `FavoritePlaylist` N—1 `User` | ✅ posty |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
 | 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — tablica, profile, znajomi, ustawienia, panel administratora | ✅ KROK 5 |
-| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest`, `FriendServiceTest` (Mockito) + `DeezerCatalogServiceTest`, `LastFmServiceTest`, `FavoritesServiceTest`, `UserModerationServiceTest`, `PlaylistServiceTest`, `PostVisibilityTest` | ✅ KROK 3 |
+| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest`, `FriendServiceTest` (Mockito) + `DeezerCatalogServiceTest`, `LastFmServiceTest`, `FavoritesServiceTest`, `UserModerationServiceTest`, `PlaylistServiceTest`, `PostVisibilityTest`, `CommonGroundServiceTest` | ✅ KROK 3 |
 | 15 | Rejestracja + logowanie, Spring Security (config NIE deprecated) | `config/SecurityConfig` — `SecurityFilterChain` + lambda DSL, sesja + BCrypt | ✅ KROK 3 |
 
 ## ⚪ Do wyboru — dla wszystkich typów projektów
@@ -38,7 +38,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 4 | Encja z datą/czasem i jej wykorzystanie | `User.createdAt` (data dołączenia na profilu), `Post.createdAt` (sortowanie tablicy), `Reaction.createdAt` | ✅ KROK 2 |
 | 5 | Sortowanie (backend) | `Sort` w `Pageable` + wybór pola i kierunku na `/users` | ✅ KROK 2 + 5 |
 | 7 | OneToOne **lub** ManyToMany | `User` N—N `User` — znajomi (`user_friends`); `User` N—N `Artist` (`user_favorite_artists`); `User` N—N `Track` (`user_favorite_tracks`) | ✅ znajomi + ulubieni |
-| 8 | Własne zapytania `@Query` / natywne | JPQL: `searchByUsernameOrEmail`, `findFeed` (JOIN FETCH + `ORDER BY CASE` stawiające znajomych na górze), `countForPosts` (GROUP BY); **natywne**: `friendsRanked`, `circleIds` (UNION) oraz `friendSuggestions` (trzy skorelowane podzapytania + sortowanie po wyliczonym dopasowaniu) | ✅ KROK 2 |
+| 8 | Własne zapytania `@Query` / natywne | JPQL: `searchByUsernameOrEmail`, `findFeed` (JOIN FETCH + `ORDER BY CASE` stawiające znajomych na górze), `countForPosts` (GROUP BY); `genresOf` (złączenie z kolekcją elementów); **natywne**: `friendsRanked`, `circleIds` (UNION) oraz `friendSuggestions` (trzy skorelowane podzapytania + sortowanie po wyliczonym dopasowaniu) | ✅ KROK 2 |
 | 10 | **Własna** adnotacja walidacyjna | `@UniqueUsername` (pole), `@PasswordsMatch` (klasa), `@ValidMusicLink` (klasa — link + rodzaj + moment startu) | ✅ KROK 3 |
 | 11 | `@ControllerAdvice` + wyjątek gdy brak elementu | `error/GlobalExceptionHandler` + `NoSuchElementFoundException` | ✅ KROK 3 |
 | 14 | `@DataJpaTest` do testów zapytań | `UserRepositoryTest`, `FriendshipRepositoryTest` (zapytanie natywne + symetria relacji), `FriendSuggestionsTest` (kolejność dopasowań), `TopMusicRepositoryTest` (zapytanie z `GROUP BY`) | ✅ KROK 2 |
@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 237 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 246 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -98,6 +98,15 @@ dopiero na uruchomionej aplikacji:
 - **kolumna `NOT NULL` dokładana do tabeli z danymi** — Hibernate w trybie
   `ddl-auto=update` dostaje wtedy od bazy odmowę, kolumna w ogóle nie powstaje
   i przestają działać wszystkie zapytania o posty. Stąd `visibility` jest
-  w bazie nullowalna, a stare wiersze uzupełnia `PostVisibilityMigration`.
+  w bazie nullowalna, a stare wiersze uzupełnia `PostVisibilityMigration`;
+- **wylogowanie kasujące token CSRF** — pierwsze następne logowanie kończyło
+  się komunikatem „Wystąpił nieoczekiwany błąd", a drugie działało. Cała rzecz
+  dzieje się w ciasteczkach, więc żaden test serwera ani przeglądarki tego nie
+  widział, dopóki nie napisaliśmy scenariusza „zaloguj → wyloguj → zaloguj";
+- **sprawdzenie, które przechodzi z wyłączoną poprawką.** Test na przeskok
+  treści przy pasku przewijania porównywał dwie strony, z których obie były
+  dłuższe od okna — pasek był na obu i nie było czego mierzyć. Od tej pory
+  każdą nową asercję sprawdzamy dodatkowo tak, że **cofamy poprawkę i patrzymy,
+  czy czerwienieje**.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

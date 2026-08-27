@@ -1762,6 +1762,114 @@ podać liczbę, która sugerowałaby, że sprawdziliśmy wszystko.
 
 ---
 
+# KROK 10 — poprawki po pierwszym prawdziwym użyciu
+
+Runda zgłoszona po tym, jak aplikacja została rzeczywiście poklikana.
+Wszystkie punkty to albo błędy, albo rzeczy, które *działały*, ale
+przeszkadzały.
+
+## Błąd: pierwsze kliknięcie „Zaloguj" po wylogowaniu
+
+Objaw: po wylogowaniu pierwsze logowanie kończyło się komunikatem
+„Wystąpił nieoczekiwany błąd", a **drugie działało**. Wyglądało to na
+losową usterkę, a było w pełni powtarzalne.
+
+Przyczyna: wylogowanie w Spring Security **kasuje ciasteczko XSRF-TOKEN**
+(robi to `CsrfLogoutHandler` — i słusznie, bo token należał do poprzedniej
+sesji). Frontend nie pobierał go ponownie, więc następny `POST` szedł bez
+tokenu i serwer go odrzucał. Dopiero odpowiedź z błędem zakładała nowe
+ciasteczko — stąd „za drugim razem działa".
+
+Naprawa dwustopniowa, bo to dwie różne rzeczy:
+1. `AuthContext` pobiera nowy token **zaraz po wylogowaniu** — to usuwa
+   przyczynę w jedynym miejscu, w którym powstaje;
+2. przechwytywacz w `client.js` powtarza **raz** zapytanie, które poszło
+   bez ciasteczka i zostało odrzucone — to siatka na wszystkie pozostałe
+   sposoby utraty tokenu (wygaśnięcie, wyczyszczenie danych strony, druga
+   karta, która się wylogowała).
+
+Powtarzamy **wyłącznie** wtedy, gdy ciasteczka w chwili wysyłki w ogóle nie
+było. Złe hasło daje ten sam kod odpowiedzi, ale ciasteczko jest wtedy na
+miejscu — taki błąd przechodzi do użytkownika nietknięty.
+
+## Pasek przewijania przesuwał całą stronę
+
+Objaw: przy przechodzeniu między stronami treść przeskakiwała o kilkanaście
+pikseli w bok. To nie było drganie interfejsu, tylko zwykła zmiana szerokości
+okna: strona bez paska przewijania jest po prostu szersza niż ta z paskiem.
+
+Rozwiązanie po kilku pomiarach: `html { overflow-y: scroll }` — pasek jest
+**obecny zawsze**, więc nic nigdy nie znika. Pierwsza próba
+(`scrollbar-gutter: stable`, czyli sama rezerwacja miejsca) załatwiała
+przechodzenie między stronami, ale nie okienka: `overflow: hidden`, które
+Bootstrap ustawia na `<body>`, zabiera pasek **razem z zarezerwowanym
+miejscem** — zmierzone, szerokość treści wracała wtedy z 1270 na 1280 px.
+
+Do tego trzeba było wyzerować dwa wyrównania, które Bootstrap dokłada przy
+otwarciu okienka: margines na `<body>` i parę
+`padding-right: 10px` / `margin-right: -10px` na pasku przyklejonym do góry.
+To drugie zwężało **wnętrze** paska, przez co logo przeskakiwało o 5 px.
+Przy zawsze obecnym pasku nie ma czego wyrównywać.
+
+**Sprawdzenie tego było trudniejsze niż sama poprawka.** Pierwsza wersja
+testu przechodziła także z wyłączoną poprawką — obie porównywane strony
+okazały się dłuższe od okna, więc pasek był na obu. Teraz test wymusza stan
+„bez paska" wprost i sprawdziliśmy, że czerwienieje po cofnięciu zmiany.
+
+## Ikony z Bootstrap Icons
+
+Ikona znajomych wyglądała na przyciętą, a grubości kresek nie zgadzały się
+między ikonami — bo wszystkie były rysowane ręcznie. Przy pięciu to
+wystarczało, przy dwudziestu czterech zaczęło się rozjeżdżać.
+
+Teraz kształty pochodzą z **Bootstrap Icons** (MIT) — oficjalnego zestawu
+Bootstrapa, którego używamy już do reszty wyglądu. Ścieżki są przepisane
+do `Icons.jsx` skryptem (nie ręką), więc **nie ma zależności do paczki**:
+biblioteka ma ponad dwa tysiące ikon, a używamy dwudziestu czterech.
+
+Przy okazji wyszedł osobny błąd: aktywna ikona w menu była w jasnym motywie
+**czarna na fioletowym tle**. Reguła Bootstrapa
+`.navbar-nav .nav-link.active` jest bardziej szczegółowa niż nasza
+`.nav-icon.active` i wygrywała mimo późniejszego wczytania arkusza.
+W ciemnym motywie nie było tego widać, bo kolor Bootstrapa jest tam prawie
+biały.
+
+## Co Was łączy
+
+Aplikacja umiała policzyć, **ile** ktoś ma z kimś wspólnego. Teraz mówi,
+**co**: wspólne gatunki, artystów, utwory i znajomych — z nazwy. Sekcja jest
+na cudzym profilu i w okienku otwieranym z karty propozycji; na własnym
+profilu się nie pokazuje, bo nie ma czego z czym porównywać.
+
+Część wspólną liczymy w Javie (dwie osoby, po kilkadziesiąt pozycji —
+zapytanie z podwójnym złączeniem byłoby trudniejsze do przeczytania, a nie
+szybsze). Wyjątkiem są gatunki: idą jednym zapytaniem, bo doczytanie ich
+z encji kosztowałoby jedno zapytanie **na każdego** ulubionego wykonawcę.
+
+## Drobiazgi z tej samej rundy
+
+- **Logo ma znów nutkę.** Wcześniej dostało tę samą ikonę co pozycja
+  „Tablica" i jedno z drugim wyglądało identycznie.
+- **Kliknięcie logo albo ikony tablicy** wraca na górę tablicy i odświeża
+  wpisy. Zmiana strony też zaczyna od góry — wcześniej przejście z połowy
+  długiej tablicy zostawiało widok w tym samym miejscu.
+- **Liczniki przy dzwonku i znajomych są mniejsze.** Miały prawie tę samą
+  wysokość co ikona i to one przyciągały wzrok pierwsze.
+- **Ekran znajomych nie podskakuje.** Kółko z napisem zajmowało jedną
+  linijkę, a zaraz po nim wskakiwał rząd kafelków wysokich na kilkanaście
+  razy tyle. Teraz jest szkielet o wysokości gotowego paska.
+- **Przejścia są nieco wolniejsze** (0,2 s zamiast 0,16 s). Ruch krótszy
+  niż mniej więcej dwie dziesiąte sekundy oko rejestruje jako przeskok,
+  a nie jako przejście.
+
+## Sprawdzone
+
+246 testów backendu (9 nowych na „co Was łączy") oraz nowy zestaw
+`sprawdz-poprawki.mjs` — **18 sprawdzeń w Chromium**. Zestawy z poprzednich
+rund bez zmian: widoczność 35, powiadomienia 21, moderacja 16, linki 12.
+
+---
+
 ## Co zostaje na później
 
 - potwierdzenie adresu e-mail przy rejestracji (wymaganie nr 16, opcjonalne).

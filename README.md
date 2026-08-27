@@ -132,7 +132,8 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
     ├── i18n/                    # pl.json i en.json
     ├── hooks/                   # useLiveReactions - odświeżanie liczników reakcji
     ├── components/              # Layout, Post, Reactions, Favorites, Playlists,
-    │                            #   EmptyState, PostSkeleton, HorizontalStrip, …
+    │                            #   CommonGround, EmptyState, PostSkeleton, …
+    │                            # Icons.jsx: ikony z Bootstrap Icons (MIT)
     └── pages/                   # Login, Register, Feed (strona główna), Post, Profile,
                                  #   Friends, Settings
 ```
@@ -165,6 +166,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/profiles/{username}/friends` | znajomi — od najbardziej powiązanych |
 | GET | `/api/profiles/{username}/top-music` | najczęściej wrzucane nagrania (top 5) |
 | GET | `/api/profiles/{username}/favorites` | czyjeś ulubione — do oglądania |
+| GET | `/api/profiles/{username}/common` | co konkretnie łączy Cię z tą osobą |
 | GET | `/api/profiles/{username}/playlists` | czyjaś gablotka playlist |
 | GET | `/api/profile/playlists` | **moja** gablotka playlist |
 | POST | `/api/profile/playlists` | dodanie playlisty (w treści sam adres) |
@@ -503,6 +505,25 @@ muzycznego. Gdyby nazwa pochodziła od użytkownika, wystarczyłoby wysłać
 zapytanie z pominięciem przeglądarki, żeby podpisać cudzą playlistę
 czymkolwiek. Ta sama zasada co przy ulubionych artystach.
 
+## Co Was łączy
+
+Aplikacja od początku umiała policzyć, **ile** ktoś ma z kimś wspólnego — na
+tym opiera się kolejność proponowanych znajomych. Nie umiała za to powiedzieć,
+**co** to jest, a to dopiero jest powód, żeby napisać do obcej osoby.
+„Oboje słuchacie Radiohead" da się zamienić w rozmowę; „2 wspólnych artystów"
+nie da się zamienić w nic.
+
+Sekcja na cudzym profilu (i okienko przy propozycjach znajomych) pokazuje
+z imienia: wspólne **gatunki**, **artystów**, **utwory** i **znajomych**.
+Na własnym profilu się nie pojawia — nie ma czego z czym porównywać.
+
+Część wspólną liczymy **w Javie**, inaczej niż przy proponowanych znajomych.
+Tam trzeba było ocenić dopasowanie *wszystkich* użytkowników naraz i tylko baza
+mogła to zrobić sensownie. Tutaj chodzi o dwie osoby i najwyżej po kilkadziesiąt
+pozycji — zapytanie z podwójnym złączeniem byłoby trudniejsze do przeczytania,
+a nie szybsze. Gatunki są jedynym wyjątkiem: idą jednym zapytaniem, bo doczytanie
+ich z encji kosztowałoby jedno zapytanie **na każdego** ulubionego wykonawcę.
+
 ## Puste stany
 
 Pusto to nie awaria, tylko początek — i wtedy właśnie aplikacja ma jedyną
@@ -694,14 +715,15 @@ YouTube Music i Apple Music** (utwory, albumy, artyści, playlisty),
 zestawienie najczęściej wrzucanych utworów, **ulubieni artyści i utwory
 z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
 guście**, **posty publiczne albo tylko dla znajomych**, **tablica ze znajomymi
-na górze**, **gablotka pięciu playlist na profilu**, **moderacja kont (zakaz
+na górze**, **gablotka pięciu playlist na profilu**, **sekcja „co Was łączy"
+z konkretnymi artystami, utworami i gatunkami**, **moderacja kont (zakaz
 publikowania, usuwanie)**, motyw jasny/ciemny oraz cała aplikacja na Docker
 Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
 
-**237 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
+**246 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
 w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność
 postów i kolejność tablicy, powiadomienia, linki muzyczne, moderacja,
-układ strony.
+układ strony i pasek przewijania.
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
 Szczegóły w `docs/WYMAGANIA.md`.

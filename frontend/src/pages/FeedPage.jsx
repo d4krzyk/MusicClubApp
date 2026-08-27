@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
@@ -47,6 +47,7 @@ const MAX_IMAGES = 10;
  */
 export default function FeedPage() {
   const { t } = useTranslation();
+  const location = useLocation();
 
   const [posts, setPosts] = useState([]);
   const [page, setPage] = useState(0);
@@ -82,6 +83,20 @@ export default function FeedPage() {
   useEffect(() => {
     fetch(0, false, scope);
   }, [fetch, scope]);
+
+  /*
+   * Klikniecie w logo albo w ikone tablicy - takze wtedy, gdy juz tu
+   * jestesmy. Layout zostawia w stanie trasy znacznik czasu; jego zmiana
+   * jest jedynym sygnalem, bo adres pozostaje ten sam.
+   *
+   * Pobieramy PIERWSZA strone od nowa, a nie doklejamy: kto wraca na gore,
+   * ten chce zobaczyc, co doszlo, a nie te same wpisy w dwoch kopiach.
+   */
+  useEffect(() => {
+    if (location.state?.refreshAt) {
+      fetch(0, false, scope);
+    }
+  }, [location.state?.refreshAt, fetch, scope]);
 
   /*
    * Odswiezanie licznikow reakcji po powrocie do karty. Wywolanie MUSI byc

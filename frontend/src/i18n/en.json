@@ -319,5 +319,17 @@
     "play": "Listen",
     "untitled": "Playlist",
     "openInService": "Open in {{service}}"
+  },
+  "common_ground": {
+    "title": "What you have in common",
+    "withPerson": "What you have in common with {{username}}",
+    "why": "These are the actual things you share - easier to start a conversation with than \"hi\".",
+    "show": "See exactly what",
+    "genres": "Shared genres",
+    "artists": "Shared artists",
+    "tracks": "Shared tracks",
+    "friends": "Mutual friends",
+    "nothing": "Nothing in common yet.",
+    "nothingHint": "Add favourite artists and tracks to your profile - then there will be something to compare."
   }
 }

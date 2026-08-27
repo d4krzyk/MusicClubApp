@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
-import Spinner from 'react-bootstrap/Spinner';
 import client from '../api/client';
 import Avatar from './Avatar';
 import EmptyState from './EmptyState';
+import PeopleSkeleton from './PeopleSkeleton';
 import { IconFriends, IconPersonPlus } from './Icons';
 
 /** Ilu znajomych mieści sie na jednym "ekranie" paska. */
@@ -61,12 +61,9 @@ export default function FriendsStrip({ username, refresh, self = false }) {
   }, [fetch, refresh]);
 
   if (loading && friends.length === 0) {
-    return (
-      <div className="text-body-secondary small py-2">
-        <Spinner animation="border" size="sm" className="me-2" />
-        {t('common.loading')}
-      </div>
-    );
+    // Szkielet o wysokosci gotowego paska - inaczej strona podskakuje
+    // w chwili, gdy kolko z napisem ustepuje miejsca kafelkom
+    return <PeopleSkeleton count={PAGE_SIZE} variant="friend" />;
   }
 
   if (total === 0) {

@@ -25,6 +25,87 @@ const client = axios.create({
   xsrfHeaderName: 'X-XSRF-TOKEN',
 });
 
+/** Czy przegladarka ma teraz ciasteczko z tokenem CSRF. */
+function hasCsrfCookie() {
+  return document.cookie.split('; ').some((c) => c.startsWith('XSRF-TOKEN='));
+}
+
+/**
+ * Pobiera token CSRF (endpoint zaklada ciasteczko {@code XSRF-TOKEN}).
+ *
+ * Wywolujemy to zawsze, gdy ciasteczka moglo zabraknac - przy starcie
+ * aplikacji i po wylogowaniu.
+ */
+export function refreshCsrfToken() {
+  return client.get('/auth/csrf');
+}
+
+/*
+ * =============================================================================
+ *  RATUNEK NA BRAKUJACY TOKEN CSRF
+ * =============================================================================
+ *
+ * BLAD, KTORY TO WYMUSIL. Po wylogowaniu pierwsze klikniecie "Zaloguj"
+ * konczylo sie komunikatem "Wystapil nieoczekiwany blad", a drugie dzialalo
+ * normalnie. Wygladalo to na losowa usterke, a bylo w pelni powtarzalne.
+ *
+ * SKAD SIE BRALO. Wylogowanie w Spring Security KASUJE ciasteczko
+ * XSRF-TOKEN (robi to CsrfLogoutHandler - i slusznie, bo token nalezal do
+ * poprzedniej sesji). Frontend nie pobieral go ponownie, wiec kolejne
+ * zapytanie POST szlo bez tokenu i serwer je odrzucal. Dopiero odpowiedz
+ * z bledem zakladala nowe ciasteczko - stad "za drugim razem dziala".
+ *
+ * JAK TO NAPRAWIAMY. Dwustopniowo, bo to dwie rozne rzeczy:
+ *   1. AuthContext pobiera nowy token zaraz po wylogowaniu - to usuwa
+ *      przyczyne w jedynym miejscu, w ktorym ona powstaje;
+ *   2. ten przechwytywacz jest siatka bezpieczenstwa na wszystkie pozostale
+ *      sposoby utraty ciasteczka (wygasniecie, wyczyszczenie danych strony,
+ *      druga karta, ktora sie wylogowala).
+ *
+ * DLACZEGO TO NIE UKRYWA PRAWDZIWYCH BLEDOW. Powtarzamy WYLACZNIE wtedy,
+ * gdy w chwili wysylki ciasteczka w ogole nie bylo. Zle haslo daje ten sam
+ * kod odpowiedzi, ale ciasteczko jest wtedy na miejscu - taki blad przechodzi
+ * do uzytkownika nietkniety. Powtarzamy tez tylko RAZ.
+ */
+client.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const request = error.config;
+    const status = error.response?.status;
+
+    const worthRetrying =
+      request
+      && !request._csrfRetry
+      && (status === 401 || status === 403)
+      && !['get', 'head', 'options'].includes((request.method ?? 'get').toLowerCase())
+      && !request.url?.includes('/auth/csrf')
+      && !request._hadCsrfCookie;
+
+    if (!worthRetrying) {
+      return Promise.reject(error);
+    }
+
+    request._csrfRetry = true;
+    try {
+      await refreshCsrfToken();
+    } catch {
+      // Serwer nie odpowiada - oddajemy pierwotny blad, bo to on jest prawdziwy
+      return Promise.reject(error);
+    }
+    return client(request);
+  }
+);
+
+/*
+ * Zapisujemy przy zapytaniu, czy ciasteczko BYLO w chwili wysylki. Sprawdzenie
+ * tego dopiero w obsludze bledu byloby za pozne: odpowiedz z bledem zaklada
+ * juz nowe ciasteczko, wiec zawsze wygladaloby na obecne.
+ */
+client.interceptors.request.use((request) => {
+  request._hadCsrfCookie = hasCsrfCookie();
+  return request;
+});
+
 /**
  * Ustawia jezyk wysylany do backendu w naglowku Accept-Language.
  *

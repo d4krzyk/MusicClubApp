@@ -13,6 +13,7 @@ import Avatar from '../components/Avatar';
 import Post from '../components/Post';
 import PostSkeleton from '../components/PostSkeleton';
 import EmptyState from '../components/EmptyState';
+import CommonGround from '../components/CommonGround';
 import FriendsStrip from '../components/FriendsStrip';
 import TopMusic from '../components/TopMusic';
 import Favorites from '../components/Favorites';
@@ -198,6 +199,15 @@ export default function ProfilePage() {
             </div>
           </Card.Body>
         </Card>
+
+        {/*
+          "Co Was laczy" stoi NAD ulubionymi i to jest celowe. Na cudzym
+          profilu pierwsze pytanie brzmi "czy mamy cos wspolnego", a nie
+          "czego ta osoba slucha" - odpowiedz na to drugie jest nizej
+          i nigdzie nie ucieknie. Na wlasnym profilu sekcja sie nie pokazuje:
+          nie ma czego z czym porownywac.
+        */}
+        <CommonGround username={profile.username} />
 
         {/*
           Dwa bloki obok siebie, ktore latwo pomylic, a mowia co innego:

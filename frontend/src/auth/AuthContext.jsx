@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import client from '../api/client';
+import client, { refreshCsrfToken } from '../api/client';
 
 /**
  * Przechowuje informacje o zalogowanym uzytkowniku i udostepnia je
@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
          * bez ktorego pierwszy POST (logowanie, rejestracja) zostalby
          * odrzucony przez Spring Security.
          */
-        await client.get('/auth/csrf');
+        await refreshCsrfToken();
       } catch {
         // Backend nie odpowiada - blad pokaze sie przy pierwszej akcji uzytkownika
       }
@@ -101,6 +101,19 @@ export function AuthProvider({ children }) {
        * ma zawsze wylogowac - a sesja po stronie serwera i tak wygasnie.
        */
       setUser(null);
+
+      /*
+       * NOWY TOKEN CSRF PO WYLOGOWANIU - i nie jest to ostroznosc na zapas.
+       * Spring Security przy wylogowaniu kasuje ciasteczko XSRF-TOKEN, bo
+       * nalezalo ono do poprzedniej sesji. Bez tej linijki pierwsze
+       * nastepne klikniecie "Zaloguj" szlo bez tokenu i konczylo sie
+       * komunikatem "Wystapil nieoczekiwany blad" - a drugie juz dzialalo,
+       * bo odpowiedz z bledem zakladala nowe ciasteczko.
+       */
+      refreshCsrfToken().catch(() => {
+        // Nie udalo sie? Zostaje przechwytywacz w client.js, ktory powtorzy
+        // pierwsze nieudane zapytanie po pobraniu tokenu.
+      });
     }
   }, []);
 

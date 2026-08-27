@@ -8,10 +8,13 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import client from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
-import { IconBoard, IconFriends, IconGear, IconLogout, IconPerson, IconShield } from './Icons';
+import {
+  IconBoard, IconFriends, IconGear, IconLogout, IconNote, IconPerson, IconShield,
+} from './Icons';
 import LanguageSwitch from './LanguageSwitch';
 import NotificationsBell from './NotificationsBell';
 import ThemeToggle from './ThemeToggle';
+import { scrollToTop } from '../utils/scroll';
 
 /**
  * Wspolna rama strony: gorne menu, tresc i stopka.
@@ -60,6 +63,43 @@ export default function Layout({ children }) {
       .catch(() => setPending(0));   // licznik to dodatek, nie psujemy menu
   }, [user, location.pathname]);
 
+  /*
+   * Zmiana strony zaczyna sie OD GORY. Bez tego przejscie z polowy dlugiej
+   * tablicy na ekran znajomych zostawialo widok w tym samym miejscu -
+   * nowa strona pokazywala sie od srodka i wygladalo to jak usterka.
+   * Bez animacji, bo tu nie ma czego animowac: to jest inna strona.
+   */
+  useEffect(() => {
+    scrollToTop(false);
+  }, [location.pathname]);
+
+  /**
+   * Klikniecie w logo albo w ikone tablicy.
+   *
+   * <p>Zawsze konczy sie na gorze tablicy - takze wtedy, gdy juz sie na niej
+   * jest. To najczestszy sposob, w jaki ludzie wracaja "do poczatku" i bez
+   * tego trzeba bylo przewijac dluga liste recznie.</p>
+   *
+   * <p>Przy okazji <b>odswiezamy wpisy</b>: kto wraca na gore, ten zwykle
+   * chce zobaczyc, czy cos nowego doszlo. Sygnalem jest znacznik czasu
+   * w stanie trasy - tablica nasluchuje jego zmiany.</p>
+   */
+  function goToFeed(event) {
+    event.preventDefault();
+
+    const alreadyHere = location.pathname === '/';
+    navigate('/', {
+      state: { refreshAt: Date.now() },
+      // Na tablicy nie dokladamy wpisow do historii - inaczej "wstecz"
+      // cofaloby przez kilkanascie odswiezen tej samej strony
+      replace: alreadyHere,
+    });
+
+    if (alreadyHere) {
+      scrollToTop(true);
+    }
+  }
+
   async function handleLogout() {
     await logout();
     navigate('/login', { replace: true });
@@ -83,9 +123,21 @@ export default function Layout({ children }) {
         className={`top-bar${scrolled ? ' is-scrolled' : ''}`}
       >
         <Container className="nav-grid">
-          <Navbar.Brand as={Link} to="/" className="brand" aria-label={t('app.name')}>
+          <Navbar.Brand
+            as={Link}
+            to="/"
+            className="brand"
+            aria-label={t('app.name')}
+            onClick={goToFeed}
+          >
+            {/*
+              Znak marki ma NUTKE, a nie tę samą ikonę co pozycja "Tablica"
+              w menu obok. Wcześniej były identyczne - logo przestawało być
+              rozpoznawalne, a aplikacja o muzyce nie miała w nim niczego
+              muzycznego.
+            */}
             <span className="brand-mark" aria-hidden="true">
-              <IconBoard size={18} />
+              <IconNote size={18} />
             </span>
             <span className="brand-text">{t('app.name')}</span>
           </Navbar.Brand>
@@ -93,7 +145,7 @@ export default function Layout({ children }) {
           <Nav className="nav-icons">
             {user ? (
               <>
-                <NavIcon to="/" end label={t('menu.feed')}>
+                <NavIcon to="/" end label={t('menu.feed')} onClick={goToFeed}>
                   <IconBoard size={20} />
                 </NavIcon>
 
@@ -195,7 +247,7 @@ export default function Layout({ children }) {
  * przycisk. Przy samych ikonach to jedyny sposob, zeby bylo widac,
  * gdzie sie jest.</p>
  */
-function NavIcon({ to, end, label, badge = 0, children }) {
+function NavIcon({ to, end, label, badge = 0, onClick, children }) {
   return (
     <Nav.Link
       as={NavLink}
@@ -204,6 +256,7 @@ function NavIcon({ to, end, label, badge = 0, children }) {
       className="nav-icon"
       title={label}
       aria-label={label}
+      onClick={onClick}
     >
       {children}
 

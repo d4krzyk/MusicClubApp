@@ -335,5 +335,17 @@
     "play": "Posłuchaj",
     "untitled": "Playlista",
     "openInService": "Otwórz w {{service}}"
+  },
+  "common_ground": {
+    "title": "Co Was łączy",
+    "withPerson": "Co Was łączy z {{username}}",
+    "why": "To są konkretne rzeczy, które macie wspólne — łatwiej od nich zacząć rozmowę niż od „cześć”.",
+    "show": "Zobacz co dokładnie",
+    "genres": "Wspólne gatunki",
+    "artists": "Wspólni artyści",
+    "tracks": "Wspólne utwory",
+    "friends": "Wspólni znajomi",
+    "nothing": "Na razie nic Was nie łączy.",
+    "nothingHint": "Dodaj do swojego profilu ulubionych artystów i utwory — wtedy będzie co porównywać."
   }
 }

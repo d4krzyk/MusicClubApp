@@ -231,6 +231,25 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean areFriends(@Param("pierwszy") String first, @Param("drugi") String second);
 
     /**
+     * Wszystkie gatunki ulubionych wykonawcow danej osoby - <b>jednym zapytaniem</b>.
+     *
+     * <p>Da sie to policzyc w Javie: przejsc po ulubionych artystach i zebrac
+     * ich gatunki. Kosztuje to jednak <b>osobne zapytanie na kazdego artyste</b>
+     * (gatunki to leniwa kolekcja elementow), czyli przy trzydziestu ulubionych -
+     * trzydziesci zapytan na jedno wejscie na profil. Tutaj jest jedno.</p>
+     *
+     * <p>{@code DISTINCT} jest potrzebny, bo ten sam gatunek ma zwykle wielu
+     * wykonawcow z listy.</p>
+     */
+    @Query("""
+           SELECT DISTINCT g FROM User u
+           JOIN u.favoriteArtists a
+           JOIN a.genres g
+           WHERE u.username = :username
+           """)
+    List<String> genresOf(@Param("username") String username);
+
+    /**
      * <b>"Moj krag"</b> - identyfikatory: moj wlasny i wszystkich moich znajomych.
      *
      * <p>Jedno pojecie, ktore zalatwia trzy sprawy naraz na tablicy: kogo posty

@@ -1,11 +1,13 @@
 package com.musicclubapp.controller;
 
+import com.musicclubapp.dto.CommonGroundResponse;
 import com.musicclubapp.dto.FriendCardResponse;
 import com.musicclubapp.dto.PlaylistsResponse;
 import com.musicclubapp.dto.PublicProfileResponse;
 import com.musicclubapp.dto.TopMusicResponse;
 import com.musicclubapp.dto.FavoritesResponse;
 import com.musicclubapp.music.MusicKind;
+import com.musicclubapp.service.CommonGroundService;
 import com.musicclubapp.service.FavoritesService;
 import com.musicclubapp.service.FriendService;
 import com.musicclubapp.service.PlaylistService;
@@ -58,17 +60,20 @@ public class PublicProfileController {
     private final TopMusicService topMusicService;
     private final FavoritesService favoritesService;
     private final PlaylistService playlistService;
+    private final CommonGroundService commonGroundService;
 
     public PublicProfileController(PublicProfileService publicProfileService,
                                    FriendService friendService,
                                    TopMusicService topMusicService,
                                    FavoritesService favoritesService,
-                                   PlaylistService playlistService) {
+                                   PlaylistService playlistService,
+                                   CommonGroundService commonGroundService) {
         this.favoritesService = favoritesService;
         this.publicProfileService = publicProfileService;
         this.friendService = friendService;
         this.topMusicService = topMusicService;
         this.playlistService = playlistService;
+        this.commonGroundService = commonGroundService;
     }
 
     @GetMapping("/{username}")
@@ -168,6 +173,28 @@ public class PublicProfileController {
          */
         return ResponseEntity.ok(
             favoritesService.favorites(username, authentication.getName()));
+    }
+
+    /**
+     * Co laczy ogladajacego z ta osoba - <b>konkretnie, a nie w liczbach</b>.
+     *
+     * <p>Osobny endpoint, a nie pole w profilu: to zestawienie porownuje dwie
+     * pelne listy ulubionych i przydaje sie takze poza profilem (w okienku
+     * przy propozycjach znajomych), a sam profil pobieramy czesto.</p>
+     */
+    @GetMapping("/{username}/common")
+    @Operation(summary = "Wspolni artysci, utwory, gatunki i znajomi")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Czesc wspolna gustow"),
+        @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
+    })
+    public ResponseEntity<CommonGroundResponse> commonGround(
+            @PathVariable String username,
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+            commonGroundService.between(authentication.getName(), username));
     }
 
     @GetMapping("/{username}/playlists")

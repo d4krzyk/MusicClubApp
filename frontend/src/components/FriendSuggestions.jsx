@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
-import Spinner from 'react-bootstrap/Spinner';
+import Modal from 'react-bootstrap/Modal';
 import client, { describeError } from '../api/client';
 import Avatar from './Avatar';
+import CommonGround from './CommonGround';
 import HorizontalStrip from './HorizontalStrip';
+import PeopleSkeleton from './PeopleSkeleton';
 import { IconPersonCheck, IconPersonPlus } from './Icons';
 
 /**
@@ -34,6 +36,9 @@ export default function FriendSuggestions({ refresh, onChange }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sent, setSent] = useState({});
+
+  /* Login osoby, dla ktorej otwarto okienko "co Was laczy" (null = zamkniete) */
+  const [showCommon, setShowCommon] = useState(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -70,12 +75,12 @@ export default function FriendSuggestions({ refresh, onChange }) {
   }
 
   if (loading) {
-    return (
-      <div className="text-body-secondary small py-2">
-        <Spinner animation="border" size="sm" className="me-2" />
-        {t('common.loading')}
-      </div>
-    );
+    /*
+     * Szkielet, a nie kolko z napisem. Kolko zajmowalo jedna linijke,
+     * a zaraz po nim wskakiwal rzad kafelkow wysokich na kilkanascie
+     * razy tyle - cala strona podskakiwala w tym momencie.
+     */
+    return <PeopleSkeleton count={5} variant="suggestion" />;
   }
 
   if (people.length === 0) {
@@ -115,18 +120,34 @@ export default function FriendSuggestions({ refresh, onChange }) {
                 <div className="fw-semibold text-truncate mt-1">{o.username}</div>
               </Link>
 
-              <div className="match-reasons">
-                {o.sharedArtists > 0 && (
-                  <div>{t('friends.sharedArtists', { count: o.sharedArtists })}</div>
-                )}
-                {o.mutualFriends > 0 && (
-                  <div>{t('friends.mutual', { count: o.mutualFriends })}</div>
-                )}
-                {o.sharedGenres > 0 && (
-                  <div>{t('friends.sharedGenres', { count: o.sharedGenres })}</div>
-                )}
-                {!o.matched && <div>{t('friends.noCommonGround')}</div>}
-              </div>
+              {/*
+                Powody sa PRZYCISKIEM, a nie napisem. Liczba mowi, ze cos nas
+                laczy, ale nie mowi CO - a to dopiero jest powod, zeby do kogos
+                napisac. Klikniecie otwiera okienko z konkretami. Osoby bez
+                zadnego dopasowania nie maja czego pokazac, wiec u nich zostaje
+                zwykly napis.
+              */}
+              {o.matched ? (
+                <button
+                  type="button"
+                  className="match-reasons match-reasons-button"
+                  onClick={() => setShowCommon(o.username)}
+                  title={t('common_ground.show')}
+                >
+                  {o.sharedArtists > 0 && (
+                    <span>{t('friends.sharedArtists', { count: o.sharedArtists })}</span>
+                  )}
+                  {o.mutualFriends > 0 && (
+                    <span>{t('friends.mutual', { count: o.mutualFriends })}</span>
+                  )}
+                  {o.sharedGenres > 0 && (
+                    <span>{t('friends.sharedGenres', { count: o.sharedGenres })}</span>
+                  )}
+                  <span className="match-reasons-more">{t('common_ground.show')}</span>
+                </button>
+              ) : (
+                <div className="match-reasons">{t('friends.noCommonGround')}</div>
+              )}
 
               {state === 'friends' && (
                 <span className="text-success small d-block text-center">
@@ -152,6 +173,22 @@ export default function FriendSuggestions({ refresh, onChange }) {
           );
         })}
       </HorizontalStrip>
+
+      {/*
+        Okienko powstaje DOPIERO po kliknieciu (a nie jest ukryte przy kazdej
+        karcie), wiec zapytanie porownujace listy ulubionych leci raz - dla
+        tej jednej osoby, o ktora ktos naprawde zapytal.
+      */}
+      <Modal show={Boolean(showCommon)} onHide={() => setShowCommon(null)} centered scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title as="h2" className="h6 mb-0">
+            {t('common_ground.withPerson', { username: showCommon })}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {showCommon && <CommonGround username={showCommon} compact />}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }
