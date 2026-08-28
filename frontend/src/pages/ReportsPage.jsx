@@ -17,6 +17,12 @@ import { formatDate, timeAgo } from '../utils/dates';
 /** Filtry w kolejnosci przydatnosci: najpierw to, co czeka na decyzje. */
 const FILTERS = ['OPEN', 'RESOLVED', 'DISMISSED', 'ALL'];
 
+/** Te same okresy co w panelu kont - kara ma znaczyc wszedzie to samo. */
+const BAN_HOURS = [1, 24, 168, 720];
+
+/** Wartosc pozycji "na zawsze" - patrz komentarz w UsersPage. */
+const FOREVER = 'forever';
+
 /**
  * Panel zgloszen - <b>tylko dla administratora</b>.
  *
@@ -116,7 +122,27 @@ function ReportCard({ report, language, t, onResolved }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
+  /*
+   * Domyslnie NIC nie robimy z kontem. To najlagodniejsza z mozliwosci
+   * i dlatego jest domyslna: kara ma byc swiadomym wyborem, a nie skutkiem
+   * nieprzestawienia listy.
+   */
+  const [action, setAction] = useState('NONE');
+  const [duration, setDuration] = useState('24');
+
   const open = report.status === 'OPEN';
+
+  /* Czas trwania dotyczy tylko zakazow - usuniecie konta trwa zawsze */
+  const needsDuration = action === 'BAN_POSTING' || action === 'BAN_MESSAGING';
+
+  /*
+   * Kasowanie posta pokazujemy WYLACZNIE przy zgloszeniu posta. Przy
+   * zgloszeniu profilu albo rozmowy nie ma czego kasowac, a pozycja
+   * prowadzaca do komunikatu o bledzie jest zaproszeniem do pomylki.
+   */
+  const actions = ['NONE',
+    ...(report.postId ? ['DELETE_POST'] : []),
+    'BAN_POSTING', 'BAN_MESSAGING', 'DELETE_ACCOUNT'];
 
   /** Dowody pobieramy dopiero przy rozwinieciu - patrz komentarz przy stronie. */
   async function toggle() {
@@ -134,10 +160,29 @@ function ReportCard({ report, language, t, onResolved }) {
   }
 
   async function decide(decision) {
+    /*
+     * Usuniecie konta jest nieodwracalne, wiec pytamy jeszcze raz - i to
+     * PRZED wyslaniem, a nie po. Pozostale dzialania da sie cofnac
+     * (zakaz mozna zdjac, posta i tak juz nie ma), wiec tam dodatkowe
+     * klikniecie tylko przeszkadzaloby w codziennej pracy.
+     */
+    if (action === 'DELETE_ACCOUNT'
+      && !window.confirm(t('reports.confirmDeleteAccount', { username: report.reportedUsername }))) {
+      return;
+    }
+
     setSending(true);
     setError(null);
     try {
-      await client.post(`/reports/admin/${report.id}/resolve`, { decision, note: note.trim() });
+      await client.post(`/reports/admin/${report.id}/resolve`, {
+        decision,
+        note: note.trim(),
+        action,
+        // Godziny wysylamy TYLKO przy karze czasowej - przy pozostalych
+        // dzialaniach nie znacza nic i tylko myliłyby w zapisie zapytania
+        hours: needsDuration && duration !== FOREVER ? Number(duration) : null,
+        forever: needsDuration && duration === FOREVER,
+      });
       onResolved();
     } catch (problem) {
       const problems = describeError(problem);
@@ -281,6 +326,57 @@ function ReportCard({ report, language, t, onResolved }) {
             />
             <p className="text-body-secondary small">{t('reports.noteHint')}</p>
 
+            {/*
+              Dzialanie wybieramy TUTAJ, razem z decyzja - a nie osobno
+              w panelu kont. Wczesniej zamkniecie sprawy bylo sama notatka
+              i trzeba bylo zapamietac nazwe konta, przejsc na inna strone,
+              odszukac je i dopiero tam ukarac. Dowody sa tutaj, wiec
+              decyzja tez powinna zapadac tutaj.
+            */}
+            <div className="d-flex gap-2 flex-wrap align-items-end mb-3">
+              <div style={{ minWidth: '15rem' }}>
+                <Form.Label htmlFor={`action-${report.id}`} className="small fw-semibold">
+                  {t('reports.action')}
+                </Form.Label>
+                <Form.Select
+                  id={`action-${report.id}`}
+                  size="sm"
+                  value={action}
+                  onChange={(e) => setAction(e.target.value)}
+                >
+                  {actions.map((code) => (
+                    <option key={code} value={code}>{t(`reports.actions.${code}`)}</option>
+                  ))}
+                </Form.Select>
+              </div>
+
+              {/* Czas trwania pokazuje sie tylko wtedy, gdy cokolwiek znaczy */}
+              {needsDuration && (
+                <div style={{ minWidth: '11rem' }}>
+                  <Form.Label htmlFor={`duration-${report.id}`} className="small fw-semibold">
+                    {t('reports.duration')}
+                  </Form.Label>
+                  <Form.Select
+                    id={`duration-${report.id}`}
+                    size="sm"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                  >
+                    {BAN_HOURS.map((h) => (
+                      <option key={h} value={h}>{t('users.banFor', { count: h })}</option>
+                    ))}
+                    <option value={FOREVER}>{t('users.banForever')}</option>
+                  </Form.Select>
+                </div>
+              )}
+            </div>
+
+            {action === 'DELETE_ACCOUNT' && (
+              <Alert variant="danger" className="py-2 small">
+                {t('reports.deleteAccountWarning')}
+              </Alert>
+            )}
+
             <div className="d-flex gap-2 flex-wrap">
               <Button
                 variant="success"
@@ -300,12 +396,10 @@ function ReportCard({ report, language, t, onResolved }) {
               </Button>
 
               {/*
-                Skrot do panelu kont. Zamkniecie zgloszenia NICZEGO nie robi
-                z kontem - dzialania (zakaz publikowania, zakaz wiadomosci,
-                usuniecie) sa osobnymi operacjami i administrator wykonuje te,
-                ktore uzna za potrzebne. Gdyby zamkniecie karalo automatycznie,
-                decyzja "zasadne, ale wystarczy upomnienie" bylaby niemozliwa
-                do wyrazenia.
+                Skrot do panelu kont. Zostaje mimo listy dzialan obok, bo
+                panel potrafi rzeczy, ktorych tu nie ma i miec nie powinno -
+                przede wszystkim podejrzenie multikont i blokade adresu.
+                To sa decyzje wykraczajace poza jedno zgloszenie.
               */}
               <Link to="/users" className="btn btn-outline-danger btn-sm">
                 {t('reports.goToPanel')}

@@ -6,6 +6,7 @@ import Nav from 'react-bootstrap/Nav';
 import Container from 'react-bootstrap/Container';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import client from '../api/client';
+import AccountSwitchNotice from './AccountSwitchNotice';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
 import ChatDrawer from './ChatDrawer';
@@ -253,7 +254,10 @@ export default function Layout({ children }) {
       </Navbar>
 
       <main className="flex-grow-1 py-4">
-        <Container>{children}</Container>
+        <Container>
+          <AccountSwitchNotice />
+          {children}
+        </Container>
       </main>
 
       {/*

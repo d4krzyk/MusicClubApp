@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import client from '../api/client';
+import Alert from 'react-bootstrap/Alert';
+import Button from 'react-bootstrap/Button';
+import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useChat } from '../chat/ChatContext';
 import Avatar from './Avatar';
@@ -54,6 +56,15 @@ export default function ChatDrawer() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  /*
+   * Blad pobierania trzymamy OSOBNO od pustej listy - i to nie jest
+   * ozdobnik. Wczesniej nieudane zapytanie ustawialo pusta liste, wiec
+   * awaria serwera wygladala identycznie jak "nie masz jeszcze znajomych":
+   * uzytkownik z kilkunastoma znajomymi widzial komunikat, ze nie ma z kim
+   * pisac, i nie mial zadnej wskazowki, ze cokolwiek sie zepsulo.
+   * Dwa rozne stany swiata musza dawac dwa rozne ekrany.
+   */
+  const [error, setError] = useState(null);
 
   const panel = useRef(null);
   /** Element, ktory mial ognisko przed otwarciem - wraca do niego po zamknieciu. */
@@ -63,12 +74,20 @@ export default function ChatDrawer() {
     try {
       const { data } = await client.get('/messages/conversations');
       setConversations(data);
-    } catch {
-      setConversations([]);
+      setError(null);
+    } catch (problem) {
+      /*
+       * Poprzedniej listy NIE kasujemy. Zapytanie powtarza sie co kilka
+       * sekund, wiec jedna nieudana proba (chwilowy brak sieci) nie ma
+       * prawa czyscic ekranu komus, kto wlasnie czyta rozmowe.
+       */
+      const details = describeError(problem);
+      setError(details.message
+        ?? (details.messageKey ? t(details.messageKey) : t('chat.listFailed')));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   /*
    * Liste odswiezamy tylko wtedy, gdy jest WIDOCZNA - czyli panel jest
@@ -258,7 +277,24 @@ export default function ChatDrawer() {
             <div className="chat-list">
               {loading && <PeopleSkeleton count={5} variant="suggestion" />}
 
-              {!loading && conversations.length === 0 && (
+              {/*
+                Awaria pobierania listy. Stoi NAD lista, a nie zamiast niej:
+                jesli poprzednie pobranie sie udalo, rozmowy zostaja na
+                ekranie i mozna dalej pisac - komunikat mowi tylko, ze
+                to, co widac, moze byc nieaktualne.
+              */}
+              {!loading && error && (
+                <Alert variant="danger" className="m-3 py-2 small">
+                  {error}
+                  <div className="mt-2">
+                    <Button size="sm" variant="outline-danger" onClick={loadConversations}>
+                      {t('common.retry')}
+                    </Button>
+                  </div>
+                </Alert>
+              )}
+
+              {!loading && !error && conversations.length === 0 && (
                 /*
                   Czat bez znajomych to nie jest awaria - to jest poczatek.
                   Zamiast "brak rozmow" mowimy, co zrobic, i dajemy jedno

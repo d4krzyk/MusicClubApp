@@ -25,6 +25,7 @@
     "delete": "Usuń",
     "confirmDelete": "Na pewno usunąć ten post?",
     "close": "Zamknij",
+    "retry": "Spróbuj ponownie",
     "of": "z",
     "scrollLeft": "Przewiń w lewo",
     "scrollRight": "Przewiń w prawo"
@@ -79,6 +80,9 @@
     "selfRoleHint": "Nie możesz zmienić własnej roli",
     "colPostingBan": "Zakaz publikowania",
     "banNone": "bez zakazu",
+    "banForever": "na zawsze",
+    "bannedForever": "bezterminowo",
+    "mutedForever": "Zakaz wiadomości bezterminowo",
     "banLift": "zdejmij zakaz",
     "banFor_one": "na {{count}} godzinę",
     "banFor_few": "na {{count}} godziny",
@@ -119,6 +123,11 @@
     "blockedHint": "Z tych adresów nie da się założyć konta ani zalogować. Otwarte sesje działają dalej — blokada działa od następnego logowania.",
     "blockedBy": "{{username}}, {{date}}",
     "unblock": "Odblokuj"
+  },
+  "account": {
+    "switchTitle": "Na tym komputerze zalogowano się na inne konto",
+    "switchText": "Ta karta była otwarta jako „{{previous}}”, ale w międzyczasie w innej karcie zalogowano się jako „{{current}}”. Strona została przeładowana, żeby nie mieszać danych dwóch kont.",
+    "switchHint": "Przeglądarka pamięta tylko jedno zalogowane konto naraz. Żeby korzystać z dwóch kont jednocześnie (na przykład by przetestować rozmowę), otwórz drugie w oknie prywatnym (incognito) albo w innej przeglądarce."
   },
   "errors": {
     "network": "Nie można połączyć się z serwerem. Sprawdź, czy backend jest uruchomiony.",
@@ -398,6 +407,7 @@
     "noFriends": "Nie masz jeszcze z kim pisać",
     "noFriendsHint": "Wiadomości wysyła się do znajomych. Znajdź kogoś o podobnym guście i wyślij zaproszenie — rozmowa zacznie się sama.",
     "loadFailed": "Nie udało się wczytać rozmowy",
+    "listFailed": "Nie udało się wczytać listy rozmów",
     "sendFailed": "Nie udało się wysłać wiadomości",
     "searchPlaceholder": "Szukaj znajomego…",
     "groupThreads": "Rozmowy",
@@ -465,6 +475,17 @@
     "decisionBy": "Zamknął(-ęła): {{username}}, {{when}}",
     "emptyOpen": "Nic nie czeka na decyzję",
     "emptyOpenHint": "Wszystkie zgłoszenia są zamknięte. Nowe pojawią się tutaj i na dzwonku.",
-    "emptyOther": "Brak zgłoszeń w tej kategorii"
+    "emptyOther": "Brak zgłoszeń w tej kategorii",
+    "action": "Co robimy",
+    "duration": "Na jak długo",
+    "deleteAccountWarning": "Usunięcie konta jest nieodwracalne — znikną też wszystkie posty, zdjęcia, reakcje i znajomości tej osoby.",
+    "confirmDeleteAccount": "Na pewno usunąć konto „{{username}}”? Tej operacji nie da się cofnąć.",
+    "actions": {
+      "NONE": "nic nie rób — tylko zapisz decyzję",
+      "DELETE_POST": "usuń zgłoszony post",
+      "BAN_POSTING": "zakaz publikowania",
+      "BAN_MESSAGING": "zakaz wysyłania wiadomości",
+      "DELETE_ACCOUNT": "usuń konto"
+    }
   }
 }

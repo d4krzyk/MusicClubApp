@@ -29,7 +29,8 @@ export default function SettingsPage() {
 
   return (
     <Row className="justify-content-center">
-      <Col lg={8}>
+      {/* Kolejne sekcje ustawien wchodza po kolei, tak jak karty na tablicy */}
+      <Col lg={8} className="tiles-in">
         <h1 className="h4 mb-3">{t('settings.title')}</h1>
 
         <AvatarForm />

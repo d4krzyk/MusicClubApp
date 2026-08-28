@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import client, { refreshCsrfToken } from '../api/client';
+import client, {
+  refreshCsrfToken, rememberShownUser, setAccountSwitchHandler,
+} from '../api/client';
 
 /**
  * Przechowuje informacje o zalogowanym uzytkowniku i udostepnia je
@@ -22,6 +24,68 @@ export function AuthProvider({ children }) {
    * logowania nawet zalogowana osobe - klasyczny migajacy ekran przy F5.
    */
   const [checkingSession, setCheckingSession] = useState(true);
+
+  /*
+   * Kogo ta karta pokazuje - do porownania z tym, kogo widzi serwer.
+   * Klient HTTP sprawdza to przy kazdej odpowiedzi; szczegoly bledu,
+   * ktory to wymusil, sa w komentarzu w api/client.js.
+   */
+  useEffect(() => {
+    rememberShownUser(user?.username ?? null);
+  }, [user]);
+
+  useEffect(() => {
+    setAccountSwitchHandler((previous, current) => {
+      /*
+       * Zapamietujemy, co sie stalo, i przeladowujemy strone. Zapis
+       * przezywa przeladowanie, wiec po starcie mozna pokazac czlowiekowi
+       * powod - inaczej strona odswiezylaby sie "sama z siebie", co
+       * wyglada jak usterka.
+       */
+      try {
+        sessionStorage.setItem('accountSwitch', JSON.stringify({ previous, current }));
+      } catch {
+        // Tryb prywatny moze zabronic zapisu - przeladowanie i tak jest wazniejsze
+      }
+      window.location.reload();
+    });
+
+    return () => setAccountSwitchHandler(null);
+  }, []);
+
+  /*
+   * Sprawdzenie tozsamosci w chwili POWROTU do karty.
+   *
+   * Podmiana konta wychodzi na jaw przy pierwszym zapytaniu do serwera,
+   * bo kazda odpowiedz niesie naglowek z nazwa zalogowanego konta. Karta
+   * pozostawiona w tle wysyla jednak zapytania rzadko (licznik powiadomien
+   * co minute), wiec bez tego czlowiek zdazylby kliknac kilka rzeczy jako
+   * nie ta osoba, co trzeba.
+   *
+   * Powrot do karty to dokladnie ta chwila, w ktorej ma znaczenie, kim
+   * jestesmy - i dlatego pytamy wlasnie wtedy. Samo zapytanie wystarczy:
+   * odpowiedz przechodzi przez ten sam mechanizm co kazda inna.
+   */
+  useEffect(() => {
+    if (!user) {
+      return undefined;
+    }
+
+    function verify() {
+      if (document.visibilityState === 'visible') {
+        client.get('/auth/me').catch(() => {
+          // 401 znaczy, ze sesja zniknela - obsluguja to zwykle sciezki bledow
+        });
+      }
+    }
+
+    window.addEventListener('focus', verify);
+    document.addEventListener('visibilitychange', verify);
+    return () => {
+      window.removeEventListener('focus', verify);
+      document.removeEventListener('visibilitychange', verify);
+    };
+  }, [user]);
 
   // Uruchamia sie raz, przy pierwszym otwarciu aplikacji
   useEffect(() => {

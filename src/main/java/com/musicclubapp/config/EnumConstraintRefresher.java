@@ -1,9 +1,12 @@
 package com.musicclubapp.config;
 
+import com.musicclubapp.entity.NotificationType;
 import com.musicclubapp.entity.PostVisibility;
+import com.musicclubapp.entity.ReactionType;
 import com.musicclubapp.entity.ReportContext;
 import com.musicclubapp.entity.ReportReason;
 import com.musicclubapp.entity.ReportStatus;
+import com.musicclubapp.entity.Role;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 import jakarta.persistence.EntityManager;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -68,9 +72,24 @@ public class EnumConstraintRefresher implements ApplicationRunner {
     private record EnumColumn(String table, String column, Class<? extends Enum<?>> type) { }
 
     /*
-     * Lista jest krotka celowo - sa tu tylko te kolumny, ktore juz sie
-     * rozjechaly albo moga sie rozjechac. Reszta enumow (role, rodzaje
-     * reakcji) nie zmieniala sie od zalozenia bazy.
+     * Lista obejmuje KAZDA kolumne wyliczeniowa w bazie - i to jest zmiana
+     * wzgledem pierwszej wersji.
+     *
+     * Wczesniej staly tu tylko kolumny "ktore juz sie rozjechaly albo moga
+     * sie rozjechac", z wyraznym zalozeniem, ze role i rodzaje powiadomien
+     * sie nie zmieniaja. Zalozenie nie przetrwalo nawet jednego kroku:
+     * do NotificationType doszla wartosc REPORT i kazde zgloszenie
+     * uzytkownika konczylo sie bledem 500
+     *
+     *   ERROR: new row for relation "notifications"
+     *          violates check constraint "notifications_type_check"
+     *
+     * przy czym komplet testow byl zielony, bo na H2 schemat powstaje od zera.
+     *
+     * Wniosek na przyszlosc: przewidywanie, ktory enum "na pewno" sie nie
+     * zmieni, jest zgadywaniem. Jedna linijka na kolumne kosztuje tyle co nic,
+     * a przeoczenie kosztuje blad 500 u uzytkownika - wiec wpisujemy
+     * wszystkie i nie zastanawiamy sie, ktore sa "wazne".
      */
     private static final List<EnumColumn> COLUMNS = List.of(
         new EnumColumn("posts", "music_kind", MusicKind.class),
@@ -102,8 +121,34 @@ public class EnumConstraintRefresher implements ApplicationRunner {
          */
         new EnumColumn("reports", "reason", ReportReason.class),
         new EnumColumn("reports", "context", ReportContext.class),
-        new EnumColumn("reports", "status", ReportStatus.class)
+        new EnumColumn("reports", "status", ReportStatus.class),
+
+        /*
+         * TA kolumna jest powodem, dla ktorego lista przestala byc wybiorcza.
+         * Rodzajow powiadomien przybywa przy kazdej nowej funkcji - doszlo
+         * zaproszenie do znajomych, reakcja, wiadomosc, teraz zgloszenie -
+         * czyli jest to enum najszybciej rosnacy w calej aplikacji.
+         */
+        new EnumColumn("notifications", "type", NotificationType.class),
+        new EnumColumn("notifications", "reaction_type", ReactionType.class),
+
+        new EnumColumn("reactions", "type", ReactionType.class),
+        new EnumColumn("favorite_playlists", "provider", MusicProvider.class),
+        new EnumColumn("users", "role", Role.class)
     );
+
+    /**
+     * Kolumny objete odswiezaniem, jako {@code "tabela.kolumna"}.
+     *
+     * <p>Wystawione dla testu, ktory porownuje te liste z modelem encji
+     * i nie pozwala o zadnej kolumnie zapomniec - bo zapomnienie o jednej
+     * kosztowalo juz blad 500 przy zglaszaniu uzytkownika.</p>
+     */
+    static Set<String> coveredColumns() {
+        return COLUMNS.stream()
+            .map(column -> column.table() + "." + column.column())
+            .collect(Collectors.toSet());
+    }
 
     private final EntityManager entityManager;
 

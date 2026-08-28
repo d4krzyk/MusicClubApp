@@ -5,6 +5,7 @@ import com.musicclubapp.dto.EvidenceLineResponse;
 import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.dto.SendMessageRequest;
+import com.musicclubapp.entity.ModerationAction;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.entity.ReportContext;
@@ -49,6 +50,7 @@ import static org.mockito.BDDMockito.given;
 class ReportServiceTest {
 
     @Autowired private ReportService reports;
+    @Autowired private UserModerationService moderation;
     @Autowired private MessageService messages;
     @Autowired private ReportRepository reportRepository;
     @Autowired private MessageRepository messageRepository;
@@ -174,7 +176,7 @@ class ReportServiceTest {
          */
         ReportResponse first = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", first.id(),
-            new ResolveReportRequest(ReportStatus.RESOLVED, "Nalozono zakaz publikowania"));
+            new ResolveReportRequest(ReportStatus.RESOLVED, "Nalozono zakaz publikowania", null, null, null));
 
         assertThat(reports.create("ala", "troll", profileReport()).status())
             .isEqualTo(ReportStatus.OPEN);
@@ -324,12 +326,91 @@ class ReportServiceTest {
         ReportResponse created = reports.create("ala", "troll", profileReport());
 
         ReportResponse closed = reports.resolve("admin", created.id(),
-            new ResolveReportRequest(ReportStatus.RESOLVED, "Zakaz publikowania na 48 h"));
+            new ResolveReportRequest(ReportStatus.RESOLVED, "Zakaz publikowania na 48 h", null, null, null));
 
         assertThat(closed.status()).isEqualTo(ReportStatus.RESOLVED);
         assertThat(closed.resolvedBy()).isEqualTo("admin");
         assertThat(closed.resolutionNote()).isEqualTo("Zakaz publikowania na 48 h");
         assertThat(closed.resolvedAt()).isNotNull();
+    }
+
+    /**
+     * Kasowanie posta przy zamykaniu sprawy - <b>na prawdziwej bazie</b>.
+     *
+     * <p><b>Blad, ktory to wymusil.</b> Decyzja „usun post" konczyla sie
+     * bledem 500:</p>
+     *
+     * <pre>
+     * update or delete on table "posts" violates foreign key constraint on table "reports"
+     * </pre>
+     *
+     * <p>Zgloszenie wskazuje na post kluczem obcym, wiec dopoki wskazuje,
+     * baza posta nie odda. Trzeba go najpierw odpiac.</p>
+     *
+     * <p><b>Dlaczego ten test musi byc TUTAJ, a nie przy atrapach.</b>
+     * {@code UserModerationServiceTest} sprawdza to samo dzialanie i przechodzil
+     * na zielono przez caly czas trwania tego bledu - bo atrapa repozytorium
+     * nie ma kluczy obcych i pozwoli skasowac cokolwiek. <b>Wiezy spojnosci
+     * istnieja wylacznie w bazie i tylko tam da sie je zlamac.</b></p>
+     */
+    @Test
+    @DisplayName("usuniecie posta przy zamykaniu sprawy NIE odbija sie od klucza obcego")
+    void deletingTheReportedPostDoesNotHitForeignKey() {
+        Post post = postRepository.save(new Post(troll, "obrazliwy wpis do skasowania"));
+        ReportResponse created = reports.create("ala", "troll", new CreateReportRequest(
+            ReportReason.HATE, ReportContext.POST, post.getId(), "Prosze o usuniecie tego wpisu"));
+
+        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+            ReportStatus.RESOLVED, "Wpis usuniety", ModerationAction.DELETE_POST, null, null));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(postRepository.findById(post.getId()))
+            .describedAs("post mial zniknac naprawde, a nie tylko w notatce")
+            .isEmpty();
+
+        /*
+         * Zgloszenie ZOSTAJE - to nie jest drobiazg. Historia konta opiera sie
+         * na zamknietych zgloszeniach i wplywa na kolejne decyzje; kasowanie
+         * ich razem z postem po cichu czyscilo by kartoteke.
+         */
+        assertThat(reportRepository.findById(created.id()))
+            .describedAs("zgloszenie ma przetrwac skasowanie posta")
+            .isPresent();
+    }
+
+    @Test
+    @DisplayName("zamkniecie moze NIC nie robic z kontem - to tez jest decyzja")
+    void resolvingWithoutActionLeavesTheAccountAlone() {
+        ReportResponse created = reports.create("ala", "troll", profileReport());
+
+        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+            ReportStatus.RESOLVED, "Upomnienie wystarczy", ModerationAction.NONE, null, null));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        User po = userRepository.findByUsername("troll").orElseThrow();
+        assertThat(po.isPostingBanned()).isFalse();
+        assertThat(po.isMessagingBanned()).isFalse();
+    }
+
+    @Test
+    @DisplayName("zamkniecie moze od razu nalozyc zakaz bezterminowy")
+    void resolvingCanBanForeverOnTheRealDatabase() {
+        ReportResponse created = reports.create("ala", "troll", profileReport());
+
+        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+            ReportStatus.RESOLVED, "Konto zalozone po to, zeby dokuczac",
+            ModerationAction.BAN_POSTING, null, true));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        User po = userRepository.findByUsername("troll").orElseThrow();
+        assertThat(po.isPostingBanned()).isTrue();
+        assertThat(User.isForever(po.getPostingBannedUntil())).isTrue();
     }
 
     @Test
@@ -341,10 +422,10 @@ class ReportServiceTest {
          */
         ReportResponse created = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", created.id(),
-            new ResolveReportRequest(ReportStatus.DISMISSED, "Bez podstaw"));
+            new ResolveReportRequest(ReportStatus.DISMISSED, "Bez podstaw", null, null, null));
 
         assertThatThrownBy(() -> reports.resolve("admin", created.id(),
-            new ResolveReportRequest(ReportStatus.RESOLVED, "Jednak jest")))
+            new ResolveReportRequest(ReportStatus.RESOLVED, "Jednak jest", null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
     }
 
@@ -354,7 +435,7 @@ class ReportServiceTest {
         ReportResponse created = reports.create("ala", "troll", profileReport());
 
         assertThatThrownBy(() -> reports.resolve("admin", created.id(),
-            new ResolveReportRequest(ReportStatus.OPEN, "nie wiem")))
+            new ResolveReportRequest(ReportStatus.OPEN, "nie wiem", null, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
     }
 
@@ -368,7 +449,7 @@ class ReportServiceTest {
          */
         ReportResponse first = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", first.id(),
-            new ResolveReportRequest(ReportStatus.RESOLVED, "Zakaz"));
+            new ResolveReportRequest(ReportStatus.RESOLVED, "Zakaz", null, null, null));
 
         User celina = userRepository.save(new User("celina", "c@example.com", "hash"));
         entityManager.flush();
@@ -383,7 +464,7 @@ class ReportServiceTest {
     void panelFiltersByStatus() {
         ReportResponse first = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", first.id(),
-            new ResolveReportRequest(ReportStatus.DISMISSED, "Bez podstaw"));
+            new ResolveReportRequest(ReportStatus.DISMISSED, "Bez podstaw", null, null, null));
 
         User celina = userRepository.save(new User("celina", "c@example.com", "hash"));
         entityManager.flush();

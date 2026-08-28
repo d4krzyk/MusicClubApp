@@ -69,7 +69,7 @@ export default function RegisterPage() {
 
         {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={submit} noValidate>
+        <Form onSubmit={submit} noValidate className="tiles-in-form">
           <Field
             id="username"
             label={t('register.username')}

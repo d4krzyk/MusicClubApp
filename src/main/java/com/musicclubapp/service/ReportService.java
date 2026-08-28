@@ -102,16 +102,38 @@ public class ReportService {
         Report saved = reportRepository.save(report);
 
         /*
-         * Powiadomienie dla administratorow. Blad tutaj NIE moze przerwac
-         * zgloszenia: zgloszenie jest juz w bazie i widac je w panelu,
-         * a powiadomienie to tylko szybsza droga do niego.
+         * Powiadomienie dla administratorow - w TEJ SAMEJ transakcji, bez
+         * zadnego "na wszelki wypadek" wokol.
+         *
+         * Stalo tu wczesniej try/catch z komentarzem, ze blad powiadomienia
+         * nie moze przerwac zgloszenia. Zamiar byl dobry, ale tak to nie
+         * dziala i skonczylo sie bledem 500 u uzytkownika:
+         *
+         *   ERROR: new row for relation "notifications"
+         *          violates check constraint "notifications_type_check"
+         *   HHH000099: null id in Notification entry
+         *          (don't flush the Session after an exception occurs)
+         *
+         * Czyli: zapis powiadomienia odbil sie od bazy, catch ladnie zapisal
+         * ostrzezenie do logu i pozwolil isc dalej - tylko ze wtedy bylo juz
+         * za pozno. Odrzucone zapytanie SQL uniewaznia CALA transakcje;
+         * zlapanie wyjatku nie cofa tego faktu, a sesja Hibernate zostaje
+         * w stanie, z ktorego kazdy nastepny krok konczy sie bledem. Zamiast
+         * lagodnego "zgloszenie jest, powiadomienia nie ma" wychodzil twardy
+         * blad 500 i zgloszenie NIE zapisywalo sie wcale - dokladnie
+         * odwrotnie niz obiecywal komentarz.
+         *
+         * Zasada, ktora z tego zostaje: wyjatku z operacji bazodanowej nie da
+         * sie "przemilczec" wewnatrz transakcji. Albo cos jest jej czescia
+         * i wolno mu ja wywrocic, albo musi dziac sie poza nia.
+         *
+         * Tutaj wybor jest swiadomy: powiadomienie NALEZY do zgloszenia.
+         * Jesli mialoby sie nie zapisac, lepiej zeby cale zgloszenie
+         * przepadlo z czytelnym bledem, niz zeby wpadlo do panelu, o ktorym
+         * nikt sie nie dowie. Zgloszenie, ktorego nikt nie przeczyta, jest
+         * gorsze niz zgloszenie wyslane drugi raz.
          */
-        try {
-            notifications.reportFiled(userRepository.findByRole(Role.ADMIN), reporter);
-        } catch (Exception e) {
-            log.warn("Nie udalo sie powiadomic administratorow o zgloszeniu {}: {}",
-                saved.getId(), e.getMessage());
-        }
+        notifications.reportFiled(userRepository.findByRole(Role.ADMIN), reporter);
 
         log.info("Uzytkownik {} zglosil {} ({}, {})",
             reporterUsername, reportedUsername, request.reason(), request.context());

@@ -23,9 +23,17 @@ import java.util.List;
  * decydowal, czy wpis ma powstac, regula "nie powiadamiam samego siebie"
  * musialaby byc powtorzona w kazdym z nich. Wystarczy pomylic sie raz.</p>
  *
- * <p>Zadna metoda tej klasy <b>nie przerywa dzialania wywolujacego</b>:
- * powiadomienie jest dodatkiem do zdarzenia, a nie jego warunkiem. Reakcja
- * ma sie zapisac takze wtedy, gdy z powiadomieniem cos pojdzie nie tak.</p>
+ * <p><b>Metody tej klasy dzialaja w transakcji wywolujacego</b> - i wolno im
+ * ja wywrocic. Wczesniej stalo tu zapewnienie, ze powiadomienie "nigdy nie
+ * przerywa dzialania wywolujacego", i bylo ono nieprawdziwe: nieudany zapis
+ * powiadomienia uniewaznia cala transakcje, a zlapanie wyjatku u wywolujacego
+ * niczego nie ratuje - zamienia tylko czytelny blad w gorszy, pozniejszy
+ * ({@code HHH000099: null id ... don't flush the Session after an exception}).
+ * Tak wlasnie objawil sie blad 500 przy zgłaszaniu użytkownika.</p>
+ *
+ * <p>Skoro powiadomienie dzieli transakcje ze zdarzeniem, to albo zapisuja
+ * sie oba, albo zadne - i tak ma byc. Powiadomienie o reakcji, ktorej
+ * ostatecznie nie ma, myli bardziej niz jego brak.</p>
  */
 @Service
 public class NotificationService {

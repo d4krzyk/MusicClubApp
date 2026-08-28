@@ -341,6 +341,19 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
+        /*
+         * Naglowki, ktore przegladarka moze ODCZYTAC.
+         *
+         * Przy zapytaniach na inny adres (front na porcie 5173, backend na
+         * 8080) JavaScript widzi domyslnie tylko kilka standardowych
+         * naglowkow - wszystkie wlasne sa przed nim ukryte, nawet jesli
+         * serwer je wyslal. Bez tej linijki X-Current-User dochodzil by do
+         * przegladarki i byl przez nia po cichu chowany, wiec wykrywanie
+         * zmiany konta nigdy by nie zadzialalo - i to bez zadnego bledu
+         * w konsoli, co jest tu najbardziej mylace.
+         */
+        config.setExposedHeaders(List.of("X-Current-User"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

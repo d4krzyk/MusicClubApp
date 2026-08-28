@@ -177,7 +177,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/reports/admin?status=` | lista zgłoszeń — **tylko administrator** |
 | GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |
-| POST | `/api/reports/admin/{id}/resolve` | zamyka zgłoszenie decyzją i notatką |
+| POST | `/api/reports/admin/{id}/resolve` | zamyka zgłoszenie decyzją i notatką, wykonując wybrane działanie (kara, usunięcie posta lub konta, albo nic) |
 | PATCH | `/api/users/{id}/messaging-ban` | zakaz wysyłania wiadomości (osobny od zakazu postów) |
 | GET | `/api/users/{id}/addresses` | adresy, z których logowało się konto |
 | GET | `/api/users/{id}/related` | inne konta z tych samych adresów (**poszlaka**) |
@@ -666,13 +666,36 @@ nie widzi (`tylko dla znajomych` kogoś obcego) — pierwsze pozwalałoby wywoł
 działanie wobec osoby, która go nie napisała, drugie byłoby obejściem
 widoczności postów.
 
-### Decyzja administratora niczego nie robi z kontem
+### Decyzja i działanie w jednym miejscu
 
 Zamknięcie zgłoszenia zapisuje **decyzję** (zasadne / bezpodstawne),
-**notatkę** i to, kto ją podjął. I tyle — żadna kara nie nakłada się sama.
-To celowe: gdyby zamknięcie automatycznie karało, decyzja „zasadne, ale
-wystarczy upomnienie" byłaby niemożliwa do wyrażenia. Kary są osobnymi
-operacjami w panelu kont.
+**notatkę** i to, kto ją podjął — a przy okazji pozwala **od razu podjąć
+działanie** wobec konta albo posta:
+
+| Działanie | Co robi |
+|---|---|
+| nic nie rób | zapisuje samą decyzję |
+| usuń zgłoszony post | kasuje post (tylko przy zgłoszeniu posta) |
+| zakaz publikowania | na godziny albo bezterminowo |
+| zakaz wysyłania wiadomości | osobna kara od powyższej |
+| usuń konto | nieodwracalne, z osobnym potwierdzeniem |
+
+**Wcześniej było inaczej i to była pomyłka.** Zamknięcie sprawy zapisywało samą
+notatkę, a karę nakładało się osobno, w panelu kont — czyli administrator czytał
+dowody w jednym miejscu, a działał w drugim: musiał zapamiętać nazwę konta,
+przejść na inną stronę, odszukać je i dopiero tam zdecydować.
+
+**„Nic nie rób" zostaje pełnoprawną pozycją na liście**, i to jest ważne.
+Bardzo często zasadne zgłoszenie nie powinno kończyć się karą — zdarza się
+pierwszy raz, sprawa jest drobna. Gdyby lista zawierała same kary, jedynym
+sposobem powiedzenia „zasadne, ale bez konsekwencji" byłoby oddalenie zgłoszenia
+jako bezpodstawnego, czyli zapisanie w historii konta nieprawdy. A ta historia
+jest widoczna przy kolejnych zgłoszeniach i wpływa na kolejne decyzje.
+
+Decyzja i kara wykonują się w **jednej transakcji**: albo jedno i drugie, albo
+nic. Przy dwóch osobnych kliknięciach awaria pomiędzy nimi zostawiałaby stan
+nie do opisania — zgłoszenie zamknięte z notatką „konto usunięte" i konto na
+miejscu.
 
 Dwa sposoby zamknięcia zamiast jednego, bo „zamknięte" bez rozróżnienia nie
 odpowiada na pytanie, które administrator zada sobie przy następnym zgłoszeniu
@@ -694,6 +717,14 @@ przypadku przy kimś, kto zaśmieca tablicę, a nikomu nie dokucza. Kto ma dosta
 obie kary, dostaje obie.
 
 Obie liczy się w godzinach i obie **wygasają same**, bez zadania w tle.
+Do wyboru jest też zakaz **bezterminowy** — przy koncie założonym tylko po to,
+żeby dokuczać, „rok przerwy" jest udawaniem, że sprawa kiedyś sama przyschnie.
+
+W bazie bezterminowy zakaz to zwykły termin, tylko ustawiony na 31.12.9999.
+Dzięki temu nie ma osobnej kolumny z flagą ani drugiej ścieżki w każdym
+sprawdzeniu; jedynym miejscem, które traktuje tę datę wyjątkowo, jest interfejs —
+pokazuje „bezterminowo" zamiast „do 31.12.9999", bo to drugie wygląda jak
+usterka, a nie jak decyzja.
 
 ## Multikonta i blokada adresu
 
@@ -724,6 +755,34 @@ Administrator **nie może zablokować adresu, z którego sam właśnie korzysta*
 Przy testowaniu na jednym komputerze albo w sieci firmowej siedzi za tym samym
 adresem co osoba, którą blokuje — jedno kliknięcie odcięłoby mu drogę powrotu,
 a odzyskanie dostępu wymagałoby ręcznej zmiany w bazie.
+
+## Dwa konta na jednym komputerze
+
+Żeby sprawdzić rozmowę na czacie, trzeba być zalogowanym na **dwa konta
+naraz** — i tu jest pułapka, która wygląda jak błąd aplikacji, a nią nie jest.
+
+**Ciasteczko sesji należy do całej przeglądarki, a nie do karty.** Zalogowanie
+się na drugie konto w nowej karcie przestawia więc również wszystkie
+pozostałe: od tej chwili stara karta — nadal wyglądająca jak pierwsze konto —
+wysyła zapytania już jako drugie i dostaje jego dane. Objawia się to tym, że
+na profilu jednej osoby pojawiają się znajomi zupełnie innej.
+
+Aplikacja to **wykrywa i mówi o tym wprost**: serwer dopisuje do każdej
+odpowiedzi nagłówek `X-Current-User`, a gdy nie zgadza się on z kontem
+pokazywanym w karcie, strona przeładowuje się i wyświetla wyjaśnienie. Karta
+pokazuje wtedy uczciwie to konto, na które naprawdę jest zalogowana, zamiast
+mieszać dwa.
+
+**Jak więc przetestować rozmowę.** Trzeba dać każdemu kontu osobny zestaw
+ciasteczek:
+
+| Sposób | Jak |
+|---|---|
+| okno prywatne | zwykłe okno + drugie w trybie incognito |
+| dwie przeglądarki | np. Firefox i Chrome |
+| profile przeglądarki | Chrome: „Dodaj” w menu profilu |
+
+Samo otwarcie drugiej **karty** nie wystarczy — karty dzielą ciasteczka.
 
 ### Skąd bierzemy adres — i dlaczego z KOŃCA nagłówka
 
@@ -915,7 +974,29 @@ zachowuje się światło padające z góry.
 
 **Wszystkie animacje wyłącza `prefers-reduced-motion`.** Dla części osób ruch
 na ekranie oznacza zawroty głowy albo mdłości, a system ma na to osobne
-ustawienie — wystarczy je uszanować.
+ustawienie — wystarczy je uszanować. Zerujemy tam także **opóźnienia**, nie
+tylko czas trwania: kafelki (niżej) czekają na swoją kolej niewidoczne, więc
+samo skrócenie animacji zostawiałoby ułamek sekundy patrzenia na pustkę.
+
+### Strony wchodzą kafelkami
+
+Tablica pojawiała się kafelek po kafelku, a wszystkie pozostałe strony
+wskakiwały naraz — i ta różnica była widoczna przy każdym przejściu między
+nimi. Teraz tak samo wchodzą **profil, znajomi, ustawienia oraz panele
+logowania i rejestracji**: kolejne sekcje (a w formularzach kolejne pola)
+pojawiają się co kilkadziesiąt milisekund.
+
+Robi to jedna klasa `.tiles-in` na pojemniku — jego bezpośrednie dzieci
+dostają opóźnienie przez `:nth-child`. Na tablicy opóźnienie bierze się ze
+zmiennej `--i` ustawianej w kodzie, bo posty doładowują się partiami
+i numeracja musi zaczynać się od nowa przy każdej partii. Tutaj skład strony
+jest stały, więc numerowanie ręcznie w kodzie byłoby przepisywaniem tego, co
+przeglądarka i tak wie — i trzeba by o tym pamiętać przy każdej zmianie
+kolejności sekcji.
+
+Profil czekał wcześniej na **jedno kółko z napisem „Ładowanie…"**; teraz ma
+szkielet o kształcie gotowej strony, więc po wczytaniu nic nie podskakuje.
+Ta sama myśl co przy szkielecie posta.
 
 ## Motyw jasny / ciemny
 
@@ -984,7 +1065,7 @@ i limitami**, **osobny zakaz wysyłania wiadomości**, **wykrywanie multikont po
 adresie IP i blokada adresu**, motyw jasny/ciemny oraz cała aplikacja
 na Docker Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
 
-**317 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
+**329 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
 w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność
 postów i kolejność tablicy, powiadomienia, linki muzyczne, moderacja,
 układ strony i pasek przewijania, a czat i moderację — **dwiema i trzema

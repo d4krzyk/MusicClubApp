@@ -25,6 +25,7 @@
     "delete": "Delete",
     "confirmDelete": "Delete this post?",
     "close": "Close",
+    "retry": "Try again",
     "of": "of",
     "scrollLeft": "Scroll left",
     "scrollRight": "Scroll right"
@@ -79,6 +80,9 @@
     "selfRoleHint": "You cannot change your own role",
     "colPostingBan": "Posting ban",
     "banNone": "no ban",
+    "banForever": "forever",
+    "bannedForever": "permanent",
+    "mutedForever": "Messaging banned permanently",
     "banLift": "lift the ban",
     "banFor_one": "for {{count}} hour",
     "banFor_other": "for {{count}} hours",
@@ -113,6 +117,11 @@
     "blockedHint": "These addresses cannot sign up or log in. Open sessions keep working — the block applies from the next login.",
     "blockedBy": "{{username}}, {{date}}",
     "unblock": "Unblock"
+  },
+  "account": {
+    "switchTitle": "A different account was signed in on this computer",
+    "switchText": "This tab was open as \"{{previous}}\", but meanwhile another tab signed in as \"{{current}}\". The page was reloaded so the two accounts' data do not get mixed.",
+    "switchHint": "A browser remembers only one signed-in account at a time. To use two accounts at once (to test a conversation, for example), open the second one in a private window or in a different browser."
   },
   "errors": {
     "network": "Cannot reach the server. Check whether the backend is running.",
@@ -378,6 +387,7 @@
     "noFriends": "Nobody to message yet",
     "noFriendsHint": "Messages go to friends. Find someone with a similar taste and send an invitation — the conversation will follow.",
     "loadFailed": "Could not load the conversation",
+    "listFailed": "Could not load the conversation list",
     "sendFailed": "Could not send the message",
     "searchPlaceholder": "Search friends…",
     "groupThreads": "Conversations",
@@ -443,6 +453,17 @@
     "decisionBy": "Closed by {{username}}, {{when}}",
     "emptyOpen": "Nothing awaiting a decision",
     "emptyOpenHint": "All reports are closed. New ones will show up here and on the bell.",
-    "emptyOther": "No reports in this category"
+    "emptyOther": "No reports in this category",
+    "action": "What to do",
+    "duration": "For how long",
+    "deleteAccountWarning": "Deleting an account cannot be undone - all of their posts, photos, reactions and friendships go with it.",
+    "confirmDeleteAccount": "Really delete the account \"{{username}}\"? This cannot be undone.",
+    "actions": {
+      "NONE": "do nothing - just record the decision",
+      "DELETE_POST": "delete the reported post",
+      "BAN_POSTING": "ban from posting",
+      "BAN_MESSAGING": "ban from messaging",
+      "DELETE_ACCOUNT": "delete the account"
+    }
   }
 }

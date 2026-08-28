@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 317 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 339 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -138,5 +138,57 @@ dopiero na uruchomionej aplikacji:
   ale poprawką było zaktualizowanie oczekiwania, nie kodu. Czerwony test nie
   zawsze znaczy zepsuty kod; czasem znaczy nieaktualne sprawdzenie, i trzeba
   za każdym razem rozstrzygnąć, które z dwojga.
+- **poprawny SQL, który przyjmuje jedna baza, a odrzuca druga.** Zapytanie
+  o listę rozmów grupowało po wyrażeniu `CASE` z parametrem `:me`. H2 to
+  przyjął, PostgreSQL odmówił (*column „sender_id" must appear in the GROUP BY
+  clause*), bo parametr trafia do SQL-a osobno w każdym miejscu i baza widzi
+  dwa różne wyrażenia zamiast jednego. Każde wejście w wiadomości kończyło się
+  błędem 500 — a na ekranie było napisane „nie masz z kim pisać", bo
+  przeglądarka traktowała awarię jak pustą listę. **Dwa wnioski:** zapytanie
+  zielone na H2 nie jest sprawdzone, dopóki nie pójdzie na PostgreSQL; i „pusto"
+  musi wyglądać inaczej niż „nie udało się";
+- **lista, o której z góry wiadomo, że ktoś o niej zapomni.** Odświeżanie
+  ograniczeń `CHECK` obejmowało tylko kolumny „które mogą się rozjechać”, bo
+  role i rodzaje powiadomień „się nie zmieniają”. Do `NotificationType` doszła
+  wartość `REPORT` i każde zgłoszenie użytkownika kończyło się błędem 500.
+  Poprawką nie było dopisanie jednej kolumny, tylko **test, który porównuje tę
+  listę z modelem encji** — dzięki temu następna kolumna wyliczeniowa zapali
+  się na czerwono sama;
+- **`try/catch`, który pogarsza sprawę.** Powiadomienie administratora o nowym
+  zgłoszeniu było opakowane w „gdyby się nie udało, trudno”. Tyle że odrzucone
+  zapytanie SQL unieważnia **całą** transakcję: złapanie wyjątku niczego nie
+  cofa, a kolejny krok kończy się `HHH000099`. Zamiast łagodnego „zgłoszenie
+  jest, powiadomienia nie ma” wychodził twardy błąd 500 i zgłoszenie nie
+  zapisywało się wcale — odwrotnie, niż obiecywał komentarz nad tym kodem;
+- **data bez strefy czasowej.** `LocalDateTime` wychodził do przeglądarki jako
+  `2026-08-28T12:00:00` — bez śladu, że to UTC. Norma JavaScriptu każe taki
+  zapis czytać jako czas **lokalny**, więc w Polsce wszystko było cofnięte
+  o dwie godziny: osoba aktywna przed chwilą miała „aktywny 2 godziny temu”.
+  Testy tego nie widziały, bo porównują daty po stronie Javy; co gorsza, przy
+  serwerze i przeglądarce w tej samej strefie błąd znika całkowicie — czyli
+  **na komputerze do nauki wyglądał na nieistniejący**;
+- **jedna przeglądarka to jedna tożsamość.** Ciasteczko sesji należy do całej
+  przeglądarki, nie do karty, więc zalogowanie się na drugie konto w nowej
+  karcie po cichu przestawiało też starą — i na profilu jednej osoby pojawiali
+  się znajomi zupełnie innej. Tego nie da się „naprawić”, bo tak działają
+  ciasteczka; można natomiast **wykryć podmianę i uprzedzić o niej**, zamiast
+  mieszać dane dwóch kont. Do prowadzenia rozmowy „sam ze sobą” potrzebne są
+  dwie osobne przeglądarki albo okno prywatne.
+- **więź w bazie, której atrapa nie ma.** Decyzja „usuń zgłoszony post" kończyła
+  się błędem 500: zgłoszenie wskazuje na post kluczem obcym, więc dopóki
+  wskazuje, baza posta nie odda. Test na atrapach sprawdzał **to samo działanie**
+  i przez cały czas trwania błędu był zielony — atrapa repozytorium nie ma
+  kluczy obcych i pozwoli skasować cokolwiek. Wniosek: **więzy spójności
+  istnieją wyłącznie w bazie i tylko tam da się je złamać**, więc każde
+  kasowanie czegoś, na co ktoś wskazuje, musi mieć test na prawdziwej bazie;
+- **kolejność, która ma znaczenie dopiero przy drugim kliknięciu.** Zamknięcie
+  zgłoszenia sprawdza, czy ktoś inny nie zdążył już podjąć decyzji. Gdyby kara
+  wykonywała się przed tym sprawdzeniem, dwoje administratorów naraz nałożyłoby
+  ją dwa razy — a przy usunięciu konta drugie wykonanie kończy się błędem „nie
+  ma takiego użytkownika", który niczego nie tłumaczy;
+- **klucz dopisany drugi raz.** Do pliku z komunikatami trafił `error.report.nopost`,
+  który już tam był w innym znaczeniu. Pliki `.properties` nie zgłaszają tego
+  w żaden sposób — po cichu wygrywa ostatni wpis, więc stary komunikat zmieniłby
+  treść bez śladu w kodzie.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

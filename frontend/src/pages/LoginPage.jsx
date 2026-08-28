@@ -64,7 +64,7 @@ export default function LoginPage() {
         {messageAfterRegister && <Alert variant="success">{t('login.registered')}</Alert>}
         {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={submit} noValidate>
+        <Form onSubmit={submit} noValidate className="tiles-in-form">
           <Field
             id="username"
             label={t('login.username')}

@@ -6,13 +6,13 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Spinner from 'react-bootstrap/Spinner';
 import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useChat } from '../chat/ChatContext';
 import Avatar from '../components/Avatar';
 import Post from '../components/Post';
 import PostSkeleton from '../components/PostSkeleton';
+import ProfileSkeleton from '../components/ProfileSkeleton';
 import EmptyState from '../components/EmptyState';
 import CommonGround from '../components/CommonGround';
 import PresenceDot from '../components/PresenceDot';
@@ -139,11 +139,17 @@ export default function ProfilePage() {
   }
 
   if (loading && !profile) {
+    /*
+     * Szkielet zamiast kolka - te same ksztalty co gotowa strona, wiec po
+     * wczytaniu nic nie podskakuje. Szerokosc kolumny musi byc TA SAMA co
+     * nizej, inaczej tresc przeskoczylaby w bok w chwili podmiany.
+     */
     return (
-      <div className="text-center py-5 text-body-secondary">
-        <Spinner animation="border" size="sm" className="me-2" />
-        {t('common.loading')}
-      </div>
+      <Row className="justify-content-center">
+        <Col lg={8}>
+          <ProfileSkeleton />
+        </Col>
+      </Row>
     );
   }
 
@@ -162,7 +168,12 @@ export default function ProfilePage() {
 
   return (
     <Row className="justify-content-center">
-      <Col lg={8}>
+      {/*
+        tiles-in sprawia, ze sekcje profilu wchodza PO KOLEI - tak samo jak
+        karty na tablicy. Wczesniej cala strona pojawiala sie naraz i przejscie
+        z tablicy na profil wygladalo jak przeskok do innej aplikacji.
+      */}
+      <Col lg={8} className="tiles-in">
         <Card className="mb-4">
           <Card.Body className="d-flex align-items-center gap-3 flex-wrap">
             <Avatar avatarUrl={profile.avatarUrl} username={profile.username} size={80} />

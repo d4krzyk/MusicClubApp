@@ -245,6 +245,18 @@ public class OperationNotAllowedException extends RuntimeException {
             "Nie ma rozmowy, ktora mozna by dolaczyc", "error.report.noconversation");
     }
 
+    /**
+     * Proba skasowania posta przy zgloszeniu, ktore posta nie dotyczy.
+     *
+     * <p>Interfejs takiego wyboru nie pokazuje, ale zapytanie moze przyjsc
+     * z dowolnego miejsca - a "skasuj post" bez posta musi skonczyc sie
+     * czytelna odmowa, a nie bledem o pustej wartosci.</p>
+     */
+    public static OperationNotAllowedException reportHasNoPost() {
+        return new OperationNotAllowedException(
+            "To zgloszenie nie dotyczy zadnego posta", "error.report.action.nopost");
+    }
+
     /** Ktos inny zdazyl zamknac to zgloszenie wczesniej. */
     public static OperationNotAllowedException reportAlreadyClosed() {
         return new OperationNotAllowedException(
@@ -301,6 +313,10 @@ public class OperationNotAllowedException extends RuntimeException {
      * sie na tym wylozyc.</p>
      */
     public static OperationNotAllowedException postingBanned(java.time.LocalDateTime until) {
+        if (com.musicclubapp.entity.User.isForever(until)) {
+            return new OperationNotAllowedException(
+                "Konto ma bezterminowy zakaz publikowania", "error.post.banned.forever");
+        }
         String deadline = until.format(DEADLINE_FORMAT);
         return new OperationNotAllowedException(
             "Konto ma zakaz publikowania do " + deadline, "error.post.banned", deadline);
@@ -315,6 +331,11 @@ public class OperationNotAllowedException extends RuntimeException {
      * zadzialala.</p>
      */
     public static OperationNotAllowedException messagingBanned(java.time.LocalDateTime until) {
+        if (com.musicclubapp.entity.User.isForever(until)) {
+            return new OperationNotAllowedException(
+                "Konto ma bezterminowy zakaz wysylania wiadomosci",
+                "error.message.banned.forever");
+        }
         String deadline = until.format(DEADLINE_FORMAT);
         return new OperationNotAllowedException(
             "Konto ma zakaz wysylania wiadomosci do " + deadline,

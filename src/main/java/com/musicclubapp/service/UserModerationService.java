@@ -4,8 +4,12 @@ import com.musicclubapp.dto.AdminUserResponse;
 import com.musicclubapp.dto.MessagingBanRequest;
 import com.musicclubapp.dto.PostingBanRequest;
 import com.musicclubapp.dto.RelatedAccountResponse;
+import com.musicclubapp.dto.ReportResponse;
+import com.musicclubapp.dto.ResolveReportRequest;
+import com.musicclubapp.entity.ModerationAction;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
+import com.musicclubapp.entity.Report;
 import com.musicclubapp.entity.ReportStatus;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
@@ -56,6 +60,14 @@ public class UserModerationService {
     private final NotificationService notifications;
     private final MessageService messages;
     private final ReportService reports;
+
+    /*
+     * Kasowanie posta idzie przez PostService, a nie wprost przez repozytorium:
+     * tam siedzi usuwanie zdjec z dysku i sprawdzenie uprawnien. Powtorzenie
+     * tego tutaj konczyloby sie plikami zostawionymi na serwerze po poscie,
+     * ktorego juz nie ma.
+     */
+    private final PostService postService;
     private final NetworkService network;
     private final ReportRepository reportRepository;
 
@@ -70,7 +82,8 @@ public class UserModerationService {
                                  MessageService messages,
                                  ReportService reports,
                                  NetworkService network,
-                                 ReportRepository reportRepository) {
+                                 ReportRepository reportRepository,
+                                 PostService postService) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.reactionRepository = reactionRepository;
@@ -83,6 +96,7 @@ public class UserModerationService {
         this.reports = reports;
         this.network = network;
         this.reportRepository = reportRepository;
+        this.postService = postService;
     }
 
     /**
@@ -186,6 +200,112 @@ public class UserModerationService {
     }
 
     /**
+     * Zamyka zgloszenie i <b>od razu</b> wykonuje decyzje administratora.
+     *
+     * <p><b>Dlaczego to jest tutaj, a nie w {@code ReportService}.</b> Kary
+     * mieszkaja w tej klasie, a {@code ReportService} nie moze po nie siegnac:
+     * ta klasa juz od niego zalezy (kasujac konto, kasuje tez jego zgloszenia),
+     * wiec zaleznosc w druga strone zamykalaby kolo i Spring nie wstalby
+     * w ogole. Kolo rozcina sie tak, ze warstwa "wiedzaca wiecej" wola te
+     * "wiedzaca mniej" - a to moderacja wie o zgloszeniach, nie odwrotnie.</p>
+     *
+     * <p><b>Jedna transakcja na decyzje i kare.</b> Gdyby to byly dwa osobne
+     * wywolania z przegladarki, awaria miedzy nimi zostawialaby stan, ktorego
+     * nie da sie sensownie opisac: zgloszenie zamkniete z notatka "konto
+     * usuniete", a konto na miejscu. Tutaj albo dzieje sie jedno i drugie,
+     * albo nic.</p>
+     *
+     * <p><b>Kolejnosc: najpierw zamkniecie, potem kara.</b> Zamkniecie
+     * sprawdza, czy ktos inny nie zdazyl juz podjac decyzji - i jesli zdazyl,
+     * przerywa. Przy odwrotnej kolejnosci kara zdazylaby sie wykonac
+     * <i>drugi raz</i>, zanim wyszloby na jaw, ze sprawa jest juz zamknieta.</p>
+     */
+    @Transactional
+    public ReportResponse resolveReport(String adminUsername, Long id,
+                                        ResolveReportRequest request) {
+
+        Report report = reportRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementFoundException("report", id));
+
+        ModerationAction action = request.actionOrNone();
+
+        /*
+         * Kasowanie posta ma sens tylko przy zgloszeniu, ktore posta dotyczy.
+         * Sprawdzamy to PRZED zamknieciem sprawy: inaczej zgloszenie bylo by
+         * juz zamkniete, gdy okaze sie, ze zadanej kary nie da sie wykonac,
+         * a zamkniecia nie da sie cofnac.
+         */
+        if (action == ModerationAction.DELETE_POST && report.getPost() == null) {
+            throw OperationNotAllowedException.reportHasNoPost();
+        }
+
+        ReportResponse closed = reports.resolve(adminUsername, id, request);
+
+        User target = report.getReported();
+        switch (action) {
+            case DELETE_POST -> {
+                Long postId = report.getPost().getId();
+
+                /*
+                 * Najpierw odpinamy post od zgloszen, dopiero potem kasujemy.
+                 * Odwrotna kolejnosc konczy sie odmowa bazy (klucz obcy
+                 * z tabeli zgloszen) - i konczyla sie, zanim to powstalo.
+                 * Odpiac trzeba WSZYSTKIE zgloszenia, nie tylko to rozpatrywane:
+                 * ten sam post mogl zglosic ktos jeszcze.
+                 */
+                reportRepository.detachPost(postId);
+
+                postService.delete(postId, adminUsername);
+                log.info("Administrator {} skasowal post {} przy zgloszeniu {}",
+                    adminUsername, postId, id);
+            }
+            case BAN_POSTING -> setPostingBan(adminUsername, target.getId(),
+                new PostingBanRequest(request.hours(), request.forever()));
+            case BAN_MESSAGING -> setMessagingBan(adminUsername, target.getId(),
+                new MessagingBanRequest(request.hours(), request.forever()));
+            case DELETE_ACCOUNT -> deleteUser(adminUsername, target.getId());
+            case NONE -> log.info("Administrator {} zamknal zgloszenie {} bez dzialan",
+                adminUsername, id);
+        }
+
+        return closed;
+    }
+
+    /**
+     * Termin konca kary dla obu rodzajow zakazu - jedno miejsce na te regule.
+     *
+     * <p>Trzy mozliwosci, w tej kolejnosci:</p>
+     * <ol>
+     *   <li>{@code forever} - zakaz bezterminowy ({@link User#FOREVER}),</li>
+     *   <li>podana liczba godzin - termin liczony od <b>zegara serwera</b>,</li>
+     *   <li>brak obu - {@code null}, czyli zdjecie zakazu.</li>
+     * </ol>
+     *
+     * <p><b>Kolejnosc ma znaczenie.</b> Zakaz bezterminowy przychodzi bez
+     * liczby godzin, wiec gdyby najpierw sprawdzac {@code hours == null},
+     * "na zawsze" zdejmowaloby kare zamiast ja nakladac - czyli robiloby
+     * doslownie odwrotnosc tego, co administrator kliknal.</p>
+     *
+     * <p>Termin liczymy od zegara serwera, a nie przyjmujemy gotowego
+     * z przegladarki: data z przeszlosci byla by kara konczaca sie, zanim
+     * sie zaczela.</p>
+     */
+    private LocalDateTime banUntil(Integer hours, Boolean forever) {
+        if (Boolean.TRUE.equals(forever)) {
+            return User.FOREVER;
+        }
+        return hours == null ? null : LocalDateTime.now().plusHours(hours);
+    }
+
+    /** Czytelny opis kary do logu - w logu "9999-12-31" wygladaloby na usterke. */
+    private String describeBan(LocalDateTime until) {
+        if (until == null) {
+            return "zdjety";
+        }
+        return User.isForever(until) ? "bezterminowo" : "do " + until;
+    }
+
+    /**
      * Naklada albo zdejmuje zakaz publikowania.
      *
      * <p>Pusta liczba godzin znaczy "zdejmij zakaz" - to jedna operacja
@@ -209,16 +329,10 @@ public class UserModerationService {
             throw OperationNotAllowedException.ownAccount();
         }
 
-        if (payload.hours() == null) {
-            target.setPostingBannedUntil(null);
-            log.info("Administrator {} zdjal zakaz publikowania z konta {}",
-                adminUsername, target.getUsername());
-        } else {
-            LocalDateTime until = LocalDateTime.now().plusHours(payload.hours());
-            target.setPostingBannedUntil(until);
-            log.info("Administrator {} nalozyl na konto {} zakaz publikowania do {}",
-                adminUsername, target.getUsername(), until);
-        }
+        LocalDateTime until = banUntil(payload.hours(), payload.forever());
+        target.setPostingBannedUntil(until);
+        log.info("Administrator {} ustawil zakaz publikowania konta {}: {}",
+            adminUsername, target.getUsername(), describeBan(until));
 
         return toResponse(userRepository.save(target));
     }
@@ -243,16 +357,10 @@ public class UserModerationService {
             throw OperationNotAllowedException.ownAccount();
         }
 
-        if (payload.hours() == null) {
-            target.setMessagingBannedUntil(null);
-            log.info("Administrator {} zdjal zakaz wiadomosci z konta {}",
-                adminUsername, target.getUsername());
-        } else {
-            LocalDateTime until = LocalDateTime.now().plusHours(payload.hours());
-            target.setMessagingBannedUntil(until);
-            log.info("Administrator {} nalozyl na konto {} zakaz wiadomosci do {}",
-                adminUsername, target.getUsername(), until);
-        }
+        LocalDateTime until = banUntil(payload.hours(), payload.forever());
+        target.setMessagingBannedUntil(until);
+        log.info("Administrator {} ustawil zakaz wiadomosci konta {}: {}",
+            adminUsername, target.getUsername(), describeBan(until));
 
         return toResponse(userRepository.save(target));
     }

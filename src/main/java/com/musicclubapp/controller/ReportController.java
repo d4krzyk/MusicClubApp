@@ -5,6 +5,7 @@ import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.entity.ReportStatus;
 import com.musicclubapp.service.ReportService;
+import com.musicclubapp.service.UserModerationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -49,9 +50,18 @@ public class ReportController {
     private static final int MAX_SIZE = 50;
 
     private final ReportService reportService;
+    private final UserModerationService moderationService;
 
-    public ReportController(ReportService reportService) {
+    /*
+     * Dwa serwisy, bo zamkniecie zgloszenia i kara to dwie rozne warstwy.
+     * Odczyty ida do ReportService, a zamkniecie POLACZONE z dzialaniem -
+     * do moderacji, bo tam mieszkaja kary (szczegoly przy
+     * UserModerationService.resolveReport).
+     */
+    public ReportController(ReportService reportService,
+                            UserModerationService moderationService) {
         this.reportService = reportService;
+        this.moderationService = moderationService;
     }
 
     /* ------------------------------------------------------------------ */
@@ -128,10 +138,11 @@ public class ReportController {
     }
 
     @PostMapping("/admin/{id}/resolve")
-    @Operation(summary = "Zamyka zgloszenie decyzja administratora")
+    @Operation(summary = "Zamyka zgloszenie decyzja administratora i wykonuje wybrane dzialanie")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Zamkniete"),
-        @ApiResponse(responseCode = "409", description = "Zgloszenie bylo juz zamkniete"),
+        @ApiResponse(responseCode = "409",
+            description = "Zgloszenie bylo juz zamkniete albo dzialania nie da sie wykonac"),
         @ApiResponse(responseCode = "422", description = "Brak decyzji albo notatki")
     })
     public ResponseEntity<ReportResponse> resolve(
@@ -140,6 +151,6 @@ public class ReportController {
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            reportService.resolve(authentication.getName(), id, request));
+            moderationService.resolveReport(authentication.getName(), id, request));
     }
 }

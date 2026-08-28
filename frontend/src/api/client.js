@@ -67,9 +67,76 @@ export function refreshCsrfToken() {
  * kod odpowiedzi, ale ciasteczko jest wtedy na miejscu - taki blad przechodzi
  * do uzytkownika nietkniety. Powtarzamy tez tylko RAZ.
  */
+/*
+ * =============================================================================
+ *  ZMIANA KONTA W INNEJ KARCIE
+ * =============================================================================
+ *
+ * BLAD, KTORY TO WYMUSIL. Po zalogowaniu sie na drugie konto w innej karcie
+ * STARA karta dalej wygladala jak poprzednie konto, ale pokazywala dane
+ * nowego - np. jego znajomych na profilu poprzedniej osoby. Nic nie
+ * ostrzegalo, ze cokolwiek sie zmienilo.
+ *
+ * SKAD SIE BRALO. Ciasteczko sesji nalezy do CALEJ przegladarki, a nie do
+ * pojedynczej karty. Zalogowanie sie gdziekolwiek podmienia je wszedzie,
+ * wiec od tej chwili stara karta wysyla zapytania juz jako nowe konto -
+ * mimo ze w Reakcie siedzi jeszcze poprzedni uzytkownik. Widac wtedy
+ * mieszanke: naglowki i menu z jednego konta, dane z drugiego.
+ *
+ * CZEGO SIE NIE DA ZROBIC. Nie da sie utrzymac dwoch kont naraz w jednej
+ * przegladarce - jedno ciasteczko to jedna tozsamosc. Zeby prowadzic rozmowe
+ * "sam ze soba", trzeba uzyc dwoch OSOBNYCH przegladarek albo okna prywatnego
+ * (incognito), ktore ma wlasny zestaw ciasteczek.
+ *
+ * CO ROBIMY. Serwer dopisuje do kazdej odpowiedzi naglowek X-Current-User
+ * z nazwa konta, ktore widzi jako zalogowane. Jesli rozni sie ona od tego,
+ * co pokazuje ta karta, przeladowujemy aplikacje - dzieki temu karta
+ * uczciwie pokazuje konto, na ktore naprawde jest zalogowana, zamiast
+ * mieszac dwa. Przeladowanie jest tu wlasciwa reakcja, bo unieważnia
+ * WSZYSTKIE dane poprzedniego konta naraz; wybieranie ich po jednym
+ * predzej czy pozniej zostawiloby gdzies stary fragment.
+ */
+const CURRENT_USER_HEADER = 'x-current-user';
+
+/** Kogo ta karta pokazuje. Ustawia AuthContext przy kazdej zmianie konta. */
+let shownUser = null;
+
+export function rememberShownUser(username) {
+  shownUser = username ?? null;
+}
+
+/** Wywolywane raz, gdy serwer zglosi inne konto niz to na ekranie. */
+let onAccountSwitch = null;
+
+export function setAccountSwitchHandler(handler) {
+  onAccountSwitch = handler;
+}
+
+function checkAccount(response) {
+  const serverUser = response?.headers?.[CURRENT_USER_HEADER];
+
+  /*
+   * Brak naglowka nie znaczy "wylogowano". Dostaja go tylko odpowiedzi
+   * zalogowanych zapytan do /api - przy 401 albo przy zapytaniu
+   * anonimowym naglowka nie ma i nie ma tu czego porownywac.
+   */
+  if (!serverUser || !shownUser || serverUser === shownUser) {
+    return;
+  }
+
+  const previous = shownUser;
+  // Zerujemy od razu, zeby rownolegle zapytania nie zglosily tego drugi raz
+  shownUser = null;
+  onAccountSwitch?.(previous, serverUser);
+}
+
 client.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    checkAccount(response);
+    return response;
+  },
   async (error) => {
+    checkAccount(error.response);
     const request = error.config;
     const status = error.response?.status;
 

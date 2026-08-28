@@ -590,6 +590,14 @@ body {
   *::after {
     animation-duration: .001ms !important;
     animation-iteration-count: 1 !important;
+    /*
+       Zerujemy takze OPOZNIENIE, nie tylko czas trwania. Kafelki wchodza
+       po kolei dzieki animation-delay, a przy fill-mode: both element
+       czeka na swoja kolej NIEWIDOCZNY. Samo skrocenie animacji zostawialoby
+       wiec osobie z wylaczonym ruchem ulamek sekundy patrzenia na pustke -
+       czyli dokladnie to, czego chciala uniknac, tylko w innej postaci.
+    */
+    animation-delay: 0s !important;
     transition-duration: .001ms !important;
     scroll-behavior: auto !important;
   }
@@ -2919,4 +2927,65 @@ body.modal-open .top-bar {
 .report-decision {
   padding-top: .75rem;
   border-top: 1px solid var(--bs-border-color);
+}
+
+/* =========================================================================
+   KAFELKOWE WCHODZENIE STRON
+   ========================================================================= */
+
+/*
+   Tablica pojawiala sie kafelek po kafelku, a wszystkie pozostale strony
+   wskakiwaly naraz - i ta roznica byla widoczna przy kazdym przejsciu
+   miedzy nimi. Ta klasa przenosi zachowanie tablicy na dowolna strone:
+   wystarczy dodac ja na pojemnik, a jego BEZPOSREDNIE dzieci wejda po kolei.
+
+   Opoznienie liczymy przez :nth-child, a nie przez zmienna --i ustawiana
+   w JSX. Przy tablicy --i jest konieczne, bo posty doladowuja sie partiami
+   i numeracja musi zaczynac sie od nowa przy kazdej partii. Tutaj sklad
+   strony jest staly i znany z gory, wiec numerowanie recznie w kodzie
+   byloby przepisywaniem tego, co przegladarka i tak wie - a przy kazdej
+   zmianie kolejnosci sekcji trzeba by pamietac o poprawieniu numerow.
+
+   Krok 45 ms i szesc pozycji: caly uklad jest na miejscu po ok. 0,25 s.
+   Wiecej pozycji nie numerujemy celowo - dalsze kafelki wchodza razem
+   z szostym, bo czekanie ponad pol sekundy na dol strony przestaje
+   wygladac jak plynne wejscie, a zaczyna jak zacinanie sie.
+*/
+.tiles-in > * {
+  animation: fade-in-up .34s var(--mc-ease) both;
+}
+
+.tiles-in > *:nth-child(1) { animation-delay: 0ms; }
+.tiles-in > *:nth-child(2) { animation-delay: 45ms; }
+.tiles-in > *:nth-child(3) { animation-delay: 90ms; }
+.tiles-in > *:nth-child(4) { animation-delay: 135ms; }
+.tiles-in > *:nth-child(5) { animation-delay: 180ms; }
+.tiles-in > *:nth-child(n+6) { animation-delay: 225ms; }
+
+/*
+   Panele logowania i rejestracji wchodza polami formularza, a nie calymi
+   sekcjami - to jedyna tresc, jaka maja. Krok jest tu krotszy, bo pol
+   jest wiecej i stoja gesto obok siebie.
+*/
+.tiles-in-form > * {
+  animation: fade-in-up .3s var(--mc-ease) both;
+}
+
+.tiles-in-form > *:nth-child(1) { animation-delay: 0ms; }
+.tiles-in-form > *:nth-child(2) { animation-delay: 35ms; }
+.tiles-in-form > *:nth-child(3) { animation-delay: 70ms; }
+.tiles-in-form > *:nth-child(4) { animation-delay: 105ms; }
+.tiles-in-form > *:nth-child(5) { animation-delay: 140ms; }
+.tiles-in-form > *:nth-child(6) { animation-delay: 175ms; }
+.tiles-in-form > *:nth-child(n+7) { animation-delay: 210ms; }
+
+/*
+   Szkielet profilu: te same ksztalty co gotowa strona, zeby po wczytaniu
+   nic nie podskoczylo. Ta sama mysl co przy szkielecie posta - kolko
+   zostawialo pusta strone i cala tresc wskakiwala naraz.
+*/
+.profile-skeleton .skeleton-avatar-lg {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
 }

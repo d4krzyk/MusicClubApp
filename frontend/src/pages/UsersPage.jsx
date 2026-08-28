@@ -13,7 +13,16 @@ import Modal from 'react-bootstrap/Modal';
 import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { IconBan } from '../components/Icons';
-import { formatDate } from '../utils/dates';
+import { formatDate, isForever } from '../utils/dates';
+
+/**
+ * Wartosc pozycji "na zawsze" na liscie kar.
+ *
+ * <p>Tekst, a nie liczba - bo to nie jest skrajnie duza liczba godzin, tylko
+ * inny rodzaj decyzji. Umowna liczba (np. 999999) predzej czy pozniej
+ * trafilaby do walidacji godzin i zostala odrzucona jako "poza zakresem".</p>
+ */
+const FOREVER = 'forever';
 
 /**
  * Panel administratora: lista kont ze stronicowaniem, sortowaniem
@@ -110,12 +119,30 @@ export default function UsersPage() {
    */
   const BAN_OPTIONS = [1, 24, 168, 720];
 
-  async function setPostingBan(id, hours) {
+  /**
+   * Wartosc z listy -> tresc zapytania do serwera.
+   *
+   * <p>Lista oddaje tekst, bo ma trzy rodzaje pozycji, a nie same liczby:
+   * pusta ("zdejmij"), {@code 'forever'} ("na zawsze") i liczba godzin.
+   * Zamiana na {@code {hours, forever}} siedzi tutaj, w jednym miejscu -
+   * obie kary wysylaja dokladnie to samo i nie da sie ich rozjechac.</p>
+   */
+  function banPayload(value) {
+    if (value === FOREVER) {
+      return { hours: null, forever: true };
+    }
+    return { hours: value === '' ? null : Number(value), forever: false };
+  }
+
+  async function setPostingBan(id, value) {
     setError(null);
     setMessage(null);
+    const payload = banPayload(value);
     try {
-      await client.patch(`/users/${id}/posting-ban`, { hours });
-      setMessage(t(hours == null ? 'users.banLifted' : 'users.banSet'));
+      await client.patch(`/users/${id}/posting-ban`, payload);
+      setMessage(t(payload.hours == null && !payload.forever
+        ? 'users.banLifted'
+        : 'users.banSet'));
       setRefresh((n) => n + 1);
     } catch (error) {
       const details = describeError(error);
@@ -124,12 +151,19 @@ export default function UsersPage() {
   }
 
   /** Zakaz wysylania wiadomosci - osobna kara od zakazu publikowania. */
-  async function setMessagingBan(id, hours) {
+  async function setMessagingBan(id, value) {
     setError(null);
     setMessage(null);
+    const payload = banPayload(value);
     try {
-      await client.patch(`/users/${id}/messaging-ban`, { hours });
-      setMessage(hours == null ? t('users.muteLifted') : t('users.muted', { count: hours }));
+      await client.patch(`/users/${id}/messaging-ban`, payload);
+      if (payload.forever) {
+        setMessage(t('users.mutedForever'));
+      } else {
+        setMessage(payload.hours == null
+          ? t('users.muteLifted')
+          : t('users.muted', { count: payload.hours }));
+      }
       setRefresh((n) => n + 1);
     } catch (problem) {
       const details = describeError(problem);
@@ -346,9 +380,7 @@ export default function UsersPage() {
                               size="sm"
                               value=""
                               disabled={mySelf}
-                              onChange={(e) => setPostingBan(
-                                u.id,
-                                e.target.value === '' ? null : Number(e.target.value))}
+                              onChange={(e) => setPostingBan(u.id, e.target.value)}
                               aria-label={t('users.colPostingBan')}
                             >
                               {/*
@@ -365,13 +397,21 @@ export default function UsersPage() {
                                   {t('users.banFor', { count: h })}
                                 </option>
                               ))}
+                              {/*
+                                "Na zawsze" stoi na koncu, za wszystkimi
+                                terminami. To najciezsza z kar w tej kolumnie,
+                                wiec nie ma prawa byc pierwsza pod kursorem.
+                              */}
+                              <option value={FOREVER}>{t('users.banForever')}</option>
                             </Form.Select>
 
                             {banned && (
                               <div className="small text-danger mt-1">
-                                {t('users.bannedUntil', {
-                                  date: formatDate(u.postingBannedUntil, i18n.language),
-                                })}
+                                {isForever(u.postingBannedUntil)
+                                  ? t('users.bannedForever')
+                                  : t('users.bannedUntil', {
+                                    date: formatDate(u.postingBannedUntil, i18n.language),
+                                  })}
                               </div>
                             )}
                           </td>
@@ -387,9 +427,7 @@ export default function UsersPage() {
                               size="sm"
                               value=""
                               disabled={mySelf}
-                              onChange={(e) => setMessagingBan(
-                                u.id,
-                                e.target.value === '' ? null : Number(e.target.value))}
+                              onChange={(e) => setMessagingBan(u.id, e.target.value)}
                               aria-label={t('users.colMessagingBan')}
                             >
                               <option value="">
@@ -400,13 +438,16 @@ export default function UsersPage() {
                                   {t('users.banFor', { count: h })}
                                 </option>
                               ))}
+                              <option value={FOREVER}>{t('users.banForever')}</option>
                             </Form.Select>
 
                             {mutedNow && (
                               <div className="small text-danger mt-1">
-                                {t('users.mutedUntil', {
-                                  date: formatDate(u.messagingBannedUntil, i18n.language),
-                                })}
+                                {isForever(u.messagingBannedUntil)
+                                  ? t('users.mutedForever')
+                                  : t('users.mutedUntil', {
+                                    date: formatDate(u.messagingBannedUntil, i18n.language),
+                                  })}
                               </div>
                             )}
                           </td>

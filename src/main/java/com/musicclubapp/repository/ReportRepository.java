@@ -97,4 +97,32 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Modifying
     @Query("UPDATE Report r SET r.post = null WHERE r.post.author.id = :authorId")
     void detachPostsOfAuthor(@Param("authorId") Long authorId);
+
+    /**
+     * Odpina JEDEN post od wszystkich zgloszen, ktore go wskazuja.
+     *
+     * <p><b>Blad, ktory to wymusil.</b> Administrator zamykal zgloszenie
+     * z decyzja „usun post" i dostawal blad 500:</p>
+     *
+     * <pre>
+     * update or delete on table "posts" violates foreign key constraint on table "reports"
+     * </pre>
+     *
+     * <p>Powod jest oczywisty, gdy sie go zobaczy: zgloszenie wskazuje na
+     * post kluczem obcym, wiec dopoki wskazuje, baza posta nie odda. Ten sam
+     * problem co przy kasowaniu konta - tylko dla pojedynczego posta.</p>
+     *
+     * <p><b>Dlaczego test jednostkowy tego nie zlapal.</b> Atrapa repozytorium
+     * nie ma kluczy obcych i pozwoli skasowac cokolwiek. Wiezy spojnosci
+     * istnieja wylacznie w prawdziwej bazie i tylko tam da sie je zlamac.</p>
+     *
+     * <p><b>Odpinamy, zamiast kasowac zgloszenie</b> - i to jest sedno.
+     * Zgloszenie jest zapisem tego, ze ktos cos zrobil; skasowanie go razem
+     * z postem czyscilo by przy okazji historie konta, na ktorej opieraja sie
+     * kolejne decyzje. Tresc posta nie ginie, bo jest w migawce dowodow -
+     * dokladnie po to ta migawka powstala.</p>
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Report r SET r.post = null WHERE r.post.id = :postId")
+    void detachPost(@Param("postId") Long postId);
 }

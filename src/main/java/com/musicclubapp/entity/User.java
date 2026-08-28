@@ -81,6 +81,33 @@ public class User {
     private boolean enabled = true;
 
     /**
+     * Termin oznaczajacy zakaz <b>bezterminowy</b>.
+     *
+     * <p>Nie jest to "koniec czasu", tylko data na tyle odlegla, ze zadne
+     * konto jej nie dozyje. Dzieki temu zakaz bezterminowy jest zwyklym
+     * zakazem z terminem - bez osobnej kolumny, osobnej flagi i osobnej
+     * sciezki w kazdym sprawdzeniu.</p>
+     *
+     * <p><b>Rok 9999, a nie {@link LocalDateTime#MAX}.</b> {@code MAX} to
+     * rok miliardowy z nanosekundami; PostgreSQL takiego znacznika nie
+     * zapisze, a i w logach wygladalby jak usterka. Rok 9999 miesci sie
+     * w kazdej bazie i od razu widac, ze jest umowny.</p>
+     */
+    public static final LocalDateTime FOREVER = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+    /**
+     * Czy podany termin oznacza zakaz bezterminowy.
+     *
+     * <p>Porownanie jest {@code >=}, a nie {@code ==}: gdyby kiedys ktos
+     * zapisal termin jeszcze dalszy, ma byc traktowany tak samo. Pytanie
+     * zadajemy w jednym miejscu, zeby interfejs i serwer nigdy nie
+     * odpowiedzialy na nie inaczej.</p>
+     */
+    public static boolean isForever(LocalDateTime until) {
+        return until != null && !until.isBefore(FOREVER);
+    }
+
+    /**
      * Do kiedy obowiazuje zakaz publikowania nalozony przez administratora.
      *
      * <p>{@code null} znaczy "bez zakazu". Data w przeszlosci tez znaczy
@@ -89,9 +116,19 @@ public class User {
      * dzieki czemu administrator widzi w panelu, ze ktos byl juz kiedys
      * zablokowany.</p>
      *
-     * <p><b>Dlaczego termin, a nie flaga.</b> Blokada bezterminowa wymagalaby,
-     * zeby ktos pamietal o jej zdjeciu - a o tym zwykle nikt nie pamieta.
-     * Zapisany termin sam pilnuje konca kary.</p>
+     * <p><b>Dlaczego termin, a nie flaga.</b> Kara z terminem wygasa sama,
+     * bez zadania w tle i bez polegania na tym, ze ktos o niej pamieta.</p>
+     *
+     * <p><b>A zakaz bezterminowy?</b> Poczatkowo go tu nie bylo, wlasnie
+     * z powyzszego powodu. Okazal sie jednak potrzebny: przy koncie zalozonym
+     * tylko po to, zeby dokuczac, "rok przerwy" jest udawaniem, ze sprawa
+     * kiedys sama przyschnie. Zamiast dokladac druga kolumne z flaga -
+     * i drugi stan do sprawdzania w kazdym miejscu - zapisujemy zakaz
+     * bezterminowy jako {@link #FOREVER}, czyli termin tak odlegly, ze
+     * praktycznie nie nadejdzie. Cala reszta kodu nie musi o tym wiedziec:
+     * {@link #isPostingBanned()} dziala bez zmian, a jedyne miejsce, ktore
+     * traktuje te date wyjatkowo, to interfejs - zeby pokazac
+     * <i>„na zawsze"</i> zamiast <i>„do 31.12.9999"</i>.</p>
      */
     @Column(name = "posting_banned_until")
     private LocalDateTime postingBannedUntil;

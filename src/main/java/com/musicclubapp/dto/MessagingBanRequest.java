@@ -14,15 +14,22 @@ import jakarta.validation.constraints.Min;
  * (choćby innym gornym limicie) trzeba by go i tak rozdzielic - tyle ze wtedy
  * z dzialajacym kodem po obu stronach.</p>
  *
- * @param hours ile godzin ma trwac zakaz; {@code null} <b>zdejmuje</b> zakaz
+ * @param hours   ile godzin ma trwac zakaz; {@code null} <b>zdejmuje</b> zakaz
+ * @param forever zakaz bezterminowy - wtedy {@code hours} nie ma znaczenia
  */
-@Schema(description = "Zakaz wysylania wiadomosci: liczba godzin albo brak wartosci, zeby go zdjac")
+@Schema(description = "Zakaz wysylania wiadomosci: liczba godzin, zakaz bezterminowy "
+    + "albo brak obu wartosci, zeby go zdjac")
 public record MessagingBanRequest(
 
     @Min(value = 1, message = "{validation.ban.hours.min}")
     @Max(value = 8760, message = "{validation.ban.hours.max}")
     @Schema(description = "Ile godzin ma trwac zakaz (1-8760). Pusta wartosc zdejmuje zakaz.",
             example = "48")
-    Integer hours
+    Integer hours,
+
+    /* Patrz komentarz przy tym samym polu w PostingBanRequest. */
+    @Schema(description = "Zakaz bezterminowy. Gdy true, pole hours jest pomijane.",
+            example = "false")
+    Boolean forever
 ) {
 }

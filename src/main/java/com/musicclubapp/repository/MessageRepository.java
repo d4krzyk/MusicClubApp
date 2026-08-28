@@ -10,7 +10,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Zapytania o wiadomosci.
@@ -83,28 +85,91 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * w tej samej milisekundzie daja remis, ktorego zapytanie nie umie
      * rozstrzygnac; po identyfikatorze remisu nie ma.</p>
      *
-     * <p><b>Wyrazenie {@code CASE} stoi tu DWA razy - i musi.</b> Pierwsza
-     * wersja tego zapytania miala je wylacznie w {@code GROUP BY}, bo tylko
-     * tam bylo potrzebne. JPQL to przyjal, Hibernate przetlumaczyl, a baza
-     * odmowila: <i>"Invalid use of aggregate function MAX(id)"</i>. Powod jest
-     * taki, ze przy grupowaniu po wyrazeniu baza chce widziec to wyrazenie
-     * takze na liscie wynikow - inaczej nie ma jak powiazac zagregowanej
-     * wartosci z grupa. Kosztuje to jedno pole wiecej w wyniku, a przy okazji
-     * oszczedza dochodzenia w Javie, kto jest ta druga strona.</p>
+     * <p><b>Dlaczego to sa DWA zapytania, a nie jedno.</b> Naturalniej byloby
+     * napisac jedno, grupujace po wyrazeniu "kto tu jest tym drugim":</p>
      *
-     * <p>Blad wyszedl dopiero w tescie na prawdziwej bazie - z atrapa
-     * repozytorium przechodzilby, bo atrapa oddaje to, co jej kazemy,
-     * i nigdy nie zaglada do SQL-a.</p>
+     * <pre>
+     * GROUP BY CASE WHEN m.sender.id = :me THEN m.recipient.id ELSE m.sender.id END
+     * </pre>
+     *
+     * <p>Tak to najpierw wygladalo i <b>na H2 dzialalo</b>. Na PostgreSQL
+     * kazde wejscie w czat konczylo sie bledem 500:</p>
+     *
+     * <pre>
+     * ERROR: column "m1_0.sender_id" must appear in the GROUP BY clause
+     * </pre>
+     *
+     * <p><b>Powod jest subtelny.</b> Grupowanie po wyrazeniu jest dozwolone,
+     * ale baza musi rozpoznac, ze wyrazenie z listy wynikow i to z
+     * {@code GROUP BY} to <i>to samo</i> wyrazenie. Tymczasem {@code :me}
+     * trafia do SQL-a jako znak zapytania, a Hibernate wstawia go
+     * <b>osobno w kazdym miejscu</b> - w gotowym zapytaniu sa cztery rozne
+     * parametry. PostgreSQL porownuje wyrazenia razem z parametrami, wiec
+     * widzi dwa <i>rozne</i> wyrazenia i sluszne stwierdza, ze
+     * {@code sender_id} nie jest ani pogrupowany, ani zagregowany. H2 jest
+     * pod tym wzgledem pobłazliwszy - i wlasnie dlatego komplet zielonych
+     * testow niczego tu nie gwarantowal.</p>
+     *
+     * <p><b>Rozwiazanie omija caly problem.</b> Zamiast jednego sprytnego
+     * zapytania sa dwa proste: osobno wiadomosci wyslane (grupowane po
+     * odbiorcy) i osobno odebrane (grupowane po nadawcy). W obu grupujemy po
+     * <b>zwyklej kolumnie</b>, wiec nie ma czego dopasowywac i zadna baza nie
+     * ma o co sie spierac. Zlaczenie obu list to kilka linijek w Javie
+     * ({@link #lastMessagePerConversation}) - jedno dodatkowe zapytanie jest
+     * tansze niz zapytanie, ktore dziala tylko na niektorych bazach.</p>
+     *
+     * @see #lastMessagePerConversation
      */
     @Query("""
-           SELECT new com.musicclubapp.repository.ConversationRow(
-                  CASE WHEN m.sender.id = :me THEN m.recipient.id ELSE m.sender.id END,
-                  MAX(m.id))
+           SELECT new com.musicclubapp.repository.ConversationRow(m.recipient.id, MAX(m.id))
            FROM Message m
-           WHERE m.sender.id = :me OR m.recipient.id = :me
-           GROUP BY CASE WHEN m.sender.id = :me THEN m.recipient.id ELSE m.sender.id END
+           WHERE m.sender.id = :me
+           GROUP BY m.recipient.id
            """)
-    List<ConversationRow> lastMessagePerConversation(@Param("me") Long me);
+    List<ConversationRow> lastSentPerPartner(@Param("me") Long me);
+
+    /**
+     * Ostatnia wiadomosc OD kazdej osoby, ktora do nas napisala.
+     *
+     * <p>Odwrotnosc {@link #lastSentPerPartner} - razem daja komplet rozmow.</p>
+     */
+    @Query("""
+           SELECT new com.musicclubapp.repository.ConversationRow(m.sender.id, MAX(m.id))
+           FROM Message m
+           WHERE m.recipient.id = :me
+           GROUP BY m.sender.id
+           """)
+    List<ConversationRow> lastReceivedPerPartner(@Param("me") Long me);
+
+    /**
+     * Ostatnia wiadomosc w kazdej rozmowie - <b>niezaleznie od tego, kto ja wyslal</b>.
+     *
+     * <p>Scala wyniki {@link #lastSentPerPartner} i {@link #lastReceivedPerPartner}.
+     * Jesli z ta sama osoba wystepujemy po obu stronach (czyli rozmowa faktycznie
+     * sie toczyla, a nie byla jednym monologiem), zostaje wieksze
+     * {@code id} - czyli wiadomosc pozniejsza.</p>
+     *
+     * <p><b>{@code MAX(id)}, a nie {@code MAX(createdAt)}</b> - po znaczniku
+     * czasu dwie wiadomosci z tej samej milisekundy daja remis, ktorego nie
+     * ma jak rozstrzygnac; po identyfikatorze remisu nie ma.</p>
+     *
+     * <p>Metoda jest {@code default}, wiec Spring Data jej nie generuje -
+     * wykonuje sie zwykly kod Javy, ktory wola dwa zapytania powyzej.
+     * Dla warstwy wyzej nic sie nie zmienilo: nazwa i wynik sa te same
+     * co wtedy, gdy bylo to jedno zapytanie.</p>
+     */
+    default List<ConversationRow> lastMessagePerConversation(Long me) {
+        Map<Long, Long> newest = new LinkedHashMap<>();
+        for (ConversationRow row : lastSentPerPartner(me)) {
+            newest.merge(row.partnerId(), row.lastMessageId(), Math::max);
+        }
+        for (ConversationRow row : lastReceivedPerPartner(me)) {
+            newest.merge(row.partnerId(), row.lastMessageId(), Math::max);
+        }
+        return newest.entrySet().stream()
+            .map(entry -> new ConversationRow(entry.getKey(), entry.getValue()))
+            .toList();
+    }
 
     /**
      * Ile nieprzeczytanych czeka od kazdej osoby z osobna - <b>jednym zapytaniem</b>.

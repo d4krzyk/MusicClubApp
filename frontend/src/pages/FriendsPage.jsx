@@ -7,10 +7,10 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
-import Spinner from 'react-bootstrap/Spinner';
 import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
+import PeopleSkeleton from '../components/PeopleSkeleton';
 import FriendsStrip from '../components/FriendsStrip';
 import FriendSuggestions from '../components/FriendSuggestions';
 import { IconCross, IconPersonCheck, IconPersonPlus } from '../components/Icons';
@@ -114,7 +114,8 @@ export default function FriendsPage() {
 
   return (
     <Row className="justify-content-center">
-      <Col lg={8}>
+      {/* Sekcje wchodza po kolei - tak samo jak karty na tablicy */}
+      <Col lg={8} className="tiles-in">
         <h1 className="h4 mb-3">{t('friends.title')}</h1>
 
         {message && (
@@ -151,12 +152,12 @@ export default function FriendsPage() {
           </Card.Body>
         </Card>
 
-        {loading && (
-          <div className="text-center py-3 text-body-secondary">
-            <Spinner animation="border" size="sm" className="me-2" />
-            {t('common.loading')}
-          </div>
-        )}
+        {/*
+          Szkielet zamiast kolka: zaproszenia to lista osob, wiec pokazujemy
+          ksztalt listy osob. Kolko zostawialo w tym miejscu pusta przerwe,
+          a po wczytaniu cala reszta strony przeskakiwala w dol.
+        */}
+        {loading && <PeopleSkeleton count={3} variant="friend" />}
 
         {/*
           Propozycje stoja WYZEJ niz zaproszenia. Zaproszenia ogląda sie
