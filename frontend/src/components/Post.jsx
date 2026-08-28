@@ -11,6 +11,7 @@ import Field from './Field';
 import Reactions from './Reactions';
 import MusicPicker from './MusicPicker';
 import VisibilityPicker from './VisibilityPicker';
+import ReportButton from './ReportButton';
 import { IconTrash, IconPencil, IconLock } from './Icons';
 import client, { describeError } from '../api/client';
 import { formatDate } from '../utils/dates';
@@ -94,6 +95,21 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
                 >
                   <IconTrash /> <span className="d-none d-sm-inline">{t('common.delete')}</span>
                 </Button>
+              )}
+
+              {/*
+                Zgloszenie posta - tylko przy CUDZYCH wpisach. Wlasny post
+                sie kasuje, a nie zglasza; przycisk przy nim byloby tylko
+                mylacy. O tym, czy post jest moj, mowi pole canEdit -
+                wylicza je serwer i ma je wylacznie autor.
+              */}
+              {!post.canEdit && (
+                <ReportButton
+                  username={post.authorUsername}
+                  contexts={['POST']}
+                  postId={post.id}
+                  compact
+                />
               )}
             </div>
           )}

@@ -170,6 +170,31 @@ public class SecurityConfig {
                  * decyzja, a nie przeoczenie.
                  */
                 .requestMatchers("/api/profiles/**").authenticated()
+
+                /*
+                 * Czat. Regula mowi tylko "trzeba byc zalogowanym" - i wiecej
+                 * powiedziec sie tu nie da. Prawdziwa blokada jest w
+                 * {@code MessageService}: pisac wolno WYLACZNIE ze znajomymi,
+                 * a tego konfiguracja bezpieczenstwa nie umie sprawdzic,
+                 * bo musialaby zajrzec do bazy po liste znajomych.
+                 *
+                 * Wpisujemy ja mimo to, zeby przy nastepnej zmianie bylo
+                 * widac, ze czat jest zamkniety swiadomie, a nie przypadkiem.
+                 */
+                .requestMatchers("/api/messages/**").authenticated()
+
+                /*
+                 * Zgloszenia. Dwie reguly i KOLEJNOSC MA ZNACZENIE - pierwsza
+                 * pasujaca wygrywa, wiec gdyby ogolna stala wyzej, caly panel
+                 * administratora bylby otwarty dla kazdego zalogowanego.
+                 *
+                 * Dlatego adresy administracyjne maja WLASNY przedrostek
+                 * (/admin/), a nie roznia sie tylko metoda HTTP: przy takim
+                 * podziale regule widac wprost z adresu, a nie trzeba jej
+                 * skladac z trzech miejsc naraz.
+                 */
+                .requestMatchers("/api/reports/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/reports/**").authenticated()
                 // zapytania OPTIONS wysyla sama przegladarka przed wlasciwym zapytaniem (CORS preflight)
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                 // cala reszta wymaga zalogowania

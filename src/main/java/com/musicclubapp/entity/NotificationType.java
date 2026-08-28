@@ -31,5 +31,19 @@ public enum NotificationType {
      * <p>Prowadzi na profil tej osoby: skoro wlasnie zostalismy znajomymi,
      * najbardziej prawdopodobne jest, ze chce sie go obejrzec.</p>
      */
-    FRIEND_ACCEPTED
+    FRIEND_ACCEPTED,
+
+    /**
+     * Ktos zglosil uzytkownika - <b>powiadomienie WYLACZNIE dla administratorow</b>.
+     *
+     * <p>Prowadzi do panelu zgloszen. To jedyny rodzaj, ktory nie dotyczy
+     * spraw samego odbiorcy, tylko jego obowiazkow - i dlatego jako jedyny
+     * powstaje dla kilku osob naraz (kazdego administratora z osobna).</p>
+     *
+     * <p><b>Powiadomienie nie zdradza, kogo zgloszono.</b> Widac tylko,
+     * ze cos czeka w panelu. Nazwisko na dzwonku ogladalby kazdy, kto
+     * przypadkiem spojrzy administratorowi na ekran, a decyzja jeszcze
+     * nie zapadla.</p>
+     */
+    REPORT
 }

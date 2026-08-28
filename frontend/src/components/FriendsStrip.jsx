@@ -6,6 +6,7 @@ import client from '../api/client';
 import Avatar from './Avatar';
 import EmptyState from './EmptyState';
 import PeopleSkeleton from './PeopleSkeleton';
+import PresenceDot from './PresenceDot';
 import { IconFriends, IconPersonPlus } from './Icons';
 
 /** Ilu znajomych mieści sie na jednym "ekranie" paska. */
@@ -103,11 +104,20 @@ export default function FriendsStrip({ username, refresh, self = false }) {
             className="friend-card text-decoration-none text-body"
             title={t('profile.visit', { username: friend.username })}
           >
-            <Avatar
-              avatarUrl={friend.avatarUrl}
-              username={friend.username}
-              size={64}
-            />
+            {/*
+              Kropka obecnosci siedzi NA awatarze, a nie obok podpisu.
+              Kafelek jest waski - dopisanie "aktywny 5 minut temu" pod
+              loginem zajeloby trzeci wiersz i pasek uroslby o polowe.
+              Pelna informacje niesie dymek po najechaniu.
+            */}
+            <span className="friend-card-avatar">
+              <Avatar
+                avatarUrl={friend.avatarUrl}
+                username={friend.username}
+                size={64}
+              />
+              <PresenceDot presence={friend.presence} />
+            </span>
             <div className="small fw-semibold text-truncate w-100 text-center mt-1">
               {friend.username}
             </div>

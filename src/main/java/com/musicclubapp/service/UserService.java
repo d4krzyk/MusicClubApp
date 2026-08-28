@@ -12,6 +12,9 @@ import com.musicclubapp.error.InvalidCurrentPasswordException;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.UserMapper;
+import com.musicclubapp.entity.ReportStatus;
+import com.musicclubapp.repository.CountByUser;
+import com.musicclubapp.repository.ReportRepository;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.storage.FileStorageService;
 import org.springframework.data.domain.Page;
@@ -19,6 +22,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -42,15 +49,45 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final FileStorageService fileStorage;
+    private final ReportRepository reportRepository;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        UserMapper userMapper,
-                       FileStorageService fileStorage) {
+                       FileStorageService fileStorage,
+                       ReportRepository reportRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.fileStorage = fileStorage;
+        this.reportRepository = reportRepository;
+    }
+
+    /**
+     * Ile zasadnych zgloszen ma to konto.
+     *
+     * <p>Wersja dla POJEDYNCZEGO konta - przy calej stronie uzywamy
+     * {@link #resolvedReportsFor(List)}, ktore liczy wszystkie naraz.</p>
+     */
+    private long resolvedReports(User user) {
+        return reportRepository.countByReportedIdAndStatus(user.getId(), ReportStatus.RESOLVED);
+    }
+
+    /**
+     * Liczby zasadnych zgloszen dla calej strony - <b>jednym zapytaniem</b>.
+     *
+     * <p>Konta bez ani jednego zgloszenia nie wracaja z zapytania (grupowanie
+     * nie tworzy pustych grup), wiec czytamy z mapy przez
+     * {@code getOrDefault(..., 0L)}.</p>
+     */
+    private Map<Long, Long> resolvedReportsFor(List<Long> userIds) {
+        if (userIds.isEmpty()) {
+            // IN () z pusta lista to blad skladni SQL - ta sama pulapka
+            // co przy circleIds w tablicy
+            return Map.of();
+        }
+        return reportRepository.countByStatusForUsers(ReportStatus.RESOLVED, userIds).stream()
+            .collect(Collectors.toMap(CountByUser::userId, CountByUser::count));
     }
 
     /**
@@ -106,7 +143,7 @@ public class UserService {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new NoSuchElementFoundException("user", id));
 
-        return userMapper.toAdminResponse(user);
+        return userMapper.toAdminResponse(user, resolvedReports(user));
     }
 
     /**
@@ -216,9 +253,14 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public Page<AdminUserResponse> search(String fragment, Pageable pageable) {
-        return userRepository
-            .searchByUsernameOrEmail(fragment == null ? "" : fragment, pageable)
-            .map(userMapper::toAdminResponse);
+        Page<User> found = userRepository
+            .searchByUsernameOrEmail(fragment == null ? "" : fragment, pageable);
+
+        Map<Long, Long> reports = resolvedReportsFor(
+            found.getContent().stream().map(User::getId).toList());
+
+        return found.map(user -> userMapper.toAdminResponse(
+            user, reports.getOrDefault(user.getId(), 0L)));
     }
 
     /**
@@ -243,6 +285,7 @@ public class UserService {
 
         target.setRole(request.role());
 
-        return userMapper.toAdminResponse(userRepository.save(target));
+        User saved = userRepository.save(target);
+        return userMapper.toAdminResponse(saved, resolvedReports(saved));
     }
 }

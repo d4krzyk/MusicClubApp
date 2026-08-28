@@ -48,6 +48,9 @@ class UserRoleServiceTest {
     @Mock
     private FileStorageService fileStorage;
 
+    @Mock
+    private com.musicclubapp.repository.ReportRepository reportRepository;
+
     @InjectMocks
     private UserService userService;
 
@@ -57,8 +60,9 @@ class UserRoleServiceTest {
         User anna = new User("anna", "anna@example.com", "hash");
         given(userRepository.findById(2L)).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
-        given(userMapper.toAdminResponse(any(User.class))).willReturn(
-            new AdminUserResponse(2L, "anna", "anna@example.com", Role.ADMIN, LocalDateTime.now(), null));
+        given(userMapper.toAdminResponse(any(User.class), org.mockito.ArgumentMatchers.anyLong())).willReturn(
+            new AdminUserResponse(2L, "anna", "anna@example.com", Role.ADMIN,
+                LocalDateTime.now(), null, null, 0));
 
         userService.changeRole("admin", 2L, new ChangeRoleRequest(Role.ADMIN));
 
@@ -74,8 +78,9 @@ class UserRoleServiceTest {
         other.setRole(Role.ADMIN);
         given(userRepository.findById(3L)).willReturn(Optional.of(other));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
-        given(userMapper.toAdminResponse(any(User.class))).willReturn(
-            new AdminUserResponse(3L, "drugiadmin", "drugi@example.com", Role.USER, LocalDateTime.now(), null));
+        given(userMapper.toAdminResponse(any(User.class), org.mockito.ArgumentMatchers.anyLong())).willReturn(
+            new AdminUserResponse(3L, "drugiadmin", "drugi@example.com", Role.USER,
+                LocalDateTime.now(), null, null, 0));
 
         userService.changeRole("admin", 3L, new ChangeRoleRequest(Role.USER));
 

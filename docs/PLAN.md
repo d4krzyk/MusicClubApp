@@ -1870,6 +1870,290 @@ rund bez zmian: widoczność 35, powiadomienia 21, moderacja 16, linki 12.
 
 ---
 
+# KROK 11 — czat ze znajomymi i znacznik obecności
+
+Aplikacja o poznawaniu ludzi, w której nie da się do nikogo napisać, kończy
+się na etapie „dodałem do znajomych i co dalej". Ten krok domyka pętlę:
+wspólny gust → zaproszenie → **rozmowa**.
+
+## Pisać można wyłącznie ze znajomymi
+
+Reguła jest jedna i pilnuje jej serwer, ale **przy każdej operacji z osobna**:
+wysłaniu, odczycie historii, odpytywaniu o nowości, oznaczaniu przeczytanych,
+nawet przy sygnale „pisze". To nie jest nadgorliwość. Gdyby sprawdzenie stało
+wyłącznie przy wysyłaniu, wystarczyłoby wywołać adres historii, żeby czytać
+korespondencję dwóch obcych osób — i blokada nie chroniłaby niczego.
+
+Osobny test sprawdza właśnie to: że **odczyt** cudzej rozmowy też kończy się
+odmową.
+
+Zakaz publikowania obejmuje czat. Kara za to, co ktoś pisze, zostawiająca
+otwartą drogę do pisania prywatnie, nie jest karą.
+
+## Rozmowa, której nie ma w bazie
+
+Tabela jest jedna: `messages`. Encji „rozmowa" nie ma i nie jest potrzebna —
+wszystko, co o rozmowie wiemy (kto z kim, kiedy ostatnio, ile nieprzeczytanych),
+da się policzyć z samych wiadomości. Osobna tabela byłaby drugą kopią tej samej
+prawdy, a dwie kopie prędzej czy później się rozjeżdżają.
+
+Ceną jest zapytanie grupujące: „dla każdej wiadomości powiedz, kto jest tą
+**drugą** stroną, i weź największy identyfikator w grupie".
+
+### Błąd, który złapał dopiero test na prawdziwej bazie
+
+Pierwsza wersja tego zapytania miała wyrażenie `CASE` wyłącznie w `GROUP BY`,
+bo tylko tam było potrzebne. JPQL to przyjął, Hibernate przetłumaczył,
+a baza odmówiła:
+
+```
+Invalid use of aggregate function MAX(m1_0.id)
+```
+
+Przy grupowaniu po wyrażeniu baza chce widzieć to wyrażenie **także na liście
+wyników** — inaczej nie ma jak powiązać zagregowanej wartości z grupą.
+Z atrapą repozytorium ten test przechodziłby, bo atrapa oddaje to, co jej
+każemy, i nigdy nie zagląda do SQL-a.
+
+### `MAX(id)`, nie `MAX(created_at)`
+
+Dwie wiadomości wysłane w tej samej milisekundzie mają identyczny znacznik
+czasu i baza może wtedy zwrócić je w dowolnej kolejności — także innej na
+każdej stronie, co przy stronicowaniu potrafi zgubić albo powtórzyć wpis.
+Identyfikator z sekwencji zawsze rośnie.
+
+## Odpytywanie zamiast WebSocketa
+
+Nowe wiadomości, dymek „pisze", obecność rozmówcy i licznik przy ikonie —
+**jedną odpowiedzią, co trzy sekundy, tylko przy otwartej rozmowie**.
+
+WebSocket wymagałby drugiej ścieżki uwierzytelniania obok sesji HTTP, własnego
+stanu połączeń na serwerze i obsługi zrywania sieci w przeglądarce. Przy
+rozmowie dwóch osób różnica między „natychmiast" a „w ciągu trzech sekund"
+jest niezauważalna.
+
+Sygnał „pisze" żyje **w pamięci serwera** i wygasa po pięciu sekundach.
+Zapisywanie go do bazy oznaczałoby kilkanaście zapisów na minutę na każdą
+otwartą rozmowę — do tabeli, której całą zawartość i tak trzeba by kasować
+co chwilę.
+
+## Ptaszek „przeczytane" nie działał — i testy tego nie widziały
+
+Odpytywanie przynosi wyłącznie wiadomości **nowsze** od tej, którą przeglądarka
+już ma. Ale przeczytanie nie tworzy nowej wiadomości: zmienia jedną kolumnę
+w starej, dawno wysłanej. Ptaszek nie pojawiał się więc **nigdy** bez
+odświeżenia całej strony.
+
+Wyszło to dopiero w przeglądarce, przy dwóch równoległych sesjach. Poprawka to
+jedno dodatkowe pytanie: „do której MOJEJ wiadomości rozmówca doczytał".
+Wystarczy jeden numer na całą rozmowę, bo wiadomości czyta się po kolei.
+
+Doszły dwa testy — i oba sprawdzone przez **wyłączenie poprawki**: bez niej
+jeden świeci na czerwono, a drugi łapie wariant, w którym zapytanie zapomina
+sprawdzić, kto jest nadawcą (wtedy zwykłe otwarcie rozmowy zapalałoby ptaszek
+pod własnymi wiadomościami — fałszywe „on to widział").
+
+## Obecność: co naprawdę znaczy „online"
+
+Serwer nie ma jak się dowiedzieć, że ktoś zamknął kartę. „Online" znaczy więc
+dokładnie tyle: **coś robił w ciągu ostatnich trzech minut**. Nie udajemy, że
+to coś więcej — obok kropki zawsze stoi data.
+
+Datę zapisujemy najwyżej **raz na 45 sekund**, a licznik trzymamy w pamięci.
+Bez tego każde odpytanie czatu byłoby zapisem do tabeli `users`.
+
+Okno „online" jest wyraźnie dłuższe niż odstęp między zapisami — inaczej ktoś
+siedzący przed ekranem migałby między stanami w rytmie własnego licznika.
+Pilnuje tego osobny test, który porównuje obie stałe zamiast sprawdzać liczbę.
+
+Aktywność odnotowuje **przechwytywacz MVC, a nie filtr**. Filtr łapie każde
+zapytanie do serwera, także pobieranie zdjęć spod `/uploads` — a tych jest
+kilkadziesiąt na jedno wejście na stronę i nie są aktywnością człowieka,
+tylko doładowywaniem obrazków.
+
+## Dwa błędy z frontendu, warte zapamiętania
+
+**Wysłana wiadomość znikała w tej samej chwili, w której się pojawiała.**
+Panel przekazywał wątkowi funkcje tworzone na nowo przy każdym rysowaniu, więc
+dla Reacta za każdym razem były to *inne* funkcje. Efekt wczytujący historię
+miał je w zależnościach i uruchamiał się w kółko, czyszcząc listę. Lekarstwo:
+uchwyt (`useRef`) na najświeższą wersję, a w zależnościach zostaje tylko to,
+od czego efekt naprawdę zależy.
+
+**Dwa pola o tym samym `id="musicUrl"`.** Ten sam wybór nagrania stoi teraz
+w formularzu posta i w czacie. Etykieta `<label for="musicUrl">` zawsze
+wskazuje **pierwszy** pasujący element, więc kliknięcie podpisu w czacie
+ustawiało kursor w formularzu pod spodem. Znalazło to sprawdzenie
+w przeglądarce, które trafiło na dwa elementy zamiast jednego — stąd
+`idPrefix`.
+
+## Sprawdzone
+
+283 testy backendu (37 nowych: 29 na czat, 7 na obecność, 1 na sprzątanie
+wiadomości przy kasowaniu konta) oraz nowy zestaw `sprawdz-czat.mjs` —
+**41 sprawdzeń w Chromium, dwiema równoległymi sesjami naraz**. Inaczej nie da
+się sprawdzić tego, co w czacie jest najważniejsze: czy wiadomość faktycznie
+dolatuje do drugiej przeglądarki, czy dymek „pisze" zapala się u rozmówcy
+i czy licznik nieprzeczytanych gaśnie po otwarciu wątku.
+
+Pięć kluczowych asercji zweryfikowanych przez **wyłączenie poprawki**: blokada
+„tylko znajomi" (przy wysyłaniu i przy czytaniu), kierunek sygnału „pisze",
+ograniczenie częstotliwości zapisów obecności i oba potwierdzenia przeczytania.
+
+Zestawy z poprzednich rund bez zmian: widoczność 35, powiadomienia 21,
+moderacja 16, linki 12, poprawki interfejsu 18.
+
+---
+
+# KROK 12 — zgłoszenia, moderacja i multikonta
+
+Czat postawił pytanie, którego wcześniej nie było: **co, jeśli ktoś użyje go
+przeciwko komuś?** Do tej pory jedyną karą był zakaz publikowania, a jedynymi
+treściami — publiczne posty, które administrator i tak widział. Wiadomości są
+prywatne i administrator nie ma jak ich zobaczyć. I nie powinien mieć.
+
+## Zgłoszenie jest bronią obosieczną
+
+Trzy osoby zgłaszające kogoś „dla zabawy" potrafią zająć administratorowi tyle
+samo czasu co trzy prawdziwe sprawy — i to jest najprostszy sposób, żeby cały
+mechanizm przestał działać. Dlatego limity nie są dodatkiem, tylko warunkiem
+tego, żeby funkcja miała sens:
+
+| Limit | Co zatrzymuje |
+|---|---|
+| jedno **otwarte** zgłoszenie na osobę | klikanie w kółko tego samego |
+| pięć zgłoszeń na dobę | zgłoszenie po kolei całego serwisu |
+| obowiązkowy opis własnymi słowami | zgłoszenia klikane bez zastanowienia |
+
+Drugi limit istnieje właśnie dlatego, że pierwszy sam nie wystarcza: przy
+zgłaszaniu różnych osób nie zadziałałby **ani razu**. Pilnuje tego osobny test.
+
+Doba jest **ruchoma**, a nie kalendarzowa — inaczej dałoby się wysłać dziesięć
+zgłoszeń w godzinę, po pięć z każdej strony północy.
+
+## Migawka dowodów zamiast odnośnika
+
+To najważniejsza decyzja w całym tym kroku i ma dwa uzasadnienia, z których
+każde osobno by wystarczyło.
+
+**Pierwsze: odporność na zacieranie śladów.** Gdyby zgłoszenie tylko
+*wskazywało* na wiadomości, zgłaszany miałby prostą drogę wyjścia —
+doprowadzić do ich skasowania. Administrator otwierałby zgłoszenie i widział
+pustkę. Test `evidenceSurvivesMessageDeletion` kasuje wiadomości po zgłoszeniu
+i sprawdza, że dowód został.
+
+**Drugie: ograniczenie uprawnień administratora.** Alternatywą był endpoint
+„pokaż mi rozmowę tych dwóch osób". Byłoby to znacznie potężniejsze prawo:
+możliwość przeczytania **dowolnej** rozmowy w serwisie, w dowolnej chwili.
+Migawka daje administratorowi wyłącznie to, co zgłaszający sam mu pokazał.
+Zakres jest zamknięty i wynika ze zgody użytkownika, a nie z roli.
+
+Technicznie migawka to `@ElementCollection` klasy osadzonej — dowód nie ma
+własnego życia, istnieje tylko jako część zgłoszenia i ginie razem z nim.
+
+### Czego jeszcze nie wolno podpiąć
+
+Post w zgłoszeniu musi **należeć do zgłaszanego** i być dla zgłaszającego
+**widoczny**. Bez pierwszego sprawdzenia dałoby się podłożyć cudzy post
+i wywołać działanie wobec osoby, która go nie napisała; bez drugiego —
+zgłosić post „tylko dla znajomych" kogoś obcego, czyli obejść widoczność
+postów przyznając się, że jednak się go widziało.
+
+## Decyzja administratora nie karze sama
+
+Zamknięcie zgłoszenia zapisuje decyzję, notatkę i autora — i nic więcej. Kary
+są osobnymi operacjami. Gdyby zamknięcie karało automatycznie, decyzja
+„zasadne, ale wystarczy upomnienie" byłaby niemożliwa do wyrażenia.
+
+Sposoby zamknięcia są **dwa**, bo „zamknięte" bez rozróżnienia nie odpowiada na
+pytanie zadawane przy następnym zgłoszeniu tej samej osoby: czy poprzednie było
+zasadne? Liczba zasadnych stoi potem przy nagłówku zgłoszenia i przy koncie
+w panelu.
+
+Powtórne zamknięcie jest odrzucane — dwóch administratorów klikających
+jednocześnie nadpisywałoby sobie notatki.
+
+## Zmiana decyzji z poprzedniego kroku: zakaz wiadomości osobno
+
+W KROKU 11 zakaz publikowania wyłączał także czat, z uzasadnieniem, że kara
+zostawiająca otwartą drogę do pisania prywatnie nie jest karą.
+
+**Ten argument się odwrócił**, gdy administrator dostał dwa osobne przełączniki.
+Przy dawnym zachowaniu nie dałoby się w ogóle ustawić „nie wolno pisać postów,
+ale wolno rozmawiać ze znajomymi" — czyli najczęstszego przypadku przy kimś, kto
+zaśmieca tablicę, a nikomu nie dokucza. Kto ma dostać obie kary, dostaje obie.
+
+Test `postingBanCoversChat` został **przepisany**, a nie usunięty: zachowanie
+zmieniło się świadomie, więc sprawdzenie ma teraz pilnować nowej reguły
+(`postingBanDoesNotBlockChat`) i osobno nowej kary (`messagingBanBlocksChat`).
+
+## Adres klienta: dlaczego OSTATNI wpis nagłówka
+
+Najciekawsza rzecz techniczna w tym kroku. Za nginxem `getRemoteAddr()` zwraca
+adres kontenera — ten sam dla wszystkich. Prawdziwy adres jest
+w `X-Forwarded-For`, który jest listą.
+
+Nasz nginx używa `$proxy_add_x_forwarded_for`, czyli **dokleja** adres rozmówcy
+na koniec tego, co przyszło. Podrobiony nagłówek daje więc:
+
+```
+X-Forwarded-For: 1.2.3.4, 203.0.113.7
+                 ^ napisał atakujący
+                            ^ dokleił nasz nginx
+```
+
+Większość tutoriali każe brać **pierwszy** wpis. Blokadę adresu obchodziłoby się
+wtedy jednym dodatkowym nagłówkiem. Bierzemy ostatni — i to jest dokładnie ten
+rodzaj kodu, który działa w każdym normalnym użyciu i jest bezużyteczny wtedy,
+kiedy ma zadziałać. Test `spoofedHeaderDoesNotWin` wysyła podrobiony nagłówek
+i sprawdza, który adres wygrywa.
+
+## Multikonta: poszlaka, nie dowód
+
+Wspólny adres **nie dowodzi**, że to ta sama osoba — pod jednym adresem siedzi
+rodzina, akademik, kawiarnia, a operatorzy komórkowi trzymają za jednym adresem
+tysiące klientów. Dlatego aplikacja nigdzie nie blokuje nikogo automatycznie,
+a okienko pokazuje ostrzeżenie **nad** danymi razem z liczbą logowań i datą
+ostatniego.
+
+Blokada adresu działa przy **rejestracji i logowaniu**, nie na całym ruchu:
+zatrzymuje zakładanie kolejnych kont po banie, a osobom postronnym za tym samym
+adresem zabiera najwyżej możliwość założenia konta.
+
+Administrator nie zablokuje adresu, z którego sam korzysta — przy testowaniu na
+jednym komputerze odciąłby sobie drogę powrotu.
+
+## Poprawki czatu z tej samej rundy
+
+- **Dymek „pisze" ma awatar.** Nie należy do żadnej serii wiadomości, więc
+  wcześniej wyglądał jak trzy kropki znikąd.
+- **Lista rozmów dzieli się na dwie sekcje.** Wcześniej wszyscy znajomi stali
+  w jednym ciągu posortowanym od najnowszej rozmowy — osoby, z którymi nic
+  jeszcze nie napisano, lądowały na samym dole, za wszystkimi wątkami. A to
+  właśnie ich szuka ktoś, kto chce **zacząć** rozmowę.
+- **Wyszukiwarka** przy liście dłuższej niż sześć osób.
+
+## Sprawdzone
+
+317 testów backendu (34 nowe: 18 na zgłoszenia, 12 na adresy i blokady,
+3 na kolizję adresów w panelu, 1 przepisany na zakazy) oraz nowy zestaw
+`sprawdz-moderacje2.mjs` — **40 sprawdzeń w Chromium, trzema równoległymi
+sesjami**: zgłaszający, zgłaszany i administrator. Inaczej nie da się
+sprawdzić, czy administrator widzi zgłoszenie złożone przez kogoś innego
+i czy widzi w nim rozmowę, której sam nie miałby jak zobaczyć.
+
+Pięć asercji zweryfikowanych przez **wyłączenie poprawki**: podrobiony nagłówek
+`X-Forwarded-For`, blokada własnego adresu, oba limity zgłoszeń i sprawdzenie
+autora posta.
+
+Zestawy z poprzednich rund bez zmian: czat 41, widoczność 35, powiadomienia 21,
+moderacja 17, linki 12, poprawki interfejsu 18. **Jedno sprawdzenie z rundy
+moderacyjnej trzeba było zaktualizować** — oczekiwało JEDNEJ kolumny „Zakaz"
+w panelu, a od tej rundy są dwie. Zaświeciło się na czerwono słusznie: zmienił
+się interfejs, nie zepsuł kod.
+
+---
+
 ## Co zostaje na później
 
 - potwierdzenie adresu e-mail przy rejestracji (wymaganie nr 16, opcjonalne).

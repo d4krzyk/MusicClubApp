@@ -97,6 +97,48 @@ public class User {
     private LocalDateTime postingBannedUntil;
 
     /**
+     * Do kiedy obowiazuje zakaz WYSYLANIA WIADOMOSCI.
+     *
+     * <p>Osobny od {@link #postingBannedUntil} i to jest zmiana wzgledem
+     * pierwszej wersji czatu. Poczatkowo zakaz publikowania obejmowal takze
+     * wiadomosci - rozumowanie bylo takie, ze kara zostawiajaca otwarta droge
+     * do pisania prywatnie nie jest kara. Odkad administrator ma DWA osobne
+     * przelaczniki, to rozumowanie sie odwraca: gdyby zakaz publikowania
+     * dalej po cichu wylaczal czat, nie dalo by sie w ogole ustawic
+     * "nie wolno pisac postow, ale wolno rozmawiac ze znajomymi" - a to
+     * najczestszy przypadek przy kims, kto zasmieca tablice, ale nikomu
+     * nie dokucza.</p>
+     *
+     * <p>Kto chce obu kar naraz, wlacza obie. Kazda z nich wygasa sama,
+     * bez zadania w tle - liczy sie wylacznie porownanie z chwila obecna.</p>
+     */
+    @Column(name = "messaging_banned_until")
+    private LocalDateTime messagingBannedUntil;
+
+    /**
+     * Kiedy ta osoba ostatnio cokolwiek w aplikacji zrobila.
+     *
+     * <p>Na tym opiera sie kropka "online" i podpis "aktywny 5 minut temu".
+     * {@code null} znaczy "nigdy" - konto zalozone i nieuzywane, albo takie,
+     * ktore nie bylo uzywane od czasu dodania tej kolumny.</p>
+     *
+     * <p><b>Kolumna jest nullowalna z tego samego powodu co
+     * {@code Post.visibility}</b>: projekt chodzi na {@code ddl-auto=update},
+     * a Hibernate nie dolozy kolumny {@code NOT NULL} do tabeli, w ktorej sa
+     * juz wiersze. Tu jednak nie ma czego uzupelniac migracja - "nie wiemy,
+     * kiedy byl ostatnio" to uczciwa odpowiedz, a wpisanie tam daty startu
+     * aplikacji byloby zmysleniem aktywnosci, ktorej nie bylo.</p>
+     *
+     * <p><b>Znaczenie slowa "online" jest przyblizone i inne byc nie moze.</b>
+     * HTTP nie ma pojecia zamknietej karty: przegladarka nie melduje wyjscia,
+     * a serwer dowiaduje sie o czyms wylacznie wtedy, gdy przychodzi
+     * zapytanie. "Online" znaczy wiec: <i>cos robil w ciagu ostatnich kilku
+     * minut</i> - patrz {@code PresenceService.ONLINE_WINDOW}.</p>
+     */
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt;
+
+    /**
      * Nazwa pliku ze zdjeciem profilowym, np. {@code a1b2...ff.jpg}.
      * {@code null} oznacza brak zdjecia - interfejs pokazuje wtedy kolo
      * z pierwsza litera loginu.
@@ -224,6 +266,34 @@ public class User {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public LocalDateTime getMessagingBannedUntil() {
+        return messagingBannedUntil;
+    }
+
+    public void setMessagingBannedUntil(LocalDateTime messagingBannedUntil) {
+        this.messagingBannedUntil = messagingBannedUntil;
+    }
+
+    /**
+     * Czy zakaz wysylania wiadomosci obowiazuje <b>teraz</b>.
+     *
+     * <p>Ta sama zasada co przy {@link #isPostingBanned()}: pytanie zadajemy
+     * encji, zeby regula "null albo przeszlosc znaczy: wolno" byla zapisana
+     * raz. Wystarczy pomylic sie w jednym miejscu, zeby zakaz dalo sie
+     * obejsc jednym niesprawdzonym wejsciem.</p>
+     */
+    public boolean isMessagingBanned() {
+        return messagingBannedUntil != null && messagingBannedUntil.isAfter(LocalDateTime.now());
+    }
+
+    public LocalDateTime getLastSeenAt() {
+        return lastSeenAt;
+    }
+
+    public void setLastSeenAt(LocalDateTime lastSeenAt) {
+        this.lastSeenAt = lastSeenAt;
     }
 
     public String getAvatarFileName() {

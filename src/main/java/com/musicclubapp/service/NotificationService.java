@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * Powiadomienia: powstawanie, czytanie i sprzatanie.
  *
@@ -78,6 +80,28 @@ public class NotificationService {
     public void reactionRemoved(Post post, User actor) {
         notificationRepository.deleteMatching(
             post.getAuthor().getId(), actor.getId(), post.getId(), NotificationType.REACTION);
+    }
+
+    /**
+     * Nowe zgloszenie - powiadamiamy KAZDEGO administratora.
+     *
+     * <p><b>Liste administratorow dostajemy z zewnatrz, zamiast jej tu
+     * szukac.</b> Ten serwis celowo nie zna repozytorium uzytkownikow: jego
+     * zadaniem jest pilnowac regul powstawania powiadomien, a nie tego, kto
+     * jest kim. Wstrzykniecie tu kolejnego repozytorium zaczeloby zamieniac
+     * go w drugi UserService.</p>
+     *
+     * <p><b>Administrator, ktory sam zglosil, nie dostaje powiadomienia
+     * o wlasnym zgloszeniu</b> - to ta sama regula co wszedzie indziej tutaj
+     * ("nie powiadamiam samego siebie"), tylko zastosowana do listy.</p>
+     */
+    @Transactional
+    public void reportFiled(List<User> admins, User reporter) {
+        for (User admin : admins) {
+            if (!admin.getId().equals(reporter.getId())) {
+                notificationRepository.save(Notification.report(admin, reporter));
+            }
+        }
     }
 
     /** Ktos wyslal zaproszenie do znajomych. */

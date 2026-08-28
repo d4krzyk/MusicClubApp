@@ -32,6 +32,23 @@ public record AdminUserResponse(
      * administratorowi, ze ktos byl juz kiedys blokowany - i to bywa
      * wazniejsze niz sam biezacy stan.</p>
      */
-    LocalDateTime postingBannedUntil
+    LocalDateTime postingBannedUntil,
+
+    /**
+     * Do kiedy obowiazuje zakaz wysylania wiadomosci; {@code null} - gdy zadnego nie ma.
+     *
+     * <p>Osobne pole od zakazu publikowania, bo to <b>osobna kara</b> -
+     * patrz komentarz przy {@code User.messagingBannedUntil}.</p>
+     */
+    LocalDateTime messagingBannedUntil,
+
+    /**
+     * Ile zgloszen na to konto uznano za zasadne.
+     *
+     * <p>Najwazniejsza liczba w calym panelu przy podejmowaniu decyzji.
+     * Jedno zgloszenie moze byc nieporozumieniem; piate zasadne to juz
+     * wzorzec zachowania - i zupelnie inna decyzja.</p>
+     */
+    long resolvedReports
 ) {
 }

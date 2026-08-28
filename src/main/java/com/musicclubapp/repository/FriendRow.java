@@ -31,4 +31,14 @@ public interface FriendRow {
      * artystow i gatunki; nazwa metody i cala reszta zostaje bez zmian.</p>
      */
     long getSharedFriends();
+
+    /**
+     * Kiedy ta osoba byla ostatnio aktywna; {@code null} = nigdy.
+     *
+     * <p>Sama data, a nie gotowe "online". Regula, ile minut jeszcze sie
+     * liczy, siedzi w {@code PresenceService} - gdyby liczylo ja takze
+     * zapytanie, ta sama osoba mogla by byc "online" na jednym ekranie
+     * i "offline" na drugim.</p>
+     */
+    java.time.LocalDateTime getLastSeenAt();
 }

@@ -54,6 +54,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByRole(Role role);
 
     /**
+     * Wszyscy z dana rola.
+     *
+     * <p>Uzywane przy zgloszeniach: powiadomienie o nowym zgloszeniu powstaje
+     * dla KAZDEGO administratora osobno, bo powiadomienie ma jednego odbiorce.
+     * Przy dwoch czy trzech administratorach to dwa czy trzy wiersze - przy
+     * setce trzeba by to przemyslec od nowa, ale wtedy problemem bylby juz
+     * caly model powiadomien, a nie to jedno miejsce.</p>
+     */
+    List<User> findByRole(Role role);
+
+    /**
      * Wlasne zapytanie JPQL - wymaganie nr 8.
      *
      * <p>Uwaga: JPQL operuje na ENCJACH i ich polach ({@code User u}, {@code u.username}),
@@ -101,6 +112,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         value = """
                 SELECT u.username            AS username,
                        u.avatar_file_name    AS avatarFileName,
+                       u.last_seen_at        AS lastSeenAt,
                        (SELECT COUNT(*)
                           FROM user_friends kandydat
                           JOIN user_friends widz
@@ -274,6 +286,24 @@ public interface UserRepository extends JpaRepository<User, Long> {
             WHERE a.username = :username
            """, nativeQuery = true)
     List<Long> circleIds(@Param("username") String username);
+
+    /**
+     * Zapisuje date ostatniej aktywnosci - <b>jednym zapytaniem, bez wczytywania encji</b>.
+     *
+     * <p>Wywolywane najczesciej ze wszystkich zapytan w projekcie (przy kazdym
+     * wejsciu zalogowanego uzytkownika, z ograniczeniem czestotliwosci -
+     * patrz {@code PresenceService}). Wczytanie calego uzytkownika tylko po to,
+     * zeby ustawic jedna kolumne, dokladalo by do kazdego takiego zapytania
+     * jeszcze jeden SELECT.</p>
+     *
+     * <p><b>Bez {@code clearAutomatically}</b>, choc to zapytanie masowe.
+     * Czyszczenie pamieci podrecznej odczepialoby encje, ktorych wlasciwe
+     * zapytanie moze jeszcze uzywac - a tutaj nie ma to sensu: nikt nie czyta
+     * tej kolumny w tej samej transakcji, w ktorej ja zapisujemy.</p>
+     */
+    @Modifying
+    @Query("UPDATE User u SET u.lastSeenAt = :now WHERE u.username = :username")
+    void touchLastSeen(@Param("username") String username, @Param("now") java.time.LocalDateTime now);
 
     /**
      * Kasuje wiersze znajomosci wskazujace na dane konto - <b>z obu stron</b>.

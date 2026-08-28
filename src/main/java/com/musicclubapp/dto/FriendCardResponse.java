@@ -14,6 +14,8 @@ package com.musicclubapp.dto;
 public record FriendCardResponse(
     String username,
     String avatarUrl,
-    long mutualFriends
+    long mutualFriends,
+    /** Kropka "online" i podpowiedz "aktywny 5 minut temu" na kafelku. */
+    PresenceResponse presence
 ) {
 }

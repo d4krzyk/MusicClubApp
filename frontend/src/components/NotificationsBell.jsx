@@ -147,6 +147,14 @@ export default function NotificationsBell() {
         return t('notifications.friendRequest', { username: notification.actorUsername });
       case 'FRIEND_ACCEPTED':
         return t('notifications.friendAccepted', { username: notification.actorUsername });
+      /*
+        Powiadomienie o zgloszeniu NIE zdradza, kogo zgloszono - widac tylko,
+        ze cos czeka w panelu. Nazwisko na dzwonku ogladalby kazdy, kto
+        przypadkiem spojrzy administratorowi na ekran, a decyzja jeszcze
+        nie zapadla.
+      */
+      case 'REPORT':
+        return t('notifications.report');
       default:
         return notification.actorUsername;
     }

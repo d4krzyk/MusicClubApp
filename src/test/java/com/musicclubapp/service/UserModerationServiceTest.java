@@ -56,6 +56,10 @@ class UserModerationServiceTest {
     @Mock private FileStorageService fileStorage;
     @Mock private UserMapper userMapper;
     @Mock private NotificationService notifications;
+    @Mock private MessageService messages;
+    @Mock private ReportService reports;
+    @Mock private NetworkService network;
+    @Mock private com.musicclubapp.repository.ReportRepository reportRepository;
 
     @InjectMocks private UserModerationService moderationService;
 
@@ -103,6 +107,9 @@ class UserModerationServiceTest {
          */
         verify(reactionRepository).deleteByUserId(target.getId());
         verify(requestRepository).deleteBySenderIdOrRecipientId(target.getId(), target.getId());
+        verify(messages).deleteAllOf(target.getId());
+        verify(reports).deleteAllOf(target.getId());
+        verify(network).forgetUser(target.getId());
         verify(userRepository).removeFriendshipsWith(target.getId());
         verify(userRepository).delete(target);
     }

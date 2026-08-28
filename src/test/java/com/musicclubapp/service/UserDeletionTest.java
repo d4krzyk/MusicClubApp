@@ -7,6 +7,7 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.music.MusicProvider;
 import com.musicclubapp.repository.FavoritePlaylistRepository;
 import com.musicclubapp.repository.FriendRequestRepository;
+import com.musicclubapp.repository.MessageRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
@@ -46,6 +47,8 @@ class UserDeletionTest {
     @Autowired private ReactionRepository reactionRepository;
     @Autowired private FriendRequestRepository requestRepository;
     @Autowired private FavoritePlaylistRepository playlistRepository;
+    @Autowired private MessageRepository messageRepository;
+    @Autowired private MessageService messageService;
     @Autowired private ReactionService reactionService;
     @Autowired private PostService postService;
     @Autowired private FriendService friendService;
@@ -71,6 +74,37 @@ class UserDeletionTest {
 
         assertThat(postRepository.countByAuthorUsername("ala")).isEqualTo(1);
         assertThat(userRepository.findByUsername("troll")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("wiadomosci z czatu znikaja w OBIE strony")
+    void chatMessagesGoBothWays() {
+        /*
+         * Wiadomosc wskazuje na konto DWOMA kluczami obcymi - jako nadawca
+         * i jako odbiorca. Skasowanie tylko jednej strony konczy sie odmowa
+         * bazy, a pominiecie obu - odmowa przy kasowaniu samego konta.
+         * Dlatego sprawdzamy tu obie polowy rozmowy naraz.
+         */
+        troll.addFriend(ala);
+        userRepository.save(troll);
+        userRepository.save(ala);
+        entityManager.flush();
+
+        messageService.send("troll", "ala", new com.musicclubapp.dto.SendMessageRequest(
+            "od trolla", null, null, null));
+        messageService.send("ala", "troll", new com.musicclubapp.dto.SendMessageRequest(
+            "do trolla", null, null, null));
+        entityManager.flush();
+
+        assertThat(messageRepository.count()).isEqualTo(2);
+
+        moderationService.deleteUser("admin", troll.getId());
+        entityManager.flush();
+
+        assertThat(messageRepository.count()).isZero();
+        assertThat(userRepository.findByUsername("troll")).isEmpty();
+        // Konto rozmowcy ma zostac nietkniete
+        assertThat(userRepository.findByUsername("ala")).isPresent();
     }
 
     @Test

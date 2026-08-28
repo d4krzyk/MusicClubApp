@@ -61,6 +61,9 @@ public class NotificationMapper {
             case FRIEND_REQUEST -> "/znajomi";
             case FRIEND_ACCEPTED -> "/profil/"
                 + URLEncoder.encode(notification.getActor().getUsername(), StandardCharsets.UTF_8);
+            // Zgloszenie prowadzi do panelu, a nie na profil zglaszajacego -
+            // administrator ma tam podjac decyzje, a nie ogladac czyjs profil
+            case REPORT -> "/zgloszenia";
         };
     }
 

@@ -9,17 +9,20 @@ import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
 import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { useChat } from '../chat/ChatContext';
 import Avatar from '../components/Avatar';
 import Post from '../components/Post';
 import PostSkeleton from '../components/PostSkeleton';
 import EmptyState from '../components/EmptyState';
 import CommonGround from '../components/CommonGround';
+import PresenceDot from '../components/PresenceDot';
+import ReportButton from '../components/ReportButton';
 import FriendsStrip from '../components/FriendsStrip';
 import TopMusic from '../components/TopMusic';
 import Favorites from '../components/Favorites';
 import Playlists from '../components/Playlists';
 import FriendshipButton from '../components/FriendshipButton';
-import { IconInbox, IconPlus } from '../components/Icons';
+import { IconChat, IconInbox, IconPlus } from '../components/Icons';
 import { formatDate } from '../utils/dates';
 
 /** Ile postow pobieramy za jednym razem. */
@@ -43,6 +46,7 @@ export default function ProfilePage() {
   const { t, i18n } = useTranslation();
   const { username } = useParams();
   const { user } = useAuth();
+  const { openChat } = useChat();
 
   // Bez nazwy w adresie ogladamy siebie
   const whose = username ?? user?.username;
@@ -165,6 +169,18 @@ export default function ProfilePage() {
 
             <div className="flex-grow-1">
               <h1 className="h4 mb-1">{profile.username}</h1>
+
+              {/*
+                Obecnosc pokazujemy tylko na CUDZYM profilu. Napis "jestes
+                online" jest dla wlasciciela konta bezuzyteczny - i tak wie,
+                ze tu jest.
+              */}
+              {!profile.self && (
+                <div className="mb-1">
+                  <PresenceDot presence={profile.presence} withLabel />
+                </div>
+              )}
+
               <div className="text-body-secondary small">
                 {t('profile.memberSince', {
                   date: formatDate(profile.createdAt, i18n.language),
@@ -196,6 +212,40 @@ export default function ProfilePage() {
                   setRefreshFriends((n) => n + 1);
                 }}
               />
+
+              {/*
+                "Napisz" pokazuje sie WYLACZNIE przy znajomym - bo tylko
+                z nim wolno pisac. Przycisk prowadzacy do komunikatu
+                "pisac mozna tylko ze znajomymi" byloby zaproszeniem
+                do bledu. O relacji rozstrzyga serwer (pole
+                friendshipStatus), a nie warunek w przegladarce.
+              */}
+              {profile.friendshipStatus === 'FRIENDS' && (
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={() => openChat(profile.username)}
+                >
+                  <IconChat className="me-1" /> {t('chat.write')}
+                </Button>
+              )}
+
+              {/*
+                Zgloszenie - tylko na CUDZYM profilu, z oczywistego powodu.
+
+                Wariant "rozmowa" pokazujemy wylacznie znajomym: tylko z nimi
+                da sie w ogole wymienic wiadomosci, a wybor prowadzacy do
+                komunikatu "nie macie zadnej rozmowy" bylby zaproszeniem
+                do bledu.
+              */}
+              {!profile.self && (
+                <ReportButton
+                  username={profile.username}
+                  contexts={profile.friendshipStatus === 'FRIENDS'
+                    ? ['PROFILE', 'CONVERSATION']
+                    : ['PROFILE']}
+                />
+              )}
             </div>
           </Card.Body>
         </Card>

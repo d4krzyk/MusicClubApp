@@ -39,14 +39,22 @@ public class UserMapper {
     /**
      * Encja -&gt; DTO dla administratora. Rozni sie tym, ze zawiera role -
      * admin musi ja widziec, zeby moc ja zmienic.
+     *
+     * <p><b>Liczbe zasadnych zgloszen podaje wolajacy</b>, zamiast mapper
+     * liczyl ja sam. Mapper celowo nie zna zadnego repozytorium: gdyby siegal
+     * do bazy, wyswietlenie listy dwudziestu kont oznaczaloby dwadziescia
+     * dodatkowych zapytan (klasyczny problem N+1) - i to bez zadnego widocznego
+     * powodu, bo z wierzchu wyglada to na zwykle przepisanie pol.</p>
      */
-    public AdminUserResponse toAdminResponse(User user) {
+    public AdminUserResponse toAdminResponse(User user, long resolvedReports) {
         return new AdminUserResponse(
             user.getId(),
             user.getUsername(),
             user.getEmail(),
             user.getRole(),
             user.getCreatedAt(),
-            user.getPostingBannedUntil());
+            user.getPostingBannedUntil(),
+            user.getMessagingBannedUntil(),
+            resolvedReports);
     }
 }

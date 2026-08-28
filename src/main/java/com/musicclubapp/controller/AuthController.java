@@ -3,7 +3,9 @@ package com.musicclubapp.controller;
 import com.musicclubapp.dto.LoginRequest;
 import com.musicclubapp.dto.RegisterRequest;
 import com.musicclubapp.dto.UserResponse;
+import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.security.JsonRememberMeServices;
+import com.musicclubapp.service.NetworkService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -56,15 +58,21 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
     private final JsonRememberMeServices rememberMeServices;
+    private final NetworkService network;
+    private final UserRepository userRepository;
 
     public AuthController(UserService userService,
                           AuthenticationManager authenticationManager,
                           SecurityContextRepository securityContextRepository,
-                          JsonRememberMeServices rememberMeServices) {
+                          JsonRememberMeServices rememberMeServices,
+                          NetworkService network,
+                          UserRepository userRepository) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.rememberMeServices = rememberMeServices;
+        this.network = network;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -85,7 +93,16 @@ public class AuthController {
         @ApiResponse(responseCode = "409", description = "Login lub e-mail juz zajety"),
         @ApiResponse(responseCode = "422", description = "Blad walidacji danych")
     })
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request,
+                                                 HttpServletRequest http) {
+        /*
+         * Blokada adresu dziala WLASNIE tutaj - przy zakladaniu konta.
+         * To jest jedyny moment, w ktorym da sie zatrzymac osobe wracajaca
+         * po banie pod nowym loginem; po zalozeniu konta jest juz tylko
+         * kolejnym uzytkownikiem, nie do odroznienia od reszty.
+         */
+        network.requireNotBlocked(network.clientIp(http));
+
         UserResponse created = userService.register(request);
 
         URI location = UriComponentsBuilder.fromPath("/api/users/{id}")
@@ -125,6 +142,14 @@ public class AuthController {
                                               HttpServletRequest request,
                                               HttpServletResponse response) {
 
+        String address = network.clientIp(request);
+        /*
+         * Sprawdzamy PRZED sprawdzeniem hasla. Odwrotna kolejnosc oznaczalaby,
+         * ze zablokowany adres nadal moze sprawdzac hasla - czyli ze blokada
+         * nie przeszkadza w zgadywaniu ich metoda prob i bledow.
+         */
+        network.requireNotBlocked(address);
+
         Authentication payload = new UsernamePasswordAuthenticationToken(
             loginPayload.username(),
             loginPayload.password());
@@ -144,6 +169,17 @@ public class AuthController {
         if (loginPayload.rememberMe()) {
             rememberMeServices.rememberUser(request, response, authenticated);
         }
+
+        /*
+         * Zapisujemy adres dopiero po UDANYM zalogowaniu. Zapis przy kazdej
+         * probie zamienialby te tabele w dziennik nieudanych logowan - a to
+         * zupelnie inna funkcja, ktorej tu nie ma.
+         *
+         * Blad zapisu nie moze przerwac logowania: to notatka pomocnicza dla
+         * administratora, a nie warunek wejscia (patrz NetworkService).
+         */
+        userRepository.findByUsername(authenticated.getName())
+            .ifPresent(user -> network.recordLogin(user, address));
 
         return ResponseEntity.ok(userService.getByUsername(authenticated.getName()));
     }

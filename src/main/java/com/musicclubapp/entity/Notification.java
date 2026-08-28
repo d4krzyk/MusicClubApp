@@ -127,6 +127,17 @@ public class Notification {
         return new Notification(recipient, actor, NotificationType.FRIEND_ACCEPTED);
     }
 
+    /**
+     * Ktos zlozyl zgloszenie - dla administratora.
+     *
+     * <p>{@code actor} to zglaszajacy, a nie osoba zgloszona. Tak jest
+     * poprawnie: powiadomienie mowi "ktos cos zglosil", a nie "ktos cos
+     * zrobil" - o tym drugim rozstrzyga dopiero administrator.</p>
+     */
+    public static Notification report(User admin, User reporter) {
+        return new Notification(admin, reporter, NotificationType.REPORT);
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

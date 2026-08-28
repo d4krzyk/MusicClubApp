@@ -22,6 +22,15 @@ import { linkError } from '../utils/musicLinks';
  *
  * <p>Blad linku pokazujemy juz przy wpisywaniu, ale <b>o wysylce decyduje
  * i tak serwer</b> - ta walidacja jest wygoda, nie zabezpieczeniem.</p>
+ *
+ * <p><b>Po co {@code idPrefix}.</b> Ten sam wybor nagrania stoi teraz
+ * w dwoch miejscach naraz: w formularzu nowego posta i w oknie czatu.
+ * Bez przedrostka oba pola dostawaly identyfikator {@code musicUrl} - a dwa
+ * elementy o tym samym identyfikatorze to nie jest drobiazg: etykieta
+ * {@code <label for="musicUrl">} zawsze wskazuje PIERWSZY z nich, wiec
+ * klikniecie podpisu w czacie ustawialo kursor w formularzu posta pod
+ * spodem. Znalazlo to sprawdzenie w przegladarce, ktore trafilo na dwa
+ * pasujace elementy zamiast jednego.</p>
  */
 
 /** Kolejnosc na przelaczniku - od najczestszego przypadku. */
@@ -32,6 +41,7 @@ export default function MusicPicker({
   link, onLink,
   startSeconds, onStartSeconds,
   serverErrors = {},
+  idPrefix = '',
 }) {
   const { t } = useTranslation();
 
@@ -71,7 +81,7 @@ export default function MusicPicker({
       <Row>
         <Col md={startSecondsAllowed ? 8 : 12}>
           <Field
-            id="musicUrl"
+            id={`${idPrefix}musicUrl`}
             label={t('posts.musicUrl')}
             value={link}
             onChange={onLink}
@@ -86,7 +96,7 @@ export default function MusicPicker({
         {startSecondsAllowed && (
           <Col md={4}>
             <Field
-              id="musicStartSeconds"
+              id={`${idPrefix}musicStartSeconds`}
               label={t('posts.startAt')}
               value={startSeconds}
               onChange={onStartSeconds}

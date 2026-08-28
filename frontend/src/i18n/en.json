@@ -14,7 +14,8 @@
     "themeLight": "Switch to light theme",
     "themeDark": "Switch to dark theme",
     "friends": "Friends",
-    "myProfile": "My profile"
+    "myProfile": "My profile",
+    "reports": "Reports"
   },
   "common": {
     "loading": "Loading…",
@@ -89,7 +90,29 @@
     "deleteQuestion": "Really delete the account \"{{username}}\"? This cannot be undone.",
     "deleteWhatGoes": "All of their posts, photos, reactions and friendships go with it.",
     "deleteConfirm": "Delete account",
-    "deleted": "The account \"{{username}}\" has been deleted."
+    "deleted": "The account \"{{username}}\" has been deleted.",
+    "colMessagingBan": "Messaging ban",
+    "colReports": "Reports",
+    "mutedUntil": "Muted until {{date}}",
+    "muted_one": "Messaging ban for {{count}} hour",
+    "muted_other": "Messaging ban for {{count}} hours",
+    "muteLifted": "Messaging ban lifted",
+    "relatedHint": "Accounts from the same address, and address blocking",
+    "relatedTitle": "Network links: {{username}}",
+    "relatedWarning": "A shared address is a LEAD, not proof. One address can be a whole family, a dorm, or thousands of a mobile carrier's customers. Blocking an address stops sign-ups and logins for everyone using it.",
+    "addressesOf": "Addresses {{username}} logs in from",
+    "noAddresses": "This account has not logged in since address logging was switched on.",
+    "otherAccounts": "Other accounts from these addresses",
+    "noRelated": "No other account has logged in from these addresses.",
+    "loginCount_one": "{{count}} login",
+    "loginCount_other": "{{count}} logins",
+    "blockAddress": "Block address",
+    "blockReasonPrompt": "Why are you blocking {{address}}? (the reason is stored)",
+    "addressBlocked": "Address {{address}} has been blocked",
+    "blockedTitle": "Blocked addresses",
+    "blockedHint": "These addresses cannot sign up or log in. Open sessions keep working — the block applies from the next login.",
+    "blockedBy": "{{username}}, {{date}}",
+    "unblock": "Unblock"
   },
   "errors": {
     "network": "Cannot reach the server. Check whether the backend is running.",
@@ -305,7 +328,8 @@
     "markAllRead": "Mark all read",
     "reaction": "{{username}} reacted {{emoji}} to your post",
     "friendRequest": "{{username}} sent you a friend request",
-    "friendAccepted": "{{username}} is now your friend"
+    "friendAccepted": "{{username}} is now your friend",
+    "report": "A new report to review"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -331,5 +355,94 @@
     "friends": "Mutual friends",
     "nothing": "Nothing in common yet.",
     "nothingHint": "Add favourite artists and tracks to your profile - then there will be something to compare."
+  },
+  "presence": {
+    "online": "active now",
+    "lastSeen": "active {{when}}",
+    "never": "never active"
+  },
+  "chat": {
+    "title": "Messages",
+    "write": "Message",
+    "send": "Send",
+    "placeholder": "Write to {{username}}…",
+    "backToList": "Back to conversations",
+    "attachMusic": "Attach a track",
+    "play": "Play",
+    "openInService": "Open in the service",
+    "you": "You",
+    "typing": "{{username}} is typing…",
+    "noMessagesYet": "Nothing here yet",
+    "emptyThread": "This is the start of your conversation with {{username}}. Send the first message or share a track.",
+    "olderMessages": "Show older",
+    "noFriends": "Nobody to message yet",
+    "noFriendsHint": "Messages go to friends. Find someone with a similar taste and send an invitation — the conversation will follow.",
+    "loadFailed": "Could not load the conversation",
+    "sendFailed": "Could not send the message",
+    "searchPlaceholder": "Search friends…",
+    "groupThreads": "Conversations",
+    "groupFriends": "Write to…",
+    "noMatches": "No friend of yours matches “{{search}}”"
+  },
+  "reports": {
+    "report": "Report",
+    "reportUser": "Report {{username}}",
+    "reason": "Reason",
+    "reasons": {
+      "HARASSMENT": "Harassment or abuse",
+      "SPAM": "Spam and advertising",
+      "HATE": "Hateful content",
+      "INAPPROPRIATE": "Inappropriate content",
+      "IMPERSONATION": "Impersonation",
+      "OTHER": "Something else"
+    },
+    "context": "What is this about",
+    "contexts": {
+      "PROFILE": "This person's profile",
+      "POST": "A specific post",
+      "CONVERSATION": "Your conversation"
+    },
+    "contextHints": {
+      "PROFILE": "The administrator will look at the profile — the name, picture and what this person shows about themselves.",
+      "POST": "We will attach the content of that post to the report.",
+      "CONVERSATION": "We will attach a copy of the last 20 messages from your conversation. Only an administrator will see them."
+    },
+    "description": "What happened?",
+    "descriptionPlaceholder": "Describe the problem in your own words…",
+    "descriptionHint": "Write at least one sentence — a reason picked from a list does not tell the administrator what to look for.",
+    "send": "Send report",
+    "sending": "Sending…",
+    "sent": "The report reached an administrator. Thank you — they will review it and decide what to do.",
+    "failed": "Could not send the report",
+    "panelTitle": "Reports",
+    "filters": {
+      "OPEN": "Pending",
+      "RESOLVED": "Founded",
+      "DISMISSED": "Unfounded",
+      "ALL": "All"
+    },
+    "statuses": {
+      "OPEN": "Pending",
+      "RESOLVED": "Founded",
+      "DISMISSED": "Unfounded"
+    },
+    "filedBy": "reported by {{username}}",
+    "priorResolved_one": "{{count}} earlier founded report",
+    "priorResolved_other": "{{count}} earlier founded reports",
+    "showDetails": "Show evidence",
+    "hideDetails": "Hide evidence",
+    "evidenceHint": "A copy of the conversation from the moment of reporting — kept even if the messages have since been deleted.",
+    "noEvidence": "No attached evidence — the profile itself is the evidence.",
+    "openPost": "Open the reported post",
+    "note": "Administrator's note",
+    "notePlaceholder": "E.g. “Messaging ban for 48 h”…",
+    "noteHint": "Closing a report does NOTHING to the account by itself. You apply penalties in the users panel.",
+    "resolve": "Founded — close",
+    "dismiss": "Unfounded",
+    "goToPanel": "Users panel",
+    "decisionBy": "Closed by {{username}}, {{when}}",
+    "emptyOpen": "Nothing awaiting a decision",
+    "emptyOpenHint": "All reports are closed. New ones will show up here and on the bell.",
+    "emptyOther": "No reports in this category"
   }
 }

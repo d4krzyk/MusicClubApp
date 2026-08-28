@@ -25,6 +25,10 @@ pozostałych osób — granicę widać wyraźnie:
 | Dzwonek — każde powiadomienie prowadzi do konkretnego zdarzenia | Okienko „kto zareagował", pogrupowane po rodzaju |
 | ![Profil](docs/zrzuty/profil.jpg) | ![Pusty stan](docs/zrzuty/pusty-stan.jpg) |
 | Profil: ulubieni, gablotka playlist, znajomi, posty | Pusto ≠ awaria — każdy pusty stan mówi, co dalej |
+| ![Czat](docs/zrzuty/czat.jpg) | ![Lista rozmów](docs/zrzuty/czat-lista.jpg) |
+| Czat wysuwa się z prawej — rozmowa toczy się obok tego, co akurat oglądasz | Lista rozmów: kropka „online", podgląd ostatniej wiadomości, licznik nieprzeczytanych |
+| ![Zgłoszenie](docs/zrzuty/zgloszenie.jpg) | ![Panel zgłoszeń](docs/zrzuty/panel-zgloszen.jpg) |
+| Zgłoszenie wymaga opisania problemu własnymi słowami | Panel administratora z migawką rozmowy — jedyną drogą, żeby ją zobaczyć |
 
 <details>
 <summary>Skąd te zrzuty i czego na nich nie ma</summary>
@@ -162,6 +166,24 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/notifications/unread-count` | liczba nieprzeczytanych (to ona wisi przy dzwonku) |
 | POST | `/api/notifications/{id}/read` | oznacza jedno jako przeczytane |
 | POST | `/api/notifications/read-all` | oznacza wszystkie |
+| GET | `/api/messages/conversations` | wszyscy znajomi z ostatnią wiadomością i licznikiem |
+| GET | `/api/messages/unread-count` | liczba nieprzeczytanych (to ona wisi przy ikonie czatu) |
+| GET | `/api/messages/with/{username}` | historia rozmowy, od najnowszej |
+| POST | `/api/messages/with/{username}` | wysłanie wiadomości (tekst i/albo nagranie) |
+| GET | `/api/messages/with/{username}/sync?after=` | nowe wiadomości + „pisze" + obecność, jedną odpowiedzią |
+| POST | `/api/messages/with/{username}/read` | oznacza rozmowę jako przeczytaną |
+| POST | `/api/messages/with/{username}/typing` | sygnał „właśnie piszę" (żyje 5 s, w pamięci) |
+| POST | `/api/reports/on/{username}` | zgłasza użytkownika (powód, kontekst, opis) |
+| GET | `/api/reports/admin?status=` | lista zgłoszeń — **tylko administrator** |
+| GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
+| GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |
+| POST | `/api/reports/admin/{id}/resolve` | zamyka zgłoszenie decyzją i notatką |
+| PATCH | `/api/users/{id}/messaging-ban` | zakaz wysyłania wiadomości (osobny od zakazu postów) |
+| GET | `/api/users/{id}/addresses` | adresy, z których logowało się konto |
+| GET | `/api/users/{id}/related` | inne konta z tych samych adresów (**poszlaka**) |
+| GET | `/api/users/blocked-ips` | lista zablokowanych adresów |
+| POST | `/api/users/blocked-ips` | blokuje adres (rejestracja i logowanie) |
+| DELETE | `/api/users/blocked-ips/{id}` | zdejmuje blokadę adresu |
 | GET | `/api/profiles/{username}` | publiczny profil użytkownika |
 | GET | `/api/profiles/{username}/friends` | znajomi — od najbardziej powiązanych |
 | GET | `/api/profiles/{username}/top-music` | najczęściej wrzucane nagrania (top 5) |
@@ -524,6 +546,229 @@ pozycji — zapytanie z podwójnym złączeniem byłoby trudniejsze do przeczyta
 a nie szybsze. Gatunki są jedynym wyjątkiem: idą jednym zapytaniem, bo doczytanie
 ich z encji kosztowałoby jedno zapytanie **na każdego** ulubionego wykonawcę.
 
+## Czat ze znajomymi
+
+Panel wysuwany z prawej strony: po lewej lista wszystkich znajomych, po
+kliknięciu — rozmowa. Do wiadomości można dołączyć **link do utworu, albumu,
+artysty albo playlisty**, dokładnie tak samo jak do posta.
+
+### Pisać można tylko ze znajomymi
+
+To jest główna reguła całej funkcji i pilnuje jej **serwer, przy każdej
+operacji z osobna** — wysłaniu, odczycie historii, odpytywaniu o nowości,
+oznaczaniu przeczytanych, nawet przy sygnale „pisze". Gdyby sprawdzenie stało
+wyłącznie przy wysyłaniu, wystarczyłoby wywołać adres historii, żeby przeczytać
+korespondencję dwóch obcych osób.
+
+W przeglądarce widać to jako brak przycisku „Napisz" u kogoś, kto nie jest
+znajomym — ale to jest tylko porządek w interfejsie, a nie zabezpieczenie.
+
+Zerwanie znajomości **zamyka rozmowę, ale jej nie kasuje**. Wiadomości zostają
+i wrócą, gdy znajomość zostanie odnowiona: kasowanie ich przy kliknięciu „usuń
+ze znajomych" byłoby decyzją za obie strony naraz, a wiadomość należy też do
+tego, kto ją dostał.
+
+Zakaz publikowania nałożony przez administratora **obejmuje także czat**. Kara
+za to, co ktoś pisze, zostawiająca otwartą drogę do pisania prywatnie, nie jest
+karą — najbardziej dokuczliwe treści trafiają właśnie tam, gdzie nikt poza
+odbiorcą ich nie widzi.
+
+### Skąd rozmowa, skoro nie ma tabeli „rozmowy"
+
+Bo nie jest potrzebna. Rozmowa dwóch osób nie ma żadnego własnego stanu:
+kto z kim, kiedy ostatnio i ile nieprzeczytanych da się policzyć z samych
+wiadomości. Osobna tabela byłaby drugą kopią tej samej prawdy — a dwie kopie
+prędzej czy później się rozjeżdżają.
+
+Ceną jest to, że listę rozmów trzeba **wyliczyć** zapytaniem grupującym
+zamiast odczytać wprost. Robią to **trzy zapytania na całą listę**, niezależnie
+od liczby znajomych: jedno o ostatnie wiadomości, jedno o ich treść, jedno
+o liczniki. Naiwna wersja — dla każdego znajomego pobierz ostatnią wiadomość
+i policz nieprzeczytane — to dwa zapytania na osobę, czyli przy trzydziestu
+znajomych sześćdziesiąt zapytań na jedno otwarcie czatu.
+
+### Odpytywanie zamiast WebSocketa
+
+Nowe wiadomości, dymek „pisze" i obecność rozmówcy przychodzą **jedną
+odpowiedzią, co trzy sekundy, i tylko przy otwartej rozmowie**. Prawdziwy czat
+„na żywo" wymaga stałego połączenia, a to znaczy: druga ścieżka uwierzytelniania
+obok sesji HTTP, własny stan połączeń na serwerze i obsługa zrywania sieci po
+stronie przeglądarki. Przy rozmowie dwóch osób różnica między „natychmiast"
+a „w ciągu trzech sekund" jest niezauważalna, a kodu do utrzymania kilka razy
+mniej.
+
+Sygnał „pisze" **nie trafia do bazy** — żyje w pamięci serwera i wygasa po
+pięciu sekundach. To stan, który ma wartość krócej niż pojedynczy zapis do bazy.
+
+### Ptaszek „przeczytane" wymagał osobnego pytania
+
+Odpytywanie przynosi wyłącznie wiadomości **nowsze** od tej, którą przeglądarka
+już ma — i tak ma być. Ale przeczytanie nie tworzy nowej wiadomości: zmienia
+jedną kolumnę w starej, dawno wysłanej. Bez dodatkowego pytania o to, do której
+wiadomości rozmówca doczytał, ptaszek nie pojawiałby się **nigdy** bez
+odświeżenia całej strony. Znalazło to dopiero sprawdzenie w przeglądarce —
+testy backendu przechodziły, bo pytały o coś innego.
+
+### Nagranie w wiadomości: najpierw wizytówka
+
+W dymku pokazuje się okładka, tytuł i nazwa serwisu; odtwarzacz pojawia się
+dopiero po kliknięciu. Post ogląda się pojedynczo, przewijając tablicę, a
+rozmowa to kilkanaście dymków naraz na wąskim panelu — dziesięć osadzonych
+ramek Spotify ładowałoby dziesięć obcych stron jednocześnie, a przewijanie
+skakałoby, bo każda dochodzi w swoim czasie.
+
+Cała logika muzyki jest **wspólna z postami**: rozpoznawanie linku, składanie
+adresu odtwarzacza, pobieranie tytułu i walidacja. Powtarzają się wyłącznie
+deklaracje kolumn w bazie.
+
+## Zgłoszenia i moderacja
+
+Przy każdym cudzym profilu i pod każdym cudzym postem jest przycisk zgłoszenia.
+Zgłoszenie trafia do administratora — do panelu i na dzwonek.
+
+### Zgłoszenie równie łatwo obrócić przeciwko komuś
+
+Dlatego są **dwa limity, i każdy zatrzymuje co innego**:
+
+- **jedno OTWARTE zgłoszenie na osobę.** Dopóki poprzednie czeka na decyzję,
+  kolejne na tę samą osobę niczego nie wnosi. Po zamknięciu można zgłosić
+  ponownie — wtedy chodzi już o nowe zdarzenie.
+- **pięć zgłoszeń na dobę.** Pierwszy limit nie zadziałałby tu ani razu, bo
+  każde zgłoszenie dotyczyłoby kogoś innego — jedna osoba mogłaby zgłosić po
+  kolei cały serwis. Doba jest ruchoma, a nie kalendarzowa: inaczej dałoby się
+  wysłać dziesięć zgłoszeń w godzinę, po pięć z każdej strony północy.
+
+Do tego **opis własnymi słowami jest obowiązkowy**. Sam wybór z listy nie mówi
+administratorowi, czego szukać, a wymóg napisania zdania odsiewa zgłoszenia
+klikane ze złości, bez zastanowienia.
+
+### Dowody są migawką, a nie odnośnikiem — i to jest sedno
+
+Do zgłoszenia rozmowy dołączamy **kopię ostatnich 20 wiadomości**. Nie
+odnośnik — kopię. Dwa powody, oba istotne:
+
+1. **Odporność na zacieranie śladów.** Gdyby zgłoszenie tylko wskazywało na
+   wiadomości, zgłaszany miałby prostą drogę wyjścia: doprowadzić do ich
+   skasowania. Administrator otwierałby zgłoszenie i widział pustkę.
+   Sprawdza to osobny test, który kasuje wiadomości po zgłoszeniu i pilnuje,
+   że dowód został.
+2. **Ograniczenie uprawnień administratora.** Druga możliwa droga to endpoint
+   „pokaż mi rozmowę tych dwóch osób". Byłoby to znacznie potężniejsze prawo:
+   administrator mógłby wtedy czytać **dowolną** rozmowę w serwisie, kiedy
+   zechce. Tutaj widzi wyłącznie to, co zgłaszający sam mu pokazał — fragment
+   własnej rozmowy, świadomie udostępniony.
+
+Przy zgłoszeniu posta dołączamy jego treść z tego samego powodu: post bywa
+skasowany, zanim ktoś zajrzy do zgłoszenia.
+
+Nie da się też podpiąć pod zgłoszenie **cudzego** posta ani posta, którego się
+nie widzi (`tylko dla znajomych` kogoś obcego) — pierwsze pozwalałoby wywołać
+działanie wobec osoby, która go nie napisała, drugie byłoby obejściem
+widoczności postów.
+
+### Decyzja administratora niczego nie robi z kontem
+
+Zamknięcie zgłoszenia zapisuje **decyzję** (zasadne / bezpodstawne),
+**notatkę** i to, kto ją podjął. I tyle — żadna kara nie nakłada się sama.
+To celowe: gdyby zamknięcie automatycznie karało, decyzja „zasadne, ale
+wystarczy upomnienie" byłaby niemożliwa do wyrażenia. Kary są osobnymi
+operacjami w panelu kont.
+
+Dwa sposoby zamknięcia zamiast jednego, bo „zamknięte" bez rozróżnienia nie
+odpowiada na pytanie, które administrator zada sobie przy następnym zgłoszeniu
+tej samej osoby: **czy poprzednie było zasadne?** Trzy zgłoszenia oddalone jako
+bezpodstawne znaczą co innego niż trzy, po których za każdym razem trzeba było
+działać. Liczba zasadnych stoi przy nagłówku zgłoszenia i przy koncie w panelu.
+
+### Dwie kary, nie jedna
+
+- **zakaz publikowania** — nie wolno dodawać ani edytować postów,
+- **zakaz wysyłania wiadomości** — nie wolno pisać na czacie.
+
+**To była zmiana wobec pierwszej wersji czatu.** Wtedy zakaz publikowania
+wyłączał także wiadomości, bo kara zostawiająca otwartą drogę do pisania
+prywatnie nie jest karą. Odkąd administrator ma dwa osobne przełączniki,
+ten argument się odwraca: przy dawnym zachowaniu nie dałoby się w ogóle ustawić
+„nie wolno pisać postów, ale wolno rozmawiać ze znajomymi" — czyli najczęstszego
+przypadku przy kimś, kto zaśmieca tablicę, a nikomu nie dokucza. Kto ma dostać
+obie kary, dostaje obie.
+
+Obie liczy się w godzinach i obie **wygasają same**, bez zadania w tle.
+
+## Multikonta i blokada adresu
+
+Przy każdym koncie w panelu jest podgląd **adresów, z których się logowało**,
+i **innych kont używających tych samych adresów**.
+
+### To jest poszlaka, nie dowód — i aplikacja mówi to wprost
+
+Pod jednym adresem siedzi cała rodzina, akademik, kawiarnia, a operatorzy
+komórkowi potrafią trzymać za jednym adresem tysiące klientów. Dlatego:
+
+- aplikacja **nigdy nie blokuje nikogo automatycznie** na tej podstawie,
+- okienko pokazuje **ostrzeżenie nad danymi**, a nie pod nimi — zdanie
+  przeczytane po obejrzeniu listy już na nic się nie zda,
+- obok każdego wpisu jest **liczba logowań i data ostatniego**: dwa konta
+  z jednym wejściem sprzed pół roku znaczą co innego niż dwa używane
+  naprzemiennie codziennie.
+
+### Blokada adresu zatrzymuje rejestrację i logowanie — nic więcej
+
+Zablokowany adres nie założy konta ani się nie zaloguje. Reszta aplikacji
+działa z niego normalnie, a **otwarte sesje działają dalej**. To nie jest
+niedoróbka: blokada całego ruchu odcięłaby przy okazji wszystkich za tym samym
+adresem, a zatrzymanie zakładania kolejnych kont po banie to dokładnie to, po
+co ta funkcja powstała.
+
+Administrator **nie może zablokować adresu, z którego sam właśnie korzysta**.
+Przy testowaniu na jednym komputerze albo w sieci firmowej siedzi za tym samym
+adresem co osoba, którą blokuje — jedno kliknięcie odcięłoby mu drogę powrotu,
+a odzyskanie dostępu wymagałoby ręcznej zmiany w bazie.
+
+### Skąd bierzemy adres — i dlaczego z KOŃCA nagłówka
+
+W układzie z `docker-compose` cały ruch idzie przez nginx frontendu, więc
+`getRemoteAddr()` zwraca adres kontenera nginxa — ten sam dla wszystkich.
+Prawdziwy adres jest w nagłówku `X-Forwarded-For`, a ten jest listą:
+`klient, pośrednik1, pośrednik2`.
+
+Nasz nginx używa `$proxy_add_x_forwarded_for`, które **dokleja** adres rozmówcy
+na **koniec** tego, co przyszło. Jeśli więc ktoś wyśle zapytanie z własnoręcznie
+napisanym nagłówkiem `X-Forwarded-For: 1.2.3.4`, do aplikacji dotrze:
+
+```
+1.2.3.4, 203.0.113.7
+   ^ wymyślone       ^ prawdziwe, dokleił je nasz nginx
+```
+
+Większość tutoriali każe brać **pierwszy** wpis — czyli dokładnie ten, który
+napisał atakujący. Blokadę obchodziłoby się wtedy jednym dodatkowym nagłówkiem.
+Bierzemy **ostatni**. Pilnuje tego osobny test z podrobionym nagłówkiem.
+
+Przy uruchomieniu backendu wprost (tryb deweloperski) pośrednika nie ma
+i nagłówkowi nie wolno ufać — służy do tego `app.security.behind-proxy`.
+
+## Kto jest teraz aktywny
+
+Zielona kropka przy awatarze i podpis „aktywny 5 minut temu" — na profilu,
+na kafelkach znajomych i na liście rozmów.
+
+**„Online" znaczy tu dokładnie tyle: coś robił w ciągu ostatnich trzech
+minut.** Serwer nie ma jak się dowiedzieć, że ktoś zamknął kartę — przeglądarka
+tego nie melduje, a HTTP nie utrzymuje połączenia. Nie udajemy więc, że to coś
+więcej, i dlatego obok kropki zawsze stoi data: każdy może sam ocenić, na ile
+jest świeża.
+
+Datę zapisujemy **najwyżej raz na 45 sekund**, a o tym, czy już czas, decyduje
+licznik w pamięci. Otwarte okno czatu odpytuje serwer co kilka sekund — zapis
+przy każdym zapytaniu oznaczałby kilkanaście zapisów na minutę na każdą otwartą
+kartę, i to do tabeli `users`, czyli tej samej, którą czyta prawie każde inne
+zapytanie.
+
+Okno „online" jest **wyraźnie dłuższe** niż odstęp między zapisami i to nie
+przypadek: gdyby było krótsze, ktoś siedzący przed ekranem migałby między
+„online" i „offline" w rytmie własnego licznika. Pilnuje tego osobny test.
+
 ## Puste stany
 
 Pusto to nie awaria, tylko początek — i wtedy właśnie aplikacja ma jedyną
@@ -705,6 +950,21 @@ Adresy obu serwisów da się podmienić (`app.music.deezer.base-url`,
 `app.lastfm.base-url`) — z tego korzystają testy, żeby nie zależeć od cudzej
 dostępności.
 
+## Konfiguracja: adres klienta za pośrednikiem
+
+| Ustawienie | Domyślnie | Co robi |
+|---|---|---|
+| `app.security.behind-proxy` | `true` | Czy przed aplikacją stoi nginx doklejający `X-Forwarded-For` |
+
+Domyślne `true` pasuje do `docker-compose`, gdzie cały ruch idzie przez nginx
+frontendu. **Przy uruchamianiu backendu wprost** (tryb deweloperski, port 8080
+bez pośrednika) ustaw `false` — inaczej każdy mógłby podać dowolny adres,
+wysyłając nagłówek własnoręcznie:
+
+```bash
+java -jar target/musicclubapp-0.0.1-SNAPSHOT.jar --app.security.behind-proxy=false
+```
+
 ## Stan projektu
 
 Kroki 0–6 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
@@ -717,13 +977,20 @@ z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
 guście**, **posty publiczne albo tylko dla znajomych**, **tablica ze znajomymi
 na górze**, **gablotka pięciu playlist na profilu**, **sekcja „co Was łączy"
 z konkretnymi artystami, utworami i gatunkami**, **moderacja kont (zakaz
-publikowania, usuwanie)**, motyw jasny/ciemny oraz cała aplikacja na Docker
-Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
+publikowania, usuwanie)**, **czat ze znajomymi z linkami muzycznymi, dymkiem
+„pisze" i potwierdzeniem przeczytania**, **znacznik online / ostatnio
+aktywny**, **zgłoszenia użytkowników z panelem administratora, migawką dowodów
+i limitami**, **osobny zakaz wysyłania wiadomości**, **wykrywanie multikont po
+adresie IP i blokada adresu**, motyw jasny/ciemny oraz cała aplikacja
+na Docker Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
 
-**246 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
+**317 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
 w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność
 postów i kolejność tablicy, powiadomienia, linki muzyczne, moderacja,
-układ strony i pasek przewijania.
+układ strony i pasek przewijania, a czat i moderację — **dwiema i trzema
+równoległymi sesjami naraz**, bo inaczej nie da się sprawdzić, czy wiadomość
+faktycznie dolatuje do drugiej przeglądarki ani czy administrator widzi
+zgłoszenie złożone przez kogoś innego.
 
 Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
 Szczegóły w `docs/WYMAGANIA.md`.

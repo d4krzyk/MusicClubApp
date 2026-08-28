@@ -1,6 +1,9 @@
 package com.musicclubapp.config;
 
 import com.musicclubapp.entity.PostVisibility;
+import com.musicclubapp.entity.ReportContext;
+import com.musicclubapp.entity.ReportReason;
+import com.musicclubapp.entity.ReportStatus;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 import jakarta.persistence.EntityManager;
@@ -78,7 +81,28 @@ public class EnumConstraintRefresher implements ApplicationRunner {
          * w ktorym dojdzie trzecia wartosc: wtedy nikt juz nie bedzie
          * pamietal, ze trzeba tu zajrzec.
          */
-        new EnumColumn("posts", "visibility", PostVisibility.class)
+        new EnumColumn("posts", "visibility", PostVisibility.class),
+
+        /*
+         * Wiadomosci na czacie maja te same dwie kolumny co posty, bo moga
+         * niesc to samo nagranie. Tabela dopiero powstaje, wiec dzis jej
+         * ograniczenie i tak jest poprawne - dopisujemy ja z tego samego
+         * powodu co widocznosc wyzej: chodzi o dzien, w ktorym dojdzie
+         * czwarty serwis muzyczny, a nikt juz nie bedzie pamietal,
+         * ze trzeba tu zajrzec.
+         */
+        new EnumColumn("messages", "music_kind", MusicKind.class),
+        new EnumColumn("messages", "music_provider", MusicProvider.class),
+
+        /*
+         * Zgloszenia maja az trzy kolumny wyliczeniowe, a lista powodow
+         * jest najbardziej prawdopodobna do rozszerzenia w calej aplikacji -
+         * wystarczy, ze pojawi sie rodzaj naruszenia, ktorego dzis nie ma
+         * na liscie.
+         */
+        new EnumColumn("reports", "reason", ReportReason.class),
+        new EnumColumn("reports", "context", ReportContext.class),
+        new EnumColumn("reports", "status", ReportStatus.class)
     );
 
     private final EntityManager entityManager;

@@ -8,8 +8,11 @@ import NavDropdown from 'react-bootstrap/NavDropdown';
 import client from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
+import ChatDrawer from './ChatDrawer';
+import ChatLauncher from './ChatLauncher';
 import {
   IconBoard, IconFriends, IconGear, IconLogout, IconNote, IconPerson, IconShield,
+  IconShieldAlert,
 } from './Icons';
 import LanguageSwitch from './LanguageSwitch';
 import NotificationsBell from './NotificationsBell';
@@ -39,6 +42,13 @@ export default function Layout({ children }) {
   const [pending, setPending] = useState(0);
 
   /*
+   * Ile zgloszen czeka na decyzje. Tylko dla administratora - zwykly
+   * uzytkownik nie ma nawet po co pytac, a zapytanie i tak skonczyloby sie
+   * odmowa 403 w konsoli przy kazdej zmianie strony.
+   */
+  const [openReports, setOpenReports] = useState(0);
+
+  /*
    * Czy strona jest przewinieta. Sluzy tylko do dorysowania cienia pod
    * paskiem: dopoki tresc zaczyna sie tuz pod nim, cien wygladalby jak
    * przypadkowa kreska, a przy przewinietej stronie pokazuje, ze pasek
@@ -61,6 +71,12 @@ export default function Layout({ children }) {
     client.get('/friends/requests/count')
       .then((o) => setPending(o.data.count))
       .catch(() => setPending(0));   // licznik to dodatek, nie psujemy menu
+
+    if (user.admin) {
+      client.get('/reports/admin/open-count')
+        .then((o) => setOpenReports(o.data.count))
+        .catch(() => setOpenReports(0));
+    }
   }, [user, location.pathname]);
 
   /*
@@ -163,6 +179,16 @@ export default function Layout({ children }) {
                     <IconShield size={20} />
                   </NavIcon>
                 )}
+
+                {user.admin && (
+                  <NavIcon
+                    to="/zgloszenia"
+                    label={t('menu.reports')}
+                    badge={openReports}
+                  >
+                    <IconShieldAlert size={20} />
+                  </NavIcon>
+                )}
               </>
             ) : (
               <>
@@ -179,6 +205,7 @@ export default function Layout({ children }) {
           <div className="nav-right">
             {/* Dzwonek stoi przy awatarze, bo jedno i drugie dotyczy MNIE -
                 w odroznieniu od jezyka i motywu, ktore dotycza calej strony */}
+            {user && <ChatLauncher />}
             {user && <NotificationsBell />}
 
             <LanguageSwitch />
@@ -228,6 +255,13 @@ export default function Layout({ children }) {
       <main className="flex-grow-1 py-4">
         <Container>{children}</Container>
       </main>
+
+      {/*
+        Panel czatu stoi POZA <main>, bo nie jest czescia tresci strony -
+        wysuwa sie nad nia. Gdyby siedzial w srodku, przewijalby sie razem
+        z tablica i znikal przy jej dolnej krawedzi.
+      */}
+      {user && <ChatDrawer />}
 
       <footer className="border-top py-3 text-center text-body-secondary small">
         {t('app.tagline')}

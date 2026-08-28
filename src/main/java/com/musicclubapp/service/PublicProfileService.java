@@ -29,13 +29,16 @@ public class PublicProfileService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final FriendService friendService;
+    private final PresenceService presence;
 
     public PublicProfileService(UserRepository userRepository,
                                 PostRepository postRepository,
-                                FriendService friendService) {
+                                FriendService friendService,
+                                PresenceService presence) {
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.friendService = friendService;
+        this.presence = presence;
     }
 
     /**
@@ -58,7 +61,8 @@ public class PublicProfileService {
                 user.getUsername(), userRepository.circleIds(viewerUsername)),
             user.getUsername().equals(viewerUsername),
             userRepository.countFriends(user.getUsername()),
-            friendService.status(viewerUsername, user.getUsername()));
+            friendService.status(viewerUsername, user.getUsername()),
+            presence.of(user));
     }
 
     /**

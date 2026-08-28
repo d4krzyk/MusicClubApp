@@ -61,6 +61,9 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
+    private com.musicclubapp.service.NetworkService network;
+
+    @MockBean
     private UserService userService;
 
     @MockBean

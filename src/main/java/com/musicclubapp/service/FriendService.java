@@ -39,13 +39,16 @@ public class FriendService {
     private final FriendRequestRepository requestRepository;
 
     private final NotificationService notifications;
+    private final PresenceService presence;
 
     public FriendService(UserRepository userRepository,
                          FriendRequestRepository requestRepository,
-                         NotificationService notifications) {
+                         NotificationService notifications,
+                         PresenceService presence) {
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
         this.notifications = notifications;
+        this.presence = presence;
     }
 
     /**
@@ -271,7 +274,8 @@ public class FriendService {
         return new FriendCardResponse(
             row.getUsername(),
             avatarUrl(row.getAvatarFileName()),
-            row.getSharedFriends());
+            row.getSharedFriends(),
+            presence.of(row.getLastSeenAt()));
     }
 
     private FriendRequestResponse toResponse(FriendRequest invitation, User otherSide) {

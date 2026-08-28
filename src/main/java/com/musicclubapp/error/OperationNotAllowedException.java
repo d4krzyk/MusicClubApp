@@ -168,6 +168,119 @@ public class OperationNotAllowedException extends RuntimeException {
             "Administrator nie moze usunac wlasnego konta", "error.user.selfdelete");
     }
 
+    /**
+     * Proba napisania do kogos, kto nie jest znajomym.
+     *
+     * <p><b>To jest glowna blokada czatu.</b> Aplikacja sluzy do poznawania
+     * ludzi, ale kolejnosc jest ustalona: najpierw zaproszenie, potem rozmowa.
+     * Bez tego kazdy moglby pisac do kazdego, a serwis o wspolnym guscie
+     * muzycznym zamienilby sie w skrzynke na zaczepki od obcych.</p>
+     */
+    public static OperationNotAllowedException messageToStranger() {
+        return new OperationNotAllowedException(
+            "Pisac mozna tylko ze znajomymi", "error.message.notfriend");
+    }
+
+    /**
+     * Proba wyslania wiadomosci do samego siebie.
+     *
+     * <p>Osobny komunikat od powyzszego, bo to zupelnie co innego: nie jest to
+     * proba obejscia blokady, tylko zwykla pomylka. "Pisac mozna tylko ze
+     * znajomymi" byloby w tej sytuacji mylace - przeciez ze soba sie jest.</p>
+     */
+    public static OperationNotAllowedException messageToSelf() {
+        return new OperationNotAllowedException(
+            "Nie mozna napisac do samego siebie", "error.message.self");
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Zgloszenia                                                         */
+    /* ------------------------------------------------------------------ */
+
+    /** Proba zgloszenia samego siebie - zwykla pomylka, nie atak. */
+    public static OperationNotAllowedException reportSelf() {
+        return new OperationNotAllowedException(
+            "Nie mozna zglosic samego siebie", "error.report.self");
+    }
+
+    /**
+     * Zgloszenie na te osobe juz czeka na decyzje.
+     *
+     * <p>Pierwsza z dwoch blokad przed zasypywaniem panelu. Po zamknieciu
+     * poprzedniego wolno zglosic ponownie - wtedy chodzi juz o NOWE zdarzenie.</p>
+     */
+    public static OperationNotAllowedException reportAlreadyOpen() {
+        return new OperationNotAllowedException(
+            "Zgloszenie na te osobe juz czeka na decyzje", "error.report.duplicate");
+    }
+
+    /**
+     * Wyczerpany dzienny limit zgloszen.
+     *
+     * <p>Druga blokada. Bez niej jedna osoba moglaby zglosic po kolei
+     * wszystkich w serwisie - kazde zgloszenie osobne, wiec ta pierwsza
+     * nie zadzialalaby ani razu.</p>
+     */
+    public static OperationNotAllowedException reportLimit(int limit) {
+        return new OperationNotAllowedException(
+            "Wyczerpano dzienny limit zgloszen (" + limit + ")",
+            "error.report.limit", limit);
+    }
+
+    /** Zgloszenie posta bez wskazania, ktorego. */
+    public static OperationNotAllowedException reportNeedsPost() {
+        return new OperationNotAllowedException(
+            "Wskaz post, ktorego dotyczy zgloszenie", "error.report.nopost");
+    }
+
+    /** Wskazany post nie nalezy do osoby, ktora zglaszamy. */
+    public static OperationNotAllowedException reportWrongAuthor() {
+        return new OperationNotAllowedException(
+            "Ten post nie nalezy do zglaszanej osoby", "error.report.wrongauthor");
+    }
+
+    /** Zgloszenie rozmowy, ktorej nie ma. */
+    public static OperationNotAllowedException reportEmptyConversation() {
+        return new OperationNotAllowedException(
+            "Nie ma rozmowy, ktora mozna by dolaczyc", "error.report.noconversation");
+    }
+
+    /** Ktos inny zdazyl zamknac to zgloszenie wczesniej. */
+    public static OperationNotAllowedException reportAlreadyClosed() {
+        return new OperationNotAllowedException(
+            "To zgloszenie zostalo juz zamkniete", "error.report.closed");
+    }
+
+    /** "Zamykam jako otwarte" nie jest decyzja. */
+    public static OperationNotAllowedException reportDecisionRequired() {
+        return new OperationNotAllowedException(
+            "Wybierz decyzje: zasadne albo bezpodstawne", "error.report.decision");
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Adresy sieciowe                                                    */
+    /* ------------------------------------------------------------------ */
+
+    /** Proba wejscia z zablokowanego adresu. */
+    public static OperationNotAllowedException blockedAddress() {
+        return new OperationNotAllowedException(
+            "Ten adres zostal zablokowany", "error.ip.blocked");
+    }
+
+    /**
+     * Administrator probuje zablokowac adres, z ktorego sam wlasnie jest.
+     *
+     * <p>Ta sama mysl co przy {@link #ownAccount()}: jedno klikniecie nie moze
+     * zostawic portalu bez nikogo, kto ma do niego dostep. Przy testowaniu na
+     * jednym komputerze to nie jest przypadek teoretyczny - administrator
+     * i osoba blokowana siedza wtedy za tym samym adresem.</p>
+     */
+    public static OperationNotAllowedException ownAddress() {
+        return new OperationNotAllowedException(
+            "Nie mozesz zablokowac adresu, z ktorego wlasnie korzystasz",
+            "error.ip.self");
+    }
+
     /** Format terminu w komunikacie - ten sam w obu jezykach, zeby nie bylo watpliwosci. */
     private static final java.time.format.DateTimeFormatter DEADLINE_FORMAT =
         java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
@@ -191,6 +304,21 @@ public class OperationNotAllowedException extends RuntimeException {
         String deadline = until.format(DEADLINE_FORMAT);
         return new OperationNotAllowedException(
             "Konto ma zakaz publikowania do " + deadline, "error.post.banned", deadline);
+    }
+
+    /**
+     * Proba wyslania wiadomosci mimo obowiazujacego zakazu.
+     *
+     * <p>Osobny komunikat od zakazu publikowania, bo to <b>osobna kara</b>:
+     * ktos z zakazem wiadomosci moze normalnie pisac posty i odwrotnie.
+     * Wspolny komunikat kazalby sie domyslac, ktora z dwoch kar akurat
+     * zadzialala.</p>
+     */
+    public static OperationNotAllowedException messagingBanned(java.time.LocalDateTime until) {
+        String deadline = until.format(DEADLINE_FORMAT);
+        return new OperationNotAllowedException(
+            "Konto ma zakaz wysylania wiadomosci do " + deadline,
+            "error.message.banned", deadline);
     }
 
     public String getMessageKey() {

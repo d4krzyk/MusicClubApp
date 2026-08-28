@@ -14,7 +14,8 @@
     "themeLight": "Włącz motyw jasny",
     "themeDark": "Włącz motyw ciemny",
     "friends": "Znajomi",
-    "myProfile": "Mój profil"
+    "myProfile": "Mój profil",
+    "reports": "Zgłoszenia"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -91,7 +92,33 @@
     "deleteQuestion": "Na pewno usunąć konto „{{username}}”? Tej operacji nie da się cofnąć.",
     "deleteWhatGoes": "Znikną też wszystkie posty tej osoby, jej zdjęcia, reakcje i znajomości.",
     "deleteConfirm": "Usuń konto",
-    "deleted": "Konto „{{username}}” zostało usunięte."
+    "deleted": "Konto „{{username}}” zostało usunięte.",
+    "colMessagingBan": "Zakaz wiadomości",
+    "colReports": "Zgłoszenia",
+    "mutedUntil": "Nie pisze do {{date}}",
+    "muted_one": "Zakaz wiadomości na {{count}} godzinę",
+    "muted_few": "Zakaz wiadomości na {{count}} godziny",
+    "muted_many": "Zakaz wiadomości na {{count}} godzin",
+    "muted_other": "Zakaz wiadomości na {{count}} godzin",
+    "muteLifted": "Zakaz wiadomości zdjęty",
+    "relatedHint": "Konta z tego samego adresu i blokada adresu",
+    "relatedTitle": "Powiązania sieciowe: {{username}}",
+    "relatedWarning": "Wspólny adres to POSZLAKA, nie dowód. Pod jednym adresem siedzi cała rodzina, akademik albo tysiące klientów operatora komórkowego. Zablokowanie adresu odetnie od zakładania kont i logowania wszystkich, którzy z niego korzystają.",
+    "addressesOf": "Adresy, z których loguje się {{username}}",
+    "noAddresses": "To konto nie logowało się jeszcze ani razu od czasu włączenia zapisu adresów.",
+    "otherAccounts": "Inne konta z tych adresów",
+    "noRelated": "Żadne inne konto nie logowało się z tych adresów.",
+    "loginCount_one": "{{count}} logowanie",
+    "loginCount_few": "{{count}} logowania",
+    "loginCount_many": "{{count}} logowań",
+    "loginCount_other": "{{count}} logowań",
+    "blockAddress": "Zablokuj adres",
+    "blockReasonPrompt": "Dlaczego blokujesz adres {{address}}? (powód jest zapisywany)",
+    "addressBlocked": "Adres {{address}} został zablokowany",
+    "blockedTitle": "Zablokowane adresy",
+    "blockedHint": "Z tych adresów nie da się założyć konta ani zalogować. Otwarte sesje działają dalej — blokada działa od następnego logowania.",
+    "blockedBy": "{{username}}, {{date}}",
+    "unblock": "Odblokuj"
   },
   "errors": {
     "network": "Nie można połączyć się z serwerem. Sprawdź, czy backend jest uruchomiony.",
@@ -321,7 +348,8 @@
     "markAllRead": "Oznacz wszystkie",
     "reaction": "{{username}} zareagował(a) {{emoji}} na Twój post",
     "friendRequest": "{{username}} wysłał(a) Ci zaproszenie do znajomych",
-    "friendAccepted": "{{username}} jest teraz Twoim znajomym"
+    "friendAccepted": "{{username}} jest teraz Twoim znajomym",
+    "report": "Nowe zgłoszenie do sprawdzenia"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -347,5 +375,96 @@
     "friends": "Wspólni znajomi",
     "nothing": "Na razie nic Was nie łączy.",
     "nothingHint": "Dodaj do swojego profilu ulubionych artystów i utwory — wtedy będzie co porównywać."
+  },
+  "presence": {
+    "online": "aktywny teraz",
+    "lastSeen": "aktywny {{when}}",
+    "never": "nigdy nie był aktywny"
+  },
+  "chat": {
+    "title": "Wiadomości",
+    "write": "Napisz",
+    "send": "Wyślij",
+    "placeholder": "Napisz do {{username}}…",
+    "backToList": "Wróć do listy rozmów",
+    "attachMusic": "Dołącz nagranie",
+    "play": "Odtwórz",
+    "openInService": "Otwórz w serwisie",
+    "you": "Ty",
+    "typing": "{{username}} pisze…",
+    "noMessagesYet": "Jeszcze nic tu nie napisaliście",
+    "emptyThread": "To początek Waszej rozmowy z {{username}}. Wyślij pierwszą wiadomość albo podrzuć utwór.",
+    "olderMessages": "Pokaż starsze",
+    "noFriends": "Nie masz jeszcze z kim pisać",
+    "noFriendsHint": "Wiadomości wysyła się do znajomych. Znajdź kogoś o podobnym guście i wyślij zaproszenie — rozmowa zacznie się sama.",
+    "loadFailed": "Nie udało się wczytać rozmowy",
+    "sendFailed": "Nie udało się wysłać wiadomości",
+    "searchPlaceholder": "Szukaj znajomego…",
+    "groupThreads": "Rozmowy",
+    "groupFriends": "Napisz do…",
+    "noMatches": "Nikt z Twoich znajomych nie pasuje do „{{search}}”"
+  },
+  "reports": {
+    "report": "Zgłoś",
+    "reportUser": "Zgłoś użytkownika {{username}}",
+    "reason": "Powód",
+    "reasons": {
+      "HARASSMENT": "Nękanie lub obrażanie",
+      "SPAM": "Spam i reklamy",
+      "HATE": "Treści nienawistne",
+      "INAPPROPRIATE": "Treści nieodpowiednie",
+      "IMPERSONATION": "Podszywanie się pod kogoś",
+      "OTHER": "Coś innego"
+    },
+    "context": "Czego dotyczy",
+    "contexts": {
+      "PROFILE": "Profil tej osoby",
+      "POST": "Konkretny post",
+      "CONVERSATION": "Wasza rozmowa"
+    },
+    "contextHints": {
+      "PROFILE": "Administrator obejrzy profil — nazwę, zdjęcie i to, co ta osoba o sobie pokazuje.",
+      "POST": "Do zgłoszenia dołączymy treść tego posta.",
+      "CONVERSATION": "Do zgłoszenia dołączymy kopię ostatnich 20 wiadomości z Waszej rozmowy. Zobaczy je wyłącznie administrator."
+    },
+    "description": "Co się stało?",
+    "descriptionPlaceholder": "Opisz własnymi słowami, na czym polega problem…",
+    "descriptionHint": "Napisz przynajmniej jedno zdanie — sam wybór z listy nie mówi administratorowi, czego szukać.",
+    "send": "Wyślij zgłoszenie",
+    "sending": "Wysyłanie…",
+    "sent": "Zgłoszenie trafiło do administratora. Dziękujemy — sprawdzi je i zdecyduje, co dalej.",
+    "failed": "Nie udało się wysłać zgłoszenia",
+    "panelTitle": "Zgłoszenia",
+    "filters": {
+      "OPEN": "Czekające",
+      "RESOLVED": "Zasadne",
+      "DISMISSED": "Bezpodstawne",
+      "ALL": "Wszystkie"
+    },
+    "statuses": {
+      "OPEN": "Czeka",
+      "RESOLVED": "Zasadne",
+      "DISMISSED": "Bezpodstawne"
+    },
+    "filedBy": "zgłosił(a): {{username}}",
+    "priorResolved_one": "{{count}} wcześniejsze zasadne zgłoszenie",
+    "priorResolved_few": "{{count}} wcześniejsze zasadne zgłoszenia",
+    "priorResolved_many": "{{count}} wcześniejszych zasadnych zgłoszeń",
+    "priorResolved_other": "{{count}} wcześniejszych zasadnych zgłoszeń",
+    "showDetails": "Pokaż dowody",
+    "hideDetails": "Ukryj dowody",
+    "evidenceHint": "Kopia rozmowy z chwili zgłoszenia — zachowana także wtedy, gdy wiadomości zostały już skasowane.",
+    "noEvidence": "Brak dołączonych dowodów — dowodem jest sam profil.",
+    "openPost": "Otwórz zgłoszony post",
+    "note": "Notatka administratora",
+    "notePlaceholder": "Np. „Nałożono zakaz wiadomości na 48 h”…",
+    "noteHint": "Zamknięcie zgłoszenia samo w sobie NIC nie robi z kontem. Kary nakładasz w panelu użytkowników.",
+    "resolve": "Zasadne — zamknij",
+    "dismiss": "Bezpodstawne",
+    "goToPanel": "Panel użytkowników",
+    "decisionBy": "Zamknął(-ęła): {{username}}, {{when}}",
+    "emptyOpen": "Nic nie czeka na decyzję",
+    "emptyOpenHint": "Wszystkie zgłoszenia są zamknięte. Nowe pojawią się tutaj i na dzwonku.",
+    "emptyOther": "Brak zgłoszeń w tej kategorii"
   }
 }

@@ -48,6 +48,9 @@ class UserControllerAccessTest {
     private MockMvc mockMvc;
 
     @MockBean
+    private com.musicclubapp.service.NetworkService network;
+
+    @MockBean
     private UserService userService;
 
     @MockBean

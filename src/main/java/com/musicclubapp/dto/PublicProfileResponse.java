@@ -35,6 +35,14 @@ public record PublicProfileResponse(
      * narzedziami deweloperskimi. Backend i tak sprawdza uprawnienia
      * ponownie przy kazdej operacji.</p>
      */
-    FriendshipStatus friendshipStatus
+    FriendshipStatus friendshipStatus,
+    /**
+     * Czy jest teraz aktywny i kiedy byl ostatnio.
+     *
+     * <p>Wyliczone przez serwer - patrz {@link PresenceResponse}. Na WLASNYM
+     * profilu frontend tego nie pokazuje: informacja "jestes online" jest
+     * dla wlasciciela konta bezuzyteczna.</p>
+     */
+    PresenceResponse presence
 ) {
 }

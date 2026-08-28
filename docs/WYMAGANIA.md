@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 246 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 317 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -107,6 +107,36 @@ dopiero na uruchomionej aplikacji:
   treści przy pasku przewijania porównywał dwie strony, z których obie były
   dłuższe od okna — pasek był na obu i nie było czego mierzyć. Od tej pory
   każdą nową asercję sprawdzamy dodatkowo tak, że **cofamy poprawkę i patrzymy,
-  czy czerwienieje**.
+  czy czerwienieje**;
+- **poprawny JPQL, którego baza nie przyjmuje.** Zapytanie o ostatnią
+  wiadomość każdej rozmowy miało wyrażenie `CASE` tylko w `GROUP BY` — Hibernate
+  je przetłumaczył, a baza odmówiła (`Invalid use of aggregate function`).
+  Z atrapą repozytorium test przechodziłby, bo atrapa oddaje to, co jej każemy,
+  i nigdy nie zagląda do SQL-a. Stąd testy czatu chodzą na prawdziwej bazie;
+- **funkcja, która działa u jednego użytkownika, a nie działa między dwoma.**
+  Ptaszek „przeczytane" nigdy się nie pojawiał: odpytywanie przynosi tylko
+  wiadomości *nowsze*, a przeczytanie zmienia kolumnę w starej. Zobaczyło to
+  dopiero sprawdzenie **dwiema równoległymi sesjami przeglądarki** — jedna
+  sesja nie ma jak zauważyć, że druga czegoś nie dostała;
+- **dwa elementy o tym samym `id` na stronie.** Wybór nagrania stoi w dwóch
+  miejscach naraz (post i czat), a `<label for>` zawsze wskazuje pierwszy
+  pasujący. Kliknięcie podpisu w czacie ustawiało kursor w formularzu pod
+  spodem. Znalazł to selektor w Playwrighcie, który trafił na dwa elementy
+  zamiast jednego;
+- **kod, który działa zawsze poza sytuacją, do której powstał.** Odczyt adresu
+  klienta z `X-Forwarded-For` — wzięcie PIERWSZEGO wpisu (tak każe większość
+  tutoriali) daje poprawny adres w każdym normalnym użyciu i adres wybrany
+  przez atakującego, gdy ktoś podrobi nagłówek. Blokadę obchodziłoby się wtedy
+  jednym nagłówkiem. Żaden test „czy odczytuje adres" tego nie złapie —
+  potrzebny był test WYSYŁAJĄCY podrobiony nagłówek;
+- **funkcja, którą trzeba sprawdzić z TRZECH stron naraz.** Zgłoszenie ma sens
+  tylko wtedy, gdy zgłaszający je złoży, zgłaszany o nim nie wie, a administrator
+  je zobaczy. Jedna sesja przeglądarki nie odpowie na żadne z tych pytań;
+- **sprawdzenie, które przestaje być prawdziwe, bo zmienił się interfejs.**
+  Regresja z rundy moderacyjnej oczekiwała JEDNEJ kolumny „Zakaz" w panelu,
+  a doszła druga (zakaz wiadomości). Zaświeciła się na czerwono słusznie —
+  ale poprawką było zaktualizowanie oczekiwania, nie kodu. Czerwony test nie
+  zawsze znaczy zepsuty kod; czasem znaczy nieaktualne sprawdzenie, i trzeba
+  za każdym razem rozstrzygnąć, które z dwojga.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia
