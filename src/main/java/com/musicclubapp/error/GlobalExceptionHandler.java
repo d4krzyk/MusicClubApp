@@ -219,14 +219,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         logger.warn("Zablokowana operacja: " + ex.getMessage());
 
+        ErrorResponse odpowiedz = new ErrorResponse(
+            HttpStatus.CONFLICT.value(), translate(ex.getMessageKey()));
+
         /*
-         * Argumenty sa tu potrzebne dla zakazu publikowania - komunikat musi
-         * podac termin, do kiedy on obowiazuje. Reszta przypadkow przysyla
-         * pusta tablice, wiec dziala tak samo jak wczesniej.
+         * Termin konca kary dokladamy jako OSOBNE POLE, a nie wklejamy
+         * w komunikat. Serwer liczy czas w UTC i nie wie, w jakiej strefie
+         * siedzi uzytkownik - wklejona przez niego godzina bywala wiec
+         * cofnieta (zakaz nalozony o 16:55 pokazywal sie jako "do 15:55").
+         * Zegar uzytkownika zna tylko jego przegladarka i to ona sklada
+         * z tej chwili czytelny napis.
          */
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(
-            new ErrorResponse(HttpStatus.CONFLICT.value(),
-                translate(ex.getMessageKey(), ex.getArguments())));
+        odpowiedz.setDeadline(ex.getDeadline());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(odpowiedz);
     }
 
     /**

@@ -183,6 +183,31 @@ public class NotificationService {
         return notificationRepository.markAllRead(username);
     }
 
+    /**
+     * Kasuje JEDNO powiadomienie - na zyczenie odbiorcy.
+     *
+     * <p><b>Po co, skoro jest juz „przeczytane".</b> Przeczytane gasi kropke,
+     * ale wpis zostaje na liscie i przy kilkudziesieciu powiadomieniach nowe
+     * gina wsrod starych. „Przeczytane" mowi <i>widzialem</i>, a usuniecie -
+     * <i>zalatwione, nie chce tego wiecej ogladac</i>. To dwie rozne rzeczy
+     * i dlatego sa dwa osobne przyciski.</p>
+     *
+     * <p><b>Kasuje tylko wlasciciel.</b> Sprawdzamy odbiorce, a nie sam
+     * identyfikator - inaczej wystarczyloby zgadnac numer, zeby usuwac cudze
+     * powiadomienia. Ta sama zasada co przy {@link #markRead}.</p>
+     *
+     * <p>Ciche przejscie, gdy powiadomienia nie ma: usuwanie czegos, czego juz
+     * nie ma, daje ten sam stan swiata, o ktory prosil uzytkownik. Blad
+     * mialby sens tylko wtedy, gdyby mial go z czym porownac - a przy dwoch
+     * klknieciach pod rzad drugie jest zwykla powtorka.</p>
+     */
+    @Transactional
+    public void delete(String username, Long id) {
+        notificationRepository.findById(id)
+            .filter(n -> n.getRecipient().getUsername().equals(username))
+            .ifPresent(notificationRepository::delete);
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */

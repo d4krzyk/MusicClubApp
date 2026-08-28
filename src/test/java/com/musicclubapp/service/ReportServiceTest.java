@@ -413,6 +413,46 @@ class ReportServiceTest {
         assertThat(User.isForever(po.getPostingBannedUntil())).isTrue();
     }
 
+    /**
+     * Zmiana decyzji po fakcie - na prawdziwej bazie.
+     *
+     * <p>Decyzja bywa pochopna albo podjeta przy niepelnym obrazie sprawy.
+     * Bez mozliwosci jej cofniecia jedynym wyjsciem byloby poprawianie wiersza
+     * wprost w bazie - a zamkniete zgloszenia licza sie do historii konta
+     * i wplywaja na kolejne decyzje.</p>
+     */
+    @Test
+    @DisplayName("zamknieta sprawe mozna otworzyc i zdecydowac inaczej")
+    void closedReportCanBeReopenedAndDecidedAgain() {
+        ReportResponse created = reports.create("ala", "troll", profileReport());
+        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+            ReportStatus.DISMISSED, "Chyba bez podstaw", ModerationAction.NONE, null, null));
+
+        ReportResponse otwarte = moderation.reopenReport("admin", created.id());
+
+        assertThat(otwarte.status()).isEqualTo(ReportStatus.OPEN);
+        assertThat(otwarte.resolvedBy())
+            .describedAs("po otwarciu sprawa nie ma juz decyzji ani jej autora")
+            .isNull();
+
+        // I da sie zdecydowac inaczej niz za pierwszym razem
+        ReportResponse ponownie = moderation.resolveReport("admin", created.id(),
+            new ResolveReportRequest(ReportStatus.RESOLVED, "Jednak zasadne",
+                ModerationAction.NONE, null, null));
+
+        assertThat(ponownie.status()).isEqualTo(ReportStatus.RESOLVED);
+        assertThat(ponownie.resolutionNote()).isEqualTo("Jednak zasadne");
+    }
+
+    @Test
+    @DisplayName("otwartej sprawy nie da sie otworzyc drugi raz")
+    void openReportCannotBeReopened() {
+        ReportResponse created = reports.create("ala", "troll", profileReport());
+
+        assertThatThrownBy(() -> moderation.reopenReport("admin", created.id()))
+            .isInstanceOf(OperationNotAllowedException.class);
+    }
+
     @Test
     @DisplayName("drugie zamkniecie jest odrzucane - pierwsza decyzja jest wiazaca")
     void secondCloseIsRefused() {

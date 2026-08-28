@@ -29,23 +29,28 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Czat: wysylanie, czytanie i lista rozmow.
  *
- * <p><b>Jedna regula rzadzi tu wszystkim: pisac mozna WYLACZNIE ze
- * znajomymi.</b> Sprawdzenie siedzi w {@link #requireFriend} i przechodzi
- * przez nie kazda operacja - wyslanie, odczyt historii, odpytywanie
- * o nowosci, oznaczanie przeczytanych, nawet sygnal "pisze". To nie jest
- * nadgorliwosc: gdyby ktorykolwiek z tych adresow pomijal sprawdzenie,
- * wystarczyloby wywolac wlasnie ten jeden, zeby czytac cudza korespondencje
- * albo zaczepiac obcych ludzi.</p>
+ * <p><b>Glowna regula: PISAC mozna wylacznie ze znajomymi.</b> Pilnuje tego
+ * {@link #requireFriend} i przechodzi przez nie wyslanie wiadomosci oraz
+ * sygnal "pisze". Gdyby ktorykolwiek z tych adresow pomijal sprawdzenie,
+ * wystarczyloby wywolac wlasnie ten jeden, zeby zaczepiac obcych ludzi.</p>
  *
- * <p><b>Zerwanie znajomosci zamyka rozmowe</b>, ale jej nie kasuje.
- * Wiadomosci zostaja w bazie i wroca, gdy znajomosc zostanie odnowiona.
- * Kasowanie cudzych wypowiedzi przy klknieciu "usun ze znajomych" byloby
- * decyzja za obie strony naraz - a wiadomosc nalezy tez do tego, kto ja
- * dostal.</p>
+ * <p><b>CZYTANIE ma lagodniejszy warunek</b> ({@link #requirePartner}):
+ * wystarczy, ze rozmowa juz sie odbyla. Poczatkowo bylo tu jedno sprawdzenie
+ * na wszystko i skutek byl taki, ze usuniecie kogos ze znajomych powodowalo
+ * zniknięcie calej rozmowy - dla obu stron wygladalo to jak awaria, a nie jak
+ * skutek czyjejs decyzji. Kazda ze stron dostala te wiadomosci i ma prawo je
+ * przeczytac; nie ma natomiast prawa napisac nic nowego.</p>
+ *
+ * <p><b>Zerwanie znajomosci nie kasuje wiadomosci.</b> Zostaja w bazie i wraca
+ * z nimi mozliwosc pisania, gdy znajomosc zostanie odnowiona. Kasowanie cudzych
+ * wypowiedzi przy klknieciu "usun ze znajomych" byloby decyzja za obie strony
+ * naraz - a wiadomosc nalezy tez do tego, kto ja dostal.</p>
  */
 @Service
 public class MessageService {
@@ -170,7 +175,7 @@ public class MessageService {
     public Page<MessageResponse> conversation(String me, String partnerUsername,
                                               Pageable pageable) {
         User viewer = requireUser(me);
-        User partner = requireFriend(viewer, partnerUsername);
+        User partner = requirePartner(viewer, partnerUsername);
 
         return messageRepository
             .conversation(viewer.getId(), partner.getId(), pageable)
@@ -195,7 +200,7 @@ public class MessageService {
     @Transactional
     public ConversationSyncResponse sync(String me, String partnerUsername, Long afterId) {
         User viewer = requireUser(me);
-        User partner = requireFriend(viewer, partnerUsername);
+        User partner = requirePartner(viewer, partnerUsername);
 
         List<Message> fresh = messageRepository.newerThan(
             viewer.getId(), partner.getId(),
@@ -225,7 +230,8 @@ public class MessageService {
             typing.isTyping(partner.getId(), viewer.getId()),
             presence.of(partner),
             messageRepository.countUnread(viewer.getId()),
-            messageRepository.lastReadOutgoingId(viewer.getId(), partner.getId()));
+            messageRepository.lastReadOutgoingId(viewer.getId(), partner.getId()),
+            canWriteTo(viewer, partner));
     }
 
     /**
@@ -239,7 +245,7 @@ public class MessageService {
     @Transactional
     public int markRead(String me, String partnerUsername) {
         User viewer = requireUser(me);
-        User partner = requireFriend(viewer, partnerUsername);
+        User partner = requirePartner(viewer, partnerUsername);
 
         return messageRepository.markConversationRead(
             viewer.getId(), partner.getId(), LocalDateTime.now());
@@ -303,19 +309,44 @@ public class MessageService {
             unreadBySender.put(row.senderId(), row.count());
         }
 
+        /*
+         * Lista sklada sie z DWOCH grup, a nie z jednej.
+         *
+         * 1. wszyscy znajomi - takze ci, z ktorymi nikt jeszcze nie zamienil
+         *    slowa, bo lista sluzy tez do ZACZYNANIA rozmow;
+         * 2. byli znajomi, z ktorymi rozmowa juz sie odbyla.
+         *
+         * Druga grupa doszla po tym, jak okazalo sie, ze usuniecie kogos ze
+         * znajomych powodowalo zniknięcie calej rozmowy - dla obu stron
+         * wygladalo to jak awaria aplikacji, a nie jak skutek czyjejs decyzji.
+         */
+        Set<Long> friendIds = viewer.getFriends().stream()
+            .map(User::getId)
+            .collect(Collectors.toSet());
+
+        List<User> partners = new ArrayList<>(viewer.getFriends());
+
+        List<Long> formerIds = lastIdByPartner.keySet().stream()
+            .filter(id -> !friendIds.contains(id))
+            .toList();
+        if (!formerIds.isEmpty()) {
+            userRepository.findAllById(formerIds).forEach(partners::add);
+        }
+
         List<ConversationResponse> conversations = new ArrayList<>();
-        for (User friend : viewer.getFriends()) {
+        for (User partner : partners) {
             // get(null) na mapie zwraca null - znajomy bez rozmowy przechodzi tedy bez warunku
-            Message last = byId.get(lastIdByPartner.get(friend.getId()));
+            Message last = byId.get(lastIdByPartner.get(partner.getId()));
 
             conversations.add(new ConversationResponse(
-                friend.getUsername(),
-                friend.getAvatarFileName() == null
+                partner.getUsername(),
+                partner.getAvatarFileName() == null
                     ? null
-                    : PostMapper.UPLOADS_PATH + friend.getAvatarFileName(),
-                presence.of(friend),
+                    : PostMapper.UPLOADS_PATH + partner.getAvatarFileName(),
+                presence.of(partner),
                 last == null ? null : messageMapper.toResponse(last, viewer),
-                unreadBySender.getOrDefault(friend.getId(), 0L)));
+                unreadBySender.getOrDefault(partner.getId(), 0L),
+                friendIds.contains(partner.getId())));
         }
 
         /*
@@ -391,5 +422,45 @@ public class MessageService {
         }
 
         return partner;
+    }
+
+    /**
+     * Jak {@link #requireFriend}, ale <b>do CZYTANIA</b> - i wystarcza mu sama
+     * historia rozmowy.
+     *
+     * <p><b>Skad ta druga wersja.</b> Wczesniej zerwanie znajomosci
+     * powodowalo, ze rozmowa <i>znikala</i> z listy i nie dalo sie jej nawet
+     * otworzyc. Wiadomosci zostawaly w bazie, ale dla obu stron wygladalo to
+     * tak, jakby rozmowa nigdy sie nie odbyla - a przeciez kazda ze stron
+     * dostala te wiadomosci i ma prawo je przeczytac. Zniknięcie calego watku
+     * jest tez gorsza informacja niz jasny komunikat: nie wiadomo, czy druga
+     * osoba usunela konto, czy zerwala znajomosc, czy cos sie zepsulo.</p>
+     *
+     * <p><b>Czytanie tak, pisanie nie.</b> Historia jest podstawa wystarczajaca
+     * do zajrzenia w to, co juz sie wydarzylo, ale nie do wysylania czegos
+     * nowego - inaczej "usun ze znajomych" nie zamykaloby drogi do zaczepiania
+     * i kazdy mogl by pisac dalej mimo zerwanej znajomosci. Dlatego wysylanie
+     * i sygnal "pisze" chodza dalej przez {@link #requireFriend}.</p>
+     */
+    private User requirePartner(User viewer, String partnerUsername) {
+        User partner = requireUser(partnerUsername);
+
+        if (partner.getId().equals(viewer.getId())) {
+            throw OperationNotAllowedException.messageToSelf();
+        }
+
+        boolean friends = userRepository.areFriends(
+            viewer.getUsername(), partner.getUsername());
+
+        if (!friends && !messageRepository.anyMessageBetween(viewer.getId(), partner.getId())) {
+            throw OperationNotAllowedException.messageToStranger();
+        }
+
+        return partner;
+    }
+
+    /** Czy z ta osoba wolno teraz PISAC (a nie tylko czytac). */
+    private boolean canWriteTo(User viewer, User partner) {
+        return userRepository.areFriends(viewer.getUsername(), partner.getUsername());
     }
 }

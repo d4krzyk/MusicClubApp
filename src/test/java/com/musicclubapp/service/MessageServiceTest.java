@@ -528,14 +528,24 @@ class MessageServiceTest {
         assertThat(rozmowa.lastMessage().mine()).isFalse();
     }
 
+    /**
+     * Zerwanie znajomosci: rozmowa <b>zostaje</b>, ale nie da sie w niej pisac.
+     *
+     * <p><b>Wczesniej bylo inaczej i to byla pomylka.</b> Rozmowa znikala
+     * z listy, a proba jej otwarcia konczyla sie odmowa - poprzednia wersja
+     * tego testu wlasnie tego pilnowala i przechodzila na zielono. Dla obu
+     * stron wygladalo to jednak jak awaria aplikacji: caly watek przepadal
+     * bez slowa i nie bylo wiadomo, czy ktos usunal konto, zerwal znajomosc,
+     * czy cos sie po prostu zepsulo.</p>
+     *
+     * <p>Teraz obowiazuje podzial: <b>czytac wolno, pisac nie</b>. Kazda ze
+     * stron dostala te wiadomosci i ma prawo do nich wrocic; nikt nie ma
+     * natomiast prawa napisac czegos nowego, bo inaczej "usun ze znajomych"
+     * nie zamykaloby drogi do zaczepiania.</p>
+     */
     @Test
-    @DisplayName("po zerwaniu znajomosci rozmowa znika z listy, ale wiadomosci zostaja w bazie")
-    void endingFriendshipClosesTheConversation() {
-        /*
-         * Kasowanie wiadomosci przy kliknieciu "usun ze znajomych" byloby
-         * decyzja za obie strony naraz - a wiadomosc nalezy tez do tego,
-         * kto ja dostal. Dlatego rozmowa sie zamyka, a nie znika.
-         */
+    @DisplayName("po zerwaniu znajomosci rozmowe mozna CZYTAC, ale nie mozna w niej PISAC")
+    void endingFriendshipStopsWritingButNotReading() {
         messages.send("ala", "bartek", text("bylo milo"));
 
         ala.removeFriend(bartek);
@@ -543,10 +553,38 @@ class MessageServiceTest {
         userRepository.save(bartek);
         entityManager.flush();
 
-        assertThat(messages.conversations("ala")).isEmpty();
+        // 1. Rozmowa zostaje na liscie - i jest oznaczona jako "juz nie znajomy"
+        assertThat(messages.conversations("ala"))
+            .extracting(ConversationResponse::username, ConversationResponse::friend)
+            .containsExactly(org.assertj.core.groups.Tuple.tuple("bartek", false));
+
+        // 2. Wiadomosci nikt nie kasuje
         assertThat(messageRepository.count()).isEqualTo(1);
 
-        assertThatThrownBy(() -> messages.conversation("ala", "bartek", PageRequest.of(0, 20)))
+        // 3. Historie wolno przeczytac - obu stronom
+        assertThat(messages.conversation("ala", "bartek", PageRequest.of(0, 20)))
+            .hasSize(1);
+        assertThat(messages.conversation("bartek", "ala", PageRequest.of(0, 20)))
+            .hasSize(1);
+
+        // 4. Ale napisac czegokolwiek juz nie
+        assertThatThrownBy(() -> messages.send("ala", "bartek", text("jednak nie")))
+            .isInstanceOf(OperationNotAllowedException.class);
+        assertThatThrownBy(() -> messages.send("bartek", "ala", text("ja tez nie")))
+            .isInstanceOf(OperationNotAllowedException.class);
+    }
+
+    @Test
+    @DisplayName("z OBCYM - bez wspolnej historii - nie da sie nawet otworzyc rozmowy")
+    void strangerCannotEvenOpenTheConversation() {
+        /*
+         * Lagodniejszy warunek na czytanie dotyczy wylacznie osob, z ktorymi
+         * rozmowa faktycznie sie odbyla. Gdyby wystarczylo samo istnienie
+         * konta, kazdy moglby zajrzec do dowolnego watku - i naprawa jednego
+         * bledu otwieralaby powazniejszy.
+         */
+        assertThatThrownBy(() ->
+            messages.conversation("ala", "obcy", PageRequest.of(0, 20)))
             .isInstanceOf(OperationNotAllowedException.class);
     }
 }

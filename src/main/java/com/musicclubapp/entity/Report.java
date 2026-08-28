@@ -181,6 +181,34 @@ public class Report {
         return true;
     }
 
+    /**
+     * Otwiera sprawe z powrotem, zeby mozna bylo zdecydowac inaczej.
+     *
+     * <p><b>Po co.</b> Decyzja bywa pochopna albo podjeta przy niepelnym
+     * obrazie - a bez tej mozliwosci jedynym wyjsciem byloby poprawianie
+     * wiersza wprost w bazie. Zamkniete zgloszenie liczy sie do historii
+     * konta i wplywa na kolejne decyzje, wiec pomylka nie jest tu bez
+     * znaczenia.</p>
+     *
+     * <p><b>Czego to NIE robi: nie cofa wykonanych dzialan.</b> Skasowanego
+     * posta nie ma, usunietego konta tym bardziej. Cofa sie <i>decyzja</i>,
+     * a nie jej skutki - i interfejs musi to mowic wprost, bo inaczej
+     * „zmien decyzje" brzmi jak „cofnij wszystko". Zdjecie zakazu to osobna
+     * czynnosc w panelu kont.</p>
+     *
+     * @return czy cokolwiek sie zmienilo (zgloszenie juz otwarte - nie)
+     */
+    public boolean reopen() {
+        if (status == ReportStatus.OPEN) {
+            return false;
+        }
+        this.status = ReportStatus.OPEN;
+        this.resolvedBy = null;
+        this.resolutionNote = null;
+        this.resolvedAt = null;
+        return true;
+    }
+
     public void addEvidence(ReportEvidence line) {
         evidence.add(line);
     }

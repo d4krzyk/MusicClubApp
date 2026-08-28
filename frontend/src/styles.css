@@ -2989,3 +2989,57 @@ body.modal-open .top-bar {
   height: 80px;
   border-radius: 50%;
 }
+
+/*
+   Rozmowa z byla znajoma osoba: watek zostaje do przeczytania, ale pole
+   do pisania ustepuje miejsca wyjasnieniu, dlaczego go nie ma.
+*/
+.chat-closed {
+  padding: .75rem 1rem;
+  text-align: center;
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.chat-row-former {
+  font-style: italic;
+  opacity: .75;
+}
+
+/*
+   Wiersz powiadomienia: tresc i krzyzyk obok siebie. Krzyzyk pojawia sie
+   dopiero pod kursorem - stale widoczny przy kazdym wpisie robilby z listy
+   kolumne przyciskow do kasowania, a to nie jest jej glowne zadanie.
+   Na dotyku (brak hovera) jest widoczny zawsze, bo tam nie ma czym najechac.
+*/
+.bell-item-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.bell-item-row .bell-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.bell-delete {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  color: var(--bs-secondary-color);
+  padding: 0 .6rem;
+  opacity: 0;
+  transition: opacity .15s var(--mc-ease), color .15s var(--mc-ease);
+}
+
+.bell-item-row:hover .bell-delete,
+.bell-delete:focus-visible {
+  opacity: 1;
+}
+
+.bell-delete:hover {
+  color: var(--bs-danger);
+}
+
+@media (hover: none) {
+  .bell-delete { opacity: 1; }
+}

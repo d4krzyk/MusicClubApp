@@ -8,11 +8,12 @@ import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
 import client, { describeError } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
 import PostSkeleton from '../components/PostSkeleton';
 import { IconCheckCircle, IconFlag, IconShieldAlert } from '../components/Icons';
-import { formatDate, timeAgo } from '../utils/dates';
+import { formatDateTime, timeAgo } from '../utils/dates';
 
 /** Filtry w kolejnosci przydatnosci: najpierw to, co czeka na decyzje. */
 const FILTERS = ['OPEN', 'RESOLVED', 'DISMISSED', 'ALL'];
@@ -37,6 +38,7 @@ const FOREVER = 'forever';
  */
 export default function ReportsPage() {
   const { t, i18n } = useTranslation();
+  const { user: loggedIn } = useAuth();
 
   const [filter, setFilter] = useState('OPEN');
   const [reports, setReports] = useState([]);
@@ -107,6 +109,12 @@ export default function ReportsPage() {
           report={report}
           language={i18n.language}
           t={t}
+          /*
+            Zgloszenie moze dotyczyc samego administratora, ktory je oglada -
+            wtedy nie wolno mu przy okazji ukarac wlasnego konta. Kto jest
+            zalogowany, wiemy tutaj, wiec przekazujemy to nizej.
+          */
+          me={loggedIn?.username}
           onResolved={load}
         />
       ))}
@@ -115,7 +123,7 @@ export default function ReportsPage() {
 }
 
 /** Jedno zgloszenie: naglowek, opis, dowody i decyzja. */
-function ReportCard({ report, language, t, onResolved }) {
+function ReportCard({ report, language, t, me, onResolved }) {
   const [expanded, setExpanded] = useState(false);
   const [details, setDetails] = useState(null);
   const [note, setNote] = useState('');
@@ -136,13 +144,25 @@ function ReportCard({ report, language, t, onResolved }) {
   const needsDuration = action === 'BAN_POSTING' || action === 'BAN_MESSAGING';
 
   /*
+   * Zgloszenie NA SAMEGO SIEBIE. Administrator moze je zamknac - ktos musi -
+   * ale nie moze przy tej okazji ukarac wlasnego konta. To z jednej strony
+   * ocena we wlasnej sprawie, a z drugiej jedno klikniecie od odebrania
+   * sobie dostepu do panelu. Zgloszenie na INNEGO administratora jest
+   * zwyklym zgloszeniem i ma pelna liste dzialan.
+   *
+   * Serwer pilnuje tego niezaleznie - tutaj chodzi o to, zeby w ogole nie
+   * pokazywac wyboru, ktory skonczy sie odmowa.
+   */
+  const aboutMe = !!me && report.reportedUsername === me;
+
+  /*
    * Kasowanie posta pokazujemy WYLACZNIE przy zgloszeniu posta. Przy
    * zgloszeniu profilu albo rozmowy nie ma czego kasowac, a pozycja
    * prowadzaca do komunikatu o bledzie jest zaproszeniem do pomylki.
    */
   const actions = ['NONE',
     ...(report.postId ? ['DELETE_POST'] : []),
-    'BAN_POSTING', 'BAN_MESSAGING', 'DELETE_ACCOUNT'];
+    ...(aboutMe ? [] : ['BAN_POSTING', 'BAN_MESSAGING', 'DELETE_ACCOUNT'])];
 
   /** Dowody pobieramy dopiero przy rozwinieciu - patrz komentarz przy stronie. */
   async function toggle() {
@@ -190,6 +210,19 @@ function ReportCard({ report, language, t, onResolved }) {
         ?? (problems.messageKey ? t(problems.messageKey) : t('reports.failed')));
     } finally {
       setSending(false);
+    }
+  }
+
+  /** Otwiera sprawe z powrotem, zeby dalo sie zdecydowac inaczej. */
+  async function reopen() {
+    setError(null);
+    try {
+      await client.post(`/reports/admin/${report.id}/reopen`);
+      onResolved();
+    } catch (problem) {
+      const problems = describeError(problem);
+      setError(problems.message
+        ?? (problems.messageKey ? t(problems.messageKey) : t('reports.failed')));
     }
   }
 
@@ -286,7 +319,7 @@ function ReportCard({ report, language, t, onResolved }) {
                     <span className="evidence-text">{line.text}</span>
                     {line.sentAt && (
                       <span className="evidence-time">
-                        {formatDate(line.sentAt, language)}
+                        {formatDateTime(line.sentAt, language)}
                       </span>
                     )}
                   </div>
@@ -299,10 +332,26 @@ function ReportCard({ report, language, t, onResolved }) {
                 <div className="fw-semibold">
                   {t('reports.decisionBy', {
                     username: report.resolvedBy,
-                    when: formatDate(report.resolvedAt, language),
+                    when: formatDateTime(report.resolvedAt, language),
                   })}
                 </div>
                 <div className="text-body-secondary">{report.resolutionNote}</div>
+
+                {/*
+                  Decyzje da sie zmienic. Bywa pochopna albo podjeta przy
+                  niepelnym obrazie sprawy, a bez tego jedynym wyjsciem byloby
+                  poprawianie wiersza wprost w bazie.
+
+                  Mowimy WPROST, ze nie cofa to wykonanych dzialan - inaczej
+                  "zmien decyzje" brzmi jak "cofnij wszystko", a skasowanego
+                  posta nie ma i nie bedzie.
+                */}
+                <div className="mt-2">
+                  <Button variant="outline-secondary" size="sm" onClick={reopen}>
+                    {t('reports.reopen')}
+                  </Button>
+                  <span className="ms-2 text-body-secondary">{t('reports.reopenHint')}</span>
+                </div>
               </div>
             )}
           </div>
@@ -370,6 +419,12 @@ function ReportCard({ report, language, t, onResolved }) {
                 </div>
               )}
             </div>
+
+            {aboutMe && (
+              <Alert variant="secondary" className="py-2 small">
+                {t('reports.selfReportHint')}
+              </Alert>
+            )}
 
             {action === 'DELETE_ACCOUNT' && (
               <Alert variant="danger" className="py-2 small">

@@ -245,6 +245,54 @@ class NotificationServiceTest {
         assertThat(cezary.getUsername()).isEqualTo("cezary");
     }
 
+    /**
+     * Usuwanie pojedynczego powiadomienia.
+     *
+     * <p><b>Kasowanie to co innego niz „przeczytane".</b> Przeczytane gasi
+     * kropke, ale wpis zostaje na liscie i przy kilkudziesieciu powiadomieniach
+     * nowe gina wsrod starych. To dwie rozne czynnosci i dlatego sa dwa
+     * osobne przyciski.</p>
+     */
+    @Test
+    @DisplayName("wlasne powiadomienie mozna usunac, a licznik sie zmniejsza")
+    void ownNotificationCanBeDeleted() {
+        reactionService.set(postAli.getId(), "bob", ReactionType.FIRE);
+        entityManager.flush();
+        assertThat(ile("ala")).isEqualTo(1);
+
+        Long id = notifications.forUser("ala", PageRequest.of(0, 10))
+            .getContent().get(0).id();
+
+        notifications.delete("ala", id);
+        entityManager.flush();
+
+        assertThat(ile("ala")).isZero();
+        assertThat(notifications.forUser("ala", PageRequest.of(0, 10)).getTotalElements())
+            .isZero();
+    }
+
+    @Test
+    @DisplayName("CUDZEGO powiadomienia nie da sie usunac")
+    void cannotDeleteSomeoneElsesNotification() {
+        /*
+         * Sprawdzamy odbiorce, a nie sam identyfikator. Bez tego wystarczyloby
+         * zgadnac numer, zeby czyscic komus dzwonek - a numery ida po kolei,
+         * wiec zgadywanie nie jest tu zadnym wyzwaniem.
+         */
+        reactionService.set(postAli.getId(), "bob", ReactionType.FIRE);
+        entityManager.flush();
+
+        Long id = notifications.forUser("ala", PageRequest.of(0, 10))
+            .getContent().get(0).id();
+
+        notifications.delete("bob", id);
+        entityManager.flush();
+
+        assertThat(notifications.forUser("ala", PageRequest.of(0, 10)).getTotalElements())
+            .describedAs("powiadomienie Ali ma przetrwac probe usuniecia przez Bobka")
+            .isEqualTo(1);
+    }
+
     /** Identyfikator jedynego oczekujacego zaproszenia w bazie. */
     private Long idZaproszenia() {
         return entityManager

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -92,5 +93,22 @@ public class NotificationController {
     public ResponseEntity<Map<String, Integer>> markAllRead(Authentication authentication) {
         return ResponseEntity.ok(Map.of(
             "marked", notificationService.markAllRead(authentication.getName())));
+    }
+
+    /**
+     * Kasuje jedno powiadomienie.
+     *
+     * <p>Odpowiadamy 204, a nie 200 z trescia - po usunieciu nie ma juz czego
+     * zwrocic. Cudzego powiadomienia nie da sie tknac; pilnuje tego serwis.</p>
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Usuwa jedno powiadomienie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Usuniete"),
+        @ApiResponse(responseCode = "401", description = "Wymagane zalogowanie")
+    })
+    public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
+        notificationService.delete(authentication.getName(), id);
+        return ResponseEntity.noContent().build();
     }
 }

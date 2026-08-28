@@ -17,14 +17,16 @@ import { timeAgo } from '../utils/dates';
 /** Co ile odswiezamy liste rozmow, gdy jest widoczna. */
 const LIST_REFRESH_MS = 10_000;
 
-/**
- * Od ilu znajomych pokazujemy wyszukiwarke.
+/*
+ * Wyszukiwarka stoi w panelu ZAWSZE, gdy jest kogokolwiek szukac.
  *
- * <p>Przy trzech osobach pole wyszukiwania jest tylko zajetym miejscem -
- * cala lista i tak miesci sie na ekranie. Przy kilkunastu zaczyna byc
- * szybsze niz przewijanie.</p>
+ * Wczesniej pojawiala sie dopiero od szesciu rozmow - z rozumowaniem, ze przy
+ * trzech osobach jest tylko zajetym miejscem. Rozumowanie bylo bledne
+ * z prostego powodu: <b>nie widac pola, ktorego nie ma</b>. Ktos, kto szuka
+ * wyszukiwarki i jej nie znajduje, nie wnioskuje "pewnie mam za malo
+ * znajomych" - wnioskuje, ze aplikacja jej nie ma. Znikajace sterowanie jest
+ * gorsze niz sterowanie, ktore czasem nie jest potrzebne.
  */
-const SEARCH_FROM = 6;
 
 /**
  * Panel czatu wysuwany z prawej strony.
@@ -185,8 +187,8 @@ export default function ChatDrawer() {
   const threads = matching.filter((c) => c.lastMessage);
   const silent = matching.filter((c) => !c.lastMessage);
 
-  // Wyszukiwarka ma sens dopiero przy liscie, ktorej nie widac naraz
-  const showSearch = conversations.length > SEARCH_FROM;
+  // Ukrywamy ja tylko wtedy, gdy nie ma w czym szukac
+  const showSearch = conversations.length > 0;
 
   return (
     <>
@@ -270,6 +272,7 @@ export default function ChatDrawer() {
             <ChatThread
               username={activeUsername}
               avatarUrl={active?.avatarUrl}
+              friend={active?.friend ?? true}
               onPresence={updatePresence}
               onRead={markReadLocally}
             />
@@ -426,7 +429,14 @@ function ChatRow({ conversation, onOpen, language, t }) {
         </span>
 
         <span className="chat-row-preview">
-          {preview(conversation.lastMessage, t)}
+          {/*
+            Byly znajomy zostaje na liscie, ale musi byc od razu odrozniony -
+            inaczej ktos zaczyna pisac i dopiero po otwarciu rozmowy dowiaduje
+            sie, ze nie moze.
+          */}
+          {conversation.friend === false
+            ? <span className="chat-row-former">{t('chat.formerFriend')}</span>
+            : preview(conversation.lastMessage, t)}
         </span>
       </span>
 

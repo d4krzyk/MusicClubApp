@@ -257,6 +257,19 @@ public class OperationNotAllowedException extends RuntimeException {
             "To zgloszenie nie dotyczy zadnego posta", "error.report.action.nopost");
     }
 
+    /**
+     * Proba ponownego otwarcia sprawy, ktora i tak jest otwarta.
+     *
+     * <p>Nazwa celowo inna niz {@code reportAlreadyOpen()} kilka metod wyzej -
+     * tamta mowi "na te osobe juz czeka zgloszenie" i dotyczy skladania
+     * nowego, a ta dotyczy zmiany decyzji w istniejacym. Dwie rozne sytuacje
+     * pod jedna nazwa byly by pomylka gotowa do popelnienia.</p>
+     */
+    public static OperationNotAllowedException reportNotClosed() {
+        return new OperationNotAllowedException(
+            "To zgloszenie jest juz otwarte", "error.report.open");
+    }
+
     /** Ktos inny zdazyl zamknac to zgloszenie wczesniej. */
     public static OperationNotAllowedException reportAlreadyClosed() {
         return new OperationNotAllowedException(
@@ -293,33 +306,32 @@ public class OperationNotAllowedException extends RuntimeException {
             "error.ip.self");
     }
 
-    /** Format terminu w komunikacie - ten sam w obu jezykach, zeby nie bylo watpliwosci. */
-    private static final java.time.format.DateTimeFormatter DEADLINE_FORMAT =
-        java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-
     /**
      * Proba opublikowania czegos mimo obowiazujacego zakazu.
      *
-     * <p>Termin konca kary wedruje w {@code arguments}, zeby komunikat mogl go
-     * pokazac. Podanie samego "nie wolno" byloby dla ukaranego bezuzyteczne -
-     * nie wiedzialby, czy wrocic za godzine, czy za tydzien.</p>
+     * <p><b>Komunikat NIE zawiera juz daty - i to jest naprawa bledu.</b>
+     * Wczesniej serwer wklejal tutaj termin sformatowany u siebie
+     * ({@code dd.MM.yyyy HH:mm}) i wychodzilo z tego coś takiego: zakaz
+     * nalozony o 16:55 na godzine pokazywal sie ukaranemu jako
+     * <i>„do 15:55"</i>, czyli w przeszlosci.</p>
      *
-     * <p><b>Date formatujemy TUTAJ, a nie w pliku z komunikatami.</b>
-     * {@code MessageFormat} (uzywany przez {@code MessageSource}) potrafi
-     * sformatowac {@code java.util.Date}, ale <b>nie</b> {@code LocalDateTime} -
-     * przy zapisie {@code {0,date,...}} rzuca wyjatkiem w srodku obslugi bledu,
-     * czyli dokladnie tam, gdzie nie ma juz komu go obsluzyc. Konczy sie to
-     * odpowiedzia 500 zamiast czytelnego komunikatu. Gotowy tekst nie ma jak
-     * sie na tym wylozyc.</p>
+     * <p>Powod: serwer liczy czas w UTC i <b>nie wie, w jakiej strefie siedzi
+     * uzytkownik</b>. Nie ma tez skad tego wiedziec - jedna aplikacja obsluguje
+     * ludzi z roznych stref naraz, wiec nie da sie wybrac jednej "wlasciwej".
+     * Zegar uzytkownika zna wylacznie jego przegladarka.</p>
+     *
+     * <p>Dlatego termin wedruje teraz jako <b>chwila</b> (pole {@code deadline}
+     * w odpowiedzi), a napis sklada z niej przegladarka - juz w czasie
+     * lokalnym. Zasada na przyszlosc: <b>serwer podaje chwile, klient robi
+     * z niej godzine</b>.</p>
      */
     public static OperationNotAllowedException postingBanned(java.time.LocalDateTime until) {
         if (com.musicclubapp.entity.User.isForever(until)) {
             return new OperationNotAllowedException(
                 "Konto ma bezterminowy zakaz publikowania", "error.post.banned.forever");
         }
-        String deadline = until.format(DEADLINE_FORMAT);
         return new OperationNotAllowedException(
-            "Konto ma zakaz publikowania do " + deadline, "error.post.banned", deadline);
+            "Konto ma zakaz publikowania", "error.post.banned", until);
     }
 
     /**
@@ -336,10 +348,24 @@ public class OperationNotAllowedException extends RuntimeException {
                 "Konto ma bezterminowy zakaz wysylania wiadomosci",
                 "error.message.banned.forever");
         }
-        String deadline = until.format(DEADLINE_FORMAT);
         return new OperationNotAllowedException(
-            "Konto ma zakaz wysylania wiadomosci do " + deadline,
-            "error.message.banned", deadline);
+            "Konto ma zakaz wysylania wiadomosci", "error.message.banned", until);
+    }
+
+    /**
+     * Termin konca kary, jesli ten blad go dotyczy - inaczej {@code null}.
+     *
+     * <p>Wyciagamy go z {@code arguments}, bo tylko tam moze sie znalezc.
+     * Obsluga bledow wklada go do odpowiedzi jako osobne pole, zeby
+     * przegladarka mogla go sformatowac w strefie uzytkownika.</p>
+     */
+    public java.time.LocalDateTime getDeadline() {
+        for (Object argument : arguments) {
+            if (argument instanceof java.time.LocalDateTime moment) {
+                return moment;
+            }
+        }
+        return null;
     }
 
     public String getMessageKey() {

@@ -1,4 +1,6 @@
 import axios from 'axios';
+import i18n from 'i18next';
+import { formatDateTime } from '../utils/dates';
 
 /**
  * Jedno miejsce, przez ktore ida WSZYSTKIE zapytania do backendu.
@@ -221,9 +223,28 @@ export function describeError(error) {
    */
   const hasFieldErrors = Object.keys(fieldErrors).length > 0;
 
+  /*
+   * Termin konca kary DOKLADAMY TUTAJ, a nie bierzemy gotowego z serwera.
+   *
+   * Wczesniej serwer wklejal date do komunikatu sam i wychodzilo z tego
+   * „zakaz do 15:55" przy karze nalozonej o 16:55 - bo serwer liczy czas
+   * w UTC i o strefie uzytkownika nie wie nic. Teraz przysyla sama chwile,
+   * a godzine sklada przegladarka, ktora jako jedyna zna zegar uzytkownika.
+   *
+   * Robimy to w jednym miejscu, a nie przy kazdym wyswietlaniu bledu:
+   * wszystkie ekrany pokazuja to, co odda `message`, wiec dolozenie terminu
+   * tutaj dziala wszedzie naraz i nigdzie nie da sie o nim zapomniec.
+   */
+  let message = hasFieldErrors ? null : (data?.message ?? null);
+  if (message && data?.deadline) {
+    message += ' ' + i18n.t('errors.until', {
+      date: formatDateTime(data.deadline, i18n.language),
+    });
+  }
+
   return {
     // Komunikat z serwera jest juz przetlumaczony (wyslalismy Accept-Language)
-    message: hasFieldErrors ? null : (data?.message ?? null),
+    message,
     messageKey: hasFieldErrors || data?.message ? null : 'errors.unknown',
     fieldErrors,
   };

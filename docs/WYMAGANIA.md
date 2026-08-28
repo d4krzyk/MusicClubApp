@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 339 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 347 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -190,5 +190,30 @@ dopiero na uruchomionej aplikacji:
   który już tam był w innym znaczeniu. Pliki `.properties` nie zgłaszają tego
   w żaden sposób — po cichu wygrywa ostatni wpis, więc stary komunikat zmieniłby
   treść bez śladu w kodzie.
+- **data sformatowana po niewłaściwej stronie.** Termin końca kary serwer
+  wklejał do komunikatu sam — i zakaz nałożony o 16:55 na godzinę pokazywał się
+  jako „do 15:55", czyli w przeszłości. Test na ten komunikat **przechodził**,
+  bo sprawdzał, czy data w nim *jest*, a nie czy jest *prawdziwa dla
+  oglądającego*. Zasada, która z tego zostaje: **serwer podaje chwilę, klient
+  robi z niej godzinę** — bo tylko przeglądarka zna strefę użytkownika;
+- **lista, w której dwie pozycje mają tę samą wartość.** W panelu kont
+  „zdejmij zakaz" miało `value=""` — dokładnie tyle samo co pozycja neutralna,
+  do której lista wraca po każdej akcji. Wybranie go nie zmieniało więc
+  wartości, przeglądarka nie zgłaszała zdarzenia i **zakazu nie dało się
+  zdjąć**. Kliknięcie wyglądało na przyjęte i nie robiło nic — najgorszy
+  rodzaj awarii, bo nie zostawia nawet błędu do zauważenia;
+- **znikające sterowanie.** Wyszukiwarka w czacie pojawiała się dopiero od
+  sześciu rozmów, z rozumowaniem, że przy trzech osobach jest zbędna. Tyle że
+  **nie widać pola, którego nie ma**: kto go szuka i nie znajduje, wnioskuje,
+  że aplikacja go nie ma, a nie że ma za mało znajomych;
+- **jedno sprawdzenie na dwie różne rzeczy.** Czat miał jeden warunek („tylko
+  znajomi") na pisanie *i* na czytanie. Skutek: usunięcie kogoś ze znajomych
+  kasowało z widoku całą rozmowę i dla obu stron wyglądało to jak awaria.
+  Rozdzielenie na „czytać wolno, pisać nie" rozwiązało to bez otwierania
+  furtki — czytanie wymaga wspólnej historii, a nie samego istnienia konta;
+- **sędzia we własnej sprawie.** Zgłoszenie może dotyczyć administratora, który
+  je rozpatruje. Kary na własne konto są tam zablokowane — nie tylko dlatego,
+  że to ocena we własnej sprawie, ale też dlatego, że jedno kliknięcie dzieli
+  wtedy od odebrania sobie dostępu do panelu.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

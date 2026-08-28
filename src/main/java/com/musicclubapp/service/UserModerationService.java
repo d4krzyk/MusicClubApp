@@ -239,6 +239,28 @@ public class UserModerationService {
             throw OperationNotAllowedException.reportHasNoPost();
         }
 
+        /*
+         * Administrator nie karze SAM SIEBIE.
+         *
+         * Zgloszenie moze dotyczyc administratora - i wtedy nadal wolno mu je
+         * zamknac, bo ktos musi. Nie wolno mu natomiast przy tej okazji
+         * zablokowac ani skasowac wlasnego konta: "sam sobie sedzia" to
+         * z jednej strony ocena we wlasnej sprawie, a z drugiej - jedno
+         * klikniecie od odebrania sobie (i moze wszystkim) dostepu do panelu.
+         * Zgloszenie na INNEGO administratora jest zwyklym zgloszeniem
+         * i dziala bez ograniczen.
+         *
+         * Sprawdzenie stoi PRZED zamknieciem sprawy. Bez niego kara i tak by
+         * nie przeszla (blokuja to setPostingBan i deleteUser), ale dowiedzieli
+         * bysmy sie o tym dopiero po zamknieciu zgloszenia - a wtedy cala
+         * operacja wywraca sie razem z decyzja, ktora administrator wlasnie
+         * swiadomie podjal.
+         */
+        boolean aboutSelf = report.getReported().getUsername().equals(adminUsername);
+        if (aboutSelf && isPunishment(action)) {
+            throw OperationNotAllowedException.ownAccount();
+        }
+
         ReportResponse closed = reports.resolve(adminUsername, id, request);
 
         User target = report.getReported();
@@ -295,6 +317,40 @@ public class UserModerationService {
             return User.FOREVER;
         }
         return hours == null ? null : LocalDateTime.now().plusHours(hours);
+    }
+
+    /**
+     * Czy to dzialanie jest kara wymierzona w KONTO.
+     *
+     * <p>Usuniecie posta swiadomie nie jest tu wymienione: post to pojedyncza
+     * tresc i skasowanie wlasnego wpisu nie odbiera nikomu dostepu do niczego.
+     * Zakazy i usuniecie konta - owszem.</p>
+     */
+    private boolean isPunishment(ModerationAction action) {
+        return action == ModerationAction.BAN_POSTING
+            || action == ModerationAction.BAN_MESSAGING
+            || action == ModerationAction.DELETE_ACCOUNT;
+    }
+
+    /**
+     * Otwiera zamknieta sprawe z powrotem, zeby dalo sie zdecydowac inaczej.
+     *
+     * <p><b>Nie cofa wykonanych dzialan</b> - skasowanego posta nie ma,
+     * a zakaz zdejmuje sie osobno w panelu kont. Cofa sie decyzja, nie jej
+     * skutki; szczegoly przy {@code Report.reopen}.</p>
+     */
+    @Transactional
+    public ReportResponse reopenReport(String adminUsername, Long id) {
+        Report report = reportRepository.findById(id)
+            .orElseThrow(() -> new NoSuchElementFoundException("report", id));
+
+        if (!report.reopen()) {
+            // Juz otwarte - nie ma czego zmieniac, a ciche "ok" myliloby
+            throw OperationNotAllowedException.reportNotClosed();
+        }
+
+        log.info("Administrator {} otworzyl ponownie zgloszenie {}", adminUsername, id);
+        return reports.get(id);
     }
 
     /** Czytelny opis kary do logu - w logu "9999-12-31" wygladaloby na usterke. */

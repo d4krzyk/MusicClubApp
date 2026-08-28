@@ -153,4 +153,24 @@ public class ReportController {
         return ResponseEntity.ok(
             moderationService.resolveReport(authentication.getName(), id, request));
     }
+
+    /**
+     * Otwiera zamknieta sprawe z powrotem - zeby dalo sie zdecydowac inaczej.
+     *
+     * <p><b>Nie cofa wykonanych dzialan.</b> Skasowanego posta nie ma,
+     * a zakaz zdejmuje sie osobno w panelu kont; cofa sie decyzja, nie jej
+     * skutki.</p>
+     */
+    @PostMapping("/admin/{id}/reopen")
+    @Operation(summary = "Otwiera zamkniete zgloszenie z powrotem")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Otwarte ponownie"),
+        @ApiResponse(responseCode = "409", description = "Zgloszenie i tak jest otwarte")
+    })
+    public ResponseEntity<ReportResponse> reopen(
+            @PathVariable Long id, Authentication authentication) {
+
+        return ResponseEntity.ok(
+            moderationService.reopenReport(authentication.getName(), id));
+    }
 }

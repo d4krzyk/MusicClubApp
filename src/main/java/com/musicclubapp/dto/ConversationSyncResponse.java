@@ -30,12 +30,18 @@ import java.util.List;
  *                      {@code null}, gdy jeszcze zadnej. Przegladarka
  *                      oznacza po tym ptaszkiem wszystko do tego numeru -
  *                      patrz {@code MessageRepository.lastReadOutgoingId}
+ * @param friend        czy z ta osoba wolno teraz PISAC. Chodzi tu przede
+ *                      wszystkim o chwile, w ktorej znajomosc znika przy
+ *                      OTWARTYM oknie rozmowy - bez tego pole do pisania
+ *                      zostaloby aktywne, a wyslanie konczyloby sie bledem
+ *                      dopiero po klknieciu "wyslij"
  */
 public record ConversationSyncResponse(
     List<MessageResponse> messages,
     boolean partnerTyping,
     PresenceResponse presence,
     long unread,
-    Long lastReadOutgoingId
+    Long lastReadOutgoingId,
+    boolean friend
 ) {
 }

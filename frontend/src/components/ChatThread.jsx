@@ -33,7 +33,7 @@ const STICK_TO_BOTTOM_PX = 80;
  * jest niezauwazalna. Odpytywanie chodzi TYLKO przy otwartej rozmowie
  * i pyta o same nowosci - patrz {@code ConversationSyncResponse}.</p>
  */
-export default function ChatThread({ username, avatarUrl, onPresence, onRead }) {
+export default function ChatThread({ username, avatarUrl, friend = true, onPresence, onRead }) {
   const { t, i18n } = useTranslation();
   const { setUnread } = useChat();
 
@@ -54,6 +54,14 @@ export default function ChatThread({ username, avatarUrl, onPresence, onRead }) 
   const [startAt, setStartAt] = useState('');
 
   const [partnerTyping, setPartnerTyping] = useState(false);
+
+  /*
+   * Czy z ta osoba wolno teraz PISAC. Wartosc poczatkowa przychodzi z listy
+   * rozmow, a odpytywanie ja odswieza - dzieki temu zerwanie znajomosci przy
+   * OTWARTYM oknie zamyka pole do pisania od razu, a nie dopiero przy probie
+   * wyslania.
+   */
+  const [canWrite, setCanWrite] = useState(friend);
 
   const scroller = useRef(null);
   const input = useRef(null);
@@ -161,6 +169,7 @@ export default function ChatThread({ username, avatarUrl, onPresence, onRead }) 
         { params: lastId.current ? { after: lastId.current } : {} });
 
       setPartnerTyping(data.partnerTyping);
+      setCanWrite(data.friend);
       callbacks.current.onPresence?.(username, data.presence);
       setUnread(data.unread);
 
@@ -397,6 +406,20 @@ export default function ChatThread({ username, avatarUrl, onPresence, onRead }) 
         )}
       </div>
 
+      {/*
+        Po zerwaniu znajomosci rozmowa ZOSTAJE do przeczytania, ale pole do
+        pisania znika. Wczesniej cala rozmowa po prostu przepadala z listy,
+        co dla obu stron wygladalo jak awaria - nie bylo wiadomo, czy ktos
+        usunal konto, zerwal znajomosc, czy cos sie zepsulo.
+
+        Komunikat widza OBIE strony i mowi wprost, jaki jest warunek -
+        samo wygaszone pole kazaloby sie domyslac, dlaczego nie dziala.
+      */}
+      {!canWrite ? (
+        <div className="chat-composer chat-closed">
+          <p className="mb-0 small text-body-secondary">{t('chat.friendsOnly')}</p>
+        </div>
+      ) : (
       <form className="chat-composer" onSubmit={send}>
         {error && <div className="chat-error">{error}</div>}
 
@@ -450,6 +473,7 @@ export default function ChatThread({ username, avatarUrl, onPresence, onRead }) 
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

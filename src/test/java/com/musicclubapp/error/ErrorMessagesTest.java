@@ -8,6 +8,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,19 +40,40 @@ class ErrorMessagesTest {
         return messageSource.getMessage(ex.getMessageKey(), ex.getArguments(), locale);
     }
 
+    /**
+     * Termin kary <b>nie jest juz wklejany w komunikat</b> - i to jest zmiana,
+     * a nie usterka.
+     *
+     * <p>Wczesniej ten test sprawdzal, ze komunikat zawiera „14.03.2026 09:47",
+     * i przechodzil. Mimo to uzytkownik widzial bzdure: zakaz nalozony o 16:55
+     * na godzine pokazywal sie jako <i>„do 15:55"</i>. Powod - serwer liczy
+     * czas w UTC i formatowal te godzine u siebie, nie wiedzac nic o strefie
+     * uzytkownika. Test byl zielony, bo pytal o <i>obecnosc</i> daty, a nie
+     * o to, czy jest ona <i>prawdziwa</i> dla ogladajacego.</p>
+     *
+     * <p>Teraz komunikat mowi samo „zakaz publikowania", a chwila konca kary
+     * jedzie osobnym polem i zamienia sie w godzine dopiero w przegladarce -
+     * bo tylko ona zna zegar uzytkownika. Test pilnuje wiec dwoch rzeczy:
+     * ze termin jest <b>przekazany</b> i ze <b>nie ma go w tekscie</b>.</p>
+     */
     @Test
-    @DisplayName("komunikat o zakazie podaje TERMIN - po polsku i po angielsku")
-    void banMessageCarriesTheDeadline() {
-        var ex = OperationNotAllowedException.postingBanned(
-            LocalDateTime.of(2026, 3, 14, 9, 47));
+    @DisplayName("komunikat o zakazie NIE zawiera godziny - ta sklada przegladarka")
+    void banMessageCarriesTheDeadlineSeparately() {
+        LocalDateTime until = LocalDateTime.of(2026, 3, 14, 9, 47);
+        var ex = OperationNotAllowedException.postingBanned(until);
 
-        assertThat(render(ex, Locale.forLanguageTag("pl")))
-            .contains("14.03.2026")
-            .contains("09:47");
+        assertThat(ex.getDeadline())
+            .describedAs("termin musi dojechac do przegladarki, inaczej nie ma z czego "
+                + "zlozyc zdania o koncu kary")
+            .isEqualTo(until);
 
-        assertThat(render(ex, Locale.ENGLISH))
-            .contains("14.03.2026")
-            .contains("09:47");
+        for (Locale locale : List.of(Locale.forLanguageTag("pl"), Locale.ENGLISH)) {
+            assertThat(render(ex, locale))
+                .describedAs("godzina sformatowana przez SERWER byla by w jego strefie, "
+                    + "a nie w strefie ogladajacego - w Polsce cofnieta o dwie godziny")
+                .doesNotContain("09:47")
+                .doesNotContain("14.03.2026");
+        }
     }
 
     @Test

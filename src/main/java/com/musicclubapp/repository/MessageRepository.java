@@ -158,6 +158,25 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
      * Dla warstwy wyzej nic sie nie zmienilo: nazwa i wynik sa te same
      * co wtedy, gdy bylo to jedno zapytanie.</p>
      */
+    /**
+     * Czy te dwie osoby kiedykolwiek cos do siebie napisaly.
+     *
+     * <p>Sluzy do rozstrzygniecia, czy wolno OTWORZYC rozmowe z kims, kto nie
+     * jest juz znajomym. Sama historia jest tu wystarczajaca podstawa: te
+     * wiadomosci powstaly, gdy znajomosc trwala, i naleza rowniez do tej
+     * drugiej strony - zerwanie znajomosci nie odbiera nikomu prawa do
+     * przeczytania tego, co sam dostal.</p>
+     *
+     * <p>Pisanie to osobna sprawa i tam historia <b>nie</b> wystarcza -
+     * patrz {@code MessageService}.</p>
+     */
+    @Query("""
+           SELECT COUNT(m) > 0 FROM Message m
+           WHERE (m.sender.id = :a AND m.recipient.id = :b)
+              OR (m.sender.id = :b AND m.recipient.id = :a)
+           """)
+    boolean anyMessageBetween(@Param("a") Long a, @Param("b") Long b);
+
     default List<ConversationRow> lastMessagePerConversation(Long me) {
         Map<Long, Long> newest = new LinkedHashMap<>();
         for (ConversationRow row : lastSentPerPartner(me)) {

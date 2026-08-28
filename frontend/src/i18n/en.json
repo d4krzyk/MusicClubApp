@@ -116,7 +116,9 @@
     "blockedTitle": "Blocked addresses",
     "blockedHint": "These addresses cannot sign up or log in. Open sessions keep working — the block applies from the next login.",
     "blockedBy": "{{username}}, {{date}}",
-    "unblock": "Unblock"
+    "unblock": "Unblock",
+    "chooseAction": "choose an action…",
+    "confirmAction": "Account \"{{username}}\"\n\n{{action}}\n\nApply?"
   },
   "account": {
     "switchTitle": "A different account was signed in on this computer",
@@ -125,7 +127,8 @@
   },
   "errors": {
     "network": "Cannot reach the server. Check whether the backend is running.",
-    "unknown": "Something went wrong. Please try again."
+    "unknown": "Something went wrong. Please try again.",
+    "until": "until {{date}}"
   },
   "settings": {
     "title": "Account settings",
@@ -338,7 +341,8 @@
     "reaction": "{{username}} reacted {{emoji}} to your post",
     "friendRequest": "{{username}} sent you a friend request",
     "friendAccepted": "{{username}} is now your friend",
-    "report": "A new report to review"
+    "report": "A new report to review",
+    "delete": "Delete notification"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -392,7 +396,9 @@
     "searchPlaceholder": "Search friends…",
     "groupThreads": "Conversations",
     "groupFriends": "Write to…",
-    "noMatches": "No friend of yours matches “{{search}}”"
+    "noMatches": "No friend of yours matches “{{search}}”",
+    "friendsOnly": "Messages go to friends only. This person is no longer your friend - you can read the conversation, but you cannot write in it.",
+    "formerFriend": "no longer a friend"
   },
   "reports": {
     "report": "Report",
@@ -464,6 +470,9 @@
       "BAN_POSTING": "ban from posting",
       "BAN_MESSAGING": "ban from messaging",
       "DELETE_ACCOUNT": "delete the account"
-    }
+    },
+    "reopen": "Change the decision",
+    "reopenHint": "Reopens the case. It does not undo actions that were already carried out.",
+    "selfReportHint": "This report is about your own account - you can close it, but you cannot punish yourself."
   }
 }

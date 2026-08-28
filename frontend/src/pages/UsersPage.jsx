@@ -13,7 +13,7 @@ import Modal from 'react-bootstrap/Modal';
 import client, { describeError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { IconBan } from '../components/Icons';
-import { formatDate, isForever } from '../utils/dates';
+import { formatDate, formatDateTime, isForever } from '../utils/dates';
 
 /**
  * Wartosc pozycji "na zawsze" na liscie kar.
@@ -23,6 +23,18 @@ import { formatDate, isForever } from '../utils/dates';
  * trafilaby do walidacji godzin i zostala odrzucona jako "poza zakresem".</p>
  */
 const FOREVER = 'forever';
+
+/**
+ * Wartosc pozycji "zdejmij zakaz".
+ *
+ * <p><b>Musi byc rozna od pustej</b> - i to jest naprawa bledu, przez ktory
+ * zakazu w ogole nie dalo sie zdjac. Lista ma na stale {@code value=""}
+ * (wraca do stanu neutralnego po kazdym wyborze), a pozycja "zdejmij zakaz"
+ * tez miala puste value. Wybranie jej nie zmienialo wiec wartosci listy,
+ * przegladarka nie zglaszala zadnej zmiany i {@code onChange} nigdy sie nie
+ * wywolywalo. Klikniecie wygladalo na przyjete i nie robilo nic.</p>
+ */
+const LIFT = 'lift';
 
 /**
  * Panel administratora: lista kont ze stronicowaniem, sortowaniem
@@ -131,10 +143,43 @@ export default function UsersPage() {
     if (value === FOREVER) {
       return { hours: null, forever: true };
     }
-    return { hours: value === '' ? null : Number(value), forever: false };
+    // LIFT i pusta wartosc znacza to samo dla serwera: zadnego zakazu
+    return {
+      hours: (value === '' || value === LIFT) ? null : Number(value),
+      forever: false,
+    };
   }
 
-  async function setPostingBan(id, value) {
+  /**
+   * Pyta o potwierdzenie i mowi wprost, co zaraz sie stanie.
+   *
+   * <p>Kary nakladalo sie dotad <b>jednym ruchem myszy na liscie</b>, bez
+   * zadnego kroku pomiedzy - a lista stoi w wierszu tabeli, tuz obok
+   * sasiednich kont. Pomylka o jeden wiersz konczyla sie kara dla
+   * niewlasciwej osoby i nikt o tym nie wiedzial.</p>
+   *
+   * <p>Pytanie zawiera <b>nazwe konta i tresc kary</b>, bo "czy na pewno?"
+   * bez tych dwoch rzeczy nie pozwala wychwycic wlasnie tej pomylki,
+   * przed ktora ma chronic.</p>
+   */
+  function confirmed(username, opis) {
+    return window.confirm(t('users.confirmAction', { username, action: opis }));
+  }
+
+  /** Opis kary do pytania o potwierdzenie - ten sam tekst co na liscie. */
+  function describeChoice(value) {
+    if (value === LIFT || value === '') {
+      return t('users.banLift');
+    }
+    return value === FOREVER
+      ? t('users.banForever')
+      : t('users.banFor', { count: Number(value) });
+  }
+
+  async function setPostingBan(id, value, username) {
+    if (!value || !confirmed(username, `${t('users.colPostingBan')}: ${describeChoice(value)}`)) {
+      return;
+    }
     setError(null);
     setMessage(null);
     const payload = banPayload(value);
@@ -151,7 +196,10 @@ export default function UsersPage() {
   }
 
   /** Zakaz wysylania wiadomosci - osobna kara od zakazu publikowania. */
-  async function setMessagingBan(id, value) {
+  async function setMessagingBan(id, value, username) {
+    if (!value || !confirmed(username, `${t('users.colMessagingBan')}: ${describeChoice(value)}`)) {
+      return;
+    }
     setError(null);
     setMessage(null);
     const payload = banPayload(value);
@@ -233,7 +281,18 @@ export default function UsersPage() {
     }
   }
 
-  async function changeRole(id, newRole) {
+  async function changeRole(id, newRole, username) {
+    /*
+     * Nadanie uprawnien administratora jednym ruchem myszy na liscie w tabeli
+     * jest az za latwe - i to jest zmiana, ktorej najtrudniej sie potem
+     * dopatrzec, bo wiersz wyglada tak samo jak przedtem.
+     */
+    const opis = t('users.colRole') + ': '
+      + t(newRole === 'ADMIN' ? 'users.roleAdmin' : 'users.roleUser');
+    if (!confirmed(username, opis)) {
+      setRefresh((n) => n + 1);   // przywraca liste do stanu z bazy
+      return;
+    }
     setError(null);
     setMessage(null);
     try {
@@ -367,7 +426,7 @@ export default function UsersPage() {
                               value={u.role}
                               disabled={mySelf}
                               title={mySelf ? t('users.selfRoleHint') : undefined}
-                              onChange={(e) => changeRole(u.id, e.target.value)}
+                              onChange={(e) => changeRole(u.id, e.target.value, u.username)}
                               aria-label={t('users.colRole')}
                             >
                               <option value="USER">{t('users.roleUser')}</option>
@@ -380,18 +439,20 @@ export default function UsersPage() {
                               size="sm"
                               value=""
                               disabled={mySelf}
-                              onChange={(e) => setPostingBan(u.id, e.target.value)}
+                              onChange={(e) => setPostingBan(u.id, e.target.value, u.username)}
                               aria-label={t('users.colPostingBan')}
                             >
                               {/*
-                                Pusta pozycja jest jednoczesnie stanem "nic nie
-                                wybrano" i poleceniem "zdejmij zakaz" - dzieki temu
-                                lista wraca po kazdej zmianie do stanu neutralnego
-                                i nie sugeruje, ze cos jest teraz ustawione.
+                                Pusta pozycja to WYLACZNIE stan neutralny ("nic nie
+                                wybrano"), do ktorego lista wraca po kazdej akcji.
+                                Zdejmowanie zakazu ma wlasna wartosc i to nie jest
+                                drobiazg: gdy obie pozycje mialy puste value,
+                                wybranie "zdejmij" nie zmienialo wartosci listy,
+                                wiec przegladarka nie zglaszala zmiany i zakazu
+                                NIE DALO SIE ZDJAC.
                               */}
-                              <option value="">
-                                {banned ? t('users.banLift') : t('users.banNone')}
-                              </option>
+                              <option value="">{t('users.chooseAction')}</option>
+                              {banned && <option value={LIFT}>{t('users.banLift')}</option>}
                               {BAN_OPTIONS.map((h) => (
                                 <option key={h} value={h}>
                                   {t('users.banFor', { count: h })}
@@ -410,7 +471,7 @@ export default function UsersPage() {
                                 {isForever(u.postingBannedUntil)
                                   ? t('users.bannedForever')
                                   : t('users.bannedUntil', {
-                                    date: formatDate(u.postingBannedUntil, i18n.language),
+                                    date: formatDateTime(u.postingBannedUntil, i18n.language),
                                   })}
                               </div>
                             )}
@@ -427,12 +488,11 @@ export default function UsersPage() {
                               size="sm"
                               value=""
                               disabled={mySelf}
-                              onChange={(e) => setMessagingBan(u.id, e.target.value)}
+                              onChange={(e) => setMessagingBan(u.id, e.target.value, u.username)}
                               aria-label={t('users.colMessagingBan')}
                             >
-                              <option value="">
-                                {mutedNow ? t('users.banLift') : t('users.banNone')}
-                              </option>
+                              <option value="">{t('users.chooseAction')}</option>
+                              {mutedNow && <option value={LIFT}>{t('users.banLift')}</option>}
                               {BAN_OPTIONS.map((h) => (
                                 <option key={h} value={h}>
                                   {t('users.banFor', { count: h })}
@@ -446,7 +506,7 @@ export default function UsersPage() {
                                 {isForever(u.messagingBannedUntil)
                                   ? t('users.mutedForever')
                                   : t('users.mutedUntil', {
-                                    date: formatDate(u.messagingBannedUntil, i18n.language),
+                                    date: formatDateTime(u.messagingBannedUntil, i18n.language),
                                   })}
                               </div>
                             )}

@@ -52,6 +52,38 @@ export function formatDate(dateText, language) {
 }
 
 /**
+ * Data RAZEM Z GODZINA, w strefie czasowej uzytkownika.
+ *
+ * <p>Osobna funkcja od {@link formatDate}, bo tamta podaje sam dzien
+ * („28 sierpnia 2026"). Przy karze trwajacej godzine sam dzien nie mowi nic -
+ * trzeba wiedziec, o ktorej sie konczy.</p>
+ *
+ * <p><b>Godzine sklada przegladarka, a nie serwer</b> - i to jest sedno.
+ * Serwer liczy czas w UTC i nie wie, w jakiej strefie siedzi uzytkownik;
+ * gdy sam wklejal gotowy napis, zakaz nalozony o 16:55 pokazywal sie jako
+ * „do 15:55". {@code Intl.DateTimeFormat} bierze strefe z systemu, wiec
+ * wynik zgadza sie z zegarem na ekranie.</p>
+ */
+export function formatDateTime(dateText, language) {
+  if (!dateText) {
+    return '—';
+  }
+
+  const date = new Date(dateText);
+  if (Number.isNaN(date.getTime())) {
+    return dateText;
+  }
+
+  return new Intl.DateTimeFormat(language, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
+
+/**
  * "3 minuty temu", "wczoraj", "2 tygodnie temu".
  *
  * <p>Przy powiadomieniach data bezwzgledna ("27 sierpnia 2026") jest

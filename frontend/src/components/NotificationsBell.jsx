@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Spinner from 'react-bootstrap/Spinner';
 import client from '../api/client';
 import Avatar from './Avatar';
-import { IconBell } from './Icons';
+import { IconBell, IconCross } from './Icons';
 import { timeAgo } from '../utils/dates';
 
 /** Co ile odswiezamy licznik nieprzeczytanych. */
@@ -119,6 +119,32 @@ export default function NotificationsBell() {
     navigate(notification.link);
   }
 
+  /**
+   * Kasuje jedno powiadomienie.
+   *
+   * <p>Znika z listy OD RAZU, jeszcze przed odpowiedzia serwera - klikniecie
+   * krzyzyka ma dawac natychmiastowy skutek. Gdyby zapytanie sie nie udalo,
+   * przeladowujemy liste, zeby ekran wrocil do stanu faktycznego zamiast
+   * pokazywac wpis jako usuniety.</p>
+   *
+   * <p>Nieprzeczytane powiadomienie zmniejsza tez licznik przy dzwonku -
+   * inaczej kropka wisialaby nad pusta lista.</p>
+   */
+  async function removeNotification(id) {
+    const removed = items.find((n) => n.id === id);
+    setItems((previous) => previous.filter((n) => n.id !== id));
+    if (removed && !removed.read) {
+      setUnread((n) => Math.max(0, n - 1));
+    }
+
+    try {
+      await client.delete(`/notifications/${id}`);
+    } catch {
+      loadList();
+      loadCount();
+    }
+  }
+
   async function markAllRead() {
     setUnread(0);
     setItems((previous) => previous.map((n) => ({ ...n, read: true })));
@@ -201,9 +227,15 @@ export default function NotificationsBell() {
               </p>
             )}
 
+            {/*
+              Wiersz sklada sie z DWOCH przyciskow obok siebie, a nie
+              z jednego. Przycisk nie moze stac wewnatrz przycisku (przegladarka
+              tego nie dopuszcza), a chcemy dwie osobne czynnosci: przejscie
+              do tresci i skasowanie wpisu.
+            */}
             {!loading && items.map((notification) => (
+              <div key={notification.id} className="bell-item-row">
               <button
-                key={notification.id}
                 type="button"
                 className={`bell-item${notification.read ? '' : ' is-unread'}`}
                 onClick={() => openNotification(notification)}
@@ -229,6 +261,23 @@ export default function NotificationsBell() {
 
                 {!notification.read && <span className="bell-dot" aria-hidden="true" />}
               </button>
+
+              {/*
+                Kasowanie to co innego niz "przeczytane": przeczytane gasi
+                kropke, ale wpis zostaje i przy kilkudziesieciu powiadomieniach
+                nowe gina wsrod starych. Krzyzyk mowi "zalatwione, nie chce
+                tego wiecej ogladac".
+              */}
+              <button
+                type="button"
+                className="bell-delete"
+                onClick={() => removeNotification(notification.id)}
+                aria-label={t('notifications.delete')}
+                title={t('notifications.delete')}
+              >
+                <IconCross size={14} />
+              </button>
+              </div>
             ))}
           </div>
         </div>

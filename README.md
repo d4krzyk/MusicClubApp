@@ -166,6 +166,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/notifications/unread-count` | liczba nieprzeczytanych (to ona wisi przy dzwonku) |
 | POST | `/api/notifications/{id}/read` | oznacza jedno jako przeczytane |
 | POST | `/api/notifications/read-all` | oznacza wszystkie |
+| DELETE | `/api/notifications/{id}` | usuwa jedno powiadomienie |
 | GET | `/api/messages/conversations` | wszyscy znajomi z ostatnią wiadomością i licznikiem |
 | GET | `/api/messages/unread-count` | liczba nieprzeczytanych (to ona wisi przy ikonie czatu) |
 | GET | `/api/messages/with/{username}` | historia rozmowy, od najnowszej |
@@ -178,6 +179,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |
 | POST | `/api/reports/admin/{id}/resolve` | zamyka zgłoszenie decyzją i notatką, wykonując wybrane działanie (kara, usunięcie posta lub konta, albo nic) |
+| POST | `/api/reports/admin/{id}/reopen` | otwiera zamkniętą sprawę, żeby zdecydować inaczej |
 | PATCH | `/api/users/{id}/messaging-ban` | zakaz wysyłania wiadomości (osobny od zakazu postów) |
 | GET | `/api/users/{id}/addresses` | adresy, z których logowało się konto |
 | GET | `/api/users/{id}/related` | inne konta z tych samych adresów (**poszlaka**) |
@@ -445,6 +447,12 @@ Dzwonek w pasku z liczbą nieprzeczytanych. Powiadamiamy o trzech rzeczach:
 ktoś **zareagował na Twój post**, ktoś **wysłał Ci zaproszenie**, ktoś
 **przyjął Twoje zaproszenie**.
 
+**Każde powiadomienie można usunąć** — krzyżykiem po prawej, widocznym pod
+kursorem (na dotyku: zawsze). To co innego niż „przeczytane": przeczytane gasi
+kropkę, ale wpis zostaje na liście i przy kilkudziesięciu powiadomieniach nowe
+giną wśród starych. „Przeczytane" mówi *widziałem*, usunięcie — *załatwione,
+nie chcę tego więcej oglądać*. Dwie różne rzeczy, więc dwa osobne przyciski.
+
 **Każde powiadomienie gdzieś prowadzi** — i to jest w nich najważniejsze.
 Powiadomienie, po którym trzeba samemu szukać, co się właściwie stało,
 łatwiej zignorować niż obsłużyć:
@@ -697,11 +705,49 @@ nic. Przy dwóch osobnych kliknięciach awaria pomiędzy nimi zostawiałaby stan
 nie do opisania — zgłoszenie zamknięte z notatką „konto usunięte" i konto na
 miejscu.
 
+**Decyzję można zmienić.** Zamknięta sprawa ma przycisk „Zmień decyzję", który
+otwiera ją ponownie. Bywa, że decyzja zapadła pochopnie albo przy niepełnym
+obrazie sprawy, a zamknięte zgłoszenia liczą się do historii konta i wpływają
+na kolejne decyzje — bez tej możliwości jedynym wyjściem byłoby poprawianie
+wiersza wprost w bazie. Ponowne otwarcie **nie cofa wykonanych działań**:
+skasowanego posta nie ma, a zakaz zdejmuje się osobno w panelu kont. Cofa się
+decyzja, nie jej skutki, i interfejs mówi to wprost.
+
+**Administrator nie karze sam siebie.** Zgłoszenie może dotyczyć
+administratora, który je rozpatruje — zamknąć je wolno, bo ktoś musi, ale lista
+działań nie zawiera wtedy zakazów ani usunięcia konta. To z jednej strony ocena
+we własnej sprawie, a z drugiej jedno kliknięcie od odebrania sobie dostępu do
+panelu. Zgłoszenie na **innego** administratora jest zwykłym zgłoszeniem
+i ma pełną listę działań.
+
 Dwa sposoby zamknięcia zamiast jednego, bo „zamknięte" bez rozróżnienia nie
 odpowiada na pytanie, które administrator zada sobie przy następnym zgłoszeniu
 tej samej osoby: **czy poprzednie było zasadne?** Trzy zgłoszenia oddalone jako
 bezpodstawne znaczą co innego niż trzy, po których za każdym razem trzeba było
 działać. Liczba zasadnych stoi przy nagłówku zgłoszenia i przy koncie w panelu.
+
+### Po zerwaniu znajomości rozmowa zostaje
+
+Usunięcie kogoś ze znajomych **nie kasuje rozmowy i jej nie ukrywa**. Wątek
+zostaje na liście, oznaczony jako „już nie znajomy", historię da się
+przeczytać — ale pola do pisania nie ma, a na jego miejscu stoi zdanie
+wyjaśniające, że pisać można tylko ze znajomymi. Widzą je **obie strony**.
+
+**Wcześniej rozmowa po prostu znikała** i to był błąd: dla obu stron wyglądało
+to jak awaria aplikacji — nie było wiadomo, czy ktoś usunął konto, zerwał
+znajomość, czy coś się zepsuło.
+
+Warunki są więc dwa, nie jeden:
+
+| Czynność | Warunek |
+|---|---|
+| czytanie historii | wystarczy, że rozmowa już się odbyła |
+| pisanie, „pisze…" | trzeba **być** znajomym |
+
+Łagodniejszy warunek na czytanie nie otwiera niczego obcym: bez wspólnej
+historii wątku nie da się nawet otworzyć. Chodzi wyłącznie o to, że
+wiadomość należy też do tego, kto ją dostał — zerwanie znajomości nie odbiera
+nikomu prawa do przeczytania tego, co sam otrzymał.
 
 ### Dwie kary, nie jedna
 
@@ -715,6 +761,12 @@ ten argument się odwraca: przy dawnym zachowaniu nie dałoby się w ogóle usta
 „nie wolno pisać postów, ale wolno rozmawiać ze znajomymi" — czyli najczęstszego
 przypadku przy kimś, kto zaśmieca tablicę, a nikomu nie dokucza. Kto ma dostać
 obie kary, dostaje obie.
+
+Każda zmiana kary w panelu **pyta o potwierdzenie**, podając nazwę konta
+i treść decyzji. Kary nakładało się dotąd jednym ruchem myszy na liście stojącej
+w wierszu tabeli, tuż obok sąsiednich kont — pomyłka o jeden wiersz kończyła się
+karą dla niewłaściwej osoby i nikt o tym nie wiedział. To samo pytanie chroni
+zmianę roli.
 
 Obie liczy się w godzinach i obie **wygasają same**, bez zadania w tle.
 Do wyboru jest też zakaz **bezterminowy** — przy koncie założonym tylko po to,
@@ -1031,6 +1083,29 @@ Adresy obu serwisów da się podmienić (`app.music.deezer.base-url`,
 `app.lastfm.base-url`) — z tego korzystają testy, żeby nie zależeć od cudzej
 dostępności.
 
+## Czas: serwer podaje chwilę, przeglądarka robi z niej godzinę
+
+Cała aplikacja liczy czas w **UTC** — zegar serwera jest do niego przypięty przy
+starcie, a daty wychodzą z API z jawnym `Z` na końcu (`2026-08-28T15:55:00Z`).
+Na czytelną godzinę zamienia je dopiero przeglądarka.
+
+**To nie jest ozdobnik, tylko wniosek z dwóch błędów.**
+
+Pierwszy: `LocalDateTime` wychodził bez żadnej strefy (`2026-08-28T12:00:00`),
+a norma JavaScriptu każe taki zapis czytać jako czas **lokalny**. W Polsce
+wszystko było przez to cofnięte o dwie godziny — osoba aktywna przed chwilą
+miała przy nazwisku „aktywny 2 godziny temu".
+
+Drugi: termin końca kary serwer **formatował sam** i wklejał do komunikatu.
+Zakaz nałożony o 16:55 na godzinę pokazywał się jako „do 15:55", czyli
+w przeszłości. Serwer nie ma skąd wiedzieć, w jakiej strefie siedzi
+użytkownik — jedna aplikacja obsługuje ludzi z różnych stref naraz, więc nie
+da się wybrać jednej „właściwej".
+
+Stąd zasada: **serwer nigdy nie formatuje daty do wyświetlenia**. Termin kary
+jedzie osobnym polem (`deadline`) w odpowiedzi błędu, a zdanie „…do 28 sierpnia
+2026 18:25" składa przeglądarka, która jako jedyna zna zegar użytkownika.
+
 ## Konfiguracja: adres klienta za pośrednikiem
 
 | Ustawienie | Domyślnie | Co robi |
@@ -1065,7 +1140,7 @@ i limitami**, **osobny zakaz wysyłania wiadomości**, **wykrywanie multikont po
 adresie IP i blokada adresu**, motyw jasny/ciemny oraz cała aplikacja
 na Docker Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
 
-**329 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
+**347 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
 w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność
 postów i kolejność tablicy, powiadomienia, linki muzyczne, moderacja,
 układ strony i pasek przewijania, a czat i moderację — **dwiema i trzema

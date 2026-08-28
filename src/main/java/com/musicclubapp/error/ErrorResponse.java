@@ -36,6 +36,22 @@ public class ErrorResponse {
     /** Lista bledow walidacji - wypelniana tylko przy bledach z formularza. */
     private List<ValidationError> errors;
 
+    /**
+     * Termin, ktorego dotyczy blad - dzis wylacznie koniec zakazu.
+     *
+     * <p><b>Wysylamy sama CHWILE, a nie gotowy napis</b> - i to jest naprawa
+     * konkretnego bledu. Wczesniej serwer wklejal do komunikatu date
+     * sformatowana u siebie, przez co zakaz nalozony o 16:55 na godzine
+     * pokazywal sie jako „do 15:55": serwer liczy czas w UTC i o strefie
+     * uzytkownika nie wie nic.</p>
+     *
+     * <p>Zegar uzytkownika zna wylacznie jego przegladarka, wiec to ona
+     * zamienia te chwile na czytelna godzine. Pole wychodzi jako
+     * {@code 2026-08-28T15:55:00Z}, czyli z jawna strefa (patrz
+     * {@code JacksonConfig}).</p>
+     */
+    private LocalDateTime deadline;
+
     public ErrorResponse(int status, String message) {
         this.status = status;
         this.message = message;
@@ -64,6 +80,14 @@ public class ErrorResponse {
 
     public LocalDateTime getTimestamp() {
         return timestamp;
+    }
+
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
+
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
     }
 
     public List<ValidationError> getErrors() {

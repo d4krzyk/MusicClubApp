@@ -315,6 +315,58 @@ class UserModerationServiceTest {
         verify(userRepository, never()).delete(any(User.class));
     }
 
+    /**
+     * Administrator nie karze sam siebie - ale sprawe zamknac moze.
+     *
+     * <p>Zgloszenie moze dotyczyc administratora i ktos musi je rozpatrzyc.
+     * Nie wolno mu jednak przy tej okazji zablokowac ani skasowac wlasnego
+     * konta: to z jednej strony ocena we wlasnej sprawie, a z drugiej jedno
+     * klikniecie od odebrania sobie dostepu do panelu.</p>
+     */
+    @Test
+    @DisplayName("administrator NIE naklada kary na wlasne konto przez zgloszenie")
+    void adminCannotPunishSelfThroughReport() {
+        User admin = user("admin");
+        reportOn(admin, null);
+
+        for (ModerationAction kara : List.of(ModerationAction.BAN_POSTING,
+                ModerationAction.BAN_MESSAGING, ModerationAction.DELETE_ACCOUNT)) {
+            assertThatThrownBy(() ->
+                moderationService.resolveReport("admin", 5L, decision(kara, 24, false)))
+                .describedAs("kara %s na wlasne konto", kara)
+                .isInstanceOf(OperationNotAllowedException.class);
+        }
+
+        // Sprawa ma zostac OTWARTA - odmowa nie moze zamykac zgloszenia po cichu
+        verify(reports, never()).resolve(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("ale ZAMKNAC zgloszenie na siebie moze - bez kary")
+    void adminMayStillCloseAReportAboutSelf() {
+        User admin = user("admin");
+        reportOn(admin, null);
+
+        moderationService.resolveReport("admin", 5L, decision(ModerationAction.NONE, null, null));
+
+        verify(reports).resolve(eq("admin"), eq(5L), any(ResolveReportRequest.class));
+        assertThat(admin.isPostingBanned()).isFalse();
+    }
+
+    @Test
+    @DisplayName("zgloszenie na INNEGO administratora rozpatruje sie normalnie")
+    void reportAboutAnotherAdminIsHandledNormally() {
+        User innyAdmin = user("admin2");
+        reportOn(innyAdmin, null);
+
+        moderationService.resolveReport("admin", 5L,
+            decision(ModerationAction.BAN_POSTING, 24, false));
+
+        assertThat(innyAdmin.isPostingBanned())
+            .describedAs("blokada dotyczy WLASNEGO konta, a nie kazdego administratora")
+            .isTrue();
+    }
+
     @Test
     @DisplayName("nie da sie kasowac posta przy zgloszeniu, ktore posta nie dotyczy")
     void cannotDeletePostWhenReportHasNone() {
