@@ -29,7 +29,8 @@
     "retry": "Try again",
     "of": "of",
     "scrollLeft": "Scroll left",
-    "scrollRight": "Scroll right"
+    "scrollRight": "Scroll right",
+    "shownOf": "Showing {{shown}} of {{total}}"
   },
   "login": {
     "title": "Sign in",
@@ -146,7 +147,20 @@
     "newPasswordHint": "at least 8 characters",
     "confirmNewPassword": "Repeat new password",
     "changePassword": "Change password",
-    "passwordChanged": "Your password has been changed."
+    "passwordChanged": "Your password has been changed.",
+    "dangerTitle": "Irreversible actions",
+    "dangerIntro": "Neither of these can be undone. That is why we ask for your password, not just a click.",
+    "deletePostsTitle": "Delete all my posts",
+    "deletePostsText": "All your posts disappear along with their images and reactions. Your account stays.",
+    "deletePostsAction": "Delete all posts",
+    "deletePostsDone": "Posts deleted: {{count}}",
+    "deleteAccountTitle": "Delete my account",
+    "deleteAccountText": "Posts, messages, friendships, favourites and playlists all disappear. This cannot be recovered.",
+    "deleteAccountAction": "Delete account",
+    "passwordLabel": "Confirm with your password",
+    "passwordHint": "The same password you sign in with.",
+    "confirm": "Confirm",
+    "working": "Deleting…"
   },
   "avatar": {
     "title": "Profile picture",
@@ -339,6 +353,7 @@
     "title": "Notifications",
     "empty": "Nothing new. When someone reacts to your post or sends you a friend request, it shows up here.",
     "markAllRead": "Mark all read",
+    "loadMore": "Show older",
     "reaction": "{{username}} reacted {{emoji}} to your post",
     "friendRequest": "{{username}} sent you a friend request",
     "friendAccepted": "{{username}} is now your friend",
@@ -400,7 +415,12 @@
     "groupFriends": "Write to…",
     "noMatches": "No friend of yours matches “{{search}}”",
     "friendsOnly": "Messages go to friends only. This person is no longer your friend - you can read the conversation, but you cannot write in it.",
-    "formerFriend": "no longer a friend"
+    "formerFriend": "no longer a friend",
+    "deleteConversation": "Delete conversation",
+    "deleteConversationTitle": "Delete this conversation?",
+    "deleteConversationText": "It disappears only for you. {{username}} keeps their copy.",
+    "conversationDeleted": "Conversation deleted",
+    "deleteConversationFailed": "Could not delete the conversation"
   },
   "reports": {
     "report": "Report",
@@ -433,6 +453,7 @@
     "sent": "The report reached an administrator. Thank you — they will review it and decide what to do.",
     "failed": "Could not send the report",
     "panelTitle": "Reports",
+    "loadMore": "Show older reports",
     "filters": {
       "OPEN": "Pending",
       "RESOLVED": "Founded",

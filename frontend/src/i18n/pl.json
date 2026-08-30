@@ -29,7 +29,8 @@
     "retry": "Spróbuj ponownie",
     "of": "z",
     "scrollLeft": "Przewiń w lewo",
-    "scrollRight": "Przewiń w prawo"
+    "scrollRight": "Przewiń w prawo",
+    "shownOf": "Pokazano {{shown}} z {{total}}"
   },
   "login": {
     "title": "Logowanie",
@@ -152,7 +153,20 @@
     "newPasswordHint": "co najmniej 8 znaków",
     "confirmNewPassword": "Powtórz nowe hasło",
     "changePassword": "Zmień hasło",
-    "passwordChanged": "Hasło zostało zmienione."
+    "passwordChanged": "Hasło zostało zmienione.",
+    "dangerTitle": "Operacje nieodwracalne",
+    "dangerIntro": "Tych dwóch rzeczy nie da się cofnąć. Dlatego prosimy o hasło, a nie o samo kliknięcie.",
+    "deletePostsTitle": "Usuń wszystkie moje posty",
+    "deletePostsText": "Znikną wszystkie Twoje wpisy razem ze zdjęciami i reakcjami pod nimi. Konto zostaje.",
+    "deletePostsAction": "Usuń wszystkie posty",
+    "deletePostsDone": "Usunięto posty: {{count}}",
+    "deleteAccountTitle": "Usuń moje konto",
+    "deleteAccountText": "Znikną posty, wiadomości, znajomości, ulubieni i playlisty. Tego nie da się odzyskać.",
+    "deleteAccountAction": "Usuń konto",
+    "passwordLabel": "Potwierdź swoim hasłem",
+    "passwordHint": "To samo hasło, którym się logujesz.",
+    "confirm": "Potwierdzam",
+    "working": "Usuwam…"
   },
   "avatar": {
     "title": "Zdjęcie profilowe",
@@ -359,6 +373,7 @@
     "title": "Powiadomienia",
     "empty": "Nic nowego. Gdy ktoś zareaguje na Twój post albo zaprosi Cię do znajomych, zobaczysz to tutaj.",
     "markAllRead": "Oznacz wszystkie",
+    "loadMore": "Pokaż starsze",
     "reaction": "{{username}} zareagował(a) {{emoji}} na Twój post",
     "friendRequest": "{{username}} wysłał(a) Ci zaproszenie do znajomych",
     "friendAccepted": "{{username}} jest teraz Twoim znajomym",
@@ -420,7 +435,12 @@
     "groupFriends": "Napisz do…",
     "noMatches": "Nikt z Twoich znajomych nie pasuje do „{{search}}”",
     "friendsOnly": "Pisać można tylko ze znajomymi. Ta osoba nie jest już Twoim znajomym — rozmowę widzisz, ale nie możesz w niej nic napisać.",
-    "formerFriend": "już nie znajomy"
+    "formerFriend": "już nie znajomy",
+    "deleteConversation": "Usuń rozmowę",
+    "deleteConversationTitle": "Usunąć tę rozmowę?",
+    "deleteConversationText": "Rozmowa zniknie tylko u Ciebie. {{username}} zachowa swoją kopię.",
+    "conversationDeleted": "Rozmowa usunięta",
+    "deleteConversationFailed": "Nie udało się usunąć rozmowy"
   },
   "reports": {
     "report": "Zgłoś",
@@ -453,6 +473,7 @@
     "sent": "Zgłoszenie trafiło do administratora. Dziękujemy — sprawdzi je i zdecyduje, co dalej.",
     "failed": "Nie udało się wysłać zgłoszenia",
     "panelTitle": "Zgłoszenia",
+    "loadMore": "Pokaż starsze zgłoszenia",
     "filters": {
       "OPEN": "Czekające",
       "RESOLVED": "Zasadne",

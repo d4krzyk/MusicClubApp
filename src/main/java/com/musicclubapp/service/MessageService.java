@@ -254,6 +254,26 @@ public class MessageService {
         return conversations;
     }
 
+    /**
+     * Usuwa rozmowe TYLKO u osoby, ktora o to poprosila.
+     *
+     * <p>Druga strona zachowuje swoja kopie - i to jest sedno tej funkcji.
+     * Skasowanie wiadomosci naprawde odbieraloby komus jego wlasna
+     * korespondencje, a rozmowa nalezy do dwojga ludzi, nie do jednego.</p>
+     *
+     * <p>Wiersze znikaja z bazy dopiero wtedy, gdy ukryja je OBIE strony -
+     * wczesniej nie ma czego kasowac, bo ktos to jeszcze widzi.</p>
+     */
+    @Transactional
+    public void deleteConversation(String me, String partnerUsername) {
+        User viewer = requireUser(me);
+        User partner = requirePartner(viewer, partnerUsername);
+
+        messageRepository.hideSentTo(viewer.getId(), partner.getId());
+        messageRepository.hideReceivedFrom(viewer.getId(), partner.getId());
+        messageRepository.deleteHiddenByBothSides();
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */

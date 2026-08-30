@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Spinner from 'react-bootstrap/Spinner';
 import * as powiadomienia from '../api/powiadomienia';
 import Avatar from './Avatar';
+import DoladujWiecej from './DoladujWiecej';
 import { IconBell, IconCross } from './Icons';
 import { timeAgo } from '../utils/dates';
 import useOdswiezanie from '../hooks/useOdswiezanie';
@@ -11,7 +12,7 @@ import useOdswiezanie from '../hooks/useOdswiezanie';
 /** Co ile odswiezamy licznik nieprzeczytanych. */
 const REFRESH_MS = 60_000;
 
-/** Ile ostatnich powiadomien pokazuje rozwijana lista. */
+/** Ile powiadomien pobieramy naraz - reszta czeka na "pokaz starsze". */
 const LIST_SIZE = 15;
 
 /** Dzwonek powiadomien w gornym pasku. */
@@ -23,7 +24,11 @@ export default function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [items, setItems] = useState([]);
+  const [strona, setStrona] = useState(0);
+  const [ostatnia, setOstatnia] = useState(true);
+  const [wszystkich, setWszystkich] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [doladowywanie, setDoladowywanie] = useState(false);
 
   const wrapper = useRef(null);
 
@@ -47,21 +52,32 @@ export default function NotificationsBell() {
   /* ...oraz co minute, gdy ktos siedzi na jednej stronie. */
   useOdswiezanie(loadCount, REFRESH_MS);
 
-  async function loadList() {
-    setLoading(true);
+  /* "dolacz" odroznia doladowanie starszych od pobrania listy od nowa. */
+  async function loadList(numer, dolacz) {
+    if (dolacz) {
+      setDoladowywanie(true);
+    } else {
+      setLoading(true);
+    }
     try {
-      const data = await powiadomienia.lista(LIST_SIZE);
-      setItems(data.content);
+      const data = await powiadomienia.lista({ strona: numer, rozmiar: LIST_SIZE });
+
+      setItems((poprzednie) => (dolacz ? [...poprzednie, ...data.content] : data.content));
+      setStrona(data.number);
+      setOstatnia(data.last);
+      setWszystkich(data.totalElements);
     } finally {
       setLoading(false);
+      setDoladowywanie(false);
     }
   }
 
+  /* Kazde otwarcie zaczyna od najnowszych - panel nie pamieta poprzedniego przewijania. */
   function toggle() {
     const next = !open;
     setOpen(next);
     if (next) {
-      loadList();
+      loadList(0, false);
     }
   }
 
@@ -102,6 +118,7 @@ export default function NotificationsBell() {
   async function removeNotification(id) {
     const removed = items.find((n) => n.id === id);
     setItems((previous) => previous.filter((n) => n.id !== id));
+    setWszystkich((n) => Math.max(0, n - 1));
     if (removed && !removed.read) {
       setUnread((n) => Math.max(0, n - 1));
     }
@@ -109,7 +126,7 @@ export default function NotificationsBell() {
     try {
       await powiadomienia.usun(id);
     } catch {
-      loadList();
+      loadList(0, false);
       loadCount();
     }
   }
@@ -235,6 +252,22 @@ export default function NotificationsBell() {
               </button>
               </div>
             ))}
+
+            {/*
+              Kasowanie w otwartym panelu przesuwa liste o jedna pozycje, wiec kolejna strona
+              moze wtedy pominac jeden wpis - zamkniecie i otwarcie dzwonka buduje ja od nowa.
+            */}
+            {!loading && items.length > 0 && wszystkich > LIST_SIZE && (
+              <DoladujWiecej
+                etykieta={t('notifications.loadMore')}
+                pokazano={items.length}
+                wszystkich={wszystkich}
+                ostatnia={ostatnia}
+                ladowanie={doladowywanie}
+                rozmiar="sm"
+                onClick={() => loadList(strona + 1, true)}
+              />
+            )}
           </div>
         </div>
       )}

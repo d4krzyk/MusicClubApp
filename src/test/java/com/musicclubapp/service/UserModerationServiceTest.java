@@ -17,7 +17,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -45,17 +43,8 @@ class UserModerationServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private com.musicclubapp.repository.ReportRepository reportRepository;
     @Mock private UserMapper userMapper;
-
-    /* Moduly, ktore sprzataja po koncie - kazdy we wlasnych tabelach. */
-    @Mock private NotificationService notifications;
-    @Mock private ReactionService reactions;
-    @Mock private PostService posts;
-    @Mock private FriendService friends;
-    @Mock private MessageService messages;
-    @Mock private ReportService reports;
     @Mock private NetworkService network;
-    @Mock private PlaylistService playlists;
-    @Mock private UserService users;
+    @Mock private AccountDeletionService deletion;
 
     @InjectMocks private UserModerationService moderationService;
 
@@ -75,42 +64,22 @@ class UserModerationServiceTest {
         verify(userRepository, never()).delete(any());
     }
 
+    /**
+     * Moderacja pilnuje UPRAWNIEN, a nie sprzatania.
+     *
+     * <p>Co dokladnie i w jakiej kolejnosci znika, sprawdza
+     * {@code AccountDeletionServiceTest} - tutaj wystarczy, ze administrator
+     * o to poprosil.</p>
+     */
     @Test
-    @DisplayName("usuniecie konta prosi po kolei kazdy modul o posprzatanie")
-    void deletingAccountAsksEveryModuleInOrder() {
+    @DisplayName("usuniecie konta zleca skasowanie modulowi od kasowania")
+    void deletingAccountDelegatesTheErasure() {
         User target = user("troll");
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
 
         moderationService.deleteUser("admin", 7L);
 
-        /* Kolejnosc nie jest tu dowolna. */
-        InOrder kolejnosc = inOrder(notifications, reactions, posts, friends,
-            messages, reports, network, playlists, users, userRepository);
-
-        kolejnosc.verify(notifications).deleteAllOf(7L);
-        kolejnosc.verify(reactions).deleteAllOf(7L);
-        kolejnosc.verify(posts).deleteAllOf(7L);
-        kolejnosc.verify(friends).deleteAllOf(target);
-        kolejnosc.verify(messages).deleteAllOf(7L);
-        kolejnosc.verify(reports).deleteAllOf(7L);
-        kolejnosc.verify(network).deleteAllOf(7L);
-        kolejnosc.verify(playlists).deleteAllOf(7L);
-        kolejnosc.verify(users).deleteAvatarOf(target);
-        kolejnosc.verify(userRepository).delete(target);
-    }
-
-    /** Pliki z dysku kasuja ich wlasciciele. */
-    @Test
-    @DisplayName("o pliki z dysku moderacja prosi ich wlascicieli")
-    void filesAreLeftToTheirOwners() {
-        User target = user("troll");
-        target.setAvatarFileName("awatar.jpg");
-        given(userRepository.findById(7L)).willReturn(Optional.of(target));
-
-        moderationService.deleteUser("admin", 7L);
-
-        verify(posts).deleteAllOf(7L);
-        verify(users).deleteAvatarOf(target);
+        verify(deletion).erase(target);
     }
 
     @Test

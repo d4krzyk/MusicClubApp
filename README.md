@@ -180,6 +180,9 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | POST | `/api/messages/with/{username}/typing` | sygnał „właśnie piszę" (żyje 5 s, w pamięci) |
 | POST | `/api/reports/on/{username}` | zgłasza użytkownika (powód, kontekst, opis) |
 | GET | `/api/reports/mine` | **moje** zgłoszenia razem z decyzją i notatką administratora |
+| DELETE | `/api/profile` | kasuje **własne konto** — wymaga hasła w treści |
+| DELETE | `/api/profile/posts` | kasuje **wszystkie własne posty** — wymaga hasła w treści |
+| DELETE | `/api/messages/with/{username}` | usuwa rozmowę **tylko u siebie** |
 | GET | `/api/reports/admin?status=` | lista zgłoszeń — **tylko administrator** |
 | GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |
@@ -632,6 +635,44 @@ skakałoby, bo każda dochodzi w swoim czasie.
 Cała logika muzyki jest **wspólna z postami**: rozpoznawanie linku, składanie
 adresu odtwarzacza, pobieranie tytułu i walidacja. Powtarzają się wyłącznie
 deklaracje kolumn w bazie.
+
+## Kasowanie własnych rzeczy
+
+Trzy operacje, którymi użytkownik sprząta po sobie sam — bez proszenia
+administratora.
+
+| Co | Gdzie | Potwierdzenie |
+|---|---|---|
+| wszystkie własne posty | Ustawienia | **hasło** |
+| własne konto | Ustawienia | **hasło** |
+| rozmowa z jedną osobą | panel czatu | okno potwierdzenia |
+
+**Dlaczego przy dwóch pierwszych pytamy o hasło, a nie o kliknięcie.** Sesja
+bywa zostawiona otwarta na cudzym komputerze, a tych operacji nie da się
+cofnąć. Kliknięcie „na pewno?" zatrzymuje pomyłkę własną, ale nie zatrzymuje
+nikogo, kto usiadł przy niezablokowanym laptopie. Hasło zatrzymuje jedno
+i drugie. Rozmowa hasła nie wymaga, bo znika **tylko u pytającego** — druga
+strona zachowuje swoją kopię, więc nie ma czego nieodwracalnie stracić.
+
+### Rozmowa należy do dwojga ludzi
+
+Usunięcie rozmowy ukrywa ją wyłącznie u tego, kto o to poprosił. Wiadomość ma
+dwie flagi (`hidden_for_sender`, `hidden_for_recipient`) i **znika z bazy
+dopiero wtedy, gdy ukryją ją obie strony**. Skasowanie wierszy od razu
+odbierałoby drugiej osobie jej własną korespondencję — a nie jest to nasza
+decyzja do podjęcia w jej imieniu.
+
+Nowa wiadomość po usunięciu otwiera rozmowę od nowa, bez starej treści.
+Znajomy zostaje na liście rozmów (do niego zawsze można się odezwać), tylko
+bez historii.
+
+### Kolejność kasowania mieszka w jednym miejscu
+
+`AccountDeletionService` zna listę kroków i nic nie kasuje sam — prosi po kolei
+moduły, które są właścicielami swoich tabel. Korzystają z niego **dwie drogi**:
+administrator w panelu kont i właściciel konta w ustawieniach. Gdyby każda
+miała własną kopię tej listy, pierwsza rozjechałaby się z drugą przy pierwszej
+nowej tabeli — a objawem byłby błąd klucza obcego u użytkownika.
 
 ## Zgłoszenia i moderacja
 

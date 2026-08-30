@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -121,6 +122,19 @@ public class MessageController {
                                                          Authentication authentication) {
         return ResponseEntity.ok(Map.of(
             "marked", messageService.markRead(authentication.getName(), username)));
+    }
+
+    /** Usuwa rozmowe u zalogowanego; druga strona zachowuje swoja kopie. */
+    @DeleteMapping("/with/{username}")
+    @Operation(summary = "Usuwa rozmowe z tym uzytkownikiem - tylko u siebie")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Rozmowa usunieta u zalogowanego"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika")
+    })
+    public ResponseEntity<Void> deleteConversation(@PathVariable String username,
+                                                   Authentication authentication) {
+        messageService.deleteConversation(authentication.getName(), username);
+        return ResponseEntity.noContent().build();
     }
 
     /** "Wlasnie pisze" - sygnal wysylany przez przegladarke przy pisaniu. */

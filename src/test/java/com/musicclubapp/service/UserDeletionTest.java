@@ -3,6 +3,8 @@ package com.musicclubapp.service;
 import com.musicclubapp.entity.FavoritePlaylist;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.ReactionType;
+import com.musicclubapp.entity.ReportContext;
+import com.musicclubapp.entity.ReportReason;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.music.MusicProvider;
 import com.musicclubapp.repository.FavoritePlaylistRepository;
@@ -10,6 +12,7 @@ import com.musicclubapp.repository.FriendRequestRepository;
 import com.musicclubapp.repository.MessageRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
+import com.musicclubapp.repository.ReportRepository;
 import com.musicclubapp.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +43,8 @@ class UserDeletionTest {
     @Autowired private ReactionService reactionService;
     @Autowired private PostService postService;
     @Autowired private FriendService friendService;
+    @Autowired private ReportService reportService;
+    @Autowired private ReportRepository reportRepository;
     @Autowired private EntityManager entityManager;
 
     private User troll;
@@ -189,5 +194,29 @@ class UserDeletionTest {
         entityManager.flush();
 
         assertThat(postRepository.findById(post.getId())).isEmpty();
+    }
+
+    /**
+     * Cudze zgloszenie wskazuje na post kasowanego konta.
+     *
+     * <p>Zgloszenie ZOSTAJE (to historia konta zglaszajacego), ale musi
+     * odpiac sie od posta, zanim post zniknie - inaczej baza odmawia.</p>
+     */
+    @Test
+    @DisplayName("konto da sie skasowac, gdy KTOS INNY zglosil jego post")
+    void accountWithAReportedPostCanBeDeleted() {
+        Post post = postRepository.save(new Post(troll, "wpis, ktory ktos zglosil"));
+        entityManager.flush();
+
+        reportService.create("ala", "troll", new com.musicclubapp.dto.CreateReportRequest(
+            ReportReason.HATE, ReportContext.POST, post.getId(), "Prosze o sprawdzenie tego wpisu"));
+        entityManager.flush();
+
+        moderationService.deleteUser("admin", troll.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(postRepository.findById(post.getId())).isEmpty();
+        assertThat(userRepository.findById(troll.getId())).isEmpty();
     }
 }

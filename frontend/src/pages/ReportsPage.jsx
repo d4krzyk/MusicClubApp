@@ -11,6 +11,7 @@ import { describeError } from '../api/client';
 import * as moderacja from '../api/moderacja';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
+import DoladujWiecej from '../components/DoladujWiecej';
 import EmptyState from '../components/EmptyState';
 import PostSkeleton from '../components/PostSkeleton';
 import { IconCheckCircle, IconFlag, IconShieldAlert } from '../components/Icons';
@@ -30,27 +31,50 @@ export default function ReportsPage() {
 
   const [filter, setFilter] = useState('OPEN');
   const [reports, setReports] = useState([]);
+  const [strona, setStrona] = useState(0);
+  const [ostatnia, setOstatnia] = useState(true);
+  const [wszystkich, setWszystkich] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [doladowywanie, setDoladowywanie] = useState(false);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  /* "dolacz" odroznia doladowanie starszych od pobrania listy od nowa. */
+  const load = useCallback(async (numer, dolacz) => {
+    if (dolacz) {
+      setDoladowywanie(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
-      const data = await moderacja.zgloszenia(
-        filter === 'ALL' ? undefined : filter, ROZMIAR_STRONY);
-      setReports(data.content);
+      const data = await moderacja.zgloszenia({
+        status: filter === 'ALL' ? undefined : filter,
+        strona: numer,
+        rozmiar: ROZMIAR_STRONY,
+      });
+
+      setReports((poprzednie) => (dolacz ? [...poprzednie, ...data.content] : data.content));
+      setStrona(data.number);
+      setOstatnia(data.last);
+      setWszystkich(data.totalElements);
     } catch (problem) {
       const details = describeError(problem);
       setError(details.message);
-      setReports([]);
+      // Nieudane doladowanie nie moze skasowac tego, co juz widac
+      if (!dolacz) {
+        setReports([]);
+      }
     } finally {
       setLoading(false);
+      setDoladowywanie(false);
     }
-  }, [filter, t]);
+    // Bez "t" w zaleznosciach: describeError siega do i18n samo, a przelaczenie jezyka
+    // pobieraloby liste od nowa i gubilo doladowane strony
+  }, [filter]);
 
+  /* Zmiana filtra to inny zbior spraw, wiec zaczynamy od pierwszej strony. */
   useEffect(() => {
-    load();
+    load(0, false);
   }, [load]);
 
   return (
@@ -96,9 +120,25 @@ export default function ReportsPage() {
            * przy okazji ukarac wlasnego konta.
            */
           me={loggedIn?.username}
-          onResolved={load}
+          /*
+           * Po decyzji wracamy na pierwsza strone, bo sprawa wypada z filtra OPEN i cala lista
+           * przesuwa sie o jedna pozycje - doklejanie kolejnej strony pomineloby wtedy jedno
+           * zgloszenie.
+           */
+          onResolved={() => load(0, false)}
         />
       ))}
+
+      {!loading && reports.length > 0 && wszystkich > ROZMIAR_STRONY && (
+        <DoladujWiecej
+          etykieta={t('reports.loadMore')}
+          pokazano={reports.length}
+          wszystkich={wszystkich}
+          ostatnia={ostatnia}
+          ladowanie={doladowywanie}
+          onClick={() => load(strona + 1, true)}
+        />
+      )}
     </div>
   );
 }

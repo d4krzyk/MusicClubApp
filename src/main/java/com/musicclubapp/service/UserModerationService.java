@@ -29,42 +29,21 @@ public class UserModerationService {
     private final UserRepository userRepository;
     private final ReportRepository reportRepository;
     private final UserMapper userMapper;
-
-    /* Moduly, ktore sprzataja po kasowanym koncie. */
-    private final NotificationService notifications;
-    private final ReactionService reactions;
-    private final PostService posts;
-    private final FriendService friends;
-    private final MessageService messages;
-    private final ReportService reports;
     private final NetworkService network;
-    private final PlaylistService playlists;
-    private final UserService users;
+
+    /* Kolejnosc krokow przy kasowaniu konta - wspolna z ta, ktora ma wlasciciel konta. */
+    private final AccountDeletionService deletion;
 
     public UserModerationService(UserRepository userRepository,
                                  ReportRepository reportRepository,
                                  UserMapper userMapper,
-                                 NotificationService notifications,
-                                 ReactionService reactions,
-                                 PostService posts,
-                                 FriendService friends,
-                                 MessageService messages,
-                                 ReportService reports,
                                  NetworkService network,
-                                 PlaylistService playlists,
-                                 UserService users) {
+                                 AccountDeletionService deletion) {
         this.userRepository = userRepository;
         this.reportRepository = reportRepository;
         this.userMapper = userMapper;
-        this.notifications = notifications;
-        this.reactions = reactions;
-        this.posts = posts;
-        this.friends = friends;
-        this.messages = messages;
-        this.reports = reports;
         this.network = network;
-        this.playlists = playlists;
-        this.users = users;
+        this.deletion = deletion;
     }
 
     /** Kasuje konto razem ze wszystkim, co po nim zostalo. */
@@ -77,40 +56,8 @@ public class UserModerationService {
             throw OperationNotAllowedException.ownAccount();
         }
 
-        // 1. Powiadomienia - wskazuja i na konto, i na posty kasowane nizej
-        notifications.deleteAllOf(id);
-
-        // 2. Reakcje tej osoby pod CUDZYMI postami - te posty maja zostac
-        reactions.deleteAllOf(id);
-
-        // 3. Wlasne posty razem ze zdjeciami z dysku
-        int usunietychPostow = posts.deleteAllOf(id);
-
-        /* 4. */
-        friends.deleteAllOf(target);
-
-        /* 5. */
-        messages.deleteAllOf(id);
-
-        // 6. Zgloszenia zlozone przez to konto i te na nie
-        reports.deleteAllOf(id);
-
-        /* 7. */
-        network.deleteAllOf(id);
-
-        /* 8. */
-        target.getFavoriteArtists().clear();
-        target.getFavoriteTracks().clear();
-
-        // 9. Gablotka playlist
-        playlists.deleteAllOf(id);
-
-        // 10. Zdjecie profilowe z dysku
-        users.deleteAvatarOf(target);
-
-        userRepository.delete(target);
-        log.info("Administrator {} usunal konto {} (postow: {})",
-            adminUsername, target.getUsername(), usunietychPostow);
+        deletion.erase(target);
+        log.info("Administrator {} usunal konto {}", adminUsername, target.getUsername());
     }
 
     /** Termin konca kary dla obu rodzajow zakazu - jedno miejsce na te regule. */

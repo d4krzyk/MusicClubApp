@@ -2,9 +2,11 @@ import client from './client';
 
 /** Co aplikacja moze poprosic serwer w sprawie powiadomien. */
 
-/** Ostatnie powiadomienia do rozwijanej listy przy dzwonku. */
-export async function lista(ile) {
-  const { data } = await client.get('/notifications', { params: { size: ile } });
+/** Strona powiadomien do rozwijanej listy przy dzwonku. */
+export async function lista({ strona = 0, rozmiar } = {}) {
+  const { data } = await client.get('/notifications', {
+    params: { page: strona, size: rozmiar },
+  });
   return data;
 }
 

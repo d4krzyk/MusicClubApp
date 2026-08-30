@@ -79,6 +79,23 @@ public class Message {
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
+    /*
+     * Usuniecie rozmowy dziala TYLKO u tego, kto je zlecil - stad dwie flagi
+     * zamiast jednej. Wiadomosc zostaje w bazie, dopoki widzi ja druga strona;
+     * skasowanie jej naprawde odbieraloby komus jego wlasna korespondencje.
+     *
+     * "default false" w definicji kolumny jest tu istotne: kolumna dochodzi do
+     * tabeli, w ktorej sa juz wiersze, a bez wartosci domyslnej baza odmowilaby
+     * dodania jej jako NOT NULL.
+     */
+    @Column(name = "hidden_for_sender", nullable = false,
+            columnDefinition = "boolean not null default false")
+    private boolean hiddenForSender;
+
+    @Column(name = "hidden_for_recipient", nullable = false,
+            columnDefinition = "boolean not null default false")
+    private boolean hiddenForRecipient;
+
     protected Message() {
     }
 

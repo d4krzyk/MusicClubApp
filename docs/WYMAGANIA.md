@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 358 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 369 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -225,6 +225,16 @@ dopiero na uruchomionej aplikacji:
   jakikolwiek adres. Znalazło to dopiero przejście przez aplikację
   w przeglądarce. Stąd `UserControllerRoutingTest` pilnuje teraz samego
   **istnienia** końcówek panelu, nie tylko kolizji między nimi;
+- **kolejność, której nikt nie sprawdził, bo nikt nie napisał tego testu.**
+  Usunięcie konta kasowało posty w kroku 3, a zgłoszenia odpinało od nich
+  dopiero w kroku 6. Działało — dopóki post skasowanego konta nie został przez
+  kogoś **zgłoszony**: wtedy baza odmawiała, bo zgłoszenie wskazywało na post
+  kluczem obcym. `UserDeletionTest` sprawdzał posty, reakcje, znajomości
+  i playlisty, ale ani jeden test nie łączył zgłoszenia z kasowaniem konta.
+  Znalazło się to dopiero przy dokładaniu nowej funkcji, przez napisanie testu
+  na przypadek, którego nie było. **Lista rzeczy do posprzątania jest tyle
+  warta, ile scenariusz, który ją przechodzi** — a scenariusz musi łączyć
+  funkcje, nie sprawdzać każdej osobno;
 - **funkcja, która nic nie zwraca, i wywołanie, które czegoś od niej oczekuje.**
   Przy przenoszeniu adresów do modułów `api/` cztery operacje na ulubionych
   zostały napisane bez `return` — a komponent dalej czytał z wyniku `.data`.

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
@@ -6,9 +7,12 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Modal from 'react-bootstrap/Modal';
 import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
-import { usunAwatar, ustawAwatar } from '../api/konto';
+import {
+  usunAwatar, usunKonto, usunWszystkiePosty, ustawAwatar,
+} from '../api/konto';
 import Field from '../components/Field';
 import Avatar from '../components/Avatar';
 
@@ -28,6 +32,7 @@ export default function SettingsPage() {
         {/* key = login. */}
         <ProfileForm key={user.username} />
         <PasswordForm />
+        <StrefaNieodwracalna />
       </Col>
     </Row>
   );
@@ -283,5 +288,133 @@ function PasswordForm() {
         </Form>
       </Card.Body>
     </Card>
+  );
+}
+
+/**
+ * Operacje, ktorych nie da sie cofnac - kazda za haslem.
+ *
+ * <p>Haslo, a nie samo potwierdzenie: sesja moze byc otwarta na cudzym
+ * komputerze, a odzyskac tego nie ma jak.</p>
+ */
+function StrefaNieodwracalna() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  /** Ktora operacja czeka na potwierdzenie: 'posty', 'konto' albo null. */
+  const [wybor, setWybor] = useState(null);
+  const [haslo, setHaslo] = useState('');
+  const [pracuje, setPracuje] = useState(false);
+  const [blad, setBlad] = useState(null);
+  const [komunikat, setKomunikat] = useState(null);
+
+  function otworz(operacja) {
+    setWybor(operacja);
+    setHaslo('');
+    setBlad(null);
+  }
+
+  async function potwierdz(event) {
+    event.preventDefault();
+    setPracuje(true);
+    setBlad(null);
+    try {
+      if (wybor === 'posty') {
+        const ile = await usunWszystkiePosty(haslo);
+        setKomunikat(t('settings.deletePostsDone', { count: ile }));
+        setWybor(null);
+      } else {
+        await usunKonto(haslo);
+        /*
+         * Konta juz nie ma, wiec czyscimy je takze u siebie - inaczej
+         * aplikacja rysowalaby menu nieistniejacego uzytkownika az do
+         * odswiezenia strony.
+         */
+        await logout();
+        navigate('/login', { replace: true });
+      }
+    } catch (problem) {
+      const szczegoly = describeError(problem);
+      setBlad(szczegoly.fieldErrors.currentPassword ?? szczegoly.message);
+    } finally {
+      setPracuje(false);
+    }
+  }
+
+  return (
+    <>
+      <Card className="mb-4 border-danger-subtle">
+        <Card.Body>
+          <Card.Title as="h2" className="h6 text-uppercase text-danger-emphasis">
+            {t('settings.dangerTitle')}
+          </Card.Title>
+          <p className="text-body-secondary small">{t('settings.dangerIntro')}</p>
+
+          {komunikat && <Alert variant="success" className="py-2">{komunikat}</Alert>}
+
+          <div className="d-flex flex-column gap-3">
+            <div>
+              <p className="fw-semibold mb-1">{t('settings.deletePostsTitle')}</p>
+              <p className="text-body-secondary small mb-2">{t('settings.deletePostsText')}</p>
+              <Button variant="outline-danger" size="sm" onClick={() => otworz('posty')}>
+                {t('settings.deletePostsAction')}
+              </Button>
+            </div>
+
+            <hr className="my-0" />
+
+            <div>
+              <p className="fw-semibold mb-1">{t('settings.deleteAccountTitle')}</p>
+              <p className="text-body-secondary small mb-2">{t('settings.deleteAccountText')}</p>
+              <Button variant="danger" size="sm" onClick={() => otworz('konto')}>
+                {t('settings.deleteAccountAction')}
+              </Button>
+            </div>
+          </div>
+        </Card.Body>
+      </Card>
+
+      <Modal show={Boolean(wybor)} onHide={() => setWybor(null)} centered>
+        <Form onSubmit={potwierdz}>
+          <Modal.Header closeButton>
+            <Modal.Title className="h6">
+              {wybor === 'posty'
+                ? t('settings.deletePostsTitle')
+                : t('settings.deleteAccountTitle')}
+            </Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body>
+            <p className="small">
+              {wybor === 'posty'
+                ? t('settings.deletePostsText')
+                : t('settings.deleteAccountText')}
+            </p>
+
+            {blad && <Alert variant="danger" className="py-2">{blad}</Alert>}
+
+            <Field
+              id="hasloPotwierdzenia"
+              label={t('settings.passwordLabel')}
+              typ="password"
+              value={haslo}
+              onChange={setHaslo}
+              suggestion={t('settings.passwordHint')}
+              autoComplete="current-password"
+            />
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => setWybor(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" variant="danger" disabled={pracuje || !haslo}>
+              {pracuje ? t('settings.working') : t('settings.confirm')}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+    </>
   );
 }

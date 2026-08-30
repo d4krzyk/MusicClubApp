@@ -524,4 +524,126 @@ class MessageServiceTest {
             messages.conversation("ala", "obcy", PageRequest.of(0, 20)))
             .isInstanceOf(OperationNotAllowedException.class);
     }
+
+    /* ------------------------------------------------------------------ */
+    /*  Usuwanie rozmowy u siebie                                          */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Sedno tej funkcji: rozmowa nalezy do DWOJGA ludzi.
+     *
+     * <p>Skasowanie wiadomosci naprawde odbieraloby drugiej stronie jej
+     * wlasna korespondencje - dlatego usuwamy tylko u tego, kto o to
+     * poprosil.</p>
+     */
+    @Test
+    @DisplayName("usuniecie rozmowy u siebie NIE rusza jej u drugiej strony")
+    void deletingConversationLeavesTheOtherSideIntact() {
+        messages.send("ala", "bartek", text("czesc"));
+        messages.send("bartek", "ala", text("hej"));
+        entityManager.flush();
+
+        messages.deleteConversation("ala", "bartek");
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(messages.conversation("bartek", "ala", PageRequest.of(0, 20)).getContent())
+            .describedAs("Bartek ma widziec obie wiadomosci")
+            .hasSize(2);
+    }
+
+    /**
+     * Znajomy zostaje na liscie, ale bez tresci rozmowy.
+     *
+     * <p>Lista rozmow pokazuje TEZ znajomych, z ktorymi nic sie jeszcze nie
+     * napisalo - inaczej nie dalo by sie do nich odezwac. Po usunieciu
+     * rozmowy wracamy dokladnie do tego stanu: osoba jest, historii nie ma.</p>
+     */
+    @Test
+    @DisplayName("po usunieciu zostaje sam znajomy, bez tresci rozmowy")
+    void deletedConversationLeavesOnlyTheFriendEntry() {
+        messages.send("ala", "bartek", text("czesc"));
+        entityManager.flush();
+
+        messages.deleteConversation("ala", "bartek");
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(messages.conversations("ala"))
+            .singleElement()
+            .satisfies(rozmowa -> {
+                assertThat(rozmowa.username()).isEqualTo("bartek");
+                assertThat(rozmowa.lastMessage())
+                    .describedAs("historia ma zniknac u Ali")
+                    .isNull();
+            });
+
+        assertThat(messages.conversations("bartek"))
+            .singleElement()
+            .satisfies(rozmowa -> assertThat(rozmowa.lastMessage())
+                .describedAs("u Bartka rozmowa zostaje")
+                .isNotNull());
+    }
+
+    @Test
+    @DisplayName("nieprzeczytane z usunietej rozmowy przestaja sie liczyc")
+    void deletedConversationStopsCountingAsUnread() {
+        messages.send("bartek", "ala", text("nieprzeczytane"));
+        entityManager.flush();
+
+        assertThat(messages.unreadCount("ala")).isEqualTo(1);
+
+        messages.deleteConversation("ala", "bartek");
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(messages.unreadCount("ala")).isZero();
+    }
+
+    /**
+     * Nowa wiadomosc po usunieciu zaczyna rozmowe od nowa.
+     *
+     * <p>Stara tresc nie wraca - usuniecie ma byc trwale u tego, kto go
+     * dokonal.</p>
+     */
+    @Test
+    @DisplayName("nowa wiadomosc po usunieciu otwiera rozmowe bez starej tresci")
+    void newMessageAfterDeletionStartsAfresh() {
+        messages.send("ala", "bartek", text("stara tresc"));
+        entityManager.flush();
+        messages.deleteConversation("ala", "bartek");
+        entityManager.flush();
+
+        messages.send("bartek", "ala", text("nowa tresc"));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(messages.conversation("ala", "bartek", PageRequest.of(0, 20)).getContent())
+            .singleElement()
+            .satisfies(m -> assertThat(m.content()).isEqualTo("nowa tresc"));
+    }
+
+    /**
+     * Wiersz znika z bazy dopiero, gdy ukryja go OBIE strony.
+     *
+     * <p>Wczesniej nie ma czego kasowac - ktos to jeszcze widzi.</p>
+     */
+    @Test
+    @DisplayName("wiadomosc znika z bazy dopiero po usunieciu przez OBIE strony")
+    void messageLeavesTheDatabaseOnlyWhenBothSidesDeleteIt() {
+        messages.send("ala", "bartek", text("do skasowania"));
+        entityManager.flush();
+
+        messages.deleteConversation("ala", "bartek");
+        entityManager.flush();
+        assertThat(messageRepository.count())
+            .describedAs("po jednej stronie wiersz ma zostac")
+            .isEqualTo(1);
+
+        messages.deleteConversation("bartek", "ala");
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(messageRepository.count()).isZero();
+    }
 }

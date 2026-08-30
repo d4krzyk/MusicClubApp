@@ -7,35 +7,56 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import { describeError } from '../api/client';
 import { mojeZgloszenia } from '../api/moderacja';
+import DoladujWiecej from '../components/DoladujWiecej';
 import EmptyState from '../components/EmptyState';
 import PostSkeleton from '../components/PostSkeleton';
 import { IconFlag } from '../components/Icons';
 import { formatDateTime, timeAgo } from '../utils/dates';
+
+/** Ile wlasnych zgloszen pobieramy naraz. */
+const ROZMIAR_STRONY = 20;
 
 /** Wlasne zgloszenia uzytkownika razem z decyzja administratora. */
 export default function MojeZgloszeniaPage() {
   const { t, i18n } = useTranslation();
 
   const [reports, setReports] = useState([]);
+  const [strona, setStrona] = useState(0);
+  const [ostatnia, setOstatnia] = useState(true);
+  const [wszystkich, setWszystkich] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [doladowywanie, setDoladowywanie] = useState(false);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  /* "dolacz" odroznia doladowanie starszych od pobrania listy od nowa. */
+  const load = useCallback(async (numer, dolacz) => {
+    if (dolacz) {
+      setDoladowywanie(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     try {
-      const data = await mojeZgloszenia();
-      setReports(data.content);
+      const data = await mojeZgloszenia({ strona: numer, rozmiar: ROZMIAR_STRONY });
+
+      setReports((poprzednie) => (dolacz ? [...poprzednie, ...data.content] : data.content));
+      setStrona(data.number);
+      setOstatnia(data.last);
+      setWszystkich(data.totalElements);
     } catch (problem) {
       setError(describeError(problem, 'myReports.loadFailed').message);
-      setReports([]);
+      // Nieudane doladowanie nie moze skasowac tego, co juz widac
+      if (!dolacz) {
+        setReports([]);
+      }
     } finally {
       setLoading(false);
+      setDoladowywanie(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    load(0, false);
   }, [load]);
 
   return (
@@ -91,6 +112,17 @@ export default function MojeZgloszeniaPage() {
             </Card.Body>
           </Card>
         ))}
+
+        {!loading && reports.length > 0 && wszystkich > ROZMIAR_STRONY && (
+          <DoladujWiecej
+            etykieta={t('reports.loadMore')}
+            pokazano={reports.length}
+            wszystkich={wszystkich}
+            ostatnia={ostatnia}
+            ladowanie={doladowywanie}
+            onClick={() => load(strona + 1, true)}
+          />
+        )}
       </Col>
     </Row>
   );

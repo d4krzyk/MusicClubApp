@@ -249,6 +249,12 @@ public class ReportService {
     /* ------------------------------------------------------------------ */
 
     /** Kasuje zgloszenia zwiazane z kontem - przy jego usuwaniu. */
+    /** Odpina posty jednego autora od CUDZYCH zgloszen - przed ich skasowaniem. */
+    @Transactional
+    public void detachPostsOf(Long authorId) {
+        reportRepository.detachPostsOfAuthor(authorId);
+    }
+
     @Transactional
     public void deleteAllOf(Long userId) {
         reportRepository.detachPostsOfAuthor(userId);

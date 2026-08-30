@@ -48,3 +48,8 @@ export async function licznikNieprzeczytanych() {
   const { data } = await client.get('/messages/unread-count');
   return data.count;
 }
+
+/** Usuwa rozmowe TYLKO u zalogowanego - druga strona zachowuje swoja kopie. */
+export async function usunRozmowe(login) {
+  await client.delete(rozmowaZ(login));
+}

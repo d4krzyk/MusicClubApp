@@ -47,3 +47,16 @@ export async function usunAwatar() {
   const { data } = await client.delete('/profile/avatar');
   return data;
 }
+
+/* Obie operacje ponizej sa nieodwracalne - stad haslo w tresci zapytania. */
+
+/** Kasuje wszystkie wlasne posty. Oddaje, ile ich znikneło. */
+export async function usunWszystkiePosty(currentPassword) {
+  const { data } = await client.delete('/profile/posts', { data: { currentPassword } });
+  return data.deleted;
+}
+
+/** Kasuje wlasne konto razem ze wszystkim, co po nim zostalo. */
+export async function usunKonto(currentPassword) {
+  await client.delete('/profile', { data: { currentPassword } });
+}

@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
+import Modal from 'react-bootstrap/Modal';
 import { describeError } from '../api/client';
-import { rozmowy } from '../api/czat';
+import { rozmowy, usunRozmowe } from '../api/czat';
 import { useAuth } from '../auth/AuthContext';
 import { useChat } from '../chat/ChatContext';
 import Avatar from './Avatar';
@@ -12,7 +13,9 @@ import ChatThread from './ChatThread';
 import EmptyState from './EmptyState';
 import PeopleSkeleton from './PeopleSkeleton';
 import PresenceDot from './PresenceDot';
-import { IconArrowLeft, IconChat, IconCross, IconPersonPlus } from './Icons';
+import {
+  IconArrowLeft, IconChat, IconCross, IconPersonPlus, IconTrash,
+} from './Icons';
 import { timeAgo } from '../utils/dates';
 import useOdswiezanie from '../hooks/useOdswiezanie';
 
@@ -34,6 +37,10 @@ export default function ChatDrawer() {
   const [search, setSearch] = useState('');
   /* Blad pobierania trzymamy OSOBNO od pustej listy - i to nie jest ozdobnik. */
   const [error, setError] = useState(null);
+
+  /** Z kim rozmowe kasujemy - null znaczy "okienko zamkniete". */
+  const [doUsuniecia, setDoUsuniecia] = useState(null);
+  const [usuwanie, setUsuwanie] = useState(false);
 
   const panel = useRef(null);
   /** Element, ktory mial ognisko przed otwarciem - wraca do niego po zamknieciu. */
@@ -115,6 +122,24 @@ export default function ChatDrawer() {
       (c) => (c.username === username ? { ...c, presence } : c)));
   }, []);
 
+  /** Kasuje rozmowe u siebie i wraca na liste. */
+  async function usunIWroc() {
+    const partner = doUsuniecia;
+    setUsuwanie(true);
+    try {
+      await usunRozmowe(partner);
+      setDoUsuniecia(null);
+      backToList();
+      await loadConversations();
+      refreshUnread();
+    } catch (problem) {
+      setError(describeError(problem, 'chat.deleteConversationFailed').message);
+      setDoUsuniecia(null);
+    } finally {
+      setUsuwanie(false);
+    }
+  }
+
   if (!user) {
     return null;
   }
@@ -190,9 +215,21 @@ export default function ChatDrawer() {
             </span>
           )}
 
+          {activeUsername && (
+            <button
+              type="button"
+              className="chat-head-button ms-auto"
+              onClick={() => setDoUsuniecia(activeUsername)}
+              aria-label={t('chat.deleteConversation')}
+              title={t('chat.deleteConversation')}
+            >
+              <IconTrash size={16} />
+            </button>
+          )}
+
           <button
             type="button"
-            className="chat-head-button ms-auto"
+            className={`chat-head-button${activeUsername ? '' : ' ms-auto'}`}
             onClick={closeChat}
             aria-label={t('common.close')}
             title={t('common.close')}
@@ -291,6 +328,24 @@ export default function ChatDrawer() {
           )}
         </div>
       </aside>
+
+      {/* Potwierdzenie: bez hasla, bo rozmowa znika tylko u pytajacego. */}
+      <Modal show={Boolean(doUsuniecia)} onHide={() => setDoUsuniecia(null)} centered>
+        <Modal.Header closeButton>
+          <Modal.Title className="h6">{t('chat.deleteConversationTitle')}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {t('chat.deleteConversationText', { username: doUsuniecia })}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="outline-secondary" onClick={() => setDoUsuniecia(null)}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="danger" onClick={usunIWroc} disabled={usuwanie}>
+            {usuwanie ? t('settings.working') : t('chat.deleteConversation')}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }

@@ -67,16 +67,18 @@ export async function zglos(login, zgloszenie) {
   await client.post(`/reports/on/${encodeURIComponent(login)}`, zgloszenie);
 }
 
-/** Wlasne zgloszenia razem z decyzja administratora - kazdy widzi tylko swoje. */
-export async function mojeZgloszenia() {
-  const { data } = await client.get('/reports/mine');
+/** Strona wlasnych zgloszen razem z decyzja administratora - kazdy widzi tylko swoje. */
+export async function mojeZgloszenia({ strona = 0, rozmiar } = {}) {
+  const { data } = await client.get('/reports/mine', {
+    params: { page: strona, size: rozmiar },
+  });
   return data;
 }
 
 /** Strona listy zgloszen. Pusty status znaczy "wszystkie". */
-export async function zgloszenia(status, rozmiar) {
+export async function zgloszenia({ status, strona = 0, rozmiar } = {}) {
   const { data } = await client.get('/reports/admin', {
-    params: { status, size: rozmiar },
+    params: { status, page: strona, size: rozmiar },
   });
   return data;
 }

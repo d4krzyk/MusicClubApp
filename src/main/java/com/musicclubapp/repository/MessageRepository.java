@@ -21,8 +21,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     /** Historia rozmowy dwoch osob, od najnowszej. */
     @Query("""
            SELECT m FROM Message m
-           WHERE (m.sender.id = :first  AND m.recipient.id = :second)
-              OR (m.sender.id = :second AND m.recipient.id = :first)
+           WHERE ((m.sender.id = :first  AND m.recipient.id = :second)
+               OR (m.sender.id = :second AND m.recipient.id = :first))
+             AND ((m.sender.id = :first AND m.hiddenForSender = false)
+               OR (m.recipient.id = :first AND m.hiddenForRecipient = false))
            ORDER BY m.id DESC
            """)
     Page<Message> conversation(@Param("first") Long first,
@@ -35,6 +37,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            WHERE ((m.sender.id = :first  AND m.recipient.id = :second)
                OR (m.sender.id = :second AND m.recipient.id = :first))
              AND m.id > :afterId
+             AND ((m.sender.id = :first AND m.hiddenForSender = false)
+               OR (m.recipient.id = :first AND m.hiddenForRecipient = false))
            ORDER BY m.id ASC
            """)
     List<Message> newerThan(@Param("first") Long first,
@@ -46,7 +50,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("""
            SELECT new com.musicclubapp.repository.ConversationRow(m.recipient.id, MAX(m.id))
            FROM Message m
-           WHERE m.sender.id = :me
+           WHERE m.sender.id = :me AND m.hiddenForSender = false
            GROUP BY m.recipient.id
            """)
     List<ConversationRow> lastSentPerPartner(@Param("me") Long me);
@@ -55,7 +59,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("""
            SELECT new com.musicclubapp.repository.ConversationRow(m.sender.id, MAX(m.id))
            FROM Message m
-           WHERE m.recipient.id = :me
+           WHERE m.recipient.id = :me AND m.hiddenForRecipient = false
            GROUP BY m.sender.id
            """)
     List<ConversationRow> lastReceivedPerPartner(@Param("me") Long me);
@@ -64,8 +68,10 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     /** Czy te dwie osoby kiedykolwiek cos do siebie napisaly. */
     @Query("""
            SELECT COUNT(m) > 0 FROM Message m
-           WHERE (m.sender.id = :a AND m.recipient.id = :b)
-              OR (m.sender.id = :b AND m.recipient.id = :a)
+           WHERE ((m.sender.id = :a AND m.recipient.id = :b)
+               OR (m.sender.id = :b AND m.recipient.id = :a))
+             AND ((m.sender.id = :a AND m.hiddenForSender = false)
+               OR (m.recipient.id = :a AND m.hiddenForRecipient = false))
            """)
     boolean anyMessageBetween(@Param("a") Long a, @Param("b") Long b);
 
@@ -87,6 +93,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            SELECT new com.musicclubapp.repository.UnreadRow(m.sender.id, COUNT(m))
            FROM Message m
            WHERE m.recipient.id = :me AND m.readAt IS NULL
+             AND m.hiddenForRecipient = false
            GROUP BY m.sender.id
            """)
     List<UnreadRow> unreadBySender(@Param("me") Long me);
@@ -97,11 +104,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            WHERE m.sender.id = :me
              AND m.recipient.id = :partner
              AND m.readAt IS NOT NULL
+             AND m.hiddenForSender = false
            """)
     Long lastReadOutgoingId(@Param("me") Long me, @Param("partner") Long partner);
 
     /** Laczna liczba nieprzeczytanych - to ona wisi przy ikonie czatu. */
-    @Query("SELECT COUNT(m) FROM Message m WHERE m.recipient.id = :me AND m.readAt IS NULL")
+    @Query("""
+           SELECT COUNT(m) FROM Message m
+           WHERE m.recipient.id = :me AND m.readAt IS NULL
+             AND m.hiddenForRecipient = false
+           """)
     long countUnread(@Param("me") Long me);
 
     /** Oznacza cala rozmowe jako przeczytana. */
@@ -111,6 +123,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            WHERE m.recipient.id = :me
              AND m.sender.id = :partner
              AND m.readAt IS NULL
+             AND m.hiddenForRecipient = false
            """)
     int markConversationRead(@Param("me") Long me,
                              @Param("partner") Long partner,
@@ -120,4 +133,32 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Modifying
     @Query("DELETE FROM Message m WHERE m.sender.id = :userId OR m.recipient.id = :userId")
     void deleteAllOfUser(@Param("userId") Long userId);
+
+    /* ------------------------------------------------------------------ */
+    /*  Usuwanie rozmowy u jednej strony                                   */
+    /* ------------------------------------------------------------------ */
+
+    /** Ukrywa u nadawcy wiadomosci, ktore sam wyslal do tej osoby. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+           UPDATE Message m SET m.hiddenForSender = true
+           WHERE m.sender.id = :me AND m.recipient.id = :partner
+           """)
+    int hideSentTo(@Param("me") Long me, @Param("partner") Long partner);
+
+    /** Ukrywa u odbiorcy wiadomosci, ktore od tej osoby dostal. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+           UPDATE Message m SET m.hiddenForRecipient = true
+           WHERE m.recipient.id = :me AND m.sender.id = :partner
+           """)
+    int hideReceivedFrom(@Param("me") Long me, @Param("partner") Long partner);
+
+    /** Wiadomosci ukryte przez OBIE strony - nikt ich juz nie zobaczy. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+           DELETE FROM Message m
+           WHERE m.hiddenForSender = true AND m.hiddenForRecipient = true
+           """)
+    int deleteHiddenByBothSides();
 }

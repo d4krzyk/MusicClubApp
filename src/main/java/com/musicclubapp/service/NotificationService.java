@@ -141,6 +141,12 @@ public class NotificationService {
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */
 
+    /** Przed skasowaniem WSZYSTKICH postow jednego autora. */
+    @Transactional
+    public void postsOfAuthorDeleted(Long authorId) {
+        notificationRepository.deleteByPostAuthorId(authorId);
+    }
+
     /** Przed usunieciem posta - inaczej klucz obcy nie pozwoli go skasowac. */
     @Transactional
     public void postDeleted(Long postId) {
