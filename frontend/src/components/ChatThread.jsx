@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
-import client from '../api/client';
+import {
+  historia, nowsze, oznaczPrzeczytane, pisze, wyslij,
+} from '../api/czat';
 import { useChat } from '../chat/ChatContext';
 import Avatar from './Avatar';
 import MusicCard from './MusicCard';
@@ -10,6 +12,7 @@ import { IconNote, IconSend } from './Icons';
 import { timeAgo } from '../utils/dates';
 import { linkError } from '../utils/musicLinks';
 import { toSeconds } from '../utils/time';
+import useOdswiezanie from '../hooks/useOdswiezanie';
 
 /** Co ile pytamy o nowosci przy otwartej rozmowie. */
 const SYNC_MS = 3_000;
@@ -101,10 +104,8 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     setMessages([]);
     lastId.current = null;
 
-    client.get(`/messages/with/${encodeURIComponent(username)}`, {
-      params: { page: 0, size: PAGE_SIZE },
-    })
-      .then(({ data }) => {
+    historia(username, 0, PAGE_SIZE)
+      .then((data) => {
         if (cancelled) return;
 
         /*
@@ -125,7 +126,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
       });
 
     // Otwarcie rozmowy kasuje kropki przy tej osobie
-    client.post(`/messages/with/${encodeURIComponent(username)}/read`)
+    oznaczPrzeczytane(username)
       .then(() => callbacks.current.onRead?.(username))
       .catch(() => {});
 
@@ -135,9 +136,8 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   async function loadOlder() {
     setLoadingOlder(true);
     try {
-      const { data } = await client.get(`/messages/with/${encodeURIComponent(username)}`, {
-        params: { page: Math.floor(messages.length / PAGE_SIZE), size: PAGE_SIZE },
-      });
+      const data = await historia(
+        username, Math.floor(messages.length / PAGE_SIZE), PAGE_SIZE);
 
       const older = [...data.content].reverse();
       /*
@@ -164,9 +164,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 
   const sync = useCallback(async () => {
     try {
-      const { data } = await client.get(
-        `/messages/with/${encodeURIComponent(username)}/sync`,
-        { params: lastId.current ? { after: lastId.current } : {} });
+      const data = await nowsze(username, lastId.current);
 
       setPartnerTyping(data.partnerTyping);
       setCanWrite(data.friend);
@@ -215,9 +213,9 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 
   useEffect(() => {
     sync();
-    const timer = setInterval(sync, SYNC_MS);
-    return () => clearInterval(timer);
   }, [sync]);
+
+  useOdswiezanie(sync, SYNC_MS);
 
   /* ---------------------------------------------------------------- */
   /*  Przewijanie                                                      */
@@ -260,7 +258,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     const now = Date.now();
     if (value && now - lastTypingPing.current > TYPING_PING_MS) {
       lastTypingPing.current = now;
-      client.post(`/messages/with/${encodeURIComponent(username)}/typing`).catch(() => {});
+      pisze(username).catch(() => {});
     }
   }
 
@@ -278,14 +276,12 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     setFieldErrors({});
 
     try {
-      const { data } = await client.post(
-        `/messages/with/${encodeURIComponent(username)}`,
-        {
-          content: text.trim() || null,
-          musicUrl: musicUrl.trim() || null,
-          musicKind: musicUrl.trim() ? musicKind : null,
-          musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
-        });
+      const data = await wyslij(username, {
+        content: text.trim() || null,
+        musicUrl: musicUrl.trim() || null,
+        musicKind: musicUrl.trim() ? musicKind : null,
+        musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
+      });
 
       /*
        * Dopisujemy odpowiedz serwera, a nie to, co wpisal uzytkownik.

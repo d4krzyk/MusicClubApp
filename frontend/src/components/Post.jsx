@@ -13,7 +13,8 @@ import MusicPicker from './MusicPicker';
 import VisibilityPicker from './VisibilityPicker';
 import ReportButton from './ReportButton';
 import { IconTrash, IconPencil, IconLock } from './Icons';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import { zmien } from '../api/posty';
 import { formatDate } from '../utils/dates';
 import { playerHeight } from '../utils/player';
 import { toMinutes, toSeconds } from '../utils/time';
@@ -172,18 +173,17 @@ function EditForm({ post, onSaved, onAnuluj }) {
     setWysylanie(true);
 
     try {
-      const response = await client.put(`/posts/${post.id}`, {
+      onSaved(await zmien(post.id, {
         content,
         musicUrl: musicUrl || null,
         musicKind: musicUrl ? musicKind : null,
         musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
         visibility,
-      });
-      onSaved(response.data);
+      }));
     } catch (error) {
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setGeneralError(details.message);
     } finally {
       setWysylanie(false);
     }

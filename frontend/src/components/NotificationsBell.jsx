@@ -2,13 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Spinner from 'react-bootstrap/Spinner';
-import client from '../api/client';
+import * as powiadomienia from '../api/powiadomienia';
 import Avatar from './Avatar';
 import { IconBell, IconCross } from './Icons';
 import { timeAgo } from '../utils/dates';
+import useOdswiezanie from '../hooks/useOdswiezanie';
 
 /** Co ile odswiezamy licznik nieprzeczytanych. */
 const REFRESH_MS = 60_000;
+
+/** Ile ostatnich powiadomien pokazuje rozwijana lista. */
+const LIST_SIZE = 15;
 
 /**
  * Dzwonek powiadomien w gornym pasku.
@@ -37,8 +41,7 @@ export default function NotificationsBell() {
 
   const loadCount = useCallback(async () => {
     try {
-      const { data } = await client.get('/notifications/unread-count');
-      setUnread(data.count);
+      setUnread(await powiadomienia.licznik());
     } catch {
       // Licznik to dodatek - gdy sie nie uda, nie psujemy calego paska
       setUnread(0);
@@ -46,21 +49,24 @@ export default function NotificationsBell() {
   }, []);
 
   /*
-   * Licznik odswiezamy przy kazdej zmianie adresu (to najprostszy moment,
-   * w ktorym cos moglo sie zdarzyc) oraz co minute, gdy ktos siedzi na
-   * jednej stronie. Bez tego drugiego powiadomienie o reakcji pojawiloby
-   * sie dopiero przy nastepnym przejsciu miedzy stronami.
+   * Licznik odswiezamy przy kazdej zmianie adresu - to najprostszy moment,
+   * w ktorym cos moglo sie zdarzyc.
    */
   useEffect(() => {
     loadCount();
-    const timer = setInterval(loadCount, REFRESH_MS);
-    return () => clearInterval(timer);
   }, [loadCount, location.pathname]);
+
+  /*
+   * ...oraz co minute, gdy ktos siedzi na jednej stronie. Bez tego
+   * powiadomienie o reakcji pojawiloby sie dopiero przy nastepnym przejsciu
+   * miedzy stronami.
+   */
+  useOdswiezanie(loadCount, REFRESH_MS);
 
   async function loadList() {
     setLoading(true);
     try {
-      const { data } = await client.get('/notifications', { params: { size: 15 } });
+      const data = await powiadomienia.lista(LIST_SIZE);
       setItems(data.content);
     } finally {
       setLoading(false);
@@ -113,7 +119,7 @@ export default function NotificationsBell() {
      */
     if (!notification.read) {
       setUnread((n) => Math.max(0, n - 1));
-      await client.post(`/notifications/${notification.id}/read`).catch(() => {});
+      await powiadomienia.oznaczPrzeczytane(notification.id).catch(() => {});
     }
 
     navigate(notification.link);
@@ -138,7 +144,7 @@ export default function NotificationsBell() {
     }
 
     try {
-      await client.delete(`/notifications/${id}`);
+      await powiadomienia.usun(id);
     } catch {
       loadList();
       loadCount();
@@ -149,7 +155,7 @@ export default function NotificationsBell() {
     setUnread(0);
     setItems((previous) => previous.map((n) => ({ ...n, read: true })));
     try {
-      await client.post('/notifications/read-all');
+      await powiadomienia.oznaczWszystkie();
     } catch {
       loadCount();   // nie udalo sie - wracamy do prawdziwego stanu
     }

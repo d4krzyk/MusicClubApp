@@ -5,7 +5,8 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import { jeden, usun } from '../api/posty';
 import Post from '../components/Post';
 import { IconArrowLeft } from '../components/Icons';
 
@@ -30,11 +31,11 @@ export default function PostPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await client.get(`/posts/${id}`);
+      const data = await jeden(id);
       setPost(data);
     } catch (problem) {
       const details = describeError(problem);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     } finally {
       setLoading(false);
     }
@@ -48,7 +49,7 @@ export default function PostPage() {
     if (!window.confirm(t('common.confirmDelete'))) {
       return;
     }
-    await client.delete(`/posts/${postId}`);
+    await usun(postId);
     // Post juz nie istnieje, wiec zostanie na tej stronie nie ma sensu
     navigate('/', { replace: true });
   }

@@ -4,12 +4,16 @@ import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import { propozycje, zapros } from '../api/znajomi';
 import Avatar from './Avatar';
 import CommonGround from './CommonGround';
 import HorizontalStrip from './HorizontalStrip';
 import PeopleSkeleton from './PeopleSkeleton';
 import { IconPersonCheck, IconPersonPlus } from './Icons';
+
+/** Ile osob pobieramy do paska propozycji. */
+const ILE_PROPOZYCJI = 24;
 
 /**
  * Proponowani znajomi - <b>cala spolecznosc, od najlepiej dopasowanych</b>.
@@ -43,11 +47,10 @@ export default function FriendSuggestions({ refresh, onChange }) {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await client.get('/friends/suggestions', { params: { limit: 24 } });
-      setPeople(response.data);
+      setPeople(await propozycje(ILE_PROPOZYCJI));
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     } finally {
       setLoading(false);
     }
@@ -60,7 +63,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
   async function invite(username) {
     setError(null);
     try {
-      const { data } = await client.post('/friends/requests', { username: username });
+      const data = await zapros(username);
       /*
        * Karta zmienia sie od razu, bez czekania na ponowne pobranie listy.
        * Przy pelnym odswiezeniu kolejnosc kart moglaby sie przesunac
@@ -70,7 +73,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
       onChange?.();
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 

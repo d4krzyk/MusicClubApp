@@ -1,0 +1,116 @@
+/* =========================================================================
+   SZKIELET PASKA Z LUDZMI
+   ========================================================================= */
+
+/*
+   Uklad taki sam jak w gotowym pasku (odstepy z .friends-strip, kafelki
+   z .friend-card / .suggestion-card). Dzieki temu szkielet zajmuje
+   DOKLADNIE tyle miejsca, co wynik - i podmiana jednego na drugie
+   nie rusza reszty strony.
+*/
+.people-skeleton {
+  display: flex;
+  gap: 1rem;
+  overflow: hidden;
+  padding: .25rem .125rem .5rem;
+}
+
+.people-skeleton .suggestion-card,
+.people-skeleton .friend-card {
+  align-items: center;
+  gap: .4rem;
+  /* Kafelki rozjasniaja sie po kolei, tak samo jak wchodza posty */
+  animation: fade-in-up .34s var(--mc-ease) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+.people-skeleton .skeleton-avatar {
+  border-radius: 50%;
+}
+
+/* =========================================================================
+   CO WAS LACZY
+   ========================================================================= */
+
+/* Gatunki jako plakietki: jest ich kilka, sa krotkie i zadna nie jest
+   wazniejsza od pozostalych - lista numerowana sugerowalaby kolejnosc,
+   ktorej tu nie ma */
+.genre-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+}
+
+.genre-pill {
+  padding: .175rem .6rem;
+  border-radius: 999px;
+  font-size: .8125rem;
+  color: rgba(var(--bs-primary-rgb), .95);
+  background: rgba(var(--bs-primary-rgb), .12);
+  border: 1px solid rgba(var(--bs-primary-rgb), .25);
+}
+
+.common-friends {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.common-friends .friend-card {
+  flex: 0 0 72px;
+  width: 72px;
+}
+
+/* Miejsce na sekcje zanim sie wczyta - inaczej profil podskakuje */
+.common-ground-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin-bottom: 1.5rem;
+}
+
+/*
+   Powody dopasowania sa przyciskiem, wiec musza WYGLADAC na klikalne -
+   inaczej nikt nie sprawdzi, co za nimi stoi. Jednoczesnie nie moga
+   wygladac jak zwykly przycisk: to nadal jest opis karty, a glownym
+   dzialaniem pozostaje "Zapros".
+*/
+.match-reasons-button {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  width: 100%;
+  padding: .25rem;
+  border: 1px dashed transparent;
+  border-radius: .5rem;
+  background: transparent;
+  color: inherit;
+  transition: background-color var(--mc-fast), border-color var(--mc-fast);
+}
+
+.match-reasons-button:hover,
+.match-reasons-button:focus-visible {
+  border-color: rgba(var(--bs-primary-rgb), .4);
+  background: rgba(var(--bs-primary-rgb), .08);
+}
+
+.match-reasons-more {
+  color: var(--bs-primary);
+  font-weight: 600;
+  /* Napis "zobacz co dokladnie" pojawia sie dopiero pod kursorem - przy
+     dwudziestu kartach naraz powtorzony wszedzie bylby samym halasem */
+  opacity: 0;
+  transition: opacity var(--mc-fast);
+}
+
+.match-reasons-button:hover .match-reasons-more,
+.match-reasons-button:focus-visible .match-reasons-more {
+  opacity: 1;
+}
+
+/* Na dotyku nie ma kursora, wiec podpowiedz musi byc widoczna od razu */
+@media (hover: none) {
+  .match-reasons-more {
+    opacity: 1;
+  }
+}

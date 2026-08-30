@@ -244,6 +244,22 @@ public class UserService {
     }
 
     /**
+     * Kasuje plik awatara konta - przy jego usuwaniu.
+     *
+     * <p>Zdjecie profilowe jest wlasnoscia konta, wiec to ten moduł wie, gdzie
+     * ono lezy - tak samo jak przy {@link #updateAvatar} i {@link #removeAvatar}.
+     * Konto usuniete z bazy, ale z fotografia lezaca dalej na serwerze, byloby
+     * usuniete tylko na niby.</p>
+     *
+     * <p>Wiersza w bazie tu nie ruszamy - kasuje go moduł moderacji na samym
+     * koncu, gdy nic juz na konto nie wskazuje.</p>
+     */
+    @Transactional
+    public void deleteAvatarOf(User user) {
+        fileStorage.remove(user.getAvatarFileName());
+    }
+
+    /**
      * Wyszukiwanie uzytkownikow ze stronicowaniem i sortowaniem
      * (wymagania nr 3, 5 i 8). Obiekt {@link Pageable} buduje kontroler
      * na podstawie parametrow zapytania.

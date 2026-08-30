@@ -126,7 +126,7 @@ public class User {
      * i drugi stan do sprawdzania w kazdym miejscu - zapisujemy zakaz
      * bezterminowy jako {@link #FOREVER}, czyli termin tak odlegly, ze
      * praktycznie nie nadejdzie. Cala reszta kodu nie musi o tym wiedziec:
-     * {@link #isPostingBanned()} dziala bez zmian, a jedyne miejsce, ktore
+     * {@link #isBanned(BanKind)} dziala bez zmian, a jedyne miejsce, ktore
      * traktuje te date wyjatkowo, to interfejs - zeby pokazac
      * <i>„na zawsze"</i> zamiast <i>„do 31.12.9999"</i>.</p>
      */
@@ -309,22 +309,6 @@ public class User {
         return messagingBannedUntil;
     }
 
-    public void setMessagingBannedUntil(LocalDateTime messagingBannedUntil) {
-        this.messagingBannedUntil = messagingBannedUntil;
-    }
-
-    /**
-     * Czy zakaz wysylania wiadomosci obowiazuje <b>teraz</b>.
-     *
-     * <p>Ta sama zasada co przy {@link #isPostingBanned()}: pytanie zadajemy
-     * encji, zeby regula "null albo przeszlosc znaczy: wolno" byla zapisana
-     * raz. Wystarczy pomylic sie w jednym miejscu, zeby zakaz dalo sie
-     * obejsc jednym niesprawdzonym wejsciem.</p>
-     */
-    public boolean isMessagingBanned() {
-        return messagingBannedUntil != null && messagingBannedUntil.isAfter(LocalDateTime.now());
-    }
-
     public LocalDateTime getLastSeenAt() {
         return lastSeenAt;
     }
@@ -349,20 +333,52 @@ public class User {
         return postingBannedUntil;
     }
 
-    public void setPostingBannedUntil(LocalDateTime postingBannedUntil) {
-        this.postingBannedUntil = postingBannedUntil;
+    /* ------------------------------------------------------------------ */
+    /*  Kary - jedno miejsce na obie                                       */
+    /* ------------------------------------------------------------------ */
+
+    /*
+     * Ponizsze trzy metody sa JEDYNYM miejscem w calej aplikacji, ktore wie,
+     * ktora kolumna odpowiada ktorej karze.
+     *
+     * Wczesniej kazda kara miala wlasny komplet metod (isPostingBanned,
+     * isMessagingBanned, dwa settery), a serwis mial dwie identyczne metody
+     * roznagce sie wylacznie tym, ktory setter wola. Jedna koncepcja stala
+     * w kodzie dwa razy - i wystarczylo poprawic jedna sciezke, zeby kary
+     * zaczely sie roznic bez powodu. Tak wlasnie powstal blad, przez ktory
+     * zdejmowanie zakazu przestalo dzialac.
+     *
+     * Teraz rodzaj kary jest WARTOSCIA (BanKind), a nie nazwa metody -
+     * dlatego reszta kodu nie musi ich rozroznaic.
+     */
+
+    /**
+     * Do kiedy obowiazuje kara danego rodzaju ({@code null} = bez kary).
+     */
+    public LocalDateTime bannedUntil(BanKind kind) {
+        return kind == BanKind.POSTING ? postingBannedUntil : messagingBannedUntil;
+    }
+
+    /** Ustawia termin konca kary; {@code null} ja zdejmuje. */
+    public void setBannedUntil(BanKind kind, LocalDateTime until) {
+        if (kind == BanKind.POSTING) {
+            this.postingBannedUntil = until;
+        } else {
+            this.messagingBannedUntil = until;
+        }
     }
 
     /**
-     * Czy zakaz publikowania obowiazuje <b>teraz</b>.
+     * Czy kara tego rodzaju obowiazuje <b>teraz</b>.
      *
      * <p>Pytanie zadajemy encji, a nie porownujemy dat w serwisie. Inaczej ta
      * sama regula ("null albo przeszlosc znaczy: wolno") musialaby byc
      * powtorzona w kazdym miejscu, ktore jej pilnuje - a wystarczy pomylic sie
      * raz, zeby zakaz dalo sie obejsc jednym niesprawdzonym wejsciem.</p>
      */
-    public boolean isPostingBanned() {
-        return postingBannedUntil != null && postingBannedUntil.isAfter(LocalDateTime.now());
+    public boolean isBanned(BanKind kind) {
+        LocalDateTime until = bannedUntil(kind);
+        return until != null && until.isAfter(LocalDateTime.now());
     }
 
     public Set<User> getFriends() {

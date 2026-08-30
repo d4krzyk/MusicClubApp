@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
-import client from '../api/client';
+import { znajomi } from '../api/profil';
 import Avatar from './Avatar';
 import EmptyState from './EmptyState';
 import PeopleSkeleton from './PeopleSkeleton';
@@ -41,14 +41,12 @@ export default function FriendsStrip({ username, refresh, self = false }) {
   const fetch = useCallback(async (pageNumber) => {
     setLoading(true);
     try {
-      const response = await client.get(
-        `/profiles/${encodeURIComponent(username)}/friends`,
-        { params: { page: pageNumber, size: PAGE_SIZE } });
+      const strona = await znajomi(username, pageNumber, PAGE_SIZE);
 
-      setFriends(response.data.content);
-      setPage(response.data.number);
-      setPages(response.data.totalPages);
-      setTotal(response.data.totalElements);
+      setFriends(strona.content);
+      setPage(strona.number);
+      setPages(strona.totalPages);
+      setTotal(strona.totalElements);
     } catch {
       // Pasek znajomych to dodatek - gdy padnie, profil ma dzialac dalej
       setFriends([]);

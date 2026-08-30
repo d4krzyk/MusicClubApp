@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Modal from 'react-bootstrap/Modal';
 import Spinner from 'react-bootstrap/Spinner';
-import client from '../api/client';
+import { autorzyReakcji } from '../api/posty';
 import Avatar from './Avatar';
 import { timeAgo } from '../utils/dates';
 
@@ -38,8 +38,8 @@ export default function ReactionAuthors({ postId, show, onHide }) {
     setLoading(true);
     setError(false);
 
-    client.get(`/posts/${postId}/reactions`)
-      .then(({ data }) => {
+    autorzyReakcji(postId)
+      .then((data) => {
         // Odpowiedz moze wrocic po zamknieciu okienka - wtedy ja porzucamy
         if (!cancelled) setPeople(data);
       })

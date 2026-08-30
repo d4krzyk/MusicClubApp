@@ -1,0 +1,166 @@
+/* =========================================================================
+   GABLOTKA PLAYLIST
+   ========================================================================= */
+
+.playlist-card {
+  position: relative;
+  width: 132px;
+}
+
+/*
+   Cala okladka jest przyciskiem, bo caly kafelek robi jedna rzecz:
+   otwiera odtwarzacz. Osobny maly przycisk "posluchaj" pod spodem
+   dawalby dwa cele klikniecia o tym samym znaczeniu.
+*/
+.playlist-open {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+}
+
+.playlist-cover {
+  width: 132px;
+  height: 132px;
+  object-fit: cover;
+  border-radius: .5rem;
+  display: block;
+  box-shadow: var(--mc-shadow-sm);
+  transition: transform var(--mc-slow), box-shadow var(--mc-slow);
+}
+
+.playlist-open:hover .playlist-cover,
+.playlist-open:focus-visible .playlist-cover {
+  transform: scale(1.04);
+  box-shadow: var(--mc-shadow-md);
+}
+
+.playlist-caption {
+  display: block;
+  margin-top: .25rem;
+  max-width: 132px;
+}
+
+/* Krzyzyk usuwania zachowuje sie tak samo jak w ulubionych */
+@media (hover: hover) {
+  .playlist-card .favorite-remove {
+    opacity: 0;
+  }
+
+  .playlist-card:hover .favorite-remove,
+  .playlist-card .favorite-remove:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/*
+   Zastepnik okladki playlisty. Reguly .cover-placeholder stoja w tym pliku
+   WYZEJ, wiec przy tej samej wadze wygralby z nimi display:block
+   z .playlist-cover - i ikona przestalaby byc wysrodkowana.
+*/
+.playlist-cover.cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* =========================================================================
+   PASEK PRZEWIJANIA
+
+   BLAD, KTORY TO WYMUSIL. Przy przechodzeniu miedzy stronami pasek
+   przegladarki znikal i pojawial sie z powrotem, a razem z nim CALA TRESC
+   przeskakiwala o kilkanascie pikseli w bok. Wygladalo to na drganie
+   interfejsu, a byla to zwykla zmiana szerokosci okna: strona bez paska
+   jest po prostu szersza niz ta z paskiem.
+
+   scrollbar-gutter: stable rezerwuje miejsce na pasek ZAWSZE - takze wtedy,
+   gdy nie ma czego przewijac. Szerokosc tresci przestaje wiec zalezec od
+   dlugosci strony i nic juz nie skacze.
+   ========================================================================= */
+
+html {
+  /*
+     Pasek jest OBECNY ZAWSZE, a nie tylko rezerwujemy na niego miejsce.
+     Roznica jest istotna: przy samej rezerwacji (scrollbar-gutter) pasek
+     nadal znika, gdy okienko blokuje przewijanie strony - i biblioteka
+     dokleja wtedy wlasne wyrownania, ktore przesuwaly gorny pasek.
+     Przy overflow-y: scroll nie znika nic i nie ma czego wyrownywac.
+  */
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+/*
+   REKOMPENSATY BOOTSTRAPA PRZY OKIENKACH NIE RUSZAMY - i to jest wazne.
+   Pierwszy odruch mowi, ze skoro miejsce na pasek jest juz zarezerwowane,
+   to doliczanie marginesu przy otwarciu okienka przesunie tresc drugi raz.
+   Pomiar mowi co innego: {@code overflow: hidden}, ktore Bootstrap
+   ustawia na <body>, zabiera pasek RAZEM z zarezerwowanym miejscem
+   (sprawdzone: szerokosc tresci wraca wtedy z 1270 na 1280 px). Margines
+   Bootstrapa dokladnie to wyrownuje. Wyzerowanie go - co bylo tu przez
+   chwile - wprowadzalo dokladnie ten przeskok, ktory mial znikac.
+
+   JEDEN WYJATEK: gorny pasek. Elementy przyklejone do gory Bootstrap
+   traktuje inaczej niz reszte strony - przy otwarciu okienka doklada im
+   padding-right: 10px RAZEM z margin-right: -10px. Cala ramka zostaje
+   wtedy tej samej szerokosci, ale jej WNETRZE zweza sie o 10 px, przez co
+   wysrodkowana zawartosc paska (logo, ikony, konto) przesuwa sie o 5 px
+   w lewo. U nas ta rekompensata nie ma czego wyrownywac, bo miejsce na
+   pasek jest zarezerwowane na stale.
+
+   Zmierzone: logo skakalo z 77 na 72 px przy kazdym otwarciu okienka.
+   Regula dziala TYLKO przy otwartym okienku (klasa modal-open) - poza tym
+   pasek zachowuje sie normalnie.
+*/
+body.modal-open,
+body.modal-open .top-bar {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+}
+
+/*
+   Wlasny, cienki pasek zamiast systemowego. Systemowy w jasnym motywie
+   jest jasnoszary na jasnym tle i prawie go nie widac, a w ciemnym potrafi
+   byc jaskrawym bialym paskiem przy calej reszcie utrzymanej w ciemnosciach.
+*/
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bs-border-color) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bs-border-color);
+  border-radius: 999px;
+  /*
+     Przezroczysta ramka plus background-clip zwezaja sam suwak, zostawiajac
+     wokol niego odstep. Bez tego suwak dotyka krawedzi okna i wyglada jak
+     doklejony pasek, a nie element tej strony.
+  */
+  border: 3px solid transparent;
+  background-clip: content-box;
+  transition: background-color var(--mc-slow);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--bs-primary-rgb), .55);
+  background-clip: content-box;
+}
+
+/* Rogu miedzy paskiem pionowym a poziomym nie malujemy - domyslnie jest
+   jasnym kwadracikiem, ktory w ciemnym motywie rzuca sie w oczy */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

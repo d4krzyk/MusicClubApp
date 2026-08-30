@@ -1,5 +1,6 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.dto.ConversationResponse;
 import com.musicclubapp.dto.ConversationSyncResponse;
 import com.musicclubapp.dto.MessageResponse;
@@ -157,12 +158,20 @@ class MessageServiceTest {
     @Test
     @DisplayName("zakaz WIADOMOSCI blokuje czat")
     void messagingBanBlocksChat() {
-        ala.setMessagingBannedUntil(LocalDateTime.now().plusHours(3));
+        ala.setBannedUntil(BanKind.MESSAGING, LocalDateTime.now().plusHours(3));
         userRepository.save(ala);
 
         assertThatThrownBy(() -> messages.send("ala", "bartek", text("mimo wszystko")))
             .isInstanceOf(OperationNotAllowedException.class)
-            .hasMessageContaining("wiadomosci");
+            /*
+             * Sprawdzamy KLUCZ, a nie tresc wyjatku. To klucz decyduje, co
+             * zobaczy uzytkownik (i w ktorym jezyku); zdanie w wyjatku trafia
+             * wylacznie do logu. Wczesniej test pilnowal slowa "wiadomosci"
+             * w tekscie technicznym - i zaswiecil na czerwono przy zmianie
+             * nazwy, choc zachowanie bylo bez zmian.
+             */
+            .extracting(e -> ((OperationNotAllowedException) e).getMessageKey())
+            .isEqualTo("error.ban.messaging");
     }
 
     @Test
@@ -179,7 +188,7 @@ class MessageServiceTest {
          * najczestszego przypadku przy kims, kto zasmieca tablice, a nikomu
          * nie dokucza. Kto ma dostac obie kary, dostaje obie.
          */
-        ala.setPostingBannedUntil(LocalDateTime.now().plusHours(3));
+        ala.setBannedUntil(BanKind.POSTING, LocalDateTime.now().plusHours(3));
         userRepository.save(ala);
 
         assertThat(messages.send("ala", "bartek", text("posty mi zablokowali")).content())
@@ -189,7 +198,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("wygasly zakaz juz nie blokuje - konczy sie sam, bez zadania w tle")
     void expiredBanStopsBlocking() {
-        ala.setMessagingBannedUntil(LocalDateTime.now().minusMinutes(1));
+        ala.setBannedUntil(BanKind.MESSAGING, LocalDateTime.now().minusMinutes(1));
         userRepository.save(ala);
 
         assertThat(messages.send("ala", "bartek", text("wrocilam")).content())

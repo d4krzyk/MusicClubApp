@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import client from '../api/client';
+import { topMuzyka } from '../api/profil';
+
+/** Ile pozycji pokazuje zestawienie - stad "top 5" w nazwie sekcji. */
+const TOP_LIMIT = 5;
 
 /**
  * "Najczesciej wrzucane" - top 5 nagran z postow uzytkownika.
@@ -21,10 +24,7 @@ export default function TopMusic({ username, refresh }) {
 
   const fetch = useCallback(async () => {
     try {
-      const response = await client.get(
-        `/profiles/${encodeURIComponent(username)}/top-music`,
-        { params: { kind: 'TRACK', limit: 5 } });
-      setItems(response.data);
+      setItems(await topMuzyka(username, 'TRACK', TOP_LIMIT));
     } catch {
       // Zestawienie to dodatek - gdy padnie, reszta profilu ma dzialac dalej
       setItems([]);

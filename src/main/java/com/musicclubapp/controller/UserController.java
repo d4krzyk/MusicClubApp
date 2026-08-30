@@ -3,10 +3,10 @@ package com.musicclubapp.controller;
 import com.musicclubapp.dto.AdminUserResponse;
 import com.musicclubapp.dto.BlockIpRequest;
 import com.musicclubapp.dto.BlockedIpResponse;
-import com.musicclubapp.dto.MessagingBanRequest;
 import com.musicclubapp.dto.RelatedAccountResponse;
 import com.musicclubapp.dto.ChangeRoleRequest;
-import com.musicclubapp.dto.PostingBanRequest;
+import com.musicclubapp.dto.BanRequest;
+import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.service.UserModerationService;
 import com.musicclubapp.service.NetworkService;
 import com.musicclubapp.service.UserService;
@@ -151,33 +151,38 @@ public class UserController {
     }
 
     /**
-     * Zakaz publikowania na okreslony czas albo jego zdjecie.
+     * Naklada albo zdejmuje kare - <b>jeden adres na oba rodzaje</b>.
      *
-     * <p>PATCH, bo zmieniamy jedno pole. Pusta liczba godzin w tresci zapytania
-     * <b>zdejmuje</b> zakaz - to jedna operacja zamiast dwoch endpointow,
-     * bo w panelu jest to jeden przelacznik.</p>
+     * <p>Kara dotyczy publikowania albo pisania wiadomosci. Czytanie, reakcje
+     * i usuwanie wlasnych tresci zostaja dozwolone - kara ma powstrzymac
+     * przed konkretna czynnoscia, a nie odciac od portalu. Od odciecia jest
+     * usuniecie konta ({@link #delete}).</p>
      *
-     * <p>Zakaz dotyczy dodawania i edytowania postow. Czytanie, komentowanie
-     * reakcja i usuwanie wlasnych tresci zostaja dozwolone - kara ma
-     * powstrzymac przed publikowaniem, a nie odciac od portalu. Od odciecia
-     * jest usuniecie konta.</p>
+     * <p>Rodzaj kary jest czescia adresu ({@code .../bans/POSTING}), a nie
+     * pola w tresci. Adres mowi wtedy wprost, co zmieniamy, a nie da sie
+     * przyslac zapytania, w ktorym adres i tresc mowia co innego.</p>
+     *
+     * <p>Wczesniej byly tu dwa endpointy z dwoma rekordami zapytania i dwiema
+     * metodami serwisu, ktore po znormalizowaniu nazw okazaly sie identyczne
+     * co do znaku. Rodzaj kary jest wartoscia, a nie osobna sciezka w kodzie.</p>
      */
-    @PatchMapping("/{id}/posting-ban")
-    @Operation(summary = "Naklada albo zdejmuje zakaz publikowania (tylko administrator)")
+    @PatchMapping("/{id}/bans/{kind}")
+    @Operation(summary = "Naklada albo zdejmuje kare na koncie (tylko administrator)")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zakaz nalozony albo zdjety"),
+        @ApiResponse(responseCode = "200", description = "Kara nalozona albo zdjeta"),
         @ApiResponse(responseCode = "403", description = "Brak uprawnien administratora"),
         @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika"),
-        @ApiResponse(responseCode = "409", description = "Proba zablokowania samego siebie"),
+        @ApiResponse(responseCode = "409", description = "Proba ukarania samego siebie"),
         @ApiResponse(responseCode = "422", description = "Liczba godzin poza zakresem 1-8760")
     })
-    public ResponseEntity<AdminUserResponse> setPostingBan(
+    public ResponseEntity<AdminUserResponse> setBan(
             @PathVariable Long id,
-            @Valid @RequestBody PostingBanRequest payload,
+            @PathVariable BanKind kind,
+            @Valid @RequestBody BanRequest payload,
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            moderationService.setPostingBan(authentication.getName(), id, payload));
+            moderationService.setBan(authentication.getName(), id, kind, payload));
     }
 
     /**
@@ -197,32 +202,6 @@ public class UserController {
     public ResponseEntity<Void> delete(@PathVariable Long id, Authentication authentication) {
         moderationService.deleteUser(authentication.getName(), id);
         return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * Naklada albo zdejmuje <b>zakaz wysylania wiadomosci</b>.
-     *
-     * <p>Osobny od zakazu publikowania i to jest cala roznica: ktos moze
-     * zasmiecac tablice, nie dokuczajac nikomu prywatnie - i odwrotnie.
-     * Jeden przelacznik na oba przypadki nie pozwalalby wyrazic zadnego
-     * z nich osobno.</p>
-     */
-    @PatchMapping("/{id}/messaging-ban")
-    @Operation(summary = "Naklada albo zdejmuje zakaz wysylania wiadomosci (tylko administrator)")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Zakaz nalozony albo zdjety"),
-        @ApiResponse(responseCode = "403", description = "Brak uprawnien administratora"),
-        @ApiResponse(responseCode = "404", description = "Nie ma takiego uzytkownika"),
-        @ApiResponse(responseCode = "409", description = "Proba zablokowania samego siebie"),
-        @ApiResponse(responseCode = "422", description = "Liczba godzin poza zakresem 1-8760")
-    })
-    public ResponseEntity<AdminUserResponse> setMessagingBan(
-            @PathVariable Long id,
-            @Valid @RequestBody MessagingBanRequest payload,
-            Authentication authentication) {
-
-        return ResponseEntity.ok(
-            moderationService.setMessagingBan(authentication.getName(), id, payload));
     }
 
     /**

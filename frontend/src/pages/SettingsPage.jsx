@@ -7,7 +7,8 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { useAuth } from '../auth/AuthContext';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import { usunAwatar, ustawAwatar } from '../api/konto';
 import Field from '../components/Field';
 import Avatar from '../components/Avatar';
 
@@ -67,11 +68,7 @@ function AvatarForm() {
     setWysylanie(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await client.put('/profile/avatar', formData);
-      refreshUser(response.data);
+      refreshUser(await ustawAwatar(file));
 
       setFile(null);
       e.target.reset();
@@ -90,11 +87,10 @@ function AvatarForm() {
     setError(null);
     setMessage(null);
     try {
-      const response = await client.delete('/profile/avatar');
-      refreshUser(response.data);
+      refreshUser(await usunAwatar());
       setMessage(t('avatar.removed'));
     } catch (error) {
-      setError(describeError(error).message ?? t('errors.unknown'));
+      setError(describeError(error).message);
     }
   }
 
@@ -170,7 +166,7 @@ function ProfileForm() {
     } catch (error) {
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setGeneralError(details.message);
     } finally {
       setWysylanie(false);
     }
@@ -248,7 +244,7 @@ function PasswordForm() {
     } catch (error) {
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setGeneralError(details.message);
     } finally {
       setWysylanie(false);
     }

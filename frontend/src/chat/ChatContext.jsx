@@ -1,8 +1,9 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useState,
 } from 'react';
-import client from '../api/client';
+import { licznikNieprzeczytanych } from '../api/czat';
 import { useAuth } from '../auth/AuthContext';
+import useOdswiezanie from '../hooks/useOdswiezanie';
 
 /** Co ile odswiezamy licznik nieprzeczytanych przy ZAMKNIETYM czacie. */
 const IDLE_REFRESH_MS = 60_000;
@@ -33,8 +34,7 @@ export function ChatProvider({ children }) {
 
   const refreshUnread = useCallback(async () => {
     try {
-      const { data } = await client.get('/messages/unread-count');
-      setUnread(data.count);
+      setUnread(await licznikNieprzeczytanych());
     } catch {
       // Licznik to dodatek - gdy sie nie uda, nie psujemy paska
       setUnread(0);
@@ -56,13 +56,10 @@ export function ChatProvider({ children }) {
     }
 
     refreshUnread();
-
-    if (open) {
-      return undefined;
-    }
-    const timer = setInterval(refreshUnread, IDLE_REFRESH_MS);
-    return () => clearInterval(timer);
+    return undefined;
   }, [user, open, refreshUnread]);
+
+  useOdswiezanie(refreshUnread, IDLE_REFRESH_MS, Boolean(user) && !open);
 
   /**
    * Otwiera czat - z konkretna osoba albo na liscie rozmow.

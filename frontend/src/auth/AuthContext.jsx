@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import client, {
+import {
   refreshCsrfToken, rememberShownUser, setAccountSwitchHandler,
 } from '../api/client';
+import * as konto from '../api/konto';
 
 /**
  * Przechowuje informacje o zalogowanym uzytkowniku i udostepnia je
@@ -73,7 +74,7 @@ export function AuthProvider({ children }) {
 
     function verify() {
       if (document.visibilityState === 'visible') {
-        client.get('/auth/me').catch(() => {
+        konto.ktoJestem().catch(() => {
           // 401 znaczy, ze sesja zniknela - obsluguja to zwykle sciezki bledow
         });
       }
@@ -102,8 +103,7 @@ export function AuthProvider({ children }) {
       }
 
       try {
-        const response = await client.get('/auth/me');
-        setUser(response.data);
+        setUser(await konto.ktoJestem());
       } catch {
         // 401 to normalna sytuacja: nikt nie jest zalogowany
         setUser(null);
@@ -116,15 +116,14 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (username, password, rememberMe) => {
-    const response = await client.post('/auth/login', { username, password, rememberMe });
-    setUser(response.data);
-    return response.data;
+    const zalogowany = await konto.zaloguj(username, password, rememberMe);
+    setUser(zalogowany);
+    return zalogowany;
   }, []);
 
   const register = useCallback(async (data) => {
     // Rejestracja NIE loguje automatycznie - backend tylko zaklada konto
-    const response = await client.post('/auth/register', data);
-    return response.data;
+    return konto.zarejestruj(data);
   }, []);
 
   /**
@@ -134,9 +133,9 @@ export function AuthProvider({ children }) {
    * pokazywalyby stary login az do odswiezenia strony.</p>
    */
   const updateProfile = useCallback(async (data) => {
-    const response = await client.put('/profile', data);
-    setUser(response.data);
-    return response.data;
+    const zmienione = await konto.zmienDane(data);
+    setUser(zmienione);
+    return zmienione;
   }, []);
 
   /**
@@ -152,12 +151,12 @@ export function AuthProvider({ children }) {
 
   /** Zmiana hasla. Nic nie zwraca - serwer odsyla 204 bez tresci. */
   const changePassword = useCallback(async (data) => {
-    await client.put('/profile/password', data);
+    await konto.zmienHaslo(data);
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await client.post('/auth/logout');
+      await konto.wyloguj();
     } finally {
       /*
        * Czyscimy uzytkownika nawet gdy zapytanie sie nie powiodlo.

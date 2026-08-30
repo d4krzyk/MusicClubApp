@@ -4,7 +4,8 @@ import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as profil from '../api/profil';
 import { useAuth } from '../auth/AuthContext';
 import CatalogSearch from './CatalogSearch';
 import HorizontalStrip from './HorizontalStrip';
@@ -43,9 +44,7 @@ export default function Favorites({ username, onChange }) {
 
   const fetch = useCallback(async () => {
     try {
-      const response = await client.get(
-        `/profiles/${encodeURIComponent(username)}/favorites`);
-      setData(response.data);
+      setData(await profil.ulubieni(username));
     } catch {
       // Section ulubionych to czesc profilu, a nie caly profil - gdy padnie,
       // reszta strony ma dzialac dalej
@@ -58,8 +57,8 @@ export default function Favorites({ username, onChange }) {
   }, [fetch]);
 
   useEffect(() => {
-    client.get('/profile/favorites/import/lastfm')
-      .then((o) => setImportAvailable(o.data.available))
+    profil.stanImportuLastFm()
+      .then((stan) => setImportAvailable(stan.available))
       .catch(() => setImportAvailable(false));
   }, []);
 
@@ -72,7 +71,7 @@ export default function Favorites({ username, onChange }) {
       onChange?.();
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 
@@ -82,16 +81,12 @@ export default function Favorites({ username, onChange }) {
     setError(null);
     setSummary(null);
     try {
-      const response = await client.post('/profile/favorites/import/lastfm',
-        { username: lastFmUsername });
-      setSummary(response.data);
+      setSummary(await profil.importujZLastFm(lastFmUsername));
       await fetch();
       onChange?.();
     } catch (error) {
       const details = describeError(error);
-      setError(details.message
-        ?? details.fieldErrors.username
-        ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message ?? details.fieldErrors.username);
     } finally {
       setImporting(false);
     }
@@ -190,10 +185,8 @@ export default function Favorites({ username, onChange }) {
         canEdit={canEdit}
         limitReached={artists.length >= maxArtists}
         kind="artists"
-        onAdd={(p) => run(() =>
-          client.post('/profile/favorites/artists', { externalId: p.externalId }))}
-        onRemove={(p) => run(() =>
-          client.delete(`/profile/favorites/artists/${p.externalId}`))}
+        onAdd={(p) => run(() => profil.dodajUlubionegoArtyste(p.externalId))}
+        onRemove={(p) => run(() => profil.usunUlubionegoArtyste(p.externalId))}
       />
 
       <Section
@@ -203,10 +196,8 @@ export default function Favorites({ username, onChange }) {
         canEdit={canEdit}
         limitReached={tracks.length >= maxTracks}
         kind="tracks"
-        onAdd={(p) => run(() =>
-          client.post('/profile/favorites/tracks', { externalId: p.externalId }))}
-        onRemove={(p) => run(() =>
-          client.delete(`/profile/favorites/tracks/${p.externalId}`))}
+        onAdd={(p) => run(() => profil.dodajUlubionyUtwor(p.externalId))}
+        onRemove={(p) => run(() => profil.usunUlubionyUtwor(p.externalId))}
       />
     </section>
   );

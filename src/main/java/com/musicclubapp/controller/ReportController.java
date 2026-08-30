@@ -5,7 +5,7 @@ import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.entity.ReportStatus;
 import com.musicclubapp.service.ReportService;
-import com.musicclubapp.service.UserModerationService;
+import com.musicclubapp.service.ReportDecisionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -50,18 +50,17 @@ public class ReportController {
     private static final int MAX_SIZE = 50;
 
     private final ReportService reportService;
-    private final UserModerationService moderationService;
+    private final ReportDecisionService decisions;
 
     /*
-     * Dwa serwisy, bo zamkniecie zgloszenia i kara to dwie rozne warstwy.
-     * Odczyty ida do ReportService, a zamkniecie POLACZONE z dzialaniem -
-     * do moderacji, bo tam mieszkaja kary (szczegoly przy
-     * UserModerationService.resolveReport).
+     * Dwa serwisy, bo to dwie rozne warstwy. Odczyty ida do ReportService,
+     * a decyzja POLACZONA z dzialaniem - do ReportDecisionService, ktory
+     * spina zgloszenia z karami (szczegoly w jego opisie).
      */
     public ReportController(ReportService reportService,
-                            UserModerationService moderationService) {
+                            ReportDecisionService decisions) {
         this.reportService = reportService;
-        this.moderationService = moderationService;
+        this.decisions = decisions;
     }
 
     /* ------------------------------------------------------------------ */
@@ -151,7 +150,7 @@ public class ReportController {
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            moderationService.resolveReport(authentication.getName(), id, request));
+            decisions.resolve(authentication.getName(), id, request));
     }
 
     /**
@@ -171,6 +170,6 @@ public class ReportController {
             @PathVariable Long id, Authentication authentication) {
 
         return ResponseEntity.ok(
-            moderationService.reopenReport(authentication.getName(), id));
+            decisions.reopen(authentication.getName(), id));
     }
 }

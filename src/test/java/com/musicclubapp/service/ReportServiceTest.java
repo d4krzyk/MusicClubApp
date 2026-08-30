@@ -1,5 +1,6 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.dto.CreateReportRequest;
 import com.musicclubapp.dto.EvidenceLineResponse;
 import com.musicclubapp.dto.ReportResponse;
@@ -50,7 +51,7 @@ import static org.mockito.BDDMockito.given;
 class ReportServiceTest {
 
     @Autowired private ReportService reports;
-    @Autowired private UserModerationService moderation;
+    @Autowired private ReportDecisionService decisions;
     @Autowired private MessageService messages;
     @Autowired private ReportRepository reportRepository;
     @Autowired private MessageRepository messageRepository;
@@ -360,7 +361,7 @@ class ReportServiceTest {
         ReportResponse created = reports.create("ala", "troll", new CreateReportRequest(
             ReportReason.HATE, ReportContext.POST, post.getId(), "Prosze o usuniecie tego wpisu"));
 
-        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+        decisions.resolve("admin", created.id(), new ResolveReportRequest(
             ReportStatus.RESOLVED, "Wpis usuniety", ModerationAction.DELETE_POST, null, null));
 
         entityManager.flush();
@@ -385,15 +386,15 @@ class ReportServiceTest {
     void resolvingWithoutActionLeavesTheAccountAlone() {
         ReportResponse created = reports.create("ala", "troll", profileReport());
 
-        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+        decisions.resolve("admin", created.id(), new ResolveReportRequest(
             ReportStatus.RESOLVED, "Upomnienie wystarczy", ModerationAction.NONE, null, null));
 
         entityManager.flush();
         entityManager.clear();
 
         User po = userRepository.findByUsername("troll").orElseThrow();
-        assertThat(po.isPostingBanned()).isFalse();
-        assertThat(po.isMessagingBanned()).isFalse();
+        assertThat(po.isBanned(BanKind.POSTING)).isFalse();
+        assertThat(po.isBanned(BanKind.MESSAGING)).isFalse();
     }
 
     @Test
@@ -401,7 +402,7 @@ class ReportServiceTest {
     void resolvingCanBanForeverOnTheRealDatabase() {
         ReportResponse created = reports.create("ala", "troll", profileReport());
 
-        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+        decisions.resolve("admin", created.id(), new ResolveReportRequest(
             ReportStatus.RESOLVED, "Konto zalozone po to, zeby dokuczac",
             ModerationAction.BAN_POSTING, null, true));
 
@@ -409,8 +410,8 @@ class ReportServiceTest {
         entityManager.clear();
 
         User po = userRepository.findByUsername("troll").orElseThrow();
-        assertThat(po.isPostingBanned()).isTrue();
-        assertThat(User.isForever(po.getPostingBannedUntil())).isTrue();
+        assertThat(po.isBanned(BanKind.POSTING)).isTrue();
+        assertThat(User.isForever(po.bannedUntil(BanKind.POSTING))).isTrue();
     }
 
     /**
@@ -425,10 +426,10 @@ class ReportServiceTest {
     @DisplayName("zamknieta sprawe mozna otworzyc i zdecydowac inaczej")
     void closedReportCanBeReopenedAndDecidedAgain() {
         ReportResponse created = reports.create("ala", "troll", profileReport());
-        moderation.resolveReport("admin", created.id(), new ResolveReportRequest(
+        decisions.resolve("admin", created.id(), new ResolveReportRequest(
             ReportStatus.DISMISSED, "Chyba bez podstaw", ModerationAction.NONE, null, null));
 
-        ReportResponse otwarte = moderation.reopenReport("admin", created.id());
+        ReportResponse otwarte = decisions.reopen("admin", created.id());
 
         assertThat(otwarte.status()).isEqualTo(ReportStatus.OPEN);
         assertThat(otwarte.resolvedBy())
@@ -436,7 +437,7 @@ class ReportServiceTest {
             .isNull();
 
         // I da sie zdecydowac inaczej niz za pierwszym razem
-        ReportResponse ponownie = moderation.resolveReport("admin", created.id(),
+        ReportResponse ponownie = decisions.resolve("admin", created.id(),
             new ResolveReportRequest(ReportStatus.RESOLVED, "Jednak zasadne",
                 ModerationAction.NONE, null, null));
 
@@ -449,7 +450,7 @@ class ReportServiceTest {
     void openReportCannotBeReopened() {
         ReportResponse created = reports.create("ala", "troll", profileReport());
 
-        assertThatThrownBy(() -> moderation.reopenReport("admin", created.id()))
+        assertThatThrownBy(() -> decisions.reopen("admin", created.id()))
             .isInstanceOf(OperationNotAllowedException.class);
     }
 

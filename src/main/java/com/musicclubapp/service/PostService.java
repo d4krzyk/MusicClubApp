@@ -8,6 +8,7 @@ import com.musicclubapp.dto.UpdatePostRequest;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
+import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
@@ -85,8 +86,8 @@ public class PostService {
          * jednej metodzie, wiec jedno sprawdzenie w tym miejscu zamyka sprawe -
          * takze wtedy, gdy kiedys dojdzie druga droga dodawania postow.
          */
-        if (author.isPostingBanned()) {
-            throw OperationNotAllowedException.postingBanned(author.getPostingBannedUntil());
+        if (author.isBanned(BanKind.POSTING)) {
+            throw OperationNotAllowedException.banned(BanKind.POSTING, author.bannedUntil(BanKind.POSTING));
         }
 
         Post post = new Post(author, request.content().trim());
@@ -139,9 +140,9 @@ public class PostService {
          * USUWANIE wlasnego posta zostaje dozwolone: kara ma powstrzymac przed
          * publikowaniem, a nie zmusic do zostawienia czegos na tablicy.
          */
-        if (post.getAuthor().isPostingBanned()) {
-            throw OperationNotAllowedException.postingBanned(
-                post.getAuthor().getPostingBannedUntil());
+        if (post.getAuthor().isBanned(BanKind.POSTING)) {
+            throw OperationNotAllowedException.banned(BanKind.POSTING, 
+                post.getAuthor().bannedUntil(BanKind.POSTING));
         }
 
         post.setContent(request.content().trim());
@@ -347,5 +348,38 @@ public class PostService {
 
         postRepository.delete(post);
         files.forEach(fileStorage::remove);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Sprzatanie                                                         */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Kasuje wszystkie posty konta razem z ich zdjeciami - przy usuwaniu
+     * uzytkownika.
+     *
+     * <p>Nazwy plikow zbieramy PRZED skasowaniem wierszy, a same pliki
+     * kasujemy dopiero na koncu - z tego samego powodu co w {@link #delete}:
+     * gdyby transakcja sie wycofala, posty zostalyby w bazie, a zdjecia juz
+     * nie istnialyby na dysku i tablica pokazalaby puste ramki.</p>
+     *
+     * <p>Cudze reakcje pod tymi postami zabiera kaskada z encji {@code Post}.
+     * Powiadomienia wskazujace na te posty musza zniknac wczesniej - robi to
+     * {@code NotificationService.deleteAllOf}, wolane jako pierwsze.</p>
+     *
+     * @return ile postow zniknelo - do wpisu w dzienniku moderacji
+     */
+    @Transactional
+    public int deleteAllOf(Long authorId) {
+        List<Post> posts = postRepository.findByAuthorId(authorId);
+
+        List<String> files = posts.stream()
+            .flatMap(post -> post.getImages().stream())
+            .map(PostImage::getFileName)
+            .toList();
+
+        postRepository.deleteAll(posts);
+        files.forEach(fileStorage::remove);
+        return posts.size();
     }
 }

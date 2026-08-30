@@ -48,6 +48,7 @@ uploads/
 .env
 *.env.local
 application-local.properties
+*.patch
 
 # --- System ---
 .DS_Store

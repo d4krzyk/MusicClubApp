@@ -218,9 +218,15 @@ public class NotificationService {
         notificationRepository.deleteByPostId(postId);
     }
 
-    /** Przed usunieciem konta - w obie strony: co dostal i co wywolal. */
+    /**
+     * Kasuje powiadomienia konta - przy usuwaniu uzytkownika.
+     *
+     * <p>W OBIE strony: te, ktore dostal, i te, ktore wywolal u innych.
+     * Musi pojsc jako pierwsze w calym sprzataniu, bo powiadomienie wskazuje
+     * kluczami obcymi i na konto, i na posty - a te znikaja chwile pozniej.</p>
+     */
     @Transactional
-    public void userDeleted(Long userId) {
+    public void deleteAllOf(Long userId) {
         notificationRepository.deleteByUserId(userId);
     }
 }

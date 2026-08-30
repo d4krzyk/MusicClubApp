@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
-import client from '../api/client';
+import { szukaj } from '../api/muzyka';
 
 /**
  * Wyszukiwarka katalogu Deezera - do dodawania ulubionych artystow i utworow.
@@ -52,12 +52,10 @@ export default function CatalogSearch({ kind, onWybor, disabled = false }) {
 
     const timer = setTimeout(async () => {
       try {
-        const response = await client.get(`/music/search/${kind}`, {
-          params: { q: searchPhrase },
-        });
+        const wyniki = await szukaj(kind, searchPhrase);
         // Odpowiedz na juz nieaktualne zapytanie - ignorujemy
         if (counter === requestNumber.current) {
-          setResults(response.data);
+          setResults(wyniki);
           setSearched(true);
         }
       } catch {

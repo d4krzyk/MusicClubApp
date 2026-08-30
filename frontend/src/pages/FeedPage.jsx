@@ -8,7 +8,8 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Collapse from 'react-bootstrap/Collapse';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as posty from '../api/posty';
 import Field from '../components/Field';
 import Post from '../components/Post';
 import PostSkeleton from '../components/PostSkeleton';
@@ -63,17 +64,16 @@ export default function FeedPage() {
     setLoading(true);
     setListError(null);
     try {
-      const response = await client.get('/posts', {
-        params: { page: pageNumber, size: PAGE_SIZE, scope: wantedScope },
+      const data = await posty.tablica({
+        strona: pageNumber, rozmiar: PAGE_SIZE, zakres: wantedScope,
       });
-      const data = response.data;
 
       setPosts((previous) => (joined ? [...previous, ...data.content] : data.content));
       setLastPage(data.last);
       setPage(data.number);
     } catch (error) {
       const details = describeError(error);
-      setListError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setListError(details.message);
     } finally {
       setLoading(false);
       setFirstLoad(false);
@@ -152,12 +152,12 @@ export default function FeedPage() {
       return;
     }
     try {
-      await client.delete(`/posts/${id}`);
+      await posty.usun(id);
       setPosts((previous) => previous.filter((p) => p.id !== id));
       setMessage(t('posts.deleted'));
     } catch (error) {
       const details = describeError(error);
-      setListError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setListError(details.message);
     }
   }
 
@@ -347,37 +347,21 @@ function PostForm({ onAdded }) {
     setSending(true);
 
     try {
-      /*
-       * Zdjecia to pliki binarne, wiec zamiast JSON-a wysylamy FormData.
-       * Czesc tekstowa idzie jako osobny fragment o nazwie "post" i MUSI miec
-       * typ application/json - inaczej Spring nie umie jej zamienic na obiekt
-       * i odrzuca zapytanie bledem 415.
-       */
-      const formData = new FormData();
-      formData.append(
-        'post',
-        new Blob(
-          [JSON.stringify({
-            content,
-            musicUrl: musicUrl || null,
-            // Bez linku rodzaj nie ma do czego sie odnosic - serwer to odrzuci
-            musicKind: musicUrl ? musicKind : null,
-            musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
-            visibility,
-          })],
-          { type: 'application/json' }
-        )
-      );
-      files.forEach((file) => formData.append('images', file));
-
-      const response = await client.post('/posts', formData);
+      const dodany = await posty.dodaj({
+        content,
+        musicUrl: musicUrl || null,
+        // Bez linku rodzaj nie ma do czego sie odnosic - serwer to odrzuci
+        musicKind: musicUrl ? musicKind : null,
+        musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
+        visibility,
+      }, files);
 
       clear();
-      onAdded(response.data);
+      onAdded(dodany);
     } catch (error) {
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setGeneralError(details.message);
     } finally {
       setSending(false);
     }

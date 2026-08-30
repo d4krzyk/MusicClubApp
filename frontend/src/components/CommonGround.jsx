@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import client from '../api/client';
+import { coWasLaczy } from '../api/profil';
 import Avatar from './Avatar';
 import HorizontalStrip from './HorizontalStrip';
 
@@ -31,9 +31,7 @@ export default function CommonGround({ username, compact = false }) {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await client.get(
-        `/profiles/${encodeURIComponent(username)}/common`);
-      setData(response.data);
+      setData(await coWasLaczy(username));
     } catch {
       // To dodatek do profilu, a nie profil - gdy padnie, reszta ma dzialac
       setData(null);

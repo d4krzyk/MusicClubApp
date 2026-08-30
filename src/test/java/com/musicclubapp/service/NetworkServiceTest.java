@@ -240,7 +240,7 @@ class NetworkServiceTest {
         network.recordLogin(ala, "203.0.113.7");
         entityManager.flush();
 
-        network.forgetUser(ala.getId());
+        network.deleteAllOf(ala.getId());
         entityManager.flush();
 
         assertThat(accountIpRepository.findByUserIdOrderByLastSeenAtDesc(ala.getId())).isEmpty();

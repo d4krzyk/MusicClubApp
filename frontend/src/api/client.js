@@ -7,6 +7,13 @@ import { formatDateTime } from '../utils/dates';
  *
  * Dzieki temu ustawienia (ciasteczka, token CSRF, jezyk) konfigurujemy raz,
  * a nie przy kazdym wywolaniu z osobna.
+ *
+ * <p><b>Ten plik odpowiada za TRANSPORT, a nie za to, o co pytamy.</b>
+ * Adresy koncowek mieszkaja w modulach obok - {@code api/czat.js},
+ * {@code api/moderacja.js}, {@code api/posty.js} i pozostalych - gdzie kazda
+ * operacja ma nazwe i oddaje gotowe dane. Zaden komponent nie siega juz
+ * po {@code client} bezposrednio; gdy adres zmieni sie po stronie serwera,
+ * poprawka jest w jednym pliku, a nie w kilkunastu komponentach.</p>
  */
 const client = axios.create({
   // Adres wzgledny - Vite przekieruje go na localhost:8080 (patrz vite.config.js)
@@ -186,23 +193,43 @@ export function setRequestLanguage(language) {
 }
 
 /**
- * Zamienia blad z axiosa na coś, co da sie pokazac uzytkownikowi.
+ * Zamienia blad z axiosa na GOTOWY tekst do pokazania uzytkownikowi.
  *
- * Backend zwraca bledy w jednym formacie (klasa ErrorResponse), np.:
+ * <p>Backend zwraca bledy w jednym formacie (klasa {@code ErrorResponse}):</p>
+ * <pre>
  * {
  *   "status": 422,
  *   "message": "Blad walidacji...",
  *   "errors": [ { "field": "email", "message": "Podaj poprawny adres" } ]
  * }
+ * </pre>
  *
- * @returns {{message: string|null, messageKey: string|null, fieldErrors: Object}}
- *          messageKey ustawiamy tylko wtedy, gdy tekst musi pochodzic
- *          z tlumaczen frontendu (bo serwer nic nie odpowiedzial).
+ * <p><b>Dlaczego oddaje gotowy napis, a nie polprodukt.</b> Wczesniej funkcja
+ * zwracala osobno {@code message} i {@code messageKey}, a skladanie ich w jedno
+ * zdanie zostawialа wywolujacemu. Kazde z <b>27 miejsc w 17 plikach</b>
+ * powtarzalo wtedy dokladnie te sama linijke:</p>
+ * <pre>
+ * setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+ * </pre>
+ *
+ * <p>Przy przegladzie okazalo sie, ze {@code messageKey} <b>nigdy</b> nie sluzyl
+ * do niczego innego - zawsze byl natychmiast zwijany do napisu, i to zawsze
+ * tak samo. Skoro rozstrzygniecie jest jedno, nalezy do tej funkcji, a nie do
+ * kazdego ekranu z osobna. Ekran ma pokazac blad, a nie decydowac, skad wziac
+ * jego tresc.</p>
+ *
+ * @param error       blad z axiosa
+ * @param fallbackKey klucz tlumaczenia uzywany, gdy serwer nie podal tresci
+ *                    (np. {@code 'chat.listFailed'}); bez niego uzywamy
+ *                    ogolnego "errors.unknown"
+ * @returns {{message: string|null, fieldErrors: Object}} {@code message} jest
+ *          juz przetlumaczony i gotowy do wyswietlenia; {@code null} tylko
+ *          wtedy, gdy blad dotyczy WYLACZNIE pol formularza
  */
-export function describeError(error) {
+export function describeError(error, fallbackKey = 'errors.unknown') {
   // Serwer nie odpowiedzial w ogole - najczesciej backend jest wylaczony
   if (!error.response) {
-    return { message: null, messageKey: 'errors.network', fieldErrors: {} };
+    return { message: i18n.t('errors.network'), fieldErrors: {} };
   }
 
   const data = error.response.data;
@@ -235,19 +262,21 @@ export function describeError(error) {
    * wszystkie ekrany pokazuja to, co odda `message`, wiec dolozenie terminu
    * tutaj dziala wszedzie naraz i nigdzie nie da sie o nim zapomniec.
    */
-  let message = hasFieldErrors ? null : (data?.message ?? null);
-  if (message && data?.deadline) {
+  if (hasFieldErrors) {
+    return { message: null, fieldErrors };
+  }
+
+  // Komunikat z serwera jest juz przetlumaczony (wyslalismy Accept-Language);
+  // gdy go nie ma, siegamy po tekst zapasowy z tlumaczen frontendu
+  let message = data?.message ?? i18n.t(fallbackKey);
+
+  if (data?.deadline) {
     message += ' ' + i18n.t('errors.until', {
       date: formatDateTime(data.deadline, i18n.language),
     });
   }
 
-  return {
-    // Komunikat z serwera jest juz przetlumaczony (wyslalismy Accept-Language)
-    message,
-    messageKey: hasFieldErrors || data?.message ? null : 'errors.unknown',
-    fieldErrors,
-  };
+  return { message, fieldErrors };
 }
 
 export default client;

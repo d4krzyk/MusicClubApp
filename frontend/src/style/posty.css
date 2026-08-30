@@ -1,0 +1,145 @@
+/* =========================================================================
+   PRZYCISKI PRZY POSTACH I NA PROFILU
+
+   Domyslne "outline" Bootstrapa to szara ramka i szary tekst - najbardziej
+   plaski element na calej stronie. Tutaj dostaja te sama glebie co reszta:
+   wypelnienie zamiast obrysu, cien i wyrazne wcisniecie.
+   ========================================================================= */
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-bg: var(--bs-body-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-border-color: rgba(var(--bs-primary-rgb), .45);
+  --bs-btn-active-bg: var(--bs-tertiary-bg);
+  --bs-btn-active-border-color: rgba(var(--bs-primary-rgb), .6);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+/* Przycisk usuwania: czerwony dopiero pod kursorem. Stale czerwony obrys
+   przy kazdym wlasnym poscie robil z tablicy liste ostrzezen */
+.btn-outline-danger {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-bg: var(--bs-body-bg);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.btn-outline-danger:hover:not(:disabled) {
+  --bs-btn-hover-bg: var(--bs-danger);
+  --bs-btn-hover-border-color: var(--bs-danger);
+  box-shadow: 0 4px 14px rgba(var(--bs-danger-rgb), .3);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--bs-primary);
+  --bs-btn-border-color: rgba(var(--bs-primary-rgb), .45);
+  --bs-btn-bg: var(--bs-body-bg);
+  --bs-btn-hover-bg: var(--bs-primary);
+  --bs-btn-hover-border-color: var(--bs-primary);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.btn-outline-primary:hover:not(:disabled) {
+  box-shadow: var(--mc-glow);
+}
+
+/* =========================================================================
+   PLYNNE POJAWIANIE SIE POSTOW
+   ========================================================================= */
+
+/*
+   Karty wchodza PO KOLEI, a nie wszystkie naraz. Opoznienie liczymy ze
+   zmiennej --i ustawianej przy renderowaniu; przy doladowanych postach
+   liczy sie ono od poczatku PARTII, a nie od poczatku listy - inaczej
+   dwudziesty post czekalby prawie sekunde.
+
+   Gorna granica (kopia z JSX: index % 10) pilnuje, zeby przy dlugiej
+   tablicy opoznienie nigdy nie uroslo ponad pol sekundy.
+*/
+.feed-page .post-card {
+  animation: fade-in-up .42s var(--mc-ease) both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/*
+   Wskaznik doladowywania: trzy kropki pulsujace po kolei. Kolko Bootstrapa
+   krecilo sie w miejscu i nie odroznialo sie od zadnego innego ladowania -
+   a to jest moment, w ktorym cos DOKLADA sie do listy.
+*/
+.loading-dots {
+  display: inline-flex;
+  gap: .3rem;
+  align-items: center;
+}
+
+.loading-dots span {
+  width: .45rem;
+  height: .45rem;
+  border-radius: 50%;
+  background: var(--mc-gradient);
+  animation: dot-pulse 1.1s var(--mc-ease) infinite;
+}
+
+.loading-dots span:nth-child(2) { animation-delay: .15s; }
+.loading-dots span:nth-child(3) { animation-delay: .3s; }
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(.6); opacity: .45; }
+  40%           { transform: scale(1);  opacity: 1; }
+}
+
+/* =========================================================================
+   PUSTE STANY
+
+   Puste miejsce to nie awaria, tylko poczatek - i wlasnie wtedy aplikacja
+   ma jedyna okazje powiedziec, co dalej. Stad ramka z ikona, zdaniem
+   i JEDNYM konkretnym dzialaniem zamiast szarej linijki tekstu.
+   ========================================================================= */
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1.25rem;
+  border-radius: var(--mc-radius);
+  border: 1px dashed var(--bs-border-color);
+  /* Ledwie widoczny odcien marki - ma sie odrozniac od tla, ale nie
+     udawac karty z trescia */
+  background: linear-gradient(180deg,
+    rgba(var(--bs-primary-rgb), .05), transparent 70%);
+}
+
+.empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: .75rem;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--mc-gradient);
+  box-shadow: var(--mc-glow);
+}
+
+.empty-state-title {
+  font-weight: 600;
+  margin-bottom: .35rem;
+}
+
+.empty-state-text {
+  color: var(--bs-secondary-color);
+  font-size: .9375rem;
+  /* Wiersz dluzszy niz ok. 60 znakow czyta sie gorzej - a to jest tekst,
+     ktory ma byc przeczytany, a nie ominiety */
+  max-width: 42ch;
+  margin: 0 auto .9rem;
+}
+
+.empty-state-action {
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}

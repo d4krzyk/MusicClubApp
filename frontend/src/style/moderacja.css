@@ -1,0 +1,84 @@
+/* =============================================================================
+   ZGLOSZENIA I MODERACJA
+   ============================================================================= */
+
+/*
+   Przycisk zgloszenia przy poscie jest SAMA IKONA. Podpis obok "Edytuj"
+   i "Usun" robilby z niego trzecia rownorzedna czynnosc - a zgloszenie
+   nie jest czyms, co robi sie codziennie i co ma przyciagac wzrok.
+*/
+.report-button-compact {
+  padding-inline: .45rem;
+  opacity: .55;
+  transition: opacity var(--mc-fast);
+}
+
+.report-button-compact:hover,
+.report-button-compact:focus-visible {
+  opacity: 1;
+}
+
+/* Zgloszenie czekajace na decyzje dostaje kolorowa krawedz z lewej -
+   widac je na liscie bez czytania plakietek */
+.report-card.is-open {
+  border-left: 3px solid var(--bs-warning);
+}
+
+.report-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* --- Migawka dowodow ----------------------------------------------------- */
+
+.evidence {
+  max-height: 20rem;
+  overflow-y: auto;
+  padding: .5rem .65rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mc-radius);
+  background: var(--bs-tertiary-bg);
+}
+
+.evidence-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: .5rem;
+  align-items: baseline;
+  padding: .2rem 0;
+  font-size: .82rem;
+}
+
+.evidence-line + .evidence-line {
+  border-top: 1px solid var(--bs-border-color);
+}
+
+.evidence-author {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/*
+   Wypowiedzi osoby ZGLOSZONEJ sa wyroznione. Bez tego administrator musi
+   przy kazdej linijce sprawdzac login - a przy dwudziestu wiadomosciach
+   to wlasnie ta czynnosc zajmuje najwiecej czasu.
+*/
+.evidence-line.is-reported .evidence-author {
+  color: var(--bs-danger);
+}
+
+.evidence-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.evidence-time {
+  white-space: nowrap;
+  font-size: .7rem;
+  color: var(--bs-secondary-color);
+}
+
+.report-decision {
+  padding-top: .75rem;
+  border-top: 1px solid var(--bs-border-color);
+}

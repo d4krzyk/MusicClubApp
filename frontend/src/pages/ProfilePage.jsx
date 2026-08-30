@@ -6,7 +6,9 @@ import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as posty from '../api/posty';
+import { publiczny } from '../api/profil';
 import { useAuth } from '../auth/AuthContext';
 import { useChat } from '../chat/ChatContext';
 import Avatar from '../components/Avatar';
@@ -70,8 +72,7 @@ export default function ProfilePage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await client.get(`/profiles/${encodeURIComponent(whose)}`);
-      setProfile(response.data);
+      setProfile(await publiczny(whose));
     } catch (error) {
       /*
        * Przy 404 pokazujemy WLASNY komunikat. Serwer odsyla ogolne
@@ -82,7 +83,7 @@ export default function ProfilePage() {
       const details = describeError(error);
       setError(error.response?.status === 404
         ? t('profile.notFound')
-        : details.message ?? (details.messageKey ? t(details.messageKey) : null));
+        : details.message);
       setProfile(null);
     } finally {
       setLoading(false);
@@ -92,17 +93,16 @@ export default function ProfilePage() {
   const loadPosts = useCallback(async (pageNumber, joined) => {
     setPostsLoading(true);
     try {
-      const response = await client.get('/posts', {
-        params: { page: pageNumber, size: PAGE_SIZE, direction: 'desc', author: whose },
+      const data = await posty.tablica({
+        strona: pageNumber, rozmiar: PAGE_SIZE, kolejnosc: 'desc', autor: whose,
       });
-      const data = response.data;
 
       setPosts((previous) => (joined ? [...previous, ...data.content] : data.content));
       setLastPage(data.last);
       setPage(data.number);
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     } finally {
       setPostsLoading(false);
     }
@@ -128,13 +128,13 @@ export default function ProfilePage() {
       return;
     }
     try {
-      await client.delete(`/posts/${id}`);
+      await posty.usun(id);
       setPosts((previous) => previous.filter((p) => p.id !== id));
       // Licznik postow w naglowku musi sie zgadzac z tym, co widac nizej
       setProfile((p) => (p ? { ...p, postCount: Math.max(p.postCount - 1, 0) } : p));
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 

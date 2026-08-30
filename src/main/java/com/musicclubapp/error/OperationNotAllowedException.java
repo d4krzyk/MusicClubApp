@@ -307,49 +307,35 @@ public class OperationNotAllowedException extends RuntimeException {
     }
 
     /**
-     * Proba opublikowania czegos mimo obowiazujacego zakazu.
+     * Proba zrobienia czegos mimo obowiazujacej kary.
      *
-     * <p><b>Komunikat NIE zawiera juz daty - i to jest naprawa bledu.</b>
-     * Wczesniej serwer wklejal tutaj termin sformatowany u siebie
-     * ({@code dd.MM.yyyy HH:mm}) i wychodzilo z tego coś takiego: zakaz
-     * nalozony o 16:55 na godzine pokazywal sie ukaranemu jako
-     * <i>„do 15:55"</i>, czyli w przeszlosci.</p>
+     * <p><b>Jedna fabryka na oba rodzaje kary.</b> Wczesniej byly dwie -
+     * {@code postingBanned} i {@code messagingBanned} - rozniace sie
+     * wylacznie kluczem komunikatu. Klucz nalezy do rodzaju kary, wiec
+     * mieszka teraz przy {@link BanKind}, a nie w nazwie metody.</p>
      *
-     * <p>Powod: serwer liczy czas w UTC i <b>nie wie, w jakiej strefie siedzi
-     * uzytkownik</b>. Nie ma tez skad tego wiedziec - jedna aplikacja obsluguje
-     * ludzi z roznych stref naraz, wiec nie da sie wybrac jednej "wlasciwej".
-     * Zegar uzytkownika zna wylacznie jego przegladarka.</p>
+     * <p><b>Komunikat NIE zawiera daty</b> i to jest naprawa bledu. Wczesniej
+     * serwer wklejal tutaj termin sformatowany u siebie i wychodzilo z tego
+     * cos takiego: kara nalozona o 16:55 na godzine pokazywala sie ukaranemu
+     * jako <i>„do 15:55"</i>, czyli w przeszlosci. Serwer liczy czas w UTC
+     * i <b>nie wie, w jakiej strefie siedzi uzytkownik</b> - nie ma tez skad
+     * tego wiedziec, bo jedna aplikacja obsluguje ludzi z roznych stref
+     * naraz. Termin wedruje wiec jako <b>chwila</b> (pole {@code deadline}
+     * w odpowiedzi), a napis sklada z niej przegladarka, juz w czasie
+     * lokalnym.</p>
      *
-     * <p>Dlatego termin wedruje teraz jako <b>chwila</b> (pole {@code deadline}
-     * w odpowiedzi), a napis sklada z niej przegladarka - juz w czasie
-     * lokalnym. Zasada na przyszlosc: <b>serwer podaje chwile, klient robi
-     * z niej godzine</b>.</p>
+     * <p>Zasada na przyszlosc: <b>serwer podaje chwile, klient robi z niej
+     * godzine</b>.</p>
      */
-    public static OperationNotAllowedException postingBanned(java.time.LocalDateTime until) {
-        if (com.musicclubapp.entity.User.isForever(until)) {
-            return new OperationNotAllowedException(
-                "Konto ma bezterminowy zakaz publikowania", "error.post.banned.forever");
-        }
-        return new OperationNotAllowedException(
-            "Konto ma zakaz publikowania", "error.post.banned", until);
-    }
+    public static OperationNotAllowedException banned(
+            com.musicclubapp.entity.BanKind kind, java.time.LocalDateTime until) {
 
-    /**
-     * Proba wyslania wiadomosci mimo obowiazujacego zakazu.
-     *
-     * <p>Osobny komunikat od zakazu publikowania, bo to <b>osobna kara</b>:
-     * ktos z zakazem wiadomosci moze normalnie pisac posty i odwrotnie.
-     * Wspolny komunikat kazalby sie domyslac, ktora z dwoch kar akurat
-     * zadzialala.</p>
-     */
-    public static OperationNotAllowedException messagingBanned(java.time.LocalDateTime until) {
-        if (com.musicclubapp.entity.User.isForever(until)) {
-            return new OperationNotAllowedException(
-                "Konto ma bezterminowy zakaz wysylania wiadomosci",
-                "error.message.banned.forever");
-        }
+        boolean forever = com.musicclubapp.entity.User.isForever(until);
         return new OperationNotAllowedException(
-            "Konto ma zakaz wysylania wiadomosci", "error.message.banned", until);
+            "Konto ma kare: " + kind,
+            kind.messageKey(forever),
+            // Przy karze bezterminowej nie ma czego pokazywac - stad brak terminu
+            forever ? new Object[0] : new Object[] { until });
     }
 
     /**

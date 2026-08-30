@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
@@ -10,31 +10,37 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as moderacja from '../api/moderacja';
 import { useAuth } from '../auth/AuthContext';
 import { IconBan } from '../components/Icons';
+import PanelSieciowy from '../components/PanelSieciowy';
 import { formatDate, formatDateTime, isForever } from '../utils/dates';
+import { OKRESY_KARY, BEZTERMINOWO, ZDEJMIJ, trescKary } from '../moderacja/kary';
 
 /**
- * Wartosc pozycji "na zawsze" na liscie kar.
+ * Napisy zalezne od rodzaju kary.
  *
- * <p>Tekst, a nie liczba - bo to nie jest skrajnie duza liczba godzin, tylko
- * inny rodzaj decyzji. Umowna liczba (np. 999999) predzej czy pozniej
- * trafilaby do walidacji godzin i zostala odrzucona jako "poza zakresem".</p>
+ * <p>Obsluga obu kar jest jedna (patrz {@code setBan}) - rozne sa wylacznie
+ * teksty. Trzymamy je w jawnej mapie, a NIE sklejamy kluczy z nazwy rodzaju
+ * (np. {@code `users.col${kind}`}): klucz zlozony w locie jest nie do
+ * znalezienia grepem, wiec przy porzadkach w tlumaczeniach nikt nie zauwazy,
+ * ze jeszcze go uzywamy. Tutaj kazdy klucz stoi wprost.</p>
  */
-const FOREVER = 'forever';
-
-/**
- * Wartosc pozycji "zdejmij zakaz".
- *
- * <p><b>Musi byc rozna od pustej</b> - i to jest naprawa bledu, przez ktory
- * zakazu w ogole nie dalo sie zdjac. Lista ma na stale {@code value=""}
- * (wraca do stanu neutralnego po kazdym wyborze), a pozycja "zdejmij zakaz"
- * tez miala puste value. Wybranie jej nie zmienialo wiec wartosci listy,
- * przegladarka nie zglaszala zadnej zmiany i {@code onChange} nigdy sie nie
- * wywolywalo. Klikniecie wygladalo na przyjete i nie robilo nic.</p>
- */
-const LIFT = 'lift';
+const BAN_LABELS = {
+  POSTING: {
+    column: 'users.colPostingBan',
+    set: 'users.banSet',
+    lifted: 'users.banLifted',
+    forever: 'users.bannedForever',
+  },
+  MESSAGING: {
+    column: 'users.colMessagingBan',
+    set: 'users.muted',
+    lifted: 'users.muteLifted',
+    forever: 'users.mutedForever',
+  },
+};
 
 /**
  * Panel administratora: lista kont ze stronicowaniem, sortowaniem
@@ -71,8 +77,6 @@ export default function UsersPage() {
   /** Okienko "powiazane konta" - null, gdy zamkniete. */
   const [related, setRelated] = useState(null);
 
-  /** Lista zablokowanych adresow, pobierana raz i po kazdej zmianie. */
-  const [blocked, setBlocked] = useState([]);
 
   /*
    * Odpytujemy backend przy kazdej zmianie parametrow.
@@ -87,16 +91,16 @@ export default function UsersPage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await client.get('/users', {
-          params: { fragment, page, size, sortBy, direction },
+        const strona = await moderacja.konta({
+          fragment, strona: page, rozmiar: size, sortujPo: sortBy, kolejnosc: direction,
         });
         if (!cancelled) {
-          setPageData(response.data);
+          setPageData(strona);
         }
       } catch (error) {
         if (!cancelled) {
           const details = describeError(error);
-          setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+          setError(details.message);
         }
       } finally {
         if (!cancelled) {
@@ -123,32 +127,7 @@ export default function UsersPage() {
     };
   }
 
-  /*
-   * Do wyboru gotowe okresy, a nie pole na dowolna liczbe godzin. Moderacja
-   * to decyzja podejmowana w pospiechu - lista "godzina / dzien / tydzien /
-   * miesiac" prowadzi do niej szybciej i nie da sie w niej przypadkiem
-   * wpisac 8760 zamiast 24.
-   */
-  const BAN_OPTIONS = [1, 24, 168, 720];
 
-  /**
-   * Wartosc z listy -> tresc zapytania do serwera.
-   *
-   * <p>Lista oddaje tekst, bo ma trzy rodzaje pozycji, a nie same liczby:
-   * pusta ("zdejmij"), {@code 'forever'} ("na zawsze") i liczba godzin.
-   * Zamiana na {@code {hours, forever}} siedzi tutaj, w jednym miejscu -
-   * obie kary wysylaja dokladnie to samo i nie da sie ich rozjechac.</p>
-   */
-  function banPayload(value) {
-    if (value === FOREVER) {
-      return { hours: null, forever: true };
-    }
-    // LIFT i pusta wartosc znacza to samo dla serwera: zadnego zakazu
-    return {
-      hours: (value === '' || value === LIFT) ? null : Number(value),
-      forever: false,
-    };
-  }
 
   /**
    * Pyta o potwierdzenie i mowi wprost, co zaraz sie stanie.
@@ -168,103 +147,52 @@ export default function UsersPage() {
 
   /** Opis kary do pytania o potwierdzenie - ten sam tekst co na liscie. */
   function describeChoice(value) {
-    if (value === LIFT || value === '') {
+    if (value === ZDEJMIJ || value === '') {
       return t('users.banLift');
     }
-    return value === FOREVER
+    return value === BEZTERMINOWO
       ? t('users.banForever')
       : t('users.banFor', { count: Number(value) });
   }
 
-  async function setPostingBan(id, value, username) {
-    if (!value || !confirmed(username, `${t('users.colPostingBan')}: ${describeChoice(value)}`)) {
-      return;
-    }
-    setError(null);
-    setMessage(null);
-    const payload = banPayload(value);
-    try {
-      await client.patch(`/users/${id}/posting-ban`, payload);
-      setMessage(t(payload.hours == null && !payload.forever
-        ? 'users.banLifted'
-        : 'users.banSet'));
-      setRefresh((n) => n + 1);
-    } catch (error) {
-      const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
-    }
-  }
-
-  /** Zakaz wysylania wiadomosci - osobna kara od zakazu publikowania. */
-  async function setMessagingBan(id, value, username) {
-    if (!value || !confirmed(username, `${t('users.colMessagingBan')}: ${describeChoice(value)}`)) {
-      return;
-    }
-    setError(null);
-    setMessage(null);
-    const payload = banPayload(value);
-    try {
-      await client.patch(`/users/${id}/messaging-ban`, payload);
-      if (payload.forever) {
-        setMessage(t('users.mutedForever'));
-      } else {
-        setMessage(payload.hours == null
-          ? t('users.muteLifted')
-          : t('users.muted', { count: payload.hours }));
-      }
-      setRefresh((n) => n + 1);
-    } catch (problem) {
-      const details = describeError(problem);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
-    }
-  }
-
   /**
-   * Pokazuje konta logujace sie z tych samych adresow.
+   * Naklada albo zdejmuje kare - <b>jedna funkcja na oba rodzaje</b>.
    *
-   * <p>Pobieramy DWIE listy: adresy tego konta (do skopiowania w blokade)
-   * i konta, ktore ich uzywaja. Osobne zapytania, bo to dwie rozne rzeczy -
-   * konto moze miec adresy, z ktorych nikt wiecej sie nie logowal.</p>
+   * <p>Wczesniej byly dwie, {@code setPostingBan} i {@code setMessagingBan},
+   * rozniace sie wylacznie adresem i tekstem komunikatu. Rodzaj kary jest
+   * wartoscia, a nie osobna sciezka w kodzie - dlatego wedruje jako argument
+   * i trafia wprost do adresu.</p>
    */
-  async function showRelated(target) {
-    setRelated({ user: target, addresses: [], accounts: [], loading: true });
-    try {
-      const [addresses, accounts] = await Promise.all([
-        client.get(`/users/${target.id}/addresses`),
-        client.get(`/users/${target.id}/related`),
-      ]);
-      setRelated({
-        user: target,
-        addresses: addresses.data,
-        accounts: accounts.data,
-        loading: false,
-      });
-    } catch {
-      setRelated({ user: target, addresses: [], accounts: [], loading: false });
-    }
-  }
-
-  /** Blokuje adres. Powod jest obowiazkowy - patrz encja BlockedIp. */
-  async function blockAddress(address) {
-    const reason = window.prompt(t('users.blockReasonPrompt', { address }));
-    if (!reason || !reason.trim()) {
+  async function setBan(id, kind, value, username) {
+    const napisy = BAN_LABELS[kind];
+    if (!value || !confirmed(username, `${t(napisy.column)}: ${describeChoice(value)}`)) {
       return;
     }
     setError(null);
+    setMessage(null);
+
+    const payload = trescKary(value);
     try {
-      await client.post('/users/blocked-ips', { address, reason: reason.trim() });
-      setMessage(t('users.addressBlocked', { address }));
-      loadBlocked();
+      await moderacja.ustawZakaz(id, kind, payload);
+      setMessage(banMessage(napisy, payload));
+      setRefresh((n) => n + 1);
     } catch (problem) {
-      const details = describeError(problem);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(describeError(problem).message);
     }
   }
 
-  async function unblockAddress(id) {
-    await client.delete(`/users/blocked-ips/${id}`).catch(() => {});
-    loadBlocked();
+  /** Potwierdzenie po nalozeniu albo zdjeciu kary. */
+  function banMessage(napisy, payload) {
+    if (payload.forever) {
+      return t(napisy.forever);
+    }
+    return payload.hours == null
+      ? t(napisy.lifted)
+      : t(napisy.set, { count: payload.hours });
   }
+
+
+
 
   async function deleteUser() {
     const target = toDelete;
@@ -272,12 +200,12 @@ export default function UsersPage() {
     setError(null);
     setMessage(null);
     try {
-      await client.delete(`/users/${target.id}`);
+      await moderacja.usunKonto(target.id);
       setMessage(t('users.deleted', { username: target.username }));
       setRefresh((n) => n + 1);
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 
@@ -296,13 +224,13 @@ export default function UsersPage() {
     setError(null);
     setMessage(null);
     try {
-      await client.patch(`/users/${id}/role`, { role: newRole });
+      await moderacja.zmienRole(id, newRole);
       setMessage(t('users.roleChanged'));
       // Przeladowujemy liste, zeby pokazac stan faktycznie zapisany w bazie
       setRefresh((n) => n + 1);
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 
@@ -439,7 +367,7 @@ export default function UsersPage() {
                               size="sm"
                               value=""
                               disabled={mySelf}
-                              onChange={(e) => setPostingBan(u.id, e.target.value, u.username)}
+                              onChange={(e) => setBan(u.id, 'POSTING', e.target.value, u.username)}
                               aria-label={t('users.colPostingBan')}
                             >
                               {/*
@@ -452,8 +380,8 @@ export default function UsersPage() {
                                 NIE DALO SIE ZDJAC.
                               */}
                               <option value="">{t('users.chooseAction')}</option>
-                              {banned && <option value={LIFT}>{t('users.banLift')}</option>}
-                              {BAN_OPTIONS.map((h) => (
+                              {banned && <option value={ZDEJMIJ}>{t('users.banLift')}</option>}
+                              {OKRESY_KARY.map((h) => (
                                 <option key={h} value={h}>
                                   {t('users.banFor', { count: h })}
                                 </option>
@@ -463,7 +391,7 @@ export default function UsersPage() {
                                 terminami. To najciezsza z kar w tej kolumnie,
                                 wiec nie ma prawa byc pierwsza pod kursorem.
                               */}
-                              <option value={FOREVER}>{t('users.banForever')}</option>
+                              <option value={BEZTERMINOWO}>{t('users.banForever')}</option>
                             </Form.Select>
 
                             {banned && (
@@ -488,17 +416,17 @@ export default function UsersPage() {
                               size="sm"
                               value=""
                               disabled={mySelf}
-                              onChange={(e) => setMessagingBan(u.id, e.target.value, u.username)}
+                              onChange={(e) => setBan(u.id, 'MESSAGING', e.target.value, u.username)}
                               aria-label={t('users.colMessagingBan')}
                             >
                               <option value="">{t('users.chooseAction')}</option>
-                              {mutedNow && <option value={LIFT}>{t('users.banLift')}</option>}
-                              {BAN_OPTIONS.map((h) => (
+                              {mutedNow && <option value={ZDEJMIJ}>{t('users.banLift')}</option>}
+                              {OKRESY_KARY.map((h) => (
                                 <option key={h} value={h}>
                                   {t('users.banFor', { count: h })}
                                 </option>
                               ))}
-                              <option value={FOREVER}>{t('users.banForever')}</option>
+                              <option value={BEZTERMINOWO}>{t('users.banForever')}</option>
                             </Form.Select>
 
                             {mutedNow && (
@@ -533,7 +461,7 @@ export default function UsersPage() {
                                 size="sm"
                                 variant="outline-secondary"
                                 title={t('users.relatedHint')}
-                                onClick={() => showRelated(u)}
+                                onClick={() => setRelated(u)}
                               >
                                 <IconBan />
                               </Button>
@@ -615,108 +543,18 @@ export default function UsersPage() {
         </Modal>
       </Card>
 
-      {/* --- Powiazane konta i blokada adresu ------------------------- */}
-      <Modal show={related != null} onHide={() => setRelated(null)} size="lg" centered>
-        <Modal.Header closeButton>
-          <Modal.Title as="h5">
-            {t('users.relatedTitle', { username: related?.user?.username })}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {/*
-            Ostrzezenie stoi NAD danymi, a nie pod nimi. Wspolny adres to
-            poszlaka, a nie dowod: pod jednym adresem siedzi cala rodzina,
-            akademik albo tysiace klientow operatora komorkowego. Zdanie
-            przeczytane po obejrzeniu listy juz na nic sie nie zda.
-          */}
-          <Alert variant="warning" className="small">{t('users.relatedWarning')}</Alert>
+      {/*
+        Powiazania sieciowe (multikonta, blokada adresu) maja wlasny komponent
+        razem ze swoim stanem i zapytaniami. Ta strona zajmuje sie kontami -
+        adresy IP to osobny temat i nie musi tu byc widoczny.
+      */}
+      <PanelSieciowy
+        target={related}
+        onClose={() => setRelated(null)}
+        onMessage={setMessage}
+        onError={setError}
+      />
 
-          {related?.loading && <p className="text-body-secondary">{t('common.loading')}</p>}
-
-          {!related?.loading && (
-            <>
-              <h6>{t('users.addressesOf', { username: related?.user?.username })}</h6>
-              {related?.addresses.length === 0 ? (
-                <p className="text-body-secondary small">{t('users.noAddresses')}</p>
-              ) : (
-                <ul className="list-unstyled small">
-                  {related?.addresses.map((entry) => (
-                    <li key={entry.address} className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                      <code>{entry.address}</code>
-                      <span className="text-body-secondary">
-                        {t('users.loginCount', { count: entry.loginCount })}
-                        {' \u00b7 '}
-                        {formatDate(entry.lastSeenAt, i18n.language)}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="outline-danger"
-                        onClick={() => blockAddress(entry.address)}
-                      >
-                        {t('users.blockAddress')}
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              <h6 className="mt-3">{t('users.otherAccounts')}</h6>
-              {related?.accounts.length === 0 ? (
-                <p className="text-body-secondary small mb-0">{t('users.noRelated')}</p>
-              ) : (
-                <ul className="list-unstyled small mb-0">
-                  {related?.accounts.map((entry) => (
-                    <li key={`${entry.userId}-${entry.address}`} className="mb-1">
-                      <Link to={`/profil/${entry.username}`}>{entry.username}</Link>
-                      {' \u2014 '}
-                      <code>{entry.address}</code>
-                      {' \u00b7 '}
-                      {t('users.loginCount', { count: entry.loginCount })}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => setRelated(null)}>
-            {t('common.close')}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* --- Zablokowane adresy --------------------------------------- */}
-      {blocked.length > 0 && (
-        <Card className="mt-4">
-          <Card.Body>
-            <h2 className="h6">{t('users.blockedTitle')}</h2>
-            <p className="text-body-secondary small">{t('users.blockedHint')}</p>
-
-            <ul className="list-unstyled small mb-0">
-              {blocked.map((entry) => (
-                <li key={entry.id} className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                  <code>{entry.address}</code>
-                  <span className="text-body-secondary">{entry.reason}</span>
-                  <span className="text-body-secondary">
-                    {t('users.blockedBy', {
-                      username: entry.blockedBy,
-                      date: formatDate(entry.createdAt, i18n.language),
-                    })}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="outline-secondary"
-                    onClick={() => unblockAddress(entry.id)}
-                  >
-                    {t('users.unblock')}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </Card.Body>
-        </Card>
-      )}
     </>
   );
 }

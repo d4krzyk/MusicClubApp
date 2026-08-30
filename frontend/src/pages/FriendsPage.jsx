@@ -7,7 +7,8 @@ import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Form from 'react-bootstrap/Form';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as znajomi from '../api/znajomi';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import PeopleSkeleton from '../components/PeopleSkeleton';
@@ -40,11 +41,10 @@ export default function FriendsPage() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await client.get('/friends/requests');
-      setInvitations(response.data);
+      setInvitations(await znajomi.zaproszenia());
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ export default function FriendsPage() {
       setMessage(successMessage);
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 
@@ -75,7 +75,7 @@ export default function FriendsPage() {
     }
     setSending(true);
     try {
-      const { data } = await client.post('/friends/requests', { username: searched.trim() });
+      const data = await znajomi.zapros(searched.trim());
       await fetch();
       setRefreshFriends((n) => n + 1);
       setSearched('');
@@ -88,7 +88,7 @@ export default function FriendsPage() {
       setError(null);
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
       setMessage(null);
     } finally {
       setSending(false);
@@ -192,7 +192,7 @@ export default function FriendsPage() {
                   <Button
                     size="sm"
                     onClick={() => run(
-                      () => client.post(`/friends/requests/${z.id}/accept`),
+                      () => znajomi.przyjmij(z.id),
                       t('friends.nowFriends'))}
                   >
                     <IconPersonCheck /> {t('friends.accept')}
@@ -201,7 +201,7 @@ export default function FriendsPage() {
                     size="sm"
                     variant="outline-secondary"
                     onClick={() => run(
-                      () => client.delete(`/friends/requests/${z.id}`),
+                      () => znajomi.odrzuc(z.id),
                       t('friends.rejected'))}
                   >
                     <IconCross /> {t('friends.reject')}
@@ -224,7 +224,7 @@ export default function FriendsPage() {
                   size="sm"
                   variant="outline-secondary"
                   onClick={() => run(
-                    () => client.delete(`/friends/requests/${z.id}`),
+                    () => znajomi.odrzuc(z.id),
                     t('friends.cancelled'))}
                 >
                   <IconCross /> {t('friends.cancelInvite')}

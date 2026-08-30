@@ -1,5 +1,6 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
@@ -377,7 +378,7 @@ class PostServiceTest {
     @DisplayName("konto z zakazem publikowania NIE doda posta")
     void bannedAccountCannotPost() {
         User banned = anna();
-        banned.setPostingBannedUntil(java.time.LocalDateTime.now().plusHours(5));
+        banned.setBannedUntil(BanKind.POSTING, java.time.LocalDateTime.now().plusHours(5));
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(banned));
 
         assertThatThrownBy(() -> postService.create(
@@ -397,7 +398,7 @@ class PostServiceTest {
          * dowolnego wlasnego posta i podmienic w nim cala tresc.
          */
         User banned = anna();
-        banned.setPostingBannedUntil(java.time.LocalDateTime.now().plusHours(5));
+        banned.setBannedUntil(BanKind.POSTING, java.time.LocalDateTime.now().plusHours(5));
 
         Post post = new Post(banned, "stara tresc");
         given(postRepository.findByIdWithAuthor(5L)).willReturn(Optional.of(post));
@@ -413,12 +414,55 @@ class PostServiceTest {
     @DisplayName("zakaz, ktory juz minal, NIE blokuje niczego")
     void expiredBanDoesNotBlock() {
         User byly = anna();
-        byly.setPostingBannedUntil(java.time.LocalDateTime.now().minusMinutes(1));
+        byly.setBannedUntil(BanKind.POSTING, java.time.LocalDateTime.now().minusMinutes(1));
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(byly));
         prepareSave();
 
         postService.create("anna", new CreatePostRequest("juz moge", null, null, null, null), null);
 
         verify(postRepository).save(any(Post.class));
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Sprzatanie po usunietym koncie                                     */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Kasowanie postow konta przenioslo sie tutaj z modulu moderacji.
+     *
+     * <p>Sedno jest w plikach: gdyby zdjecia zostawaly na dysku, konto
+     * usuniete z bazy dalej lezaloby na serwerze w postaci fotografii.
+     * A gdyby leciały z dysku PRZED skasowaniem wierszy i transakcja by sie
+     * wycofala - tablica pokazywalaby puste ramki.</p>
+     */
+    @Test
+    @DisplayName("kasowanie postow konta zdejmuje z dysku ich zdjecia")
+    void deletingAllPostsRemovesTheirImages() {
+        User autor = anna();
+        Post zJednym = new Post(autor, "post ze zdjeciem");
+        zJednym.addImage(new PostImage("pierwsze.jpg"));
+        Post zDwoma = new Post(autor, "post z dwoma");
+        zDwoma.addImage(new PostImage("drugie.jpg"));
+        zDwoma.addImage(new PostImage("trzecie.jpg"));
+
+        given(postRepository.findByAuthorId(7L)).willReturn(List.of(zJednym, zDwoma));
+
+        int ile = postService.deleteAllOf(7L);
+
+        assertThat(ile).isEqualTo(2);
+        verify(fileStorage).remove("pierwsze.jpg");
+        verify(fileStorage).remove("drugie.jpg");
+        verify(fileStorage).remove("trzecie.jpg");
+        verify(postRepository).deleteAll(List.of(zJednym, zDwoma));
+    }
+
+    @Test
+    @DisplayName("konto bez postow nie probuje kasowac zadnych plikow")
+    void deletingAllPostsOfEmptyAccountTouchesNoFiles() {
+        given(postRepository.findByAuthorId(7L)).willReturn(List.of());
+
+        assertThat(postService.deleteAllOf(7L)).isZero();
+
+        verify(fileStorage, never()).remove(any());
     }
 }

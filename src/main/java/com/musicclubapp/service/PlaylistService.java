@@ -164,6 +164,26 @@ public class PlaylistService {
         }
     }
 
+    /* ------------------------------------------------------------------ */
+    /*  Sprzatanie                                                         */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Kasuje gablotke playlist konta - przy usuwaniu uzytkownika.
+     *
+     * <p>Wprost, a nie kaskada: wiersze wskazuja na konto kluczem obcym,
+     * ale encja {@code User} nic o nich nie wie, wiec Hibernate sam ich nie
+     * ruszy - a baza bez tego odmowilaby skasowania konta.</p>
+     */
+    @Transactional
+    public void deleteAllOf(Long ownerId) {
+        playlistRepository.deleteByOwnerId(ownerId);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Pomocnicze                                                         */
+    /* ------------------------------------------------------------------ */
+
     private int nextPosition(String username) {
         return (int) playlistRepository.countByOwnerUsername(username);
     }

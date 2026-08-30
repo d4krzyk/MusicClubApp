@@ -27,7 +27,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 6 | OneToMany + ManyToOne między min. 2 encjami | `Post` N—1 `User`, `Post` 1—N `PostImage`, `Post` 1—N `Reaction`, `Notification` N—1 `User` ×2 i N—1 `Post`, `FavoritePlaylist` N—1 `User` | ✅ posty |
 | 9 | Bean Validation (bez własnych adnotacji) | `dto/RegisterRequest` — `@NotBlank`, `@Email`, `@Size`, `@Pattern` | ✅ KROK 3 |
 | 12b | Frontend (REST API → dowolne narzędzie) | React + Vite w `frontend/` — tablica, profile, znajomi, ustawienia, panel administratora | ✅ KROK 5 |
-| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest`, `FriendServiceTest` (Mockito) + `DeezerCatalogServiceTest`, `LastFmServiceTest`, `FavoritesServiceTest`, `UserModerationServiceTest`, `PlaylistServiceTest`, `PostVisibilityTest`, `CommonGroundServiceTest` | ✅ KROK 3 |
+| 13 | Testy jednostkowe serwisów | `UserServiceTest`, `PostServiceTest`, `ReactionServiceTest`, `FriendServiceTest` (Mockito) + `DeezerCatalogServiceTest`, `LastFmServiceTest`, `FavoritesServiceTest`, `UserModerationServiceTest`, `ReportDecisionServiceTest`, `PlaylistServiceTest`, `PostVisibilityTest`, `CommonGroundServiceTest` | ✅ KROK 3 |
 | 15 | Rejestracja + logowanie, Spring Security (config NIE deprecated) | `config/SecurityConfig` — `SecurityFilterChain` + lambda DSL, sesja + BCrypt | ✅ KROK 3 |
 
 ## ⚪ Do wyboru — dla wszystkich typów projektów
@@ -53,7 +53,7 @@ Potrzebujemy 10 → jest zapas, ale nie ma miejsca na duże obsuwy.
 | 22 | Używanie `ResponseEntity` | każda metoda każdego kontrolera (Auth, Post, Reaction, Profile, Users, Favorites, MusicCatalog, Friend) | ✅ KROK 3 |
 | 23 | HATEOAS (Spring RESTful) | — | ⬜ opcjonalne (nie planujemy) |
 | 24 | Swagger (Spring RPC) | `springdoc-openapi` → `/swagger-ui.html`, wszystkie endpointy z opisami | ✅ KROK 3 |
-| 25 | `@WebMvcTest` **oraz** `@SpringBootTest` | `AuthControllerTest`, `UserControllerAccessTest`, `PostControllerRoutingTest` + `MusicClubAppApplicationTests`, `PostVisibilityTest`, `PlaylistServiceTest` | ✅ KROK 3 |
+| 25 | `@WebMvcTest` **oraz** `@SpringBootTest` | `AuthControllerTest`, `UserControllerAccessTest`, `PostControllerRoutingTest`, `UserControllerRoutingTest` (kolizje adresów **i istnienie końcówek panelu**) + `MusicClubAppApplicationTests`, `PostVisibilityTest`, `PlaylistServiceTest` | ✅ KROK 3 |
 
 ---
 
@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 347 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 354 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -214,6 +214,23 @@ dopiero na uruchomionej aplikacji:
 - **sędzia we własnej sprawie.** Zgłoszenie może dotyczyć administratora, który
   je rozpatruje. Kary na własne konto są tam zablokowane — nie tylko dlatego,
   że to ocena we własnej sprawie, ale też dlatego, że jedno kliknięcie dzieli
-  wtedy od odebrania sobie dostępu do panelu.
+  wtedy od odebrania sobie dostępu do panelu;
+- **końcówka, która zniknęła po cichu przy porządkowaniu kodu.** Scalanie dwóch
+  adresów kary w jeden (`/{id}/bans/{kind}`) usunęło przy okazji
+  `DELETE /api/users/{id}`, bo leżał on w pliku **pomiędzy** nimi. Kod dalej się
+  kompilował, wszystkie 351 testów było zielonych, a panel administratora
+  dostawał 405 przy próbie usunięcia konta. **Brakującego mapowania nie widać
+  ani w kompilacji, ani w testach logiki** — testy sprawdzały, co robi
+  `UserModerationService`, ale żaden nie pytał, czy prowadzi do niego
+  jakikolwiek adres. Znalazło to dopiero przejście przez aplikację
+  w przeglądarce. Stąd `UserControllerRoutingTest` pilnuje teraz samego
+  **istnienia** końcówek panelu, nie tylko kolizji między nimi;
+- **liczba zależności to nie to samo co jakość zależności.** Przenosząc
+  sprzątanie po koncie do modułów-właścicieli spodziewaliśmy się, że
+  `UserModerationService` schudnie z 12 zależności — a wyszło 12 na 12: pięć
+  repozytoriów zniknęło, ale weszły cztery moduły. Zysk jest gdzie indziej:
+  moduł moderacji nie zna już **ani jednego repozytorium, którego nie jest
+  właścicielem**. Warto pilnować, żeby miarą refaktoru nie stała się ładna
+  liczba, która akurat da się pokazać.
 
 Legenda: ✅ zrobione · 🟡 częściowo · ⬜ do zrobienia

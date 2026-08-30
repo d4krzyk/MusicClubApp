@@ -156,4 +156,42 @@ class UserServiceTest {
         assertThat(score).isEqualTo(oczekiwany);
         assertThat(score.username()).isEqualTo("anna");
     }
+
+    /* ------------------------------------------------------------------ */
+    /*  Sprzatanie po usunietym koncie                                     */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Kasowanie awatara przenioslo sie tutaj z modulu moderacji.
+     *
+     * <p>Zdjecie profilowe jest wlasnoscia konta, wiec to ten modul wie,
+     * gdzie ono lezy - tak samo jak przy wgrywaniu i zmianie. Konto usuniete
+     * z bazy, ale z fotografia lezaca dalej na serwerze, byloby usuniete
+     * tylko na niby.</p>
+     */
+    @Test
+    @DisplayName("usuwanie konta zdejmuje z dysku jego awatar")
+    void deletingAccountRemovesItsAvatar() {
+        User user = new User("anna", "anna@example.com", "hash");
+        user.setAvatarFileName("awatar.jpg");
+
+        userService.deleteAvatarOf(user);
+
+        verify(fileStorage).remove("awatar.jpg");
+    }
+
+    @Test
+    @DisplayName("konto bez awatara nie kasuje zadnego pliku")
+    void accountWithoutAvatarRemovesNothing() {
+        /*
+         * Skladnica plikow sama pilnuje, zeby nie ruszac niczego przy pustej
+         * nazwie - ale sprawdzamy to stad, bo to TUTAJ decydujemy, ze wolamy
+         * ja bezwarunkowo, zamiast owijac wywolanie w "jesli nie null".
+         */
+        User user = new User("anna", "anna@example.com", "hash");
+
+        userService.deleteAvatarOf(user);
+
+        verify(fileStorage).remove(null);
+    }
 }

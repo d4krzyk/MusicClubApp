@@ -5,7 +5,8 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Modal from 'react-bootstrap/Modal';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as profil from '../api/profil';
 import HorizontalStrip from './HorizontalStrip';
 import { IconLink, IconPlaylist } from './Icons';
 import { playerHeight } from '../utils/player';
@@ -38,9 +39,7 @@ export default function Playlists({ username }) {
 
   const fetch = useCallback(async () => {
     try {
-      const response = await client.get(
-        `/profiles/${encodeURIComponent(username)}/playlists`);
-      setData(response.data);
+      setData(await profil.playlisty(username));
     } catch {
       // Gablotka to czesc profilu, a nie caly profil - gdy padnie,
       // reszta strony ma dzialac dalej
@@ -75,14 +74,11 @@ export default function Playlists({ username }) {
     setAdding(true);
     setError(null);
     try {
-      const response = await client.post('/profile/playlists', { url });
-      setData(response.data);
+      setData(await profil.dodajPlayliste(url));
       setUrl('');
     } catch (problem) {
       const details = describeError(problem);
-      setError(details.message
-        ?? details.fieldErrors.url
-        ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message ?? details.fieldErrors.url);
     } finally {
       setAdding(false);
     }
@@ -91,11 +87,10 @@ export default function Playlists({ username }) {
   async function remove(id) {
     setError(null);
     try {
-      const response = await client.delete(`/profile/playlists/${id}`);
-      setData(response.data);
+      setData(await profil.usunPlayliste(id));
     } catch (problem) {
       const details = describeError(problem);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     }
   }
 

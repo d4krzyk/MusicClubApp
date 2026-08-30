@@ -27,7 +27,7 @@ package com.musicclubapp.entity;
 public enum ModerationAction {
 
     /** Zapisujemy decyzje i na tym koniec. */
-    NONE,
+    NONE(null),
 
     /**
      * Kasuje zglaszany post.
@@ -35,18 +35,44 @@ public enum ModerationAction {
      * <p>Dostepne wylacznie przy zgloszeniu dotyczacym posta - przy zgloszeniu
      * profilu albo rozmowy nie ma czego kasowac.</p>
      */
-    DELETE_POST,
+    DELETE_POST(null),
 
     /** Zakaz publikowania - na podana liczbe godzin albo bezterminowo. */
-    BAN_POSTING,
+    BAN_POSTING(BanKind.POSTING),
 
     /** Zakaz wysylania wiadomosci - osobna kara od zakazu publikowania. */
-    BAN_MESSAGING,
+    BAN_MESSAGING(BanKind.MESSAGING),
 
     /**
      * Kasuje konto razem z jego postami, zdjeciami i znajomosciami.
      *
      * <p>Nieodwracalne i dlatego wymaga osobnego potwierdzenia w interfejsie.</p>
      */
-    DELETE_ACCOUNT
+    DELETE_ACCOUNT(null);
+
+    /**
+     * Rodzaj kary, jesli to dzialanie jest kara - inaczej {@code null}.
+     *
+     * <p><b>Dlaczego lista zostala plaska</b> (dwa osobne wpisy na kary),
+     * zamiast jednego {@code BAN} z osobnym polem "rodzaj". Ta lista jest
+     * <i>menu decyzji</i> pokazywanym administratorowi i kazda pozycja ma byc
+     * pelna odpowiedzia na pytanie „co robimy". Wariant z {@code BAN} plus
+     * doklejone pole dawalby wartosc, ktora sama w sobie nie znaczy jeszcze
+     * nic, i drugie pole znaczace cos wylacznie przy jednej z pozycji -
+     * czyli dokladnie ten rodzaj "trybu warunkowego", ktory potem trzeba
+     * sprawdzac w kazdym miejscu z osobna.</p>
+     *
+     * <p>Powiazanie z {@link BanKind} siedzi wiec TUTAJ, raz. Serwis nie ma
+     * juz galezi na kazda kare - pyta o rodzaj i wola jedna metode.</p>
+     */
+    private final BanKind banKind;
+
+    ModerationAction(BanKind banKind) {
+        this.banKind = banKind;
+    }
+
+    /** Rodzaj kary albo {@code null}, gdy to dzialanie kara nie jest. */
+    public BanKind banKind() {
+        return banKind;
+    }
 }

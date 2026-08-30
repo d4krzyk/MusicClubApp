@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as znajomi from '../api/znajomi';
 import { IconPersonCheck, IconPersonPlus, IconCross } from './Icons';
 
 /**
@@ -34,17 +35,15 @@ export default function FriendshipButton({ profile, onChange }) {
       await onChange();
     } catch (error) {
       const details = describeError(error);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
     } finally {
       setWysylanie(false);
     }
   }
 
-  const invite = () => run(
-    () => client.post('/friends/requests', { username: profile.username }));
+  const invite = () => run(() => znajomi.zapros(profile.username));
 
-  const remove = () => run(
-    () => client.delete(`/friends/${encodeURIComponent(profile.username)}`));
+  const remove = () => run(() => znajomi.usunZnajomego(profile.username));
 
   /*
    * Przyjecie wymaga NUMERU zaproszenia, ktorego profil nie zawiera - musimy
@@ -53,18 +52,18 @@ export default function FriendshipButton({ profile, onChange }) {
    * na piec.
    */
   const accept = () => run(async () => {
-    const { data } = await client.get('/friends/requests');
-    const mine = data.incoming.find((z) => z.username === profile.username);
+    const lista = await znajomi.zaproszenia();
+    const mine = lista.incoming.find((z) => z.username === profile.username);
     if (mine) {
-      await client.post(`/friends/requests/${mine.id}/accept`);
+      await znajomi.przyjmij(mine.id);
     }
   });
 
   const anuluj = () => run(async () => {
-    const { data } = await client.get('/friends/requests');
-    const mine = data.outgoing.find((z) => z.username === profile.username);
+    const lista = await znajomi.zaproszenia();
+    const mine = lista.outgoing.find((z) => z.username === profile.username);
     if (mine) {
-      await client.delete(`/friends/requests/${mine.id}`);
+      await znajomi.odrzuc(mine.id);
     }
   });
 

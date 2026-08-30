@@ -168,6 +168,29 @@ public class ReactionService {
         return score;
     }
 
+    /* ------------------------------------------------------------------ */
+    /*  Sprzatanie                                                         */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Kasuje reakcje konta pod CUDZYMI postami - przy usuwaniu uzytkownika.
+     *
+     * <p>Same posty zostaja: ktos inny je napisal i nie ma powodu, zeby
+     * znikaly razem z osoba, ktora pod nimi kliknela serduszko. Znika
+     * wylacznie jej reakcja - i licznik pod postem zmniejsza sie o jeden.</p>
+     *
+     * <p>Reakcje pod WLASNYMI postami tej osoby sprzata {@code PostService},
+     * razem z samymi postami.</p>
+     */
+    @Transactional
+    public void deleteAllOf(Long userId) {
+        reactionRepository.deleteByUserId(userId);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Pomocnicze                                                         */
+    /* ------------------------------------------------------------------ */
+
     /**
      * Odsyla post z przeliczonymi na nowo licznikami, zeby przegladarka nie
      * musiala pobierac calej tablicy po kazdym kliknieciu.

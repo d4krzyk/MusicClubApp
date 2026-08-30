@@ -5,7 +5,8 @@ import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import Container from 'react-bootstrap/Container';
 import NavDropdown from 'react-bootstrap/NavDropdown';
-import client from '../api/client';
+import { licznikZaproszen } from '../api/znajomi';
+import { licznikOtwartych } from '../api/moderacja';
 import AccountSwitchNotice from './AccountSwitchNotice';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
@@ -69,13 +70,13 @@ export default function Layout({ children }) {
       setPending(0);
       return;
     }
-    client.get('/friends/requests/count')
-      .then((o) => setPending(o.data.count))
+    licznikZaproszen()
+      .then(setPending)
       .catch(() => setPending(0));   // licznik to dodatek, nie psujemy menu
 
     if (user.admin) {
-      client.get('/reports/admin/open-count')
-        .then((o) => setOpenReports(o.data.count))
+      licznikOtwartych()
+        .then(setOpenReports)
         .catch(() => setOpenReports(0));
     }
   }, [user, location.pathname]);

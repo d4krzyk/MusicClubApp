@@ -54,7 +54,7 @@ export default function RegisterPage() {
        */
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setGeneralError(details.message);
     } finally {
       setWysylanie(false);
     }

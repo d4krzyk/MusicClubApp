@@ -1,5 +1,7 @@
 package com.musicclubapp.error;
 
+import com.musicclubapp.entity.BanKind;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +62,7 @@ class ErrorMessagesTest {
     @DisplayName("komunikat o zakazie NIE zawiera godziny - ta sklada przegladarka")
     void banMessageCarriesTheDeadlineSeparately() {
         LocalDateTime until = LocalDateTime.of(2026, 3, 14, 9, 47);
-        var ex = OperationNotAllowedException.postingBanned(until);
+        var ex = OperationNotAllowedException.banned(BanKind.POSTING, until);
 
         assertThat(ex.getDeadline())
             .describedAs("termin musi dojechac do przegladarki, inaczej nie ma z czego "
@@ -99,7 +101,7 @@ class ErrorMessagesTest {
             OperationNotAllowedException.lastFmDisabled(),
             OperationNotAllowedException.lastFmUnknownUser(),
             OperationNotAllowedException.lastFmUnavailable(),
-            OperationNotAllowedException.postingBanned(LocalDateTime.now().plusDays(1)),
+            OperationNotAllowedException.banned(BanKind.POSTING, LocalDateTime.now().plusDays(1)),
         };
 
         for (var ex : przypadki) {

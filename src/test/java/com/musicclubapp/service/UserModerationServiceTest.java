@@ -1,11 +1,9 @@
 package com.musicclubapp.service;
 
-import com.musicclubapp.dto.MessagingBanRequest;
-import com.musicclubapp.dto.PostingBanRequest;
+import com.musicclubapp.entity.BanKind;
+import com.musicclubapp.dto.BanRequest;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.entity.ModerationAction;
-import com.musicclubapp.entity.Post;
-import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Report;
 import com.musicclubapp.entity.ReportContext;
 import com.musicclubapp.entity.ReportReason;
@@ -14,17 +12,12 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.UserMapper;
-import com.musicclubapp.repository.FavoritePlaylistRepository;
-import com.musicclubapp.repository.FriendRequestRepository;
-import com.musicclubapp.repository.PostRepository;
-import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
-import com.musicclubapp.storage.FileStorageService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -57,27 +50,21 @@ import static org.mockito.Mockito.verify;
 class UserModerationServiceTest {
 
     @Mock private UserRepository userRepository;
-    @Mock private PostRepository postRepository;
-    @Mock private ReactionRepository reactionRepository;
-    @Mock private FriendRequestRepository requestRepository;
-    @Mock private FavoritePlaylistRepository playlistRepository;
-    @Mock private FileStorageService fileStorage;
+    @Mock private com.musicclubapp.repository.ReportRepository reportRepository;
     @Mock private UserMapper userMapper;
+
+    /* Moduly, ktore sprzataja po koncie - kazdy we wlasnych tabelach. */
     @Mock private NotificationService notifications;
+    @Mock private ReactionService reactions;
+    @Mock private PostService posts;
+    @Mock private FriendService friends;
     @Mock private MessageService messages;
     @Mock private ReportService reports;
     @Mock private NetworkService network;
-    @Mock private com.musicclubapp.repository.ReportRepository reportRepository;
-    @Mock private PostService postService;
+    @Mock private PlaylistService playlists;
+    @Mock private UserService users;
 
     @InjectMocks private UserModerationService moderationService;
-
-    @BeforeEach
-    void setUp() {
-        // Domyslnie: konto bez postow. Test, ktory potrzebuje postow,
-        // podmienia to u siebie.
-        given(postRepository.findByAuthorId(any())).willReturn(List.of());
-    }
 
     private User user(String username) {
         return new User(username, username + "@example.com", "hash");
@@ -101,46 +88,56 @@ class UserModerationServiceTest {
     }
 
     @Test
-    @DisplayName("usuniecie konta kasuje TEZ reakcje, zaproszenia i znajomosci")
-    void deletingAccountCleansUpEverything() {
+    @DisplayName("usuniecie konta prosi po kolei kazdy modul o posprzatanie")
+    void deletingAccountAsksEveryModuleInOrder() {
         User target = user("troll");
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
 
         moderationService.deleteUser("admin", 7L);
 
         /*
-         * Kazde z tych wywolan odpowiada innej tabeli wskazujacej na konto.
-         * Pominiecie ktoregokolwiek konczy sie tym, ze baza odmawia usuniecia
+         * Kolejnosc nie jest tu dowolna. Powiadomienia musza pojsc pierwsze,
+         * bo wskazuja kluczami obcymi i na konto, i na posty kasowane nizej;
+         * samo konto - ostatnie, gdy nic juz na nie nie wskazuje. Pominiecie
+         * ktoregokolwiek kroku konczy sie tym, ze baza odmawia usuniecia
          * z powodu klucza obcego - albo, gorzej, zostawia wiersz wskazujacy
          * na uzytkownika, ktorego juz nie ma.
          */
-        verify(reactionRepository).deleteByUserId(target.getId());
-        verify(requestRepository).deleteBySenderIdOrRecipientId(target.getId(), target.getId());
-        verify(messages).deleteAllOf(target.getId());
-        verify(reports).deleteAllOf(target.getId());
-        verify(network).forgetUser(target.getId());
-        verify(userRepository).removeFriendshipsWith(target.getId());
-        verify(userRepository).delete(target);
+        InOrder kolejnosc = inOrder(notifications, reactions, posts, friends,
+            messages, reports, network, playlists, users, userRepository);
+
+        kolejnosc.verify(notifications).deleteAllOf(7L);
+        kolejnosc.verify(reactions).deleteAllOf(7L);
+        kolejnosc.verify(posts).deleteAllOf(7L);
+        kolejnosc.verify(friends).deleteAllOf(target);
+        kolejnosc.verify(messages).deleteAllOf(7L);
+        kolejnosc.verify(reports).deleteAllOf(7L);
+        kolejnosc.verify(network).deleteAllOf(7L);
+        kolejnosc.verify(playlists).deleteAllOf(7L);
+        kolejnosc.verify(users).deleteAvatarOf(target);
+        kolejnosc.verify(userRepository).delete(target);
     }
 
+    /**
+     * Pliki z dysku kasuja ich wlasciciele.
+     *
+     * <p>Ze {@code PostService} faktycznie zdejmuje zdjecia z postow, a
+     * {@code UserService} awatar - sprawdzaja ich wlasne testy. Tutaj
+     * pilnujemy tego, za co ta klasa jeszcze odpowiada: ze w ogole o to
+     * poprosila. Wczesniej kasowala te pliki sama i trzymala z tego powodu
+     * zaleznosc do skladnicy plikow.</p>
+     */
     @Test
-    @DisplayName("usuniecie konta zdejmuje z dysku awatar i zdjecia z postow")
-    void deletingAccountRemovesFiles() {
-        User target = new User("troll", "troll@example.com", "hash");
+    @DisplayName("o pliki z dysku moderacja prosi ich wlascicieli")
+    void filesAreLeftToTheirOwners() {
+        User target = user("troll");
         target.setAvatarFileName("awatar.jpg");
-
-        Post post = new Post(target, "post ze zdjeciem");
-        post.addImage(new PostImage("zdjecie.jpg"));
-
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
-        given(postRepository.findByAuthorId(any())).willReturn(List.of(post));
 
         moderationService.deleteUser("admin", 7L);
 
-        // Konto usuniete z bazy, ale ze zdjeciami dalej na serwerze,
-        // to usuniecie tylko na niby
-        verify(fileStorage).remove("awatar.jpg");
-        verify(fileStorage).remove("zdjecie.jpg");
+        verify(posts).deleteAllOf(7L);
+        verify(users).deleteAvatarOf(target);
     }
 
     @Test
@@ -159,230 +156,29 @@ class UserModerationServiceTest {
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
 
-        moderationService.setPostingBan("admin", 7L, new PostingBanRequest(24, false));
+        moderationService.setBan("admin", 7L, BanKind.POSTING, new BanRequest(24, false));
 
         ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(stored.capture());
 
-        LocalDateTime until = stored.getValue().getPostingBannedUntil();
+        LocalDateTime until = stored.getValue().bannedUntil(BanKind.POSTING);
         assertThat(until).isAfter(LocalDateTime.now().plusHours(23));
         assertThat(until).isBefore(LocalDateTime.now().plusHours(25));
-        assertThat(stored.getValue().isPostingBanned()).isTrue();
+        assertThat(stored.getValue().isBanned(BanKind.POSTING)).isTrue();
     }
 
     @Test
     @DisplayName("pusta liczba godzin ZDEJMUJE zakaz")
     void nullHoursLiftsTheBan() {
         User target = new User("troll", "troll@example.com", "hash");
-        target.setPostingBannedUntil(LocalDateTime.now().plusDays(3));
+        target.setBannedUntil(BanKind.POSTING, LocalDateTime.now().plusDays(3));
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
 
-        moderationService.setPostingBan("admin", 7L, new PostingBanRequest(null, false));
+        moderationService.setBan("admin", 7L, BanKind.POSTING, new BanRequest(null, false));
 
-        assertThat(target.getPostingBannedUntil()).isNull();
-        assertThat(target.isPostingBanned()).isFalse();
-    }
-
-    /* ------------------------------------------------------------------ */
-    /*  Decyzja w zgloszeniu razem z dzialaniem                            */
-    /* ------------------------------------------------------------------ */
-
-    /**
-     * Zgloszenie na konto "troll", opcjonalnie o konkretnym poscie.
-     *
-     * <p>Identyfikatorow nie ustawiamy, bo encje nadaja je dopiero przy
-     * zapisie do bazy - w tescie na atrapach zostaja puste. Dlatego
-     * wyszukiwanie konta dopasowujemy przez {@code any()}, a nie przez
-     * konkretna liczbe: sprawdzamy tu <b>co sie dzieje</b>, a nie pod jakim
-     * numerem.</p>
-     */
-    private Report reportOn(User troll, Post post) {
-        Report report = new Report(
-            user("zglaszajacy"), troll,
-            ReportReason.HARASSMENT, ReportContext.PROFILE, "opis zgloszenia");
-        report.setPost(post);
-        given(reportRepository.findById(5L)).willReturn(Optional.of(report));
-        given(userRepository.findById(any())).willReturn(Optional.of(troll));
-        given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
-        return report;
-    }
-
-    private ResolveReportRequest decision(ModerationAction action, Integer hours, Boolean forever) {
-        return new ResolveReportRequest(
-            ReportStatus.RESOLVED, "notatka administratora", action, hours, forever);
-    }
-
-    @Test
-    @DisplayName("zamkniecie z dzialaniem NONE nie rusza konta")
-    void resolvingWithoutActionChangesNothing() {
-        User troll = user("troll");
-        reportOn(troll, null);
-
-        moderationService.resolveReport("admin", 5L, decision(ModerationAction.NONE, null, null));
-
-        /*
-         * Sedno: "zasadne, ale bez kary" musi byc mozliwe do wyrazenia.
-         * Gdyby zamkniecie karalo automatycznie, jedynym sposobem na
-         * niekaranie byloby oddalenie zgloszenia jako bezpodstawnego -
-         * czyli zapisanie w historii konta nieprawdy.
-         */
-        assertThat(troll.isPostingBanned()).isFalse();
-        assertThat(troll.isMessagingBanned()).isFalse();
-        verify(userRepository, never()).delete(any(User.class));
-        verify(postService, never()).delete(any(), any());
-        verify(reports).resolve(eq("admin"), eq(5L), any(ResolveReportRequest.class));
-    }
-
-    @Test
-    @DisplayName("zamkniecie z zakazem publikowania od razu naklada kare")
-    void resolvingCanBanPosting() {
-        User troll = user("troll");
-        reportOn(troll, null);
-
-        moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.BAN_POSTING, 24, false));
-
-        assertThat(troll.isPostingBanned()).isTrue();
-        assertThat(troll.isMessagingBanned())
-            .describedAs("zakaz publikowania to OSOBNA kara od zakazu wiadomosci")
-            .isFalse();
-    }
-
-    @Test
-    @DisplayName("zamkniecie moze nalozyc zakaz BEZTERMINOWY")
-    void resolvingCanBanForever() {
-        User troll = user("troll");
-        reportOn(troll, null);
-
-        moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.BAN_MESSAGING, null, true));
-
-        assertThat(troll.getMessagingBannedUntil()).isEqualTo(User.FOREVER);
-    }
-
-    @Test
-    @DisplayName("zamkniecie z usunieciem konta faktycznie je kasuje")
-    void resolvingCanDeleteTheAccount() {
-        User troll = user("troll");
-        reportOn(troll, null);
-
-        moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.DELETE_ACCOUNT, null, null));
-
-        verify(userRepository).delete(troll);
-    }
-
-    @Test
-    @DisplayName("zamkniecie z usunieciem posta kasuje TEN post")
-    void resolvingCanDeleteTheReportedPost() {
-        User troll = user("troll");
-        /*
-         * Post jako atrapa wylacznie po to, zeby mial identyfikator -
-         * prawdziwa encja dostaje go dopiero przy zapisie do bazy,
-         * a tu chodzi o sprawdzenie, ze kasujemy WLASCIWY post.
-         */
-        Post post = org.mockito.Mockito.mock(Post.class);
-        given(post.getId()).willReturn(42L);
-        reportOn(troll, post);
-
-        moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.DELETE_POST, null, null));
-
-        // Przez PostService, a nie repozytorium - tam siedzi kasowanie zdjec z dysku
-        verify(postService).delete(42L, "admin");
-    }
-
-    /**
-     * Sprawdzenie kolejnosci, ktore latwo przeoczyc.
-     *
-     * <p>Gdyby kara wykonywala sie PRZED zamknieciem sprawy, dwa klikniecia
-     * pod rzad (albo dwoje administratorow naraz) nalozylyby ja dwa razy -
-     * a dopiero potem wyszlo by na jaw, ze zgloszenie bylo juz zamkniete.</p>
-     */
-    @Test
-    @DisplayName("gdy zgloszenie bylo juz zamkniete, kara NIE wykonuje sie drugi raz")
-    void doesNotPunishTwiceWhenAlreadyClosed() {
-        User troll = user("troll");
-        reportOn(troll, null);
-        given(reports.resolve(any(), any(), any()))
-            .willThrow(OperationNotAllowedException.reportAlreadyClosed());
-
-        assertThatThrownBy(() -> moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.DELETE_ACCOUNT, null, null)))
-            .isInstanceOf(OperationNotAllowedException.class);
-
-        verify(userRepository, never()).delete(any(User.class));
-    }
-
-    /**
-     * Administrator nie karze sam siebie - ale sprawe zamknac moze.
-     *
-     * <p>Zgloszenie moze dotyczyc administratora i ktos musi je rozpatrzyc.
-     * Nie wolno mu jednak przy tej okazji zablokowac ani skasowac wlasnego
-     * konta: to z jednej strony ocena we wlasnej sprawie, a z drugiej jedno
-     * klikniecie od odebrania sobie dostepu do panelu.</p>
-     */
-    @Test
-    @DisplayName("administrator NIE naklada kary na wlasne konto przez zgloszenie")
-    void adminCannotPunishSelfThroughReport() {
-        User admin = user("admin");
-        reportOn(admin, null);
-
-        for (ModerationAction kara : List.of(ModerationAction.BAN_POSTING,
-                ModerationAction.BAN_MESSAGING, ModerationAction.DELETE_ACCOUNT)) {
-            assertThatThrownBy(() ->
-                moderationService.resolveReport("admin", 5L, decision(kara, 24, false)))
-                .describedAs("kara %s na wlasne konto", kara)
-                .isInstanceOf(OperationNotAllowedException.class);
-        }
-
-        // Sprawa ma zostac OTWARTA - odmowa nie moze zamykac zgloszenia po cichu
-        verify(reports, never()).resolve(any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("ale ZAMKNAC zgloszenie na siebie moze - bez kary")
-    void adminMayStillCloseAReportAboutSelf() {
-        User admin = user("admin");
-        reportOn(admin, null);
-
-        moderationService.resolveReport("admin", 5L, decision(ModerationAction.NONE, null, null));
-
-        verify(reports).resolve(eq("admin"), eq(5L), any(ResolveReportRequest.class));
-        assertThat(admin.isPostingBanned()).isFalse();
-    }
-
-    @Test
-    @DisplayName("zgloszenie na INNEGO administratora rozpatruje sie normalnie")
-    void reportAboutAnotherAdminIsHandledNormally() {
-        User innyAdmin = user("admin2");
-        reportOn(innyAdmin, null);
-
-        moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.BAN_POSTING, 24, false));
-
-        assertThat(innyAdmin.isPostingBanned())
-            .describedAs("blokada dotyczy WLASNEGO konta, a nie kazdego administratora")
-            .isTrue();
-    }
-
-    @Test
-    @DisplayName("nie da sie kasowac posta przy zgloszeniu, ktore posta nie dotyczy")
-    void cannotDeletePostWhenReportHasNone() {
-        User troll = user("troll");
-        reportOn(troll, null);
-
-        assertThatThrownBy(() -> moderationService.resolveReport("admin", 5L,
-            decision(ModerationAction.DELETE_POST, null, null)))
-            .isInstanceOf(OperationNotAllowedException.class);
-
-        /*
-         * Sprawa ma zostac OTWARTA. Odmowa po zamknieciu byla by najgorsza
-         * z mozliwosci: zgloszenie zamkniete z notatka "post usuniety",
-         * a post na miejscu - i nie da sie tego cofnac.
-         */
-        verify(reports, never()).resolve(any(), any(), any());
+        assertThat(target.bannedUntil(BanKind.POSTING)).isNull();
+        assertThat(target.isBanned(BanKind.POSTING)).isFalse();
     }
 
     @Test
@@ -392,11 +188,11 @@ class UserModerationServiceTest {
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
 
-        moderationService.setPostingBan("admin", 7L, new PostingBanRequest(null, true));
+        moderationService.setBan("admin", 7L, BanKind.POSTING, new BanRequest(null, true));
 
-        assertThat(target.getPostingBannedUntil()).isEqualTo(User.FOREVER);
-        assertThat(target.isPostingBanned()).isTrue();
-        assertThat(User.isForever(target.getPostingBannedUntil())).isTrue();
+        assertThat(target.bannedUntil(BanKind.POSTING)).isEqualTo(User.FOREVER);
+        assertThat(target.isBanned(BanKind.POSTING)).isTrue();
+        assertThat(User.isForever(target.bannedUntil(BanKind.POSTING))).isTrue();
     }
 
     /**
@@ -416,15 +212,15 @@ class UserModerationServiceTest {
         given(userRepository.findById(7L)).willReturn(Optional.of(target));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
 
-        moderationService.setMessagingBan("admin", 7L, new MessagingBanRequest(null, true));
-        assertThat(target.isMessagingBanned())
+        moderationService.setBan("admin", 7L, BanKind.MESSAGING, new BanRequest(null, true));
+        assertThat(target.isBanned(BanKind.MESSAGING))
             .describedAs("zakaz bezterminowy ma OBOWIAZYWAC, a nie zostac zdjety")
             .isTrue();
 
         // A samo "bez godzin i bez na zawsze" ma nadal zdejmowac kare
-        moderationService.setMessagingBan("admin", 7L, new MessagingBanRequest(null, false));
-        assertThat(target.getMessagingBannedUntil()).isNull();
-        assertThat(target.isMessagingBanned()).isFalse();
+        moderationService.setBan("admin", 7L, BanKind.MESSAGING, new BanRequest(null, false));
+        assertThat(target.bannedUntil(BanKind.MESSAGING)).isNull();
+        assertThat(target.isBanned(BanKind.MESSAGING)).isFalse();
     }
 
     @Test
@@ -436,9 +232,9 @@ class UserModerationServiceTest {
          * a nie jak decyzja administratora.
          */
         OperationNotAllowedException problem =
-            OperationNotAllowedException.postingBanned(User.FOREVER);
+            OperationNotAllowedException.banned(BanKind.POSTING, User.FOREVER);
 
-        assertThat(problem.getMessageKey()).isEqualTo("error.post.banned.forever");
+        assertThat(problem.getMessageKey()).isEqualTo("error.ban.posting.forever");
         assertThat(problem.getMessage()).doesNotContain("9999");
         assertThat(problem.getArguments()).isEmpty();
     }
@@ -447,7 +243,7 @@ class UserModerationServiceTest {
     @DisplayName("zakaz z przeszlosci wygasa SAM, bez zadnego sprzatania")
     void expiredBanNeedsNoCleanup() {
         User target = new User("bylyTroll", "byly@example.com", "hash");
-        target.setPostingBannedUntil(LocalDateTime.now().minusMinutes(1));
+        target.setBannedUntil(BanKind.POSTING, LocalDateTime.now().minusMinutes(1));
 
         /*
          * Nie ma tu zadnego zadania w tle ani pola "czy zablokowany" do
@@ -455,8 +251,8 @@ class UserModerationServiceTest {
          * wiec kara konczy sie dokladnie wtedy, kiedy miala sie skonczyc.
          * Wpis zostaje - administrator widzi w panelu, ze ktos byl karany.
          */
-        assertThat(target.isPostingBanned()).isFalse();
-        assertThat(target.getPostingBannedUntil()).isNotNull();
+        assertThat(target.isBanned(BanKind.POSTING)).isFalse();
+        assertThat(target.bannedUntil(BanKind.POSTING)).isNotNull();
     }
 
     @Test
@@ -465,7 +261,7 @@ class UserModerationServiceTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user("admin")));
 
         assertThatThrownBy(() ->
-            moderationService.setPostingBan("admin", 1L, new PostingBanRequest(24, false)))
+            moderationService.setBan("admin", 1L, BanKind.POSTING, new BanRequest(24, false)))
             .isInstanceOf(OperationNotAllowedException.class);
     }
 }

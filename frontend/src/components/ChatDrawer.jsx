@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import { rozmowy } from '../api/czat';
 import { useAuth } from '../auth/AuthContext';
 import { useChat } from '../chat/ChatContext';
 import Avatar from './Avatar';
@@ -13,6 +14,7 @@ import PeopleSkeleton from './PeopleSkeleton';
 import PresenceDot from './PresenceDot';
 import { IconArrowLeft, IconChat, IconCross, IconPersonPlus } from './Icons';
 import { timeAgo } from '../utils/dates';
+import useOdswiezanie from '../hooks/useOdswiezanie';
 
 /** Co ile odswiezamy liste rozmow, gdy jest widoczna. */
 const LIST_REFRESH_MS = 10_000;
@@ -74,7 +76,7 @@ export default function ChatDrawer() {
 
   const loadConversations = useCallback(async () => {
     try {
-      const { data } = await client.get('/messages/conversations');
+      const data = await rozmowy();
       setConversations(data);
       setError(null);
     } catch (problem) {
@@ -83,9 +85,8 @@ export default function ChatDrawer() {
        * sekund, wiec jedna nieudana proba (chwilowy brak sieci) nie ma
        * prawa czyscic ekranu komus, kto wlasnie czyta rozmowe.
        */
-      const details = describeError(problem);
-      setError(details.message
-        ?? (details.messageKey ? t(details.messageKey) : t('chat.listFailed')));
+      const details = describeError(problem, 'chat.listFailed');
+      setError(details.message);
     } finally {
       setLoading(false);
     }
@@ -103,13 +104,12 @@ export default function ChatDrawer() {
     }
 
     loadConversations();
-
-    if (activeUsername) {
-      return undefined;
-    }
-    const timer = setInterval(loadConversations, LIST_REFRESH_MS);
-    return () => clearInterval(timer);
+    return undefined;
   }, [open, user, activeUsername, loadConversations]);
+
+  useOdswiezanie(
+    loadConversations, LIST_REFRESH_MS, open && Boolean(user) && !activeUsername,
+  );
 
   /* Escape zamyka - tak zachowuje sie kazde okno w tej aplikacji */
   useEffect(() => {

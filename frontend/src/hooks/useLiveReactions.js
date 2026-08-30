@@ -1,8 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
-import client from '../api/client';
-
-/** Co ile odswiezamy liczniki, gdy karta jest na wierzchu. */
-const DEFAULT_INTERVAL_MS = 45_000;
+import { useCallback, useRef } from 'react';
+import { licznikiReakcji } from '../api/posty';
+import useOdswiezanie, { DOMYSLNY_ODSTEP_MS } from './useOdswiezanie';
 
 /**
  * Odswieza liczniki reakcji pod postami, ktore uzytkownik ma na ekranie.
@@ -18,23 +16,18 @@ const DEFAULT_INTERVAL_MS = 45_000;
  * stracilby miejsce, w ktorym czytal. Tutaj podmieniamy WYLACZNIE liczniki
  * przy postach, ktore juz sa na ekranie.</p>
  *
- * <p><b>Odswiezamy tylko wtedy, gdy karta jest widoczna.</b> Zapytania
- * wysylane do zminimalizowanego okna nikomu niczego nie pokazuja, a zuzywaja
- * baterie i lacze. Dlatego zegar chodzi wylacznie przy widocznej karcie,
- * a powrot do niej odswieza liczniki od razu - to najczestszy moment,
- * w ktorym cos zdazylo sie zmienic.</p>
+ * <p><b>Kiedy odpytujemy</b> - a wiec i to, ze zminimalizowane okno nie
+ * wysyla niczego - ustala {@link useOdswiezanie}. Tutaj zostaje samo
+ * pytanie: ktore posty i co z odpowiedzia zrobic.</p>
  *
  * @param posts     lista postow na ekranie (potrzebne sa z niej same numery)
- * @param onCounts  wolane ze slownikiem {@code {postId: podsumowanie}};
- *                  MUSI byc stabilne (useCallback), inaczej zegar
- *                  przestawialby sie przy kazdym renderze
- * @param intervalMs co ile odswiezac przy widocznej karcie
+ * @param onCounts  wolane ze slownikiem {@code {postId: podsumowanie}}
+ * @param odstepMs  co ile odswiezac przy widocznej karcie
  */
-export default function useLiveReactions(posts, onCounts, intervalMs = DEFAULT_INTERVAL_MS) {
+export default function useLiveReactions(posts, onCounts, odstepMs = DOMYSLNY_ODSTEP_MS) {
   /*
    * Lista postow zmienia sie przy kazdej reakcji, a nie chcemy z tego powodu
-   * zdejmowac i zakladac nasluchow od nowa. Dlatego biezaca liste trzymamy
-   * w referencji, a efekt nizej nie zalezy od niej.
+   * budowac zapytania od nowa. Dlatego biezaca liste trzymamy w referencji.
    */
   const postsRef = useRef(posts);
   postsRef.current = posts;
@@ -46,53 +39,14 @@ export default function useLiveReactions(posts, onCounts, intervalMs = DEFAULT_I
     }
 
     try {
-      const { data } = await client.get('/posts/reactions', {
-        params: { ids: ids.join(',') },
-      });
-      onCounts(data);
+      onCounts(await licznikiReakcji(ids));
     } catch {
       // Odswiezenie licznikow to dodatek - gdy sie nie uda, na ekranie
       // zostaja poprzednie wartosci i nikomu nic sie nie psuje
     }
   }, [onCounts]);
 
-  useEffect(() => {
-    let timer = null;
-
-    function stop() {
-      if (timer !== null) {
-        clearInterval(timer);
-        timer = null;
-      }
-    }
-
-    function start() {
-      stop();
-      timer = setInterval(refresh, intervalMs);
-    }
-
-    function onVisibility() {
-      if (document.visibilityState === 'visible') {
-        refresh();
-        start();
-      } else {
-        stop();
-      }
-    }
-
-    if (document.visibilityState === 'visible') {
-      start();
-    }
-
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', refresh);
-
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('focus', refresh);
-    };
-  }, [refresh, intervalMs]);
+  useOdswiezanie(refresh, odstepMs);
 
   return refresh;
 }

@@ -1,0 +1,745 @@
+/* =============================================================================
+   CZAT ZE ZNAJOMYMI
+
+   Panel wysuwany z prawej strony: lista rozmow i pojedynczy watek. Rozmowa
+   toczy sie OBOK tego, co sie akurat oglada - dlatego panel, a nie osobna
+   strona.
+   ============================================================================= */
+
+/* --- Ikona w gornym pasku ------------------------------------------------ */
+
+/*
+   Wyglada dokladnie jak dzwonek obok - i tak ma byc. Oba przyciski znacza
+   to samo ("cos czeka na Ciebie"), wiec roznica w wygladzie sugerowalaby
+   roznice, ktorej nie ma.
+*/
+.chat-launcher {
+  position: relative;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+  box-shadow: inset 0 1px 2px rgba(15, 12, 30, .06);
+  transition: background-color var(--mc-fast), transform var(--mc-fast),
+              color var(--mc-fast);
+}
+
+[data-bs-theme='dark'] .chat-launcher {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .35);
+}
+
+.chat-launcher:hover {
+  transform: translateY(-1px);
+}
+
+.chat-launcher:active {
+  transform: scale(.94);
+}
+
+.chat-launcher.is-open {
+  background: var(--mc-gradient);
+  color: #fff;
+}
+
+/* Ten sam rozmiar co licznik przy dzwonku i przy zaproszeniach */
+.chat-launcher-badge {
+  position: absolute;
+  top: -.05rem;
+  right: -.05rem;
+  min-width: .85rem;
+  height: .85rem;
+  padding: 0 .2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--mc-3);
+  color: #1a0d16;
+  font-size: .5625rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 1.5px var(--bs-body-bg);
+}
+
+/* --- Panel --------------------------------------------------------------- */
+
+/*
+   Tlo przygaszajace strone. Jest przyciskiem, a nie warstwa <div>, zeby
+   dalo sie je klikac takze klawiatura.
+
+   Przy zamknietym panelu zostaje w drzewie z zerowa przezroczystoscia
+   i wylaczonymi zdarzeniami myszy - inaczej niewidoczna warstwa
+   przechwytywalaby klikniecia w cala strone.
+*/
+.chat-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1044;
+  border: 0;
+  padding: 0;
+  background: rgba(15, 12, 30, .35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--mc-slow);
+}
+
+.chat-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1045;
+  width: min(24rem, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--bs-body-bg);
+  border-left: 1px solid var(--bs-border-color);
+  box-shadow: var(--mc-shadow-lg);
+
+  /*
+     Zamkniety panel stoi POZA ekranem, a nie jest usuniety z drzewa.
+     Gdyby powstawal dopiero przy otwarciu, przegladarka nie mialaby czego
+     animowac - element pojawialby sie od razu na miejscu.
+
+     Dodatkowe 2% to zapas na cien: bez tego rozmyta krawedz wystawalaby
+     zza prawego brzegu ekranu jako ciemny pasek.
+  */
+  transform: translateX(102%);
+  transition: transform var(--mc-slow), visibility var(--mc-slow);
+  visibility: hidden;
+}
+
+.chat-drawer.is-open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+/*
+   Panel nie ma wlasnej ramki ogniska - ognisko trafia na niego programowo
+   po otwarciu i obwodka wygladalaby jak podswietlenie calego okna.
+   Elementy w srodku maja swoje wlasne obwodki i to one sa widoczne.
+*/
+.chat-drawer:focus {
+  outline: none;
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem .75rem;
+  border-bottom: 1px solid var(--bs-border-color);
+  min-height: 3.25rem;
+}
+
+.chat-head-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 600;
+}
+
+.chat-head-button {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  transition: background-color var(--mc-fast), color var(--mc-fast);
+}
+
+.chat-head-button:hover {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+.chat-head-person {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.chat-head-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.chat-head-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-body {
+  flex: 1 1 auto;
+  min-height: 0;   /* bez tego dziecko z przewijaniem rozpycha caly panel */
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Lista rozmow -------------------------------------------------------- */
+
+.chat-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: .5rem;
+}
+
+.chat-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .55rem .6rem;
+  border: 0;
+  border-radius: var(--mc-radius);
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  transition: background-color var(--mc-fast);
+}
+
+.chat-row:hover,
+.chat-row:focus-visible {
+  background: var(--bs-secondary-bg);
+}
+
+.chat-row-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  display: block;
+  line-height: 0;
+}
+
+.chat-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.chat-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.chat-row-name {
+  font-weight: 600;
+  font-size: .9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-row-time {
+  flex: 0 0 auto;
+  font-size: .7rem;
+  color: var(--bs-secondary-color);
+}
+
+/*
+   Podglad ostatniej wiadomosci ZAWSZE w jednej linii. Bez tego rozmowa
+   z dluzszym zdaniem zajmowalaby trzy wiersze, a lista przestawalaby
+   wygladac na liste.
+*/
+.chat-row-preview {
+  font-size: .8rem;
+  color: var(--bs-secondary-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-row-nothing {
+  font-style: italic;
+  opacity: .8;
+}
+
+/* Nieprzeczytana rozmowa - pogrubiony podglad, zeby bylo widac ja z daleka */
+.chat-row.is-unread .chat-row-preview {
+  color: var(--bs-body-color);
+  font-weight: 600;
+}
+
+.chat-row-badge {
+  flex: 0 0 auto;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 .3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--mc-gradient);
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+}
+
+/* --- Watek rozmowy ------------------------------------------------------- */
+
+.chat-thread {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.chat-empty {
+  margin: auto 0;
+  padding: 1rem;
+  text-align: center;
+  font-size: .85rem;
+  color: var(--bs-secondary-color);
+}
+
+.bubble-row {
+  display: flex;
+  align-items: flex-end;
+  gap: .4rem;
+  max-width: 100%;
+}
+
+.bubble-row.is-mine {
+  justify-content: flex-end;
+}
+
+/*
+   Miejsce na awatar jest zajete ZAWSZE, takze gdy awatara nie ma. Dzieki
+   temu kolejne wiadomosci tej samej osoby stoja w jednej linii pionowej,
+   zamiast przeskakiwac w lewo przy pierwszej z serii.
+*/
+.bubble-avatar {
+  flex: 0 0 26px;
+  width: 26px;
+  line-height: 0;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: .45rem .7rem;
+  border-radius: 1.1rem;
+  background: var(--bs-secondary-bg);
+  font-size: .875rem;
+  animation: fade-in-up .28s var(--mc-ease) both;
+}
+
+/*
+   Wlasne wiadomosci dostaja gradient marki - ten sam, co logo i glowny
+   przycisk. Kolor niesie tu informacje (kto pisal), a nie ozdobe: przy
+   dwoch jednakowych dymkach trzeba by ich szukac po stronie ekranu.
+*/
+.bubble-row.is-mine .bubble {
+  background: var(--mc-gradient);
+  color: #fff;
+  border-bottom-right-radius: .35rem;
+}
+
+.bubble-row:not(.is-mine) .bubble {
+  border-bottom-left-radius: .35rem;
+}
+
+.bubble-text {
+  margin: 0;
+  /* Zachowuje przelamania linii wpisane przez uzytkownika (Shift+Enter) */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubble-time {
+  display: block;
+  margin-top: .15rem;
+  font-size: .65rem;
+  opacity: .7;
+}
+
+/* --- Dymek "pisze" ------------------------------------------------------- */
+
+.typing-bubble {
+  padding: .55rem .7rem;
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: .22rem;
+}
+
+.typing-dots i {
+  width: .35rem;
+  height: .35rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-color);
+  animation: typing-bounce 1.2s var(--mc-ease) infinite;
+}
+
+/*
+   Kropki podskakuja z przesunieciem, a nie razem. Rownoczesny ruch czyta
+   sie jak mruganie bledu; przesuniety - jak pisanie.
+*/
+.typing-dots i:nth-child(2) { animation-delay: .15s; }
+.typing-dots i:nth-child(3) { animation-delay: .3s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+  30%           { transform: translateY(-.22rem); opacity: 1; }
+}
+
+/* --- Szkielet ladowania rozmowy ------------------------------------------ */
+
+.chat-loading {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.bubble-skeleton {
+  height: 2.1rem;
+  width: 60%;
+  border-radius: 1.1rem;
+  background: linear-gradient(90deg,
+    var(--bs-secondary-bg) 25%,
+    var(--bs-tertiary-bg) 37%,
+    var(--bs-secondary-bg) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.bubble-skeleton.is-mine {
+  align-self: flex-end;
+  width: 45%;
+}
+
+/* --- Nagranie w wiadomosci ----------------------------------------------- */
+
+/*
+   Wizytowka nagrania: okladka, tytul i serwis. Odtwarzacz pojawia sie
+   dopiero po kliknieciu - dziesiec osadzonych ramek Spotify w jednej
+   rozmowie ladowaloby dziesiec obcych stron naraz.
+*/
+.music-card {
+  display: flex;
+  align-items: stretch;
+  gap: .25rem;
+  margin-top: .35rem;
+  border-radius: .6rem;
+  background: rgba(255, 255, 255, .14);
+  overflow: hidden;
+}
+
+.bubble-row:not(.is-mine) .music-card {
+  background: var(--bs-tertiary-bg);
+}
+
+.music-card-play {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .45rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background-color var(--mc-fast);
+}
+
+.music-card-play:hover,
+.music-card-play:focus-visible {
+  background: rgba(0, 0, 0, .12);
+}
+
+.music-card-cover {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: .35rem;
+  object-fit: cover;
+}
+
+.music-card-cover-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .18);
+}
+
+.music-card-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.music-card-title {
+  font-size: .8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.music-card-provider {
+  font-size: .68rem;
+  opacity: .8;
+}
+
+.music-card-open {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 .5rem;
+  color: inherit;
+  text-decoration: none;
+  opacity: .75;
+  transition: opacity var(--mc-fast), background-color var(--mc-fast);
+}
+
+.music-card-open:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, .12);
+  color: inherit;
+}
+
+/* Odtwarzacz w dymku nie ma marginesu gornego posta - jest ciasniej */
+.chat-player {
+  margin-top: .35rem;
+  margin-bottom: 0;
+}
+
+/* --- Pole pisania -------------------------------------------------------- */
+
+.chat-composer {
+  flex: 0 0 auto;
+  padding: .5rem .6rem .6rem;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+.chat-composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: .4rem;
+}
+
+.chat-input {
+  flex: 1 1 auto;
+  resize: none;
+  /*
+     Pole rosnie do czterech wierszy i dopiero potem samo sie przewija.
+     Jeden wiersz jest za ciasny na dluzsza mysl, a nieograniczone
+     rosniecie zjadaloby cala rozmowe nad nim.
+  */
+  max-height: 6.5rem;
+  min-height: 2.4rem;
+  padding: .45rem .7rem;
+  border-radius: 1.2rem;
+  font-size: .875rem;
+}
+
+.chat-music-toggle,
+.chat-send {
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  transition: background-color var(--mc-fast), transform var(--mc-fast),
+              opacity var(--mc-fast);
+}
+
+.chat-music-toggle {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+}
+
+.chat-music-toggle:hover,
+.chat-music-toggle.is-open {
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-body-color);
+}
+
+.chat-music-toggle.is-open {
+  color: var(--bs-primary);
+}
+
+.chat-send {
+  background: var(--mc-gradient);
+  color: #fff;
+}
+
+.chat-send:active:not(:disabled) {
+  transform: scale(.94);
+}
+
+/*
+   Wylaczony przycisk wysylania zostaje WIDOCZNY, tylko przygaszony.
+   Znikajacy przycisk kazalby sie domyslac, gdzie sie podzial - a on po
+   prostu czeka, az bedzie co wyslac.
+*/
+.chat-send:disabled {
+  opacity: .45;
+}
+
+.chat-music-picker {
+  padding: .25rem .1rem 0;
+  animation: fade-in-up .24s var(--mc-ease) both;
+}
+
+/* Wybor nagrania w waskim panelu nie potrzebuje dolnego marginesu posta */
+.chat-music-picker .mb-3 {
+  margin-bottom: .35rem !important;
+}
+
+/*
+   Link i moment startu JEDNO POD DRUGIM, mimo ze w formularzu posta stoja
+   obok siebie.
+
+   To nie jest kwestia gustu, tylko ograniczenia siatki Bootstrapa: klasa
+   "col-md-8" patrzy na szerokosc CALEGO OKNA, a nie tego pojemnika, w ktorym
+   stoi. Na monitorze okno ma ponad 768 pikseli, wiec Bootstrap ustawia oba
+   pola obok siebie - w panelu szerokim na 24rem. Efekt byl taki, ze podpis
+   "Zacznij od (min:sek)" lamal sie na trzy wiersze i spychal pole pisania
+   w dol. Wymuszamy wiec pelna szerokosc tam, gdzie siatka nie ma jak
+   sie zorientowac.
+*/
+.chat-music-picker [class*='col-md-'] {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+/* Podpowiedzi pod polami sa w panelu drobniejsze - miejsca jest malo */
+.chat-music-picker .form-text {
+  font-size: .7rem;
+}
+
+.chat-error {
+  margin-bottom: .4rem;
+  padding: .35rem .6rem;
+  border-radius: .5rem;
+  background: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger-text-emphasis);
+  font-size: .78rem;
+}
+
+/* --- Kropka obecnosci ---------------------------------------------------- */
+
+.presence {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .72rem;
+  color: var(--bs-secondary-color);
+}
+
+.presence-dot {
+  width: .55rem;
+  height: .55rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-color);
+  opacity: .5;
+  /*
+     Obwodka w kolorze tla oddziela kropke od awatara, na ktorym lezy.
+     Bez niej szara kropka na szarym zastepniku awatara znika.
+  */
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+
+.presence.is-online .presence-dot {
+  background: #22c55e;
+  opacity: 1;
+}
+
+/*
+   Kropka NA awatarze - w liscie rozmow i na kafelku znajomego. Sam
+   PresenceDot nie wie, gdzie stoi; pozycjonuje go rodzic.
+*/
+.chat-row-avatar .presence,
+.friend-card-avatar .presence {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+}
+
+.friend-card-avatar {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+
+/* --- Waski ekran --------------------------------------------------------- */
+
+@media (max-width: 575.98px) {
+  /*
+     Na telefonie panel zajmuje caly ekran. Waski pasek przy krawedzi
+     zostawialby po lewej kilkanascie pikseli tresci, ktora i tak jest
+     nieczytelna, a rozmowe scisnalby do polowy szerokosci.
+  */
+  .chat-drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+
+  .bubble {
+    max-width: 85%;
+  }
+}
+
+/* --- Lista rozmow: szukanie i podzial na sekcje -------------------------- */
+
+.chat-search {
+  padding: .1rem .35rem .45rem;
+}
+
+/*
+   Naglowek sekcji. Drobny i przygaszony celowo - ma oddzielac, a nie
+   konkurowac z nazwami osob pod spodem.
+*/
+.chat-group {
+  margin: .5rem .6rem .2rem;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.chat-group:first-child {
+  margin-top: .2rem;
+}

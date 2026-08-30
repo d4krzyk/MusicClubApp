@@ -4,7 +4,8 @@ import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import { zglos } from '../api/moderacja';
 import { IconFlag } from './Icons';
 
 /** Powody w kolejnosci od najczestszego. */
@@ -66,7 +67,7 @@ export default function ReportButton({
     setError(null);
 
     try {
-      await client.post(`/reports/on/${encodeURIComponent(username)}`, {
+      await zglos(username, {
         reason,
         context,
         postId: context === 'POST' ? postId : null,
@@ -74,9 +75,8 @@ export default function ReportButton({
       });
       setDone(true);
     } catch (problem) {
-      const details = describeError(problem);
-      setError(details.message
-        ?? (details.messageKey ? t(details.messageKey) : t('reports.failed')));
+      const details = describeError(problem, 'reports.failed');
+      setError(details.message);
     } finally {
       setSending(false);
     }

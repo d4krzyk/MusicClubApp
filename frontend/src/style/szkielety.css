@@ -1,0 +1,61 @@
+/* =========================================================================
+   SZKIELETY LADOWANIA
+
+   Zajmuja TO SAMO miejsce, co prawdziwe posty - dzieki temu po wczytaniu
+   nic nie skacze. Kolko Bootstrapa zostawialo pusta strone, a tresc
+   wskakiwala potem, przesuwajac wszystko w dol.
+   ========================================================================= */
+
+.skeleton-card {
+  /* Szkielet nie jest trescia, wiec nie udaje jej cieniem */
+  box-shadow: var(--mc-shadow-sm);
+  opacity: .85;
+}
+
+.skeleton {
+  display: block;
+  border-radius: .5rem;
+  /*
+     Pasek swiatla przesuwajacy sie w prawo. Sam szary prostokat wyglada
+     jak element, ktory sie nie wczytal; ruch mowi "to zaraz bedzie".
+  */
+  background: linear-gradient(90deg,
+    var(--bs-secondary-bg) 25%,
+    var(--bs-tertiary-bg) 37%,
+    var(--bs-secondary-bg) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-line {
+  height: .75rem;
+  margin-bottom: .5rem;
+}
+
+.skeleton-line-sm {
+  height: .625rem;
+  margin-bottom: 0;
+}
+
+.skeleton-player {
+  height: 152px;
+  margin-top: .75rem;
+}
+
+.skeleton-pill {
+  width: 3.25rem;
+  height: 1.75rem;
+  border-radius: 999px;
+}
+
+@keyframes skeleton-sweep {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}

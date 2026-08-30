@@ -7,22 +7,21 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
 import Badge from 'react-bootstrap/Badge';
-import client, { describeError } from '../api/client';
+import { describeError } from '../api/client';
+import * as moderacja from '../api/moderacja';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
 import PostSkeleton from '../components/PostSkeleton';
 import { IconCheckCircle, IconFlag, IconShieldAlert } from '../components/Icons';
 import { formatDateTime, timeAgo } from '../utils/dates';
+import { OKRESY_KARY, BEZTERMINOWO } from '../moderacja/kary';
 
 /** Filtry w kolejnosci przydatnosci: najpierw to, co czeka na decyzje. */
 const FILTERS = ['OPEN', 'RESOLVED', 'DISMISSED', 'ALL'];
 
-/** Te same okresy co w panelu kont - kara ma znaczyc wszedzie to samo. */
-const BAN_HOURS = [1, 24, 168, 720];
-
-/** Wartosc pozycji "na zawsze" - patrz komentarz w UsersPage. */
-const FOREVER = 'forever';
+/** Ile zgloszen pobieramy naraz. */
+const ROZMIAR_STRONY = 30;
 
 /**
  * Panel zgloszen - <b>tylko dla administratora</b>.
@@ -49,13 +48,12 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await client.get('/reports/admin', {
-        params: { status: filter === 'ALL' ? undefined : filter, size: 30 },
-      });
+      const data = await moderacja.zgloszenia(
+        filter === 'ALL' ? undefined : filter, ROZMIAR_STRONY);
       setReports(data.content);
     } catch (problem) {
       const details = describeError(problem);
-      setError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setError(details.message);
       setReports([]);
     } finally {
       setLoading(false);
@@ -171,8 +169,7 @@ function ReportCard({ report, language, t, me, onResolved }) {
 
     if (next && !details) {
       try {
-        const { data } = await client.get(`/reports/admin/${report.id}`);
-        setDetails(data);
+        setDetails(await moderacja.zgloszenie(report.id));
       } catch {
         setDetails({ ...report, evidence: [] });
       }
@@ -194,20 +191,19 @@ function ReportCard({ report, language, t, me, onResolved }) {
     setSending(true);
     setError(null);
     try {
-      await client.post(`/reports/admin/${report.id}/resolve`, {
+      await moderacja.rozpatrz(report.id, {
         decision,
         note: note.trim(),
         action,
         // Godziny wysylamy TYLKO przy karze czasowej - przy pozostalych
         // dzialaniach nie znacza nic i tylko myliłyby w zapisie zapytania
-        hours: needsDuration && duration !== FOREVER ? Number(duration) : null,
-        forever: needsDuration && duration === FOREVER,
+        hours: needsDuration && duration !== BEZTERMINOWO ? Number(duration) : null,
+        forever: needsDuration && duration === BEZTERMINOWO,
       });
       onResolved();
     } catch (problem) {
-      const problems = describeError(problem);
-      setError(problems.message
-        ?? (problems.messageKey ? t(problems.messageKey) : t('reports.failed')));
+      const problems = describeError(problem, 'reports.failed');
+      setError(problems.message);
     } finally {
       setSending(false);
     }
@@ -217,12 +213,11 @@ function ReportCard({ report, language, t, me, onResolved }) {
   async function reopen() {
     setError(null);
     try {
-      await client.post(`/reports/admin/${report.id}/reopen`);
+      await moderacja.otworzPonownie(report.id);
       onResolved();
     } catch (problem) {
-      const problems = describeError(problem);
-      setError(problems.message
-        ?? (problems.messageKey ? t(problems.messageKey) : t('reports.failed')));
+      const problems = describeError(problem, 'reports.failed');
+      setError(problems.message);
     }
   }
 
@@ -411,10 +406,10 @@ function ReportCard({ report, language, t, me, onResolved }) {
                     value={duration}
                     onChange={(e) => setDuration(e.target.value)}
                   >
-                    {BAN_HOURS.map((h) => (
+                    {OKRESY_KARY.map((h) => (
                       <option key={h} value={h}>{t('users.banFor', { count: h })}</option>
                     ))}
-                    <option value={FOREVER}>{t('users.banForever')}</option>
+                    <option value={BEZTERMINOWO}>{t('users.banForever')}</option>
                   </Form.Select>
                 </div>
               )}

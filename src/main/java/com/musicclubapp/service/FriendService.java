@@ -246,6 +246,30 @@ public class FriendService {
         return requestRepository.countByRecipientUsername(username);
     }
 
+    /* ------------------------------------------------------------------ */
+    /*  Sprzatanie                                                         */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Zrywa wszystkie wiezi konta - zaproszenia i znajomosci - przy jego
+     * usuwaniu.
+     *
+     * <p><b>Dlaczego bierze cala encje, a nie samo id</b> jak pozostale
+     * sprzatania. Znajomosc zapisuje sie w tabeli {@code user_friends} w OBIE
+     * strony. Hibernate przy kasowaniu konta usuwa tylko te wiersze, w ktorych
+     * ta osoba jest wlascicielem relacji - drugiej polowy trzeba pozbyc sie
+     * zapytaniem. Samo zapytanie jednak nie wystarczy: gdyby kolekcja
+     * {@code friends} zostala w pamieci, Hibernate przy zapisie dopisalby
+     * skasowane wiersze z powrotem. Dlatego czyscimy i baze, i encje.</p>
+     */
+    @Transactional
+    public void deleteAllOf(User user) {
+        requestRepository.deleteBySenderIdOrRecipientId(user.getId(), user.getId());
+
+        userRepository.removeFriendshipsWith(user.getId());
+        user.getFriends().clear();
+    }
+
     // ----------------------------------------------------------------------
 
     /**

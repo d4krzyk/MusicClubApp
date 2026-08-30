@@ -204,7 +204,7 @@ public class NetworkService {
 
     /** Kasuje historie adresow konta - przy usuwaniu uzytkownika. */
     @Transactional
-    public void forgetUser(Long userId) {
+    public void deleteAllOf(Long userId) {
         accountIpRepository.deleteByUserId(userId);
     }
 }

@@ -47,7 +47,7 @@ export default function LoginPage() {
     } catch (error) {
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message ?? (details.messageKey ? t(details.messageKey) : null));
+      setGeneralError(details.message);
     } finally {
       // finally - zeby przycisk odblokowal sie takze po bledzie
       setWysylanie(false);

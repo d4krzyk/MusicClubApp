@@ -130,11 +130,15 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 ├── Dockerfile                   # KROK 6: build Vite -> nginx
 ├── nginx.conf                   # to samo proxy, ale w kontenerze
 └── src/
-    ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy
+    ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy (sam TRANSPORT)
+    ├── api/czat.js, moderacja.js, posty.js, profil.js, znajomi.js,
+    │       powiadomienia.js, konto.js, muzyka.js
+    │                            # nazwane operacje serwera - oddają gotowe dane
     ├── auth/                    # kto zalogowany + ochrona tras
     ├── theme/                   # motyw jasny/ciemny
     ├── i18n/                    # pl.json i en.json
-    ├── hooks/                   # useLiveReactions - odświeżanie liczników reakcji
+    ├── hooks/                   # useOdswiezanie - jeden puls dla całej aplikacji
+    │                            # useLiveReactions - liczniki reakcji
     ├── components/              # Layout, Post, Reactions, Favorites, Playlists,
     │                            #   CommonGround, EmptyState, PostSkeleton, …
     │                            # Icons.jsx: ikony z Bootstrap Icons (MIT)
@@ -180,7 +184,6 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |
 | POST | `/api/reports/admin/{id}/resolve` | zamyka zgłoszenie decyzją i notatką, wykonując wybrane działanie (kara, usunięcie posta lub konta, albo nic) |
 | POST | `/api/reports/admin/{id}/reopen` | otwiera zamkniętą sprawę, żeby zdecydować inaczej |
-| PATCH | `/api/users/{id}/messaging-ban` | zakaz wysyłania wiadomości (osobny od zakazu postów) |
 | GET | `/api/users/{id}/addresses` | adresy, z których logowało się konto |
 | GET | `/api/users/{id}/related` | inne konta z tych samych adresów (**poszlaka**) |
 | GET | `/api/users/blocked-ips` | lista zablokowanych adresów |
@@ -215,7 +218,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/users` | lista ze stronicowaniem i sortowaniem — **tylko admin** |
 | GET | `/api/users/{id}` | pojedynczy użytkownik — **tylko admin** |
 | PATCH | `/api/users/{id}/role` | zmiana roli — **tylko admin** |
-| PATCH | `/api/users/{id}/posting-ban` | zakaz publikowania na N godzin (pusto = zdejmij) — **tylko admin** |
+| PATCH | `/api/users/{id}/bans/{kind}` | kara `POSTING` albo `MESSAGING` na N godzin, bezterminowo lub pusto = zdejmij — **tylko admin** |
 | DELETE | `/api/users/{id}` | usunięcie konta wraz z jego treściami — **tylko admin** |
 | GET | `/actuator/health` | czy aplikacja żyje — używa tego healthcheck Dockera |
 
@@ -1082,6 +1085,66 @@ Klucz Last.fm zakłada się w minutę na
 Adresy obu serwisów da się podmienić (`app.music.deezer.base-url`,
 `app.lastfm.base-url`) — z tego korzystają testy, żeby nie zależeć od cudzej
 dostępności.
+
+## Jak zbudowany jest kod
+
+Kilka decyzji, które warto znać przed czytaniem źródeł — każda wzięła się
+z konkretnego problemu, a nie z upodobania.
+
+**Kara ma rodzaj, a nie własną kopię kodu.** Zakaz publikowania i zakaz
+wysyłania wiadomości to `BanKind.POSTING` i `BanKind.MESSAGING` — jeden rekord
+zapytania, jedna metoda serwisu, jeden adres (`PATCH /api/users/{id}/bans/{kind}`).
+Wcześniej ta sama koncepcja stała w kodzie **dwa razy, w dziesięciu miejscach**;
+po znormalizowaniu nazw obie metody serwisu okazały się identyczne co do znaku.
+Kosztowało to prawdziwy błąd: poprawka trafiła do jednej ścieżki, druga została,
+i zdejmowanie zakazu przestało działać. Wybór kolumny w bazie odbywa się teraz
+w jednym miejscu — w encji `User`.
+
+**`describeError` oddaje gotowy tekst.** Wcześniej zwracał półprodukt
+(`message` + `messageKey`), a składanie ich w zdanie powtarzało się w **27
+miejscach w 17 plikach** — zawsze tak samo. Ekran ma pokazać błąd, a nie
+decydować, skąd wziąć jego treść.
+
+**Style są podzielone tematycznie.** `styles.css` to spis treści z importami;
+reguły leżą w `src/style/` (czat, moderacja, szkielety…). Kolejność importów
+jest ta sama co kolejność sekcji w dawnym pliku i **musi taka zostać** — w CSS
+przy równej szczegółowości wygrywa reguła późniejsza.
+
+**Zgłoszenia i konta to dwie warstwy.** `ReportService` wie, czym jest
+zgłoszenie; `UserModerationService` wie, jak ukarać konto; `ReportDecisionService`
+wie tylko tyle, że decyzja i kara mają się wydarzyć razem albo wcale.
+
+**Po koncie sprząta każdy moduł u siebie.** Usunięcie konta to dziesięć
+ponumerowanych kroków w `UserModerationService.deleteUser` — ale ta metoda
+jest **listą kroków, a nie ich wykonaniem**. Każdy krok to jedno zdanie:
+„module X, posprzątaj po tym koncie". Co to znaczy w tabelach danego modułu,
+wie on sam (`PostService.deleteAllOf`, `FriendService.deleteAllOf`, …).
+Wcześniej połowę tej roboty moderacja robiła sama, sięgając wprost do pięciu
+cudzych repozytoriów; te pięć zależności istniało **wyłącznie** po to.
+Zysk nie jest w liczbie zależności — ta się prawie nie zmieniła — tylko w tym,
+że dopisanie funkcji z własną tabelą nie wymaga już wracania do cudzej klasy
+w innym pakiecie. Kolejność kroków **zostaje w jednym miejscu**, bo to wiedza
+o całości: powiadomienia muszą pójść pierwsze (wskazują i na konto, i na posty),
+samo konto — ostatnie.
+
+**Jeden puls zamiast pięciu zegarów.** Aplikacja dopytuje serwer w pięciu
+miejscach (czat co 3 s, lista rozmów co 10 s, liczniki co minutę, reakcje co
+45 s). Każde miało własny `setInterval`, a cztery z pięciu tykały dalej przy
+zminimalizowanym oknie — zminimalizowana karta z otwartą rozmową to 1200
+zapytań na godzinę wysłanych w próżnię. Teraz wszystkie używają
+`hooks/useOdswiezanie.js`, gdzie zasada „zegar chodzi tylko przy widocznej
+karcie, a powrót do zakładki odświeża od razu" jest zapisana **raz**.
+W całym froncie został dokładnie jeden `setInterval`.
+
+**Frontend prosi o rzeczy, nie o adresy.** `api/client.js` odpowiada za sam
+transport (ciasteczka, CSRF, język, tłumaczenie błędów). To, **co** aplikacja
+może poprosić serwer, mieszka w modułach obok: `api/czat.js`, `api/moderacja.js`,
+`api/posty.js`, `api/profil.js`, `api/znajomi.js`, `api/powiadomienia.js`,
+`api/konto.js`, `api/muzyka.js`. Każda operacja ma nazwę i oddaje gotowe dane —
+komponent nie wie ani jak brzmi adres, ani że pod spodem jest `response.data`.
+Wcześniej adresy były sklejane z szablonów w miejscu użycia, **79 razy w 28
+plikach**; nie dało się ich znaleźć po nazwie, bo w kodzie nie występowały
+jako całość. Żaden komponent nie sięga już po `client` bezpośrednio.
 
 ## Czas: serwer podaje chwilę, przeglądarka robi z niej godzinę
 

@@ -1254,7 +1254,7 @@ porównanie z bieżącą chwilą. Wpisu po wygaśnięciu **nie kasujemy** —
 administrator widzi w panelu, że ktoś był już kiedyś karany, a to bywa
 ważniejsze niż sam bieżący stan.
 
-Pytanie „czy zakaz obowiązuje" zadajemy **encji** (`user.isPostingBanned()`),
+Pytanie „czy zakaz obowiązuje" zadajemy **encji** (`user.isBanned(kind)`),
 a nie porównujemy dat w serwisie. Inaczej ta sama reguła („null albo
 przeszłość znaczy: wolno") musiałaby być powtórzona w każdym miejscu, które
 jej pilnuje — a wystarczy pomylić się raz, żeby zakaz dało się obejść.

@@ -5,6 +5,7 @@ import com.musicclubapp.dto.ConversationSyncResponse;
 import com.musicclubapp.dto.MessageResponse;
 import com.musicclubapp.dto.SendMessageRequest;
 import com.musicclubapp.entity.Message;
+import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
@@ -111,9 +112,9 @@ public class MessageService {
         User sender = requireUser(senderUsername);
         User recipient = requireFriend(sender, recipientUsername);
 
-        if (sender.isMessagingBanned()) {
-            throw OperationNotAllowedException.messagingBanned(
-                sender.getMessagingBannedUntil());
+        if (sender.isBanned(BanKind.MESSAGING)) {
+            throw OperationNotAllowedException.banned(BanKind.MESSAGING, 
+                sender.bannedUntil(BanKind.MESSAGING));
         }
 
         /*

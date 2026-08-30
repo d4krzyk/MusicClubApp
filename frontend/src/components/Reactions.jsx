@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
-import client from '../api/client';
+import { cofnijReakcje, ustawReakcje } from '../api/posty';
 import ReactionAuthors from './ReactionAuthors';
 
 /**
@@ -46,12 +46,12 @@ export default function Reactions({ post, onChange }) {
        * zaznaczone. Backend zostaje prosty: PUT ustawia, DELETE kasuje,
        * i oba mozna wyslac dwa razy bez niespodzianek.
        */
-      const response = summary.mine === code
-        ? await client.delete(`/posts/${post.id}/reaction`)
-        : await client.put(`/posts/${post.id}/reaction`, { type: code });
+      const zmieniony = summary.mine === code
+        ? await cofnijReakcje(post.id)
+        : await ustawReakcje(post.id, code);
 
       // Serwer odsyla caly post z przeliczonymi licznikami - nie dodajemy +1 sami
-      onChange(response.data);
+      onChange(zmieniony);
     } catch {
       setError(true);
     } finally {
