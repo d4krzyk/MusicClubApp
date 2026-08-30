@@ -31,13 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Kontrola dostepu do listy uzytkownikow.
- *
- * <p>To najwazniejsze testy w tym kroku. Ukrycie przycisku w interfejsie
- * NIE jest zabezpieczeniem - kazdy moze wpisac adres recznie albo wyslac
- * zapytanie z konsoli. Te testy pilnuja, ze o dostepie decyduje backend.</p>
- */
+/** Kontrola dostepu do listy uzytkownikow. */
 @WebMvcTest(UserController.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, I18nConfig.class, GlobalExceptionHandler.class})

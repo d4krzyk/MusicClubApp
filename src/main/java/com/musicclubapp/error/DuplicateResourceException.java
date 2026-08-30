@@ -1,12 +1,6 @@
 package com.musicclubapp.error;
 
-/**
- * Rzucany, gdy ktos probuje zalozyc konto na zajety login lub e-mail.
- *
- * <p>Obslugiwany przez {@link GlobalExceptionHandler} jako HTTP 409 CONFLICT -
- * wedlug wykladu 4 (slajd 32) to wlasnie status dla "proby utworzenia zasobu,
- * ktory juz istnieje".</p>
- */
+/** Rzucany, gdy ktos probuje zalozyc konto na zajety login lub e-mail. */
 public class DuplicateResourceException extends RuntimeException {
 
     private final String messageKey;

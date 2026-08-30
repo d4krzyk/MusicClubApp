@@ -16,26 +16,13 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
-/**
- * Jedno powiadomienie dla jednego uzytkownika.
- *
- * <p><b>Dlaczego osobna tabela, a nie wyliczanie w locie.</b> Da sie
- * teoretycznie policzyc "co sie zdarzylo od ostatniej wizyty" z reakcji
- * i zaproszen. Tyle ze powiadomienie ma wlasny stan - jest przeczytane albo
- * nie - i tego nie da sie wyprowadzic z niczego innego. Zapis jest tu
- * jedynym uczciwym rozwiazaniem.</p>
- *
- * <p><b>Kolejna relacja {@code ManyToOne}</b> - i to az trzy w jednej encji:
- * odbiorca, sprawca i (przy reakcji) post.</p>
- */
+/** Jedno powiadomienie dla jednego uzytkownika. */
 @Entity
 @Table(
     name = "notifications",
     indexes = {
         /*
-         * Kazde wejscie na strone pyta o liczbe nieprzeczytanych powiadomien
-         * DANEGO uzytkownika. Bez indeksu baza przegladalaby cala tabele -
-         * a ta rosnie z kazda reakcja w calym serwisie.
+         * Kazde wejscie na strone pyta o liczbe nieprzeczytanych powiadomien DANEGO uzytkownika.
          */
         @Index(name = "idx_notifications_recipient", columnList = "recipient_id, created_at")
     })
@@ -50,12 +37,7 @@ public class Notification {
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
 
-    /**
-     * Kto to wywolal.
-     *
-     * <p>Nigdy nie jest to sam odbiorca - powiadomienie o wlasnym dzialaniu
-     * nie ma sensu i nie powstaje (patrz {@code NotificationService}).</p>
-     */
+    /** Kto to wywolal. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "actor_id", nullable = false)
     private User actor;
@@ -64,25 +46,14 @@ public class Notification {
     @Column(nullable = false, length = 32)
     private NotificationType type;
 
-    /**
-     * Post, ktorego dotyczy powiadomienie - wypelniony tylko przy
-     * {@link NotificationType#REACTION}.
-     *
-     * <p><b>To jest prawdziwy klucz obcy</b>, a nie luzny numer. Roznica jest
-     * istotna: baza sama pilnuje, ze powiadomienie nie wskaze posta, ktorego
-     * juz nie ma. Przy zwyklej kolumnie {@code Long} skasowanie posta
-     * zostawialoby powiadomienie prowadzace donikad - a klikniecie w nie
-     * konczyloby sie bledem 404 zamiast czegokolwiek sensownego.</p>
-     */
+    /** Post, ktorego dotyczy powiadomienie - wypelniony tylko przy NotificationType#REACTION. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
 
     /**
-     * Ktora reakcja - tylko przy {@link NotificationType#REACTION}.
-     *
-     * <p>"Ktos zareagowal 🔥 na Twoj post" niesie wiecej niz samo "ktos
-     * zareagowal", a kosztuje jedna kolumne.</p>
+     * Ktora reakcja - tylko przy NotificationType#REACTION. "Ktos zareagowal 🔥 na Twoj post"
+     * niesie wiecej niz samo "ktos zareagowal", a kosztuje jedna kolumne.
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "reaction_type", length = 16)
@@ -91,12 +62,7 @@ public class Notification {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * Kiedy przeczytane; {@code null} znaczy "jeszcze nie".
-     *
-     * <p>Data zamiast flagi {@code boolean} - kosztuje tyle samo, a pozwala
-     * kiedys pokazac "przeczytane 3 dni temu" albo posprzatac stare wpisy.</p>
-     */
+    /** Kiedy przeczytane; null znaczy "jeszcze nie". */
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
@@ -128,14 +94,15 @@ public class Notification {
     }
 
     /**
-     * Ktos zlozyl zgloszenie - dla administratora.
-     *
-     * <p>{@code actor} to zglaszajacy, a nie osoba zgloszona. Tak jest
-     * poprawnie: powiadomienie mowi "ktos cos zglosil", a nie "ktos cos
-     * zrobil" - o tym drugim rozstrzyga dopiero administrator.</p>
+     * Ktos zlozyl zgloszenie - dla administratora. actor to zglaszajacy, a nie osoba zgloszona.
      */
     public static Notification report(User admin, User reporter) {
         return new Notification(admin, reporter, NotificationType.REPORT);
+    }
+
+    /** Zgloszenie rozpatrzone - dla zglaszajacego, z administratorem jako sprawca. */
+    public static Notification reportResolved(User reporter, User admin) {
+        return new Notification(reporter, admin, NotificationType.REPORT_RESOLVED);
     }
 
     @PrePersist
@@ -145,14 +112,7 @@ public class Notification {
         }
     }
 
-    /**
-     * Odswieza powiadomienie zamiast tworzyc drugie.
-     *
-     * <p>Uzywane, gdy ta sama osoba zmienia zdanie co do reakcji. Bez tego
-     * jedna osoba klikajaca kolejno trzy emotki wyprodukowalaby trzy
-     * powiadomienia o tym samym poscie - a to najkrotsza droga do tego,
-     * zeby uzytkownik przestal je czytac.</p>
-     */
+    /** Odswieza powiadomienie zamiast tworzyc drugie. */
     public void refresh(ReactionType reactionType) {
         this.reactionType = reactionType;
         this.createdAt = LocalDateTime.now();

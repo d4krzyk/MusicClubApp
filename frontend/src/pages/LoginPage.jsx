@@ -38,10 +38,7 @@ export default function LoginPage() {
       await login(username, password, rememberMe);
 
       /*
-       * Wracamy tam, skad uzytkownik zostal odeslany na logowanie
-       * (np. probowal wejsc na /users). Gdy wszedl tu sam - na strone glowna.
-       * replace: true usuwa ekran logowania z historii, wiec "wstecz"
-       * nie cofa do formularza po zalogowaniu.
+       * Wracamy tam, skad uzytkownik zostal odeslany na logowanie (np. probowal wejsc na /users).
        */
       navigate(location.state?.from ?? '/', { replace: true });
     } catch (error) {

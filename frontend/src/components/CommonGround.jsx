@@ -5,23 +5,7 @@ import { coWasLaczy } from '../api/profil';
 import Avatar from './Avatar';
 import HorizontalStrip from './HorizontalStrip';
 
-/**
- * <b>Co Was laczy</b> - wspolni artysci, utwory, gatunki i znajomi.
- *
- * <p><b>Skad sie wzielo.</b> Aplikacja pokazywala do tej pory same liczby:
- * "2 wspolnych artystow", "3 wspolne gatunki". Liczba mowi, ze cos nas laczy,
- * ale nie mowi <i>co</i> - a to dopiero jest powod, zeby napisac do obcej
- * osoby. "Oboje sluchacie Radiohead" da sie zamienic w rozmowe; "2 wspolnych
- * artystow" nie da sie zamienic w nic.</p>
- *
- * <p><b>Pobieramy dopiero, gdy jest to potrzebne.</b> Na profilu - przy
- * wejsciu; przy propozycjach znajomych - dopiero po otwarciu okienka.
- * Inaczej pasek z dwudziestoma osobami oznaczalby dwadziescia zapytan
- * porownujacych pelne listy ulubionych.</p>
- *
- * @param username czyj profil porownujemy z naszym
- * @param compact  wersja do okienka: bez naglowka i bez podpowiedzi
- */
+/** Co Was laczy - wspolni artysci, utwory, gatunki i znajomi. */
 export default function CommonGround({ username, compact = false }) {
   const { t } = useTranslation();
 
@@ -64,9 +48,8 @@ export default function CommonGround({ username, compact = false }) {
 
   if (nothing) {
     /*
-     * Brak czesci wspolnej to normalny wynik, a nie usterka - i wlasnie
-     * dlatego mowimy o nim wprost. Milczenie w tym miejscu wygladaloby
-     * tak, jakby sekcja sie nie wczytala.
+     * Brak czesci wspolnej to normalny wynik, a nie usterka - i wlasnie dlatego mowimy o nim
+     * wprost.
      */
     return compact ? (
       <p className="text-body-secondary small mb-0">{t('common_ground.nothing')}</p>
@@ -86,8 +69,8 @@ export default function CommonGround({ username, compact = false }) {
         <div className="mb-3">
           <h3 className="h6 text-body-secondary mb-2">{t('common_ground.genres')}</h3>
           {/*
-            Gatunki jako plakietki, a nie lista - jest ich zwykle kilka,
-            sa krotkie i nie maja wlasnej kolejnosci waznosci.
+            Gatunki jako plakietki, a nie lista - jest ich zwykle kilka, sa krotkie i nie maja
+            wlasnej kolejnosci waznosci.
           */}
           <div className="genre-pills">
             {genres.map((genre) => (

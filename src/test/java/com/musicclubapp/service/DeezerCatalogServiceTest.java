@@ -13,14 +13,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy czytania odpowiedzi Deezera.
- *
- * <p>Odpowiedzi ponizej sa przepisane z dokumentacji Deezera i skrocone
- * do pol, ktorych uzywamy. Sprawdzamy trzy rzeczy, ktore latwo zepsuc
- * i trudno zauwazyc: <b>czy dobrze skladamy adres</b> (kodowanie spacji),
- * <b>czy czytamy wlasciwe pola</b> i <b>czy awaria nie wywraca strony</b>.</p>
- */
+/** Testy czytania odpowiedzi Deezera. */
 @DisplayName("Katalog Deezera - czytanie odpowiedzi")
 class DeezerCatalogServiceTest {
 
@@ -106,11 +99,7 @@ class DeezerCatalogServiceTest {
 
         catalog.searchArtists("daft punk", 8);
 
-        /*
-         * Bez kodowania spacja rozbilaby adres i zapytanie w ogole by nie
-         * doszlo. Sprawdzamy tu, ze parametry naprawde dotarly - serwer
-         * zapisuje adres po rozkodowaniu, wiec widzimy to, co odczytal Deezer.
-         */
+        /* Bez kodowania spacja rozbilaby adres i zapytanie w ogole by nie doszlo. */
         assertThat(server.requests()).singleElement().asString()
             .contains("q=daft punk")
             .contains("limit=8");
@@ -164,8 +153,8 @@ class DeezerCatalogServiceTest {
     @DisplayName("identyfikator, ktory nie jest liczba, w ogole nie idzie do sieci")
     void identifierIsNotANumber() {
         /*
-         * To pierwsza linia obrony: identyfikatory Deezera sa liczbami, wiec
-         * cokolwiek innego odrzucamy, zanim doklejymy to do adresu zapytania.
+         * To pierwsza linia obrony: identyfikatory Deezera sa liczbami, wiec cokolwiek innego
+         * odrzucamy, zanim doklejymy to do adresu zapytania.
          */
         assertThat(catalog.fetchArtist("../../cos")).isEmpty();
         assertThat(catalog.fetchArtist("abc")).isEmpty();
@@ -178,9 +167,8 @@ class DeezerCatalogServiceTest {
     @DisplayName("blad Deezera przychodzi z kodem 200 - i mimo to go rozpoznajemy")
     void errorInsideResponseBody() {
         /*
-         * Pulapka warta testu: Deezer sygnalizuje bledy POLEM "error"
-         * w tresci, a status HTTP zostaje 200. Kod patrzacy tylko na status
-         * uznalby przekroczony limit zapytan za "brak wynikow".
+         * Pulapka warta testu: Deezer sygnalizuje bledy POLEM "error" w tresci, a status HTTP
+         * zostaje 200.
          */
         server.odpowiadaj("/search/artist", """
             {"error": {"type": "Exception", "message": "Quota limit exceeded", "code": 4}}

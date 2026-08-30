@@ -1,18 +1,4 @@
-/**
- * Szkielet poziomego paska z ludzmi - propozycje znajomych i lista znajomych.
- *
- * <p><b>Skad sie wzial.</b> Oba paski pokazywaly w czasie ladowania jedna
- * linijke z kolkiem ("Ladowanie…"), a potem podmienialy ja na rzad kafelkow
- * wysokich na kilkanascie razy tyle. Cala strona podskakiwala w tym momencie
- * dwa razy - raz przy propozycjach, raz przy znajomych - i wygladalo to jak
- * drganie interfejsu, a nie jak ladowanie.</p>
- *
- * <p>Szkielet zajmuje <b>dokladnie tyle miejsca, co gotowy pasek</b>, wiec
- * wstawienie prawdziwych kafelkow nie zmienia juz ukladu strony.</p>
- *
- * @param count ile kafelkow narysowac
- * @param variant "suggestion" (karta z przyciskiem) albo "friend" (sam awatar)
- */
+/** Szkielet poziomego paska z ludzmi - propozycje znajomych i lista znajomych. */
 export default function PeopleSkeleton({ count = 5, variant = 'friend' }) {
   const suggestion = variant === 'suggestion';
 

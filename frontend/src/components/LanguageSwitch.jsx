@@ -1,18 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { LANGUAGES, changeLanguage } from '../i18n';
 
-/**
- * Przelacznik jezyka jako jedna pigulka z przesuwajacym sie wskaznikiem.
- *
- * <p><b>Dlaczego nie dwa przyciski.</b> Dwa osobne przyciski nie mowia, ze
- * wybor jest jeden z dwoch - wygladaja jak dwie niezalezne akcje. Pigulka
- * z jednym podswietleniem pokazuje to od razu, a przesuniecie wskaznika przy
- * zmianie samo tlumaczy, co sie wlasnie stalo.</p>
- *
- * <p>Wskaznik jest osobnym elementem pod spodem i przesuwamy go przez
- * {@code transform}. Animowanie tla kazdego przycisku dawaloby dwa niezalezne
- * przejscia zamiast jednego ruchu.</p>
- */
+/** Przelacznik jezyka jako jedna pigulka z przesuwajacym sie wskaznikiem. */
 export default function LanguageSwitch() {
   const { t, i18n } = useTranslation();
 

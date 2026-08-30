@@ -18,17 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Gablotka playlist <b>zalogowanego uzytkownika</b>.
- *
- * <p>Ta sama zasada co przy ulubionych: {@code /api/profile/...} (liczba
- * pojedyncza) dotyczy MOICH danych i zawsze bierze login z sesji, nigdy ze
- * sciezki. Nie trzeba wiec sprawdzac, czy ktos nie podal cudzego loginu -
- * takiego parametru po prostu nie ma.</p>
- *
- * <p>CUDZA gablotka jest do odczytu pod
- * {@code /api/profiles/{username}/playlists} (liczba mnoga).</p>
- */
+/** Gablotka playlist zalogowanego uzytkownika. */
 @RestController
 @RequestMapping("/api/profile/playlists")
 @Tag(name = "Playlisty", description = "Gablotka playlist na profilu")

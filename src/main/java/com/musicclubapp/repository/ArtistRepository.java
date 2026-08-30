@@ -6,14 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Dostep do katalogu artystow zapisanych w naszej bazie.
- *
- * <p>Wyszukiwanie po {@code externalId} jest tu najwazniejsze: zanim zapiszemy
- * nowego artyste, sprawdzamy, czy kogos takiego juz nie mamy. Bez tego kazde
- * polubienie tworzyloby nowy wiersz i porownywanie gustow przestaloby
- * cokolwiek znaczyc.</p>
- */
+/** Dostep do katalogu artystow zapisanych w naszej bazie. */
 @Repository
 public interface ArtistRepository extends JpaRepository<Artist, Long> {
 

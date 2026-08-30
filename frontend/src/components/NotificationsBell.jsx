@@ -14,19 +14,7 @@ const REFRESH_MS = 60_000;
 /** Ile ostatnich powiadomien pokazuje rozwijana lista. */
 const LIST_SIZE = 15;
 
-/**
- * Dzwonek powiadomien w gornym pasku.
- *
- * <p><b>Licznik i lista sa pobierane osobno</b>, i to celowo. Liczba
- * nieprzeczytanych jest potrzebna na kazdej stronie, a lista - dopiero po
- * kliknieciu. Jedno zapytanie na oba cele oznaczaloby ciagniecie
- * kilkunastu wpisow z avatarami tylko po to, zeby narysowac kropke.</p>
- *
- * <p><b>Kazde powiadomienie gdzies prowadzi.</b> Adres wylicza serwer
- * (pole {@code link}) - patrz {@code NotificationMapper}. Frontend go tylko
- * wykonuje, wiec dolozenie nowego rodzaju powiadomienia nie wymaga tutaj
- * zadnej zmiany.</p>
- */
+/** Dzwonek powiadomien w gornym pasku. */
 export default function NotificationsBell() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -49,18 +37,14 @@ export default function NotificationsBell() {
   }, []);
 
   /*
-   * Licznik odswiezamy przy kazdej zmianie adresu - to najprostszy moment,
-   * w ktorym cos moglo sie zdarzyc.
+   * Licznik odswiezamy przy kazdej zmianie adresu - to najprostszy moment, w ktorym cos moglo sie
+   * zdarzyc.
    */
   useEffect(() => {
     loadCount();
   }, [loadCount, location.pathname]);
 
-  /*
-   * ...oraz co minute, gdy ktos siedzi na jednej stronie. Bez tego
-   * powiadomienie o reakcji pojawiloby sie dopiero przy nastepnym przejsciu
-   * miedzy stronami.
-   */
+  /* ...oraz co minute, gdy ktos siedzi na jednej stronie. */
   useOdswiezanie(loadCount, REFRESH_MS);
 
   async function loadList() {
@@ -105,18 +89,7 @@ export default function NotificationsBell() {
   async function openNotification(notification) {
     setOpen(false);
 
-    /*
-     * Na oznaczenie CZEKAMY, mimo ze kusi, zeby przejsc od razu.
-     *
-     * Powod jest konkretny: zaraz po przejsciu zmienia sie adres, a to
-     * uruchamia ponowne pobranie licznika. Przy wyslaniu "w tle" serwer
-     * czesto nie zdazyl jeszcze zapisac oznaczenia i wracala STARA liczba -
-     * kropka wracala na dzwonek zaraz po tym, jak z niego znikla.
-     *
-     * Blad przy oznaczaniu nie moze zablokowac przejscia: to powiadomienie
-     * juz zostalo otwarte, a nieprzeczytany wpis jest mniejszym problemem
-     * niz klikniecie, ktore nigdzie nie prowadzi.
-     */
+    /* Na oznaczenie CZEKAMY, mimo ze kusi, zeby przejsc od razu. */
     if (!notification.read) {
       setUnread((n) => Math.max(0, n - 1));
       await powiadomienia.oznaczPrzeczytane(notification.id).catch(() => {});
@@ -125,17 +98,7 @@ export default function NotificationsBell() {
     navigate(notification.link);
   }
 
-  /**
-   * Kasuje jedno powiadomienie.
-   *
-   * <p>Znika z listy OD RAZU, jeszcze przed odpowiedzia serwera - klikniecie
-   * krzyzyka ma dawac natychmiastowy skutek. Gdyby zapytanie sie nie udalo,
-   * przeladowujemy liste, zeby ekran wrocil do stanu faktycznego zamiast
-   * pokazywac wpis jako usuniety.</p>
-   *
-   * <p>Nieprzeczytane powiadomienie zmniejsza tez licznik przy dzwonku -
-   * inaczej kropka wisialaby nad pusta lista.</p>
-   */
+  /** Kasuje jedno powiadomienie. */
   async function removeNotification(id) {
     const removed = items.find((n) => n.id === id);
     setItems((previous) => previous.filter((n) => n.id !== id));
@@ -161,13 +124,7 @@ export default function NotificationsBell() {
     }
   }
 
-  /**
-   * Tresc powiadomienia.
-   *
-   * <p>Tekst sklada frontend z klucza tlumaczenia, a nie serwer - inaczej
-   * komunikaty nie dalyby sie przetlumaczyc na drugi jezyk bez wysylania
-   * ich z backendu w obu wersjach naraz.</p>
-   */
+  /** Tresc powiadomienia. */
   function text(notification) {
     switch (notification.type) {
       case 'REACTION':
@@ -180,13 +137,13 @@ export default function NotificationsBell() {
       case 'FRIEND_ACCEPTED':
         return t('notifications.friendAccepted', { username: notification.actorUsername });
       /*
-        Powiadomienie o zgloszeniu NIE zdradza, kogo zgloszono - widac tylko,
-        ze cos czeka w panelu. Nazwisko na dzwonku ogladalby kazdy, kto
-        przypadkiem spojrzy administratorowi na ekran, a decyzja jeszcze
-        nie zapadla.
-      */
+       * Powiadomienie o zgloszeniu NIE zdradza, kogo zgloszono - widac tylko, ze cos czeka w
+       * panelu.
+       */
       case 'REPORT':
         return t('notifications.report');
+      case 'REPORT_RESOLVED':
+        return t('notifications.reportResolved');
       default:
         return notification.actorUsername;
     }
@@ -233,12 +190,7 @@ export default function NotificationsBell() {
               </p>
             )}
 
-            {/*
-              Wiersz sklada sie z DWOCH przyciskow obok siebie, a nie
-              z jednego. Przycisk nie moze stac wewnatrz przycisku (przegladarka
-              tego nie dopuszcza), a chcemy dwie osobne czynnosci: przejscie
-              do tresci i skasowanie wpisu.
-            */}
+            {/* Wiersz sklada sie z DWOCH przyciskow obok siebie, a nie z jednego. */}
             {!loading && items.map((notification) => (
               <div key={notification.id} className="bell-item-row">
               <button
@@ -269,10 +221,8 @@ export default function NotificationsBell() {
               </button>
 
               {/*
-                Kasowanie to co innego niz "przeczytane": przeczytane gasi
-                kropke, ale wpis zostaje i przy kilkudziesieciu powiadomieniach
-                nowe gina wsrod starych. Krzyzyk mowi "zalatwione, nie chce
-                tego wiecej ogladac".
+                Kasowanie to co innego niz "przeczytane": przeczytane gasi kropke, ale wpis
+                zostaje i przy kilkudziesieciu powiadomieniach nowe gina wsrod starych.
               */}
               <button
                 type="button"

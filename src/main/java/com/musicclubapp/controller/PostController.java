@@ -37,15 +37,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Posty uzytkownikow: tekst, zdjecia i utwor ze Spotify.
- *
- * <p><b>Dlaczego {@code multipart/form-data}, a nie zwykly JSON?</b> Bo razem
- * z tekstem lecą pliki, a JSON nie przenosi plikow binarnych. Zapytanie sklada
- * sie wiec z dwoch czesci: {@code post} (JSON z trescia) i {@code images}
- * (wgrane obrazki) - stad adnotacja {@code @RequestPart} zamiast
- * {@code @RequestBody}.</p>
- */
+/** Posty uzytkownikow: tekst, zdjecia i utwor ze Spotify. */
 @RestController
 @RequestMapping("/api/posts")
 @Tag(name = "Posty", description = "Tablica i dodawanie postow")
@@ -59,16 +51,7 @@ public class PostController {
         this.postService = postService;
     }
 
-    /**
-     * Tablica - <b>najpierw posty znajomych, potem publiczne posty pozostalych</b>.
-     * Stronicowanie po stronie backendu (wymagania nr 3 i 5).
-     *
-     * <p><b>Parametr {@code direction} dotyczy postow jednego autora</b>
-     * (czyli wywolania z {@code author=...}). Na samej tablicy kolejnosc jest
-     * ustalona - krag na gorze, w kazdej grupie od najnowszych - bo to nie jest
-     * ustawienie uzytkownika, tylko sens tej strony. Widoczne sortowanie
-     * z wyborem pola i kierunku ma lista uzytkownikow ({@code /api/users}).</p>
-     */
+    /** Tablica - najpierw posty znajomych, potem publiczne posty pozostalych. */
     @GetMapping
     @Operation(summary = "Tablica: najpierw znajomi, potem reszta")
     @ApiResponses({
@@ -111,19 +94,7 @@ public class PostController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * Same liczniki reakcji dla wskazanych postow.
-     *
-     * <p>Tablica wola to po powrocie do karty przegladarki, zeby odswiezyc
-     * emotki pod postami, ktore uzytkownik ma na ekranie. Pobranie w tym celu
-     * calej tablicy od nowa przestawiloby widok i zgubilo miejsce, w ktorym
-     * ktos czytal - a chodzi o kilka liczb.</p>
-     *
-     * <p><b>Adres {@code /api/posts/reactions} nie kloci sie z
-     * {@code /api/posts/{id}}</b>: przy dwoch pasujacych wzorcach Spring
-     * wybiera ten z dosłownym czlonem, a nie ze zmienna. Pilnuje tego test
-     * {@code PostControllerRoutingTest}.</p>
-     */
+    /** Same liczniki reakcji dla wskazanych postow. */
     @GetMapping("/reactions")
     @Operation(summary = "Liczniki reakcji dla wskazanych postow")
     public ResponseEntity<Map<Long, ReactionSummary>> reactions(
@@ -139,12 +110,7 @@ public class PostController {
             postService.reactionSummaries(limited, authentication.getName()));
     }
 
-    /**
-     * Jeden post po identyfikatorze.
-     *
-     * <p>Uzywaja tego powiadomienia ("ktos zareagowal na Twoj post" prowadzi
-     * do tego konkretnego wpisu) i zwykly link do posta wyslany komus.</p>
-     */
+    /** Jeden post po identyfikatorze. */
     @GetMapping("/{id}")
     @Operation(summary = "Zwraca jeden post")
     @ApiResponses({
@@ -157,12 +123,7 @@ public class PostController {
         return ResponseEntity.ok(postService.getOne(id, authentication.getName()));
     }
 
-    /**
-     * Dodanie posta.
-     *
-     * <p>Zwracamy 201 CREATED z naglowkiem {@code Location} - wyklad 4,
-     * slajd 32.</p>
-     */
+    /** Dodanie posta. */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Dodaje post z tekstem, zdjeciami i utworem ze Spotify")
     @ApiResponses({
@@ -186,12 +147,7 @@ public class PostController {
         return ResponseEntity.created(location).body(created);
     }
 
-    /**
-     * Edycja wlasnego posta.
-     *
-     * <p>Tutaj zwykly JSON, nie multipart - nie przesylamy plikow, bo zdjec
-     * nie da sie zmienic po opublikowaniu.</p>
-     */
+    /** Edycja wlasnego posta. */
     @PutMapping("/{id}")
     @Operation(summary = "Edytuje wlasny post (tresc i utwor ze Spotify)")
     @ApiResponses({
@@ -209,9 +165,8 @@ public class PostController {
     }
 
     /**
-     * Usuniecie wlasnego posta (administrator moze usunac dowolny).
-     *
-     * <p>204 NO CONTENT - udalo sie, ale nie ma czego zwracac.</p>
+     * Usuniecie wlasnego posta (administrator moze usunac dowolny). 204 NO CONTENT - udalo sie,
+     * ale nie ma czego zwracac.
      */
     @DeleteMapping("/{id}")
     @Operation(summary = "Usuwa post (autor albo administrator)")

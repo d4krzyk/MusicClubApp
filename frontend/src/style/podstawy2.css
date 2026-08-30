@@ -580,7 +580,7 @@ body {
   border: 1px solid var(--bs-border-color);
   box-shadow: var(--mc-shadow-sm);
   /* Komunikat wjezdza z gory - inaczej pojawia sie znikad i latwo go przeoczyc */
-  animation: fade-in-up .3s var(--mc-ease) both;
+  animation: fade-in-up .3s var(--mc-ease) backwards;
 }
 
 /* --- Przejscia ------------------------------------------------------------ */
@@ -680,7 +680,7 @@ a:hover > .avatar-placeholder,
 }
 
 .feed-page > * {
-  animation: fade-in-up .34s var(--mc-ease) both;
+  animation: fade-in-up .34s var(--mc-ease) backwards;
 }
 
 /* --- Drobiazgi ----------------------------------------------------------- */

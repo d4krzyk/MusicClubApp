@@ -2,13 +2,7 @@ import client from './client';
 
 /** Co aplikacja moze poprosic serwer w sprawie postow i reakcji. */
 
-/**
- * Strona tablicy.
- *
- * <p>Ten sam adres obsluguje trzy widoki: tablice ogolna, tablice znajomych
- * ({@code scope}) i posty jednej osoby ({@code author}). Rozne sa tylko
- * parametry - dlatego jedna funkcja z opcjami, a nie trzy blizniacze.</p>
- */
+/** Strona tablicy. */
 export async function tablica({ strona, rozmiar, zakres, autor, kolejnosc }) {
   const { data } = await client.get('/posts', {
     params: {
@@ -27,13 +21,7 @@ export async function jeden(id) {
   return data;
 }
 
-/**
- * Dodaje post razem ze zdjeciami.
- *
- * <p>Tresc i zdjecia ida jednym zapytaniem wieloczesciowym: tresc jako JSON
- * pod nazwa {@code post}, pliki pod {@code images}. Sklejanie tej koperty
- * siedzi tutaj, zeby formularz nie musial znac nazw pol.</p>
- */
+/** Dodaje post razem ze zdjeciami. */
 export async function dodaj(tresc, pliki) {
   const formData = new FormData();
   formData.append('post', new Blob([JSON.stringify(tresc)], { type: 'application/json' }));
@@ -58,7 +46,7 @@ export async function ustawReakcje(idPosta, rodzaj) {
   return data;
 }
 
-/** Cofa wlasna reakcje. Tak samo jak wyzej - odsyla caly post. */
+/** Cofa wlasna reakcje. Odsyla caly post z przeliczonymi licznikami. */
 export async function cofnijReakcje(idPosta) {
   const { data } = await client.delete(`/posts/${idPosta}/reaction`);
   return data;

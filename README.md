@@ -179,6 +179,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | POST | `/api/messages/with/{username}/read` | oznacza rozmowę jako przeczytaną |
 | POST | `/api/messages/with/{username}/typing` | sygnał „właśnie piszę" (żyje 5 s, w pamięci) |
 | POST | `/api/reports/on/{username}` | zgłasza użytkownika (powód, kontekst, opis) |
+| GET | `/api/reports/mine` | **moje** zgłoszenia razem z decyzją i notatką administratora |
 | GET | `/api/reports/admin?status=` | lista zgłoszeń — **tylko administrator** |
 | GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |
@@ -723,6 +724,28 @@ we własnej sprawie, a z drugiej jedno kliknięcie od odebrania sobie dostępu d
 panelu. Zgłoszenie na **innego** administratora jest zwykłym zgłoszeniem
 i ma pełną listę działań.
 
+### Zgłaszający dowiaduje się, jak skończyła się sprawa
+
+Zamknięcie zgłoszenia wysyła powiadomienie **osobie, która je złożyła**, a ta
+znajduje pod nim (menu konta → *Moje zgłoszenia*) listę swoich zgłoszeń razem
+z decyzją i **notatką administratora**. Bez tego zgłoszenie znika z oczu
+w chwili wysłania: nie wiadomo, czy ktokolwiek je przeczytał, a jedyną
+informacją zwrotną jest to, że zgłoszona osoba dalej jest albo jej nie ma.
+
+Notatka jest przy zamykaniu **obowiązkowa**, więc nie ma sprawy zamkniętej bez
+słowa wyjaśnienia — i to samo zdanie, które trafia do historii konta, widzi
+zgłaszający.
+
+**Nie pokazujemy, jaką karę dostała zgłoszona osoba.** Zgłaszający ma prawo
+wiedzieć, czy sprawa została rozpatrzona i co administrator o niej sądzi;
+wysokość cudzej kary to już sprawa między tą osobą a administracją. Stąd osobny
+`MyReportResponse` zamiast oddawania pełnego `ReportResponse` — okrojony
+o dowody i o działanie.
+
+Powiadomienie dostaje **wyłącznie zgłaszający**. Zgłoszona osoba nie dowiaduje
+się ani o zgłoszeniu, ani o tym, kto je złożył — wiedza o tym, kto kogo zgłosił,
+jest najkrótszą drogą do odwetu.
+
 Dwa sposoby zamknięcia zamiast jednego, bo „zamknięte" bez rozróżnienia nie
 odpowiada na pytanie, które administrator zada sobie przy następnym zgłoszeniu
 tej samej osoby: **czy poprzednie było zasadne?** Trzy zgłoszenia oddalone jako
@@ -1135,6 +1158,12 @@ zapytań na godzinę wysłanych w próżnię. Teraz wszystkie używają
 `hooks/useOdswiezanie.js`, gdzie zasada „zegar chodzi tylko przy widocznej
 karcie, a powrót do zakładki odświeża od razu" jest zapisana **raz**.
 W całym froncie został dokładnie jeden `setInterval`.
+
+**Komentarze mówią, CO to robi — nie jak do tego doszło.** Jedno zdanie nad
+rzeczą, która tego potrzebuje, i nic więcej; opisy dawnych błędów i wersji
+poprzednich zostały usunięte z kodu (część z nich żyje dalej tutaj i w
+`docs/WYMAGANIA.md`, gdzie jest ich miejsce). Komentarz to 13% plików Javy
+zamiast 44% — czyta się teraz kod, a nie opowieść o nim.
 
 **Frontend prosi o rzeczy, nie o adresy.** `api/client.js` odpowiada za sam
 transport (ciasteczka, CSRF, język, tłumaczenie błędów). To, **co** aplikacja

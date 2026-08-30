@@ -1,21 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
-/**
- * Motyw jasny/ciemny.
- *
- * <p><b>Podzial roboty z {@code index.html}.</b> Pierwsze ustawienie motywu
- * robi maly skrypt w {@code index.html} - jeszcze przed narysowaniem strony,
- * zeby nic nie mignelo w zlych kolorach. Ten kontekst tylko <b>przejmuje</b>
- * to, co tam ustawiono, i pozwala potem przelaczac.</p>
- *
- * <p><b>Dlaczego atrybut na {@code <html>}, a nie wlasne zmienne CSS?</b>
- * Bootstrap 5.3 ma wbudowana obsluge motywow wlasnie przez
- * {@code data-bs-theme}. Ustawienie tego jednego atrybutu przestawia
- * wszystkie kolory frameworka naraz - tla, obramowania, tekst, formularze.
- * Nasz {@code styles.css} korzysta z tych samych zmiennych
- * ({@code var(--bs-secondary-bg)} i podobnych), wiec przelacza sie razem
- * z nimi, bez ani jednej dodatkowej linijki.</p>
- */
+/** Motyw jasny/ciemny. */
 const ThemeContext = createContext(null);
 
 const STORAGE_KEY = 'motyw';
@@ -26,21 +11,15 @@ function readStored() {
     return localStorage.getItem(STORAGE_KEY);
   } catch {
     /*
-     * W trybie prywatnym (i przy zablokowanych danych witryn) samo siegniecie
-     * po localStorage konczy sie wyjatkiem. Wtedy motyw po prostu nie jest
-     * zapamietywany - aplikacja ma dzialac dalej, a nie sie wywalac.
+     * W trybie prywatnym (i przy zablokowanych danych witryn) samo siegniecie po localStorage
+     * konczy sie wyjatkiem.
      */
     return null;
   }
 }
 
 export function ThemeProvider({ children }) {
-  /*
-   * Stan startowy czytamy z ATRYBUTU, a nie z localStorage. Skrypt
-   * w index.html juz rozstrzygnal, co pokazac (zapisany wybor albo ustawienie
-   * systemu) - powtarzanie tej logiki tutaj groziloby tym, ze obie wersje
-   * z czasem sie rozjada.
-   */
+  /* Stan startowy czytamy z ATRYBUTU, a nie z localStorage. */
   const [theme, setTheme] = useState(
     () => document.documentElement.getAttribute('data-bs-theme') ?? 'dark');
 
@@ -54,10 +33,8 @@ export function ThemeProvider({ children }) {
   }, [theme]);
 
   /*
-   * Gdy uzytkownik NIE wybral nic recznie, chodzimy za ustawieniem systemu -
-   * takze wtedy, gdy zmieni je w trakcie (np. o zmierzchu). Po pierwszym
-   * kliknieciu przelacznika jego wybor jest wazniejszy i systemu juz
-   * nie sluchamy.
+   * Gdy uzytkownik NIE wybral nic recznie, chodzimy za ustawieniem systemu - takze wtedy, gdy
+   * zmieni je w trakcie (np. o zmierzchu).
    */
   useEffect(() => {
     if (readStored()) {

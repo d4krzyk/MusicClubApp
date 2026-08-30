@@ -21,17 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Znajomi: zapraszanie, przyjmowanie i lista.
- *
- * <p><b>Realizuje wymaganie nr 7</b> - relacja {@code @ManyToMany}
- * ({@code User.friends}).</p>
- *
- * <p><b>Znajomosc jest obustronna.</b> Nie ma czegos takiego jak
- * "obserwowanie" - po przyjeciu zaproszenia obie osoby widza sie nawzajem
- * na swoich listach. Dlatego encja {@link FriendRequest} istnieje tylko
- * do momentu odpowiedzi, a potem znika.</p>
- */
+/** Znajomi: zapraszanie, przyjmowanie i lista. */
 @Service
 public class FriendService {
 
@@ -51,18 +41,7 @@ public class FriendService {
         this.presence = presence;
     }
 
-    /**
-     * Wysyla zaproszenie do znajomych.
-     *
-     * <p><b>Przypadek szczegolny: obie osoby zaprosily sie nawzajem.</b>
-     * Jesli druga strona juz nas zaprosila, nie tworzymy drugiego zaproszenia
-     * "w druga strone" - od razu przyjmujemy tamto. Obie osoby wyrazily
-     * przeciez zgode, wiec czekanie na dodatkowe klikniecie byloby
-     * bez sensu, a w bazie zostalyby dwa lustrzane zaproszenia, ktore
-     * trzeba by potem sprzatac.</p>
-     *
-     * @return {@code true}, gdy od razu powstala znajomosc (przypadek wyzej)
-     */
+    /** Wysyla zaproszenie do znajomych. */
     @Transactional
     public boolean invite(String username, String targetUsername) {
         if (username.equals(targetUsername)) {
@@ -96,11 +75,7 @@ public class FriendService {
     public void accept(Long invitationId, String username) {
         FriendRequest invitation = invitation(invitationId);
 
-        /*
-         * Kluczowe sprawdzenie: przyjac moze WYLACZNIE odbiorca. Bez tego
-         * wystarczyloby zgadnac numer zaproszenia, zeby skojarzyc ze soba
-         * dwie obce osoby.
-         */
+        /* Kluczowe sprawdzenie: przyjac moze WYLACZNIE odbiorca. */
         if (!invitation.getRecipient().getUsername().equals(username)) {
             throw OperationNotAllowedException.someoneElsesInvitation();
         }
@@ -108,13 +83,7 @@ public class FriendService {
         merge(invitation.getSender(), invitation.getRecipient(), invitation);
     }
 
-    /**
-     * Odrzuca zaproszenie do mnie albo anuluje moje wlasne.
-     *
-     * <p>Obie czynnosci to skasowanie tego samego wiersza, wiec obsluguje
-     * je jedna metoda - rozni sie tylko to, po ktorej stronie stoi
-     * zalogowany uzytkownik.</p>
-     */
+    /** Odrzuca zaproszenie do mnie albo anuluje moje wlasne. */
     @Transactional
     public void rejectOrCancel(Long invitationId, String username) {
         FriendRequest invitation = invitation(invitationId);
@@ -128,11 +97,7 @@ public class FriendService {
 
         requestRepository.delete(invitation);
 
-        /*
-         * Powiadomienie o zaproszeniu ma zniknac razem z nim. Zostawione
-         * prowadziloby na strone znajomych, gdzie nic juz nie czeka -
-         * a to wyglada jak usterka aplikacji.
-         */
+        /* Powiadomienie o zaproszeniu ma zniknac razem z nim. */
         notifications.friendRequestGone(invitation.getRecipient(), invitation.getSender());
     }
 
@@ -147,12 +112,7 @@ public class FriendService {
         userRepository.save(on);
     }
 
-    /**
-     * Lista znajomych danej osoby, od najbardziej powiazanych z ogladajacym.
-     *
-     * <p>Stronicowana (wymagania nr 3 i 5) - pasek na profilu pobiera kolejne
-     * strony po klknieciu strzalki, zamiast ciagnac wszystkich naraz.</p>
-     */
+    /** Lista znajomych danej osoby, od najbardziej powiazanych z ogladajacym. */
     @Transactional(readOnly = true)
     public Page<FriendCardResponse> friends(String whose, String viewer, Pageable pageable) {
         // Sprawdzamy, czy taka osoba w ogole istnieje - inaczej pusta lista
@@ -163,24 +123,7 @@ public class FriendService {
             .map(this::toCard);
     }
 
-    /**
-     * <b>Proponowani znajomi: cala spolecznosc, od najlepiej dopasowanych.</b>
-     *
-     * <p>Nie odsiewamy nikogo poza soba samym. Zamysl jest taki, ze lista
-     * pokazuje najpierw osoby o podobnym guscie, a dalej po prostu pozostalych
-     * uzytkownikow. Aplikacja dla kilkunastu osob, ktora po odfiltrowaniu
-     * "za malo podobnych" wyswietla pusta strone, jest bezuzyteczna dokladnie
-     * wtedy, kiedy najbardziej potrzeba w niej ludzi - na starcie.</p>
-     *
-     * <p>Znajomi tez zostaja na liscie, tylko z innym przyciskiem. Inaczej
-     * osoba z najlepszym dopasowaniem znikalaby w chwili dodania jej do
-     * znajomych - a to wlasnie ona najlepiej tlumaczy, po co ta lista jest.</p>
-     *
-     * <p>Cale liczenie robi jedno zapytanie w bazie
-     * ({@code UserRepository.friendSuggestions}) - tam tez jest opis wag.</p>
-     *
-     * @param limit ile kart maksymalnie zwrocic (pasek i tak sie przewija)
-     */
+    /** Proponowani znajomi: cala spolecznosc, od najlepiej dopasowanych. */
     @Transactional(readOnly = true)
     public List<SuggestionResponse> suggestions(String username, int limit) {
         user(username);
@@ -216,13 +159,7 @@ public class FriendService {
         return new PendingRequestsResponse(incoming, outgoing);
     }
 
-    /**
-     * W jakiej relacji jest ogladajacy z dana osoba.
-     *
-     * <p>Wyliczamy to na serwerze, zeby frontend wiedzial, ktory przycisk
-     * narysowac ("Zapros", "Przyjmij", "Usun ze znajomych"), zamiast skladac
-     * to sobie z kilku osobnych zapytan.</p>
-     */
+    /** W jakiej relacji jest ogladajacy z dana osoba. */
     @Transactional(readOnly = true)
     public FriendshipStatus status(String viewer, String whose) {
         if (viewer.equals(whose)) {
@@ -250,18 +187,7 @@ public class FriendService {
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Zrywa wszystkie wiezi konta - zaproszenia i znajomosci - przy jego
-     * usuwaniu.
-     *
-     * <p><b>Dlaczego bierze cala encje, a nie samo id</b> jak pozostale
-     * sprzatania. Znajomosc zapisuje sie w tabeli {@code user_friends} w OBIE
-     * strony. Hibernate przy kasowaniu konta usuwa tylko te wiersze, w ktorych
-     * ta osoba jest wlascicielem relacji - drugiej polowy trzeba pozbyc sie
-     * zapytaniem. Samo zapytanie jednak nie wystarczy: gdyby kolekcja
-     * {@code friends} zostala w pamieci, Hibernate przy zapisie dopisalby
-     * skasowane wiersze z powrotem. Dlatego czyscimy i baze, i encje.</p>
-     */
+    /** Zrywa wszystkie wiezi konta - zaproszenia i znajomosci - przy jego usuwaniu. */
     @Transactional
     public void deleteAllOf(User user) {
         requestRepository.deleteBySenderIdOrRecipientId(user.getId(), user.getId());
@@ -272,13 +198,7 @@ public class FriendService {
 
     // ----------------------------------------------------------------------
 
-    /**
-     * Laczy dwie osoby w znajomych i kasuje zuzyte zaproszenie.
-     *
-     * @param a nadawca zaproszenia - to ON czekal, wiec to jemu nalezy sie
-     *          powiadomienie o tym, ze znajomosc doszla do skutku
-     * @param b odbiorca, czyli osoba, ktora wlasnie to potwierdzila
-     */
+    /** Laczy dwie osoby w znajomych i kasuje zuzyte zaproszenie. */
     private void merge(User a, User b, FriendRequest invitation) {
         a.addFriend(b);
         userRepository.save(a);
@@ -286,11 +206,7 @@ public class FriendService {
 
         notifications.friendshipFormed(a, b);
 
-        /*
-         * Zaproszenie znika po przyjeciu - tabela friend_requests trzyma
-         * WYLACZNIE oczekujace. Dzieki temu zadne zapytanie o zaproszenia
-         * nie musi pamietac o filtrowaniu po statusie.
-         */
+        /* Zaproszenie znika po przyjeciu - tabela friend_requests trzyma WYLACZNIE oczekujace. */
         requestRepository.delete(invitation);
     }
 

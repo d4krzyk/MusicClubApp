@@ -8,24 +8,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.util.Optional;
 
-/**
- * Walidator dla {@link ValidMusicLink}.
- *
- * <p>Pilnuje czterech rzeczy - i kazda odpowiada innej pomylce, ktora
- * uzytkownik faktycznie popelni:</p>
- *
- * <ol>
- *   <li><b>Adres w ogole nie jest linkiem muzycznym.</b> Wczesniej taki tekst
- *       byl po cichu polykany, post powstawal bez odtwarzacza i nikt nie
- *       wiedzial dlaczego.</li>
- *   <li><b>Rodzaj nie zgadza sie z linkiem</b> - wybral "Album", a wkleil
- *       utwor. Mowimy wprost, co wkleil, zamiast ogolnego "zly link".</li>
- *   <li><b>Wybrano rodzaj, ale nie podano adresu</b> (albo odwrotnie).</li>
- *   <li><b>Moment startu przy albumie lub artyscie.</b> Formularz chowa wtedy
- *       to pole, ale ktos moze wyslac zapytanie z pominieciem przegladarki -
- *       a serwer nie moze ufac temu, co przyjdzie.</li>
- * </ol>
- */
+/** Walidator dla ValidMusicLink. */
 public class ValidMusicLinkValidator
     implements ConstraintValidator<ValidMusicLink, MusicLinkToValidate> {
 
@@ -52,12 +35,7 @@ public class ValidMusicLinkValidator
 
         Optional<ParsedMusicLink> parsed = MusicLinkParser.parse(data.musicUrl());
         if (parsed.isEmpty()) {
-            /*
-             * Zwykly YouTube dostaje WLASNY komunikat. Ogolne "to nie jest
-             * link do zadnego znanego serwisu" wyglada przy adresie z YouTube'a
-             * jak blad aplikacji - przeciez YouTube kazdy zna. Tutaj mowimy
-             * wprost, co zrobic: otworzyc to samo w YouTube Music.
-             */
+            /* Zwykly YouTube dostaje WLASNY komunikat. */
             String message = MusicLinkParser.isPlainYouTube(data.musicUrl())
                 ? "{validation.music.url.youtubeNotMusic}"
                 : "{validation.music.url.invalid}";
@@ -67,9 +45,8 @@ public class ValidMusicLinkValidator
         MusicKind fromLink = parsed.get().kind();
         if (fromLink != data.musicKind()) {
             /*
-             * Komunikat mowi, CO uzytkownik wkleil - "to jest link do utworu"
-             * jest o wiele bardziej pomocne niz "zly link". Klucz skladamy
-             * z nazwy rodzaju, wiec kazdy przypadek ma wlasne tlumaczenie.
+             * Komunikat mowi, CO uzytkownik wkleil - "to jest link do utworu" jest o wiele
+             * bardziej pomocne niz "zly link".
              */
             return error(context, "musicUrl",
                 "{validation.music.kind.mismatch." + fromLink.name().toLowerCase(java.util.Locale.ROOT) + "}");
@@ -91,13 +68,7 @@ public class ValidMusicLinkValidator
         return error(context, "musicStartSeconds", "{validation.music.start.nolink}");
     }
 
-    /**
-     * Przypina komunikat do KONKRETNEGO pola.
-     *
-     * <p>Bez tego blad z poziomu klasy trafia do odpowiedzi z pustym polem
-     * {@code field} i frontend nie wie, co podswietlic - dokladnie tak samo
-     * jak przy {@link PasswordsMatchValidator}.</p>
-     */
+    /** Przypina komunikat do KONKRETNEGO pola. */
     private boolean error(ConstraintValidatorContext context, String field, String message) {
         context.disableDefaultConstraintViolation();
         context.buildConstraintViolationWithTemplate(message)

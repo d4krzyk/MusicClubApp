@@ -29,21 +29,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Testy jednostkowe serwisu - wymaganie nr 13.
- *
- * <p>Wyklad 5 (slajd 8): testy jednostkowe "powinny testowac jeden byt",
- * "powinny dotyczyc serwisow i klas pomocniczych" i powinno byc ich najwiecej,
- * bo sa szybkie.</p>
- *
- * <p>Zaleznosci serwisu (repozytorium, encoder, mapper) sa atrapami -
- * {@code @Mock} z Mockito (wyklad 5, slajdy 17-18). Dzieki temu test nie
- * dotyka bazy danych i sprawdza wylacznie logike samego serwisu.</p>
- *
- * <p>{@code @ExtendWith(MockitoExtension.class)} inicjalizuje atrapy -
- * to nowszy odpowiednik {@code MockitoAnnotations.openMocks(this)} ze slajdu 17.
- * {@code @InjectMocks} tworzy testowany obiekt i wstrzykuje mu atrapy.</p>
- */
+/** Testy jednostkowe serwisu - wymaganie nr 13. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService - logika rejestracji i wyszukiwania")
 class UserServiceTest {
@@ -161,14 +147,7 @@ class UserServiceTest {
     /*  Sprzatanie po usunietym koncie                                     */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Kasowanie awatara przenioslo sie tutaj z modulu moderacji.
-     *
-     * <p>Zdjecie profilowe jest wlasnoscia konta, wiec to ten modul wie,
-     * gdzie ono lezy - tak samo jak przy wgrywaniu i zmianie. Konto usuniete
-     * z bazy, ale z fotografia lezaca dalej na serwerze, byloby usuniete
-     * tylko na niby.</p>
-     */
+    /** Kasowanie awatara przenioslo sie tutaj z modulu moderacji. */
     @Test
     @DisplayName("usuwanie konta zdejmuje z dysku jego awatar")
     void deletingAccountRemovesItsAvatar() {
@@ -184,9 +163,9 @@ class UserServiceTest {
     @DisplayName("konto bez awatara nie kasuje zadnego pliku")
     void accountWithoutAvatarRemovesNothing() {
         /*
-         * Skladnica plikow sama pilnuje, zeby nie ruszac niczego przy pustej
-         * nazwie - ale sprawdzamy to stad, bo to TUTAJ decydujemy, ze wolamy
-         * ja bezwarunkowo, zamiast owijac wywolanie w "jesli nie null".
+         * Skladnica plikow sama pilnuje, zeby nie ruszac niczego przy pustej nazwie - ale
+         * sprawdzamy to stad, bo to TUTAJ decydujemy, ze wolamy ja bezwarunkowo, zamiast owijac
+         * wywolanie w "jesli nie null".
          */
         User user = new User("anna", "anna@example.com", "hash");
 

@@ -1,15 +1,6 @@
-/**
- * Zamiana czasu utworu miedzy zapisem "1:23" a liczba sekund.
- *
- * <p>Uzytkownik mysli w minutach i sekundach, a backend przechowuje sekundy -
- * te dwie funkcje sa mostkiem miedzy jednym a drugim.</p>
- */
+/** Zamiana czasu utworu miedzy zapisem "1:23" a liczba sekund. */
 
-/**
- * "1:23" -&gt; 83. Przyjmuje tez sam zapis sekundowy ("83").
- *
- * @returns liczba sekund albo {@code null}, gdy pole jest puste lub bledne
- */
+/** "1:23" -&gt; 83. */
 export function toSeconds(text) {
   if (!text || !text.trim()) {
     return null;

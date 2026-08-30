@@ -33,36 +33,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Czat: wysylanie, czytanie i lista rozmow.
- *
- * <p><b>Glowna regula: PISAC mozna wylacznie ze znajomymi.</b> Pilnuje tego
- * {@link #requireFriend} i przechodzi przez nie wyslanie wiadomosci oraz
- * sygnal "pisze". Gdyby ktorykolwiek z tych adresow pomijal sprawdzenie,
- * wystarczyloby wywolac wlasnie ten jeden, zeby zaczepiac obcych ludzi.</p>
- *
- * <p><b>CZYTANIE ma lagodniejszy warunek</b> ({@link #requirePartner}):
- * wystarczy, ze rozmowa juz sie odbyla. Poczatkowo bylo tu jedno sprawdzenie
- * na wszystko i skutek byl taki, ze usuniecie kogos ze znajomych powodowalo
- * zniknięcie calej rozmowy - dla obu stron wygladalo to jak awaria, a nie jak
- * skutek czyjejs decyzji. Kazda ze stron dostala te wiadomosci i ma prawo je
- * przeczytac; nie ma natomiast prawa napisac nic nowego.</p>
- *
- * <p><b>Zerwanie znajomosci nie kasuje wiadomosci.</b> Zostaja w bazie i wraca
- * z nimi mozliwosc pisania, gdy znajomosc zostanie odnowiona. Kasowanie cudzych
- * wypowiedzi przy klknieciu "usun ze znajomych" byloby decyzja za obie strony
- * naraz - a wiadomosc nalezy tez do tego, kto ja dostal.</p>
- */
+/** Czat: wysylanie, czytanie i lista rozmow. */
 @Service
 public class MessageService {
 
-    /**
-     * Ile najwyzej nowych wiadomosci oddajemy w jednym odpytaniu.
-     *
-     * <p>Okno czatu potrafi stac otwarte na karcie, do ktorej nikt nie wraca
-     * godzinami. Bez limitu pierwsze odpytanie po powrocie sciagneloby
-     * wszystko, co przez ten czas przyszlo, jednym kawalkiem.</p>
-     */
+    /** Ile najwyzej nowych wiadomosci oddajemy w jednym odpytaniu. */
     private static final int MAX_SYNC_BATCH = 50;
 
     private final MessageRepository messageRepository;
@@ -90,21 +65,7 @@ public class MessageService {
     /*  Wysylanie                                                          */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Wysyla wiadomosc do znajomego.
-     *
-     * <p><b>Czat blokuje osobny zakaz - {@code messagingBannedUntil}, a nie
-     * zakaz publikowania.</b> W pierwszej wersji bylo odwrotnie: zakaz
-     * publikowania wylaczal takze czat, bo kara zostawiajaca otwarta droge
-     * do pisania prywatnie nie jest kara. Odkad administrator ma DWA osobne
-     * przelaczniki, ten argument sie odwraca - przy dawnym zachowaniu nie
-     * dalo by sie w ogole ustawic "nie wolno pisac postow, ale wolno rozmawiac
-     * ze znajomymi", czyli najczestszego przypadku przy kims, kto zasmieca
-     * tablice, a nikomu nie dokucza.</p>
-     *
-     * <p>Kto ma dostac obie kary, dostaje obie - administrator wlacza dwa
-     * przelaczniki zamiast jednego. Kazda wygasa sama.</p>
-     */
+    /** Wysyla wiadomosc do znajomego. */
     @Transactional
     public MessageResponse send(String senderUsername, String recipientUsername,
                                 SendMessageRequest request) {
@@ -117,12 +78,7 @@ public class MessageService {
                 sender.bannedUntil(BanKind.MESSAGING));
         }
 
-        /*
-         * Tresc przycinamy z bialych znakow, a pusta zamieniamy na null.
-         * Bez tego wiadomosc "sam utwor" mialaby w bazie raz null, raz pusty
-         * napis, raz spacje - zaleznie od tego, co akurat zostalo w polu.
-         * Frontend musialby wtedy sprawdzac wszystkie trzy przypadki.
-         */
+        /* Tresc przycinamy z bialych znakow, a pusta zamieniamy na null. */
         String content = request.content() == null || request.content().isBlank()
             ? null
             : request.content().trim();
@@ -132,22 +88,13 @@ public class MessageService {
 
         Message saved = messageRepository.save(message);
 
-        /*
-         * Sygnal "pisze" gasimy od razu. Bez tego dymek z kropkami wisialby
-         * jeszcze kilka sekund POD wlasnie dostarczona wiadomoscia.
-         */
+        /* Sygnal "pisze" gasimy od razu. */
         typing.stoppedTyping(sender.getId(), recipient.getId());
 
         return messageMapper.toResponse(saved, sender);
     }
 
-    /**
-     * Podpina nagranie - razem z tytulem i miniaturka.
-     *
-     * <p>Dokladnie ta sama sciezka co przy postach ({@code PostService}):
-     * poprawnosc adresu sprawdzil juz walidator {@code ValidMusicLink},
-     * wiec nierozpoznany adres moze tu znaczyc juz tylko "pole jest puste".</p>
-     */
+    /** Podpina nagranie - razem z tytulem i miniaturka. */
     private void applyMusic(Message message, String url, Integer startSeconds) {
         ParsedMusicLink link = MusicLinkParser.parse(url).orElse(null);
 
@@ -166,12 +113,7 @@ public class MessageService {
     /*  Czytanie                                                           */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Historia rozmowy, <b>od najnowszej</b>.
-     *
-     * <p>Odwrocenie tej kolejnosci przed narysowaniem to jedna linijka
-     * w przegladarce - patrz komentarz przy {@code MessageRepository.conversation}.</p>
-     */
+    /** Historia rozmowy, od najnowszej. */
     @Transactional(readOnly = true)
     public Page<MessageResponse> conversation(String me, String partnerUsername,
                                               Pageable pageable) {
@@ -183,21 +125,7 @@ public class MessageService {
             .map(message -> messageMapper.toResponse(message, viewer));
     }
 
-    /**
-     * Co nowego w otwartej rozmowie - <b>jednym zapytaniem</b>.
-     *
-     * <p>Nowe wiadomosci, dymek "pisze", obecnosc rozmowcy i licznik przy
-     * ikonie czatu naraz. Po co razem - patrz {@link ConversationSyncResponse}.</p>
-     *
-     * <p><b>Oznaczanie przeczytanych dzieje sie TUTAJ</b>, a nie osobnym
-     * zapytaniem z przegladarki. Skoro okno rozmowy jest otwarte i wlasnie
-     * odebralo nowa wiadomosc, to znaczy, ze zostala pokazana - a wiec
-     * przeczytana. Osobne zapytanie robiloby to samo pol sekundy pozniej,
-     * kosztem jeszcze jednego objazdu do serwera.</p>
-     *
-     * @param afterId identyfikator ostatniej wiadomosci, ktora przegladarka
-     *                juz ma; {@code null} przy pierwszym odpytaniu
-     */
+    /** Co nowego w otwartej rozmowie - jednym zapytaniem. */
     @Transactional
     public ConversationSyncResponse sync(String me, String partnerUsername, Long afterId) {
         User viewer = requireUser(me);
@@ -212,12 +140,6 @@ public class MessageService {
             .map(message -> messageMapper.toResponse(message, viewer))
             .toList();
 
-        /*
-         * Zamapowac MUSIMY przed oznaczeniem przeczytanych: masowy UPDATE
-         * czysci pamiec podreczna Hibernate'a (patrz komentarz przy
-         * markConversationRead), wiec encje odczytane wczesniej staja sie
-         * odczepione. Kolejnosc tych dwoch linijek nie jest przypadkowa.
-         */
         boolean somethingToRead = fresh.stream()
             .anyMatch(message -> message.getRecipient().getId().equals(viewer.getId()));
 
@@ -235,14 +157,7 @@ public class MessageService {
             canWriteTo(viewer, partner));
     }
 
-    /**
-     * Oznacza cala rozmowe jako przeczytana.
-     *
-     * <p>Wolane przy otwarciu watku - {@link #sync} robi to samo dla wiadomosci,
-     * ktore doszly juz przy otwartym oknie.</p>
-     *
-     * @return ile wpisow zmienilo stan
-     */
+    /** Oznacza cala rozmowe jako przeczytana. */
     @Transactional
     public int markRead(String me, String partnerUsername) {
         User viewer = requireUser(me);
@@ -271,30 +186,12 @@ public class MessageService {
     /*  Lista rozmow                                                       */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Wszyscy znajomi z ostatnia wiadomoscia, licznikiem nieprzeczytanych
-     * i kropka obecnosci.
-     *
-     * <p><b>Trzy zapytania na cala liste, niezaleznie od liczby znajomych.</b>
-     * Naiwna wersja - dla kazdego znajomego pobierz ostatnia wiadomosc
-     * i policz nieprzeczytane - to dwa zapytania NA OSOBE, czyli przy
-     * trzydziestu znajomych szescdziesiat zapytan na jedno otwarcie czatu
-     * (klasyczny problem N+1). Tutaj: jedno o identyfikatory ostatnich
-     * wiadomosci, jedno o same wiadomosci, jedno o liczniki.</p>
-     *
-     * <p><b>Kolejnosc.</b> Najpierw rozmowy zywe - od najnowszej wiadomosci -
-     * a pod nimi reszta znajomych alfabetycznie. Tak samo jak w tablicy:
-     * to, co swieze, ma byc na gorze bez przewijania.</p>
-     */
+    /** Wszyscy znajomi z ostatnia wiadomoscia, licznikiem nieprzeczytanych i kropka obecnosci. */
     @Transactional(readOnly = true)
     public List<ConversationResponse> conversations(String me) {
         User viewer = requireUser(me);
 
-        /*
-         * Ostatnie wiadomosci. Identyfikatory i tresc pobieramy osobno,
-         * bo zapytanie grupujace umie oddac tylko wyliczone wartosci -
-         * nie cale encje.
-         */
+        /* Ostatnie wiadomosci. */
         Map<Long, Long> lastIdByPartner = new HashMap<>();
         for (ConversationRow row : messageRepository.lastMessagePerConversation(viewer.getId())) {
             lastIdByPartner.put(row.partnerId(), row.lastMessageId());
@@ -311,15 +208,9 @@ public class MessageService {
         }
 
         /*
-         * Lista sklada sie z DWOCH grup, a nie z jednej.
-         *
-         * 1. wszyscy znajomi - takze ci, z ktorymi nikt jeszcze nie zamienil
-         *    slowa, bo lista sluzy tez do ZACZYNANIA rozmow;
-         * 2. byli znajomi, z ktorymi rozmowa juz sie odbyla.
-         *
-         * Druga grupa doszla po tym, jak okazalo sie, ze usuniecie kogos ze
-         * znajomych powodowalo zniknięcie calej rozmowy - dla obu stron
-         * wygladalo to jak awaria aplikacji, a nie jak skutek czyjejs decyzji.
+         * Lista sklada sie z DWOCH grup, a nie z jednej. 1. wszyscy znajomi - takze ci, z ktorymi
+         * nikt jeszcze nie zamienil slowa, bo lista sluzy tez do ZACZYNANIA rozmow; 2. byli
+         * znajomi, z ktorymi rozmowa juz sie odbyla.
          */
         Set<Long> friendIds = viewer.getFriends().stream()
             .map(User::getId)
@@ -350,12 +241,7 @@ public class MessageService {
                 friendIds.contains(partner.getId())));
         }
 
-        /*
-         * Sortujemy w Javie, a nie w bazie. Zapytanie musialoby polaczyc
-         * znajomych z wyliczona lista rozmow i posortowac po kolumnie, ktorej
-         * przy wiekszosci wierszy nie ma - a lista ma tyle pozycji, ilu
-         * czlowiek ma znajomych, wiec kosztu tu nie ma zadnego.
-         */
+        /* Sortujemy w Javie, a nie w bazie. */
         conversations.sort(
             Comparator.comparing(
                     (ConversationResponse c) -> Optional.ofNullable(c.lastMessage())
@@ -372,13 +258,7 @@ public class MessageService {
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Kasuje wszystkie wiadomosci konta - uzywane przy usuwaniu uzytkownika.
-     *
-     * <p>Musi pojsc PRZED skasowaniem samego konta: wiadomosci wskazuja na nie
-     * dwoma kluczami obcymi i baza nie pozwoli usunac wiersza, do ktorego cos
-     * jeszcze prowadzi.</p>
-     */
+    /** Kasuje wszystkie wiadomosci konta - uzywane przy usuwaniu uzytkownika. */
     @Transactional
     public void deleteAllOf(Long userId) {
         messageRepository.deleteAllOfUser(userId);
@@ -393,19 +273,7 @@ public class MessageService {
             .orElseThrow(() -> new NoSuchElementFoundException("user", username));
     }
 
-    /**
-     * Zwraca druga strone rozmowy albo <b>przerywa</b>, gdy nie wolno z nia pisac.
-     *
-     * <p>Trzy przypadki, kazdy z innym komunikatem, bo kazdy znaczy co innego
-     * dla tego, kto go zobaczy:</p>
-     * <ul>
-     *   <li><b>nie ma takiego konta</b> - 404, zwykla literowka albo konto
-     *       usuniete w miedzyczasie,</li>
-     *   <li><b>rozmowa z samym soba</b> - to nie jest luka bezpieczenstwa,
-     *       tylko pomylka; osobny komunikat oszczedza domyslania sie,</li>
-     *   <li><b>to nie jest znajomy</b> - i to jest ta wlasciwa blokada.</li>
-     * </ul>
-     */
+    /** Zwraca druga strone rozmowy albo przerywa, gdy nie wolno z nia pisac. */
     private User requireFriend(User viewer, String partnerUsername) {
         User partner = requireUser(partnerUsername);
 
@@ -413,11 +281,7 @@ public class MessageService {
             throw OperationNotAllowedException.messageToSelf();
         }
 
-        /*
-         * Pytamy bazy, a nie kolekcji viewer.getFriends(). Przy koncie
-         * z setka znajomych sprawdzenie w Javie oznacza wczytanie ich
-         * wszystkich, zeby odpowiedziec na pytanie o jedna osobe.
-         */
+        /* Pytamy bazy, a nie kolekcji viewer.getFriends(). */
         if (!userRepository.areFriends(viewer.getUsername(), partner.getUsername())) {
             throw OperationNotAllowedException.messageToStranger();
         }
@@ -425,24 +289,7 @@ public class MessageService {
         return partner;
     }
 
-    /**
-     * Jak {@link #requireFriend}, ale <b>do CZYTANIA</b> - i wystarcza mu sama
-     * historia rozmowy.
-     *
-     * <p><b>Skad ta druga wersja.</b> Wczesniej zerwanie znajomosci
-     * powodowalo, ze rozmowa <i>znikala</i> z listy i nie dalo sie jej nawet
-     * otworzyc. Wiadomosci zostawaly w bazie, ale dla obu stron wygladalo to
-     * tak, jakby rozmowa nigdy sie nie odbyla - a przeciez kazda ze stron
-     * dostala te wiadomosci i ma prawo je przeczytac. Zniknięcie calego watku
-     * jest tez gorsza informacja niz jasny komunikat: nie wiadomo, czy druga
-     * osoba usunela konto, czy zerwala znajomosc, czy cos sie zepsulo.</p>
-     *
-     * <p><b>Czytanie tak, pisanie nie.</b> Historia jest podstawa wystarczajaca
-     * do zajrzenia w to, co juz sie wydarzylo, ale nie do wysylania czegos
-     * nowego - inaczej "usun ze znajomych" nie zamykaloby drogi do zaczepiania
-     * i kazdy mogl by pisac dalej mimo zerwanej znajomosci. Dlatego wysylanie
-     * i sygnal "pisze" chodza dalej przez {@link #requireFriend}.</p>
-     */
+    /** Jak #requireFriend, ale do CZYTANIA - i wystarcza mu sama historia rozmowy. */
     private User requirePartner(User viewer, String partnerUsername) {
         User partner = requireUser(partnerUsername);
 

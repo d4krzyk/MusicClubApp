@@ -29,16 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-/**
- * Wlasny profil zalogowanego uzytkownika - ustawienia konta.
- *
- * <p><b>Czym to sie rozni od {@code UserController}?</b> Tamten sluzy do
- * przegladania CUDZYCH kont i jest dostepny tylko dla administratora. Tutaj
- * kazdy zalogowany moze zmienic wylacznie SWOJE dane - nigdzie nie przyjmujemy
- * identyfikatora uzytkownika z zapytania, tylko bierzemy go z sesji
- * ({@code authentication.getName()}). Dzieki temu nie da sie podmienic id
- * w adresie i wejsc w cudze ustawienia.</p>
- */
+/** Wlasny profil zalogowanego uzytkownika - ustawienia konta. */
 @RestController
 @RequestMapping("/api/profile")
 @Tag(name = "Profil", description = "Ustawienia wlasnego konta")
@@ -56,16 +47,7 @@ public class ProfileController {
         this.securityContextRepository = securityContextRepository;
     }
 
-    /**
-     * Zmiana loginu i adresu e-mail.
-     *
-     * <p><b>Uwaga na pulapke:</b> sesja zapamietuje uzytkownika po LOGINIE.
-     * Po jego zmianie zapisany w sesji login przestaje istniec w bazie
-     * i kazde kolejne zapytanie (np. {@code /api/auth/me}) konczyloby sie
-     * bledem 404 albo wylogowaniem. Dlatego po udanej zmianie budujemy nowy
-     * obiekt uwierzytelnienia i nadpisujemy nim sesje - patrz
-     * {@link #refreshSession}.</p>
-     */
+    /** Zmiana loginu i adresu e-mail. */
     @PutMapping
     @Operation(summary = "Zmienia login i adres e-mail zalogowanego uzytkownika")
     @ApiResponses({
@@ -88,13 +70,7 @@ public class ProfileController {
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * Zmiana hasla. Wymaga podania obecnego hasla - patrz komentarz
-     * w {@link ChangePasswordRequest}.
-     *
-     * <p>Zwracamy 204 NO CONTENT: operacja sie udala, ale nie ma czego
-     * odsylac (wyklad 4, slajd 32).</p>
-     */
+    /** Zmiana hasla. */
     @PutMapping("/password")
     @Operation(summary = "Zmienia haslo zalogowanego uzytkownika")
     @ApiResponses({
@@ -110,12 +86,7 @@ public class ProfileController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
-    /**
-     * Wgranie zdjecia profilowego.
-     *
-     * <p>Stare zdjecie jest kasowane z dysku - bez tego kazda zmiana
-     * zostawialaby po sobie nieuzywany plik, a katalog uploadow rosl bez konca.</p>
-     */
+    /** Wgranie zdjecia profilowego. */
     @PutMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Ustawia zdjecie profilowe zalogowanego uzytkownika")
     @ApiResponses({
@@ -137,8 +108,8 @@ public class ProfileController {
     }
 
     /**
-     * Podmienia uzytkownika zapisanego w sesji na tego z nowym loginem,
-     * zeby zalogowanie przetrwalo zmiane nazwy konta.
+     * Podmienia uzytkownika zapisanego w sesji na tego z nowym loginem, zeby zalogowanie
+     * przetrwalo zmiane nazwy konta.
      */
     private void refreshSession(String newUsername,
                               HttpServletRequest request,

@@ -7,6 +7,7 @@ import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.dto.SendMessageRequest;
 import com.musicclubapp.entity.ModerationAction;
+import com.musicclubapp.entity.NotificationType;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.entity.ReportContext;
@@ -36,14 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-/**
- * Zgloszenia: limity, dowody i decyzje administratora.
- *
- * <p>Na prawdziwej bazie, bo najwazniejsza rzecz do sprawdzenia - <b>ze
- * migawka dowodow przezywa skasowanie wiadomosci</b> - jest wlasnie
- * wlasciwoscia zapisu w bazie, a nie kodu w Javie. Atrapa repozytorium
- * potwierdzilaby ja niezaleznie od tego, jak wyglada mapowanie.</p>
- */
+/** Zgloszenia: limity, dowody i decyzje administratora. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -66,18 +60,7 @@ class ReportServiceTest {
     private User ala;
     private User troll;
 
-    /**
-     * Ilu administratorow ma serwis.
-     *
-     * <p><b>Nie zakladamy wlasnego konta administratora</b> - jedno powstaje
-     * juz przy starcie aplikacji ({@code AdminInitializer}) i zyje w tej samej
-     * bazie H2 co testy, bo kontekst Springa jest wspolny. Proba zalozenia
-     * drugiego o tym samym loginie konczy sie naruszeniem unikalnosci.</p>
-     *
-     * <p>Liczbe odczytujemy, zamiast wpisywac 1: gdyby kiedys doszlo drugie
-     * konto administratora, test na powiadomienia zaczalby klamac, a nie
-     * czerwieniec.</p>
-     */
+    /** Ilu administratorow ma serwis. */
     private int adminCount;
 
     @BeforeEach
@@ -138,10 +121,8 @@ class ReportServiceTest {
     @DisplayName("administrator NIE dostaje powiadomienia o wlasnym zgloszeniu")
     void reporterAdminIsNotNotified() {
         /*
-         * Ta sama regula co wszedzie indziej przy powiadomieniach ("nie
-         * powiadamiam samego siebie"), tylko zastosowana do listy odbiorcow.
-         * Bez niej administrator, ktory sam cos zglosil, dostawalby dzwonek
-         * z informacja o wlasnym klknieciu.
+         * Ta sama regula co wszedzie indziej przy powiadomieniach ("nie powiadamiam samego
+         * siebie"), tylko zastosowana do listy odbiorcow.
          */
         long before = notificationRepository.count();
 
@@ -169,12 +150,7 @@ class ReportServiceTest {
     @Test
     @DisplayName("po ZAMKNIECIU mozna zglosic te osobe ponownie")
     void allowsReportAgainAfterClosing() {
-        /*
-         * Blokada dotyczy zgloszen OTWARTYCH, a nie osoby na zawsze. Po
-         * decyzji administratora kolejne zgloszenie dotyczy juz nowego
-         * zdarzenia - zablokowanie go na stale oznaczaloby, ze kto raz
-         * kogos zglosil, ten nie moze zglosic go nigdy wiecej.
-         */
+        /* Blokada dotyczy zgloszen OTWARTYCH, a nie osoby na zawsze. */
         ReportResponse first = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", first.id(),
             new ResolveReportRequest(ReportStatus.RESOLVED, "Nalozono zakaz publikowania", null, null, null));
@@ -187,8 +163,8 @@ class ReportServiceTest {
     @DisplayName("dzienny limit zatrzymuje zglaszanie wszystkich po kolei")
     void dailyLimitStopsMassReporting() {
         /*
-         * Blokada "jedno otwarte na osobe" nie zadzialalaby tu ANI RAZU -
-         * kazde zgloszenie dotyczy kogos innego. Dlatego limity sa dwa.
+         * Blokada "jedno otwarte na osobe" nie zadzialalaby tu ANI RAZU - kazde zgloszenie dotyczy
+         * kogos innego.
          */
         for (int i = 0; i < ReportService.MAX_PER_DAY; i++) {
             User target = userRepository.save(
@@ -225,9 +201,8 @@ class ReportServiceTest {
     @DisplayName("nie da sie podpiac pod zgloszenie posta NAPISANEGO PRZEZ KOGOS INNEGO")
     void postMustBelongToTheReportedPerson() {
         /*
-         * Bez tego sprawdzenia dalo by sie zglosic Trolla, dolaczajac jako
-         * dowod cudzy - na przyklad wlasny - post. Administrator patrzylby
-         * wtedy na tresc, ktorej zglaszany nigdy nie napisal.
+         * Bez tego sprawdzenia dalo by sie zglosic Trolla, dolaczajac jako dowod cudzy - na
+         * przyklad wlasny - post.
          */
         Post cudzy = postRepository.save(new Post(ala, "moj wlasny post"));
         entityManager.flush();
@@ -241,11 +216,7 @@ class ReportServiceTest {
     @Test
     @DisplayName("nie da sie zglosic posta, ktorego sie nie widzi")
     void cannotReportInvisiblePost() {
-        /*
-         * Post "tylko dla znajomych" osoby, ktora znajomym nie jest, jest dla
-         * nas niewidoczny. Zgloszenie go bylo by przyznaniem sie do tego,
-         * ze jednak sie go widzialo - czyli obejsciem widocznosci postow.
-         */
+        /* Post "tylko dla znajomych" osoby, ktora znajomym nie jest, jest dla nas niewidoczny. */
         Post prywatny = new Post(troll, "tylko dla znajomych");
         prywatny.setVisibility(PostVisibility.FRIENDS);
         postRepository.save(prywatny);
@@ -292,12 +263,7 @@ class ReportServiceTest {
     @Test
     @DisplayName("MIGAWKA PRZEZYWA skasowanie wiadomosci - to jest caly sens kopiowania tresci")
     void evidenceSurvivesMessageDeletion() {
-        /*
-         * Najwazniejszy test w tej klasie. Gdyby zgloszenie tylko WSKAZYWALO
-         * na wiadomosci, zglaszany mialby prosty sposob na wyjscie z sytuacji:
-         * doprowadzic do ich skasowania. Administrator otwieralby wtedy
-         * zgloszenie i widzial pustke.
-         */
+        /* Najwazniejszy test w tej klasie. */
         makeFriends();
         messages.send("troll", "ala", text("mam cie gdzies"));
         entityManager.flush();
@@ -335,25 +301,7 @@ class ReportServiceTest {
         assertThat(closed.resolvedAt()).isNotNull();
     }
 
-    /**
-     * Kasowanie posta przy zamykaniu sprawy - <b>na prawdziwej bazie</b>.
-     *
-     * <p><b>Blad, ktory to wymusil.</b> Decyzja „usun post" konczyla sie
-     * bledem 500:</p>
-     *
-     * <pre>
-     * update or delete on table "posts" violates foreign key constraint on table "reports"
-     * </pre>
-     *
-     * <p>Zgloszenie wskazuje na post kluczem obcym, wiec dopoki wskazuje,
-     * baza posta nie odda. Trzeba go najpierw odpiac.</p>
-     *
-     * <p><b>Dlaczego ten test musi byc TUTAJ, a nie przy atrapach.</b>
-     * {@code UserModerationServiceTest} sprawdza to samo dzialanie i przechodzil
-     * na zielono przez caly czas trwania tego bledu - bo atrapa repozytorium
-     * nie ma kluczy obcych i pozwoli skasowac cokolwiek. <b>Wiezy spojnosci
-     * istnieja wylacznie w bazie i tylko tam da sie je zlamac.</b></p>
-     */
+    /** Kasowanie posta przy zamykaniu sprawy - na prawdziwej bazie. */
     @Test
     @DisplayName("usuniecie posta przy zamykaniu sprawy NIE odbija sie od klucza obcego")
     void deletingTheReportedPostDoesNotHitForeignKey() {
@@ -371,11 +319,7 @@ class ReportServiceTest {
             .describedAs("post mial zniknac naprawde, a nie tylko w notatce")
             .isEmpty();
 
-        /*
-         * Zgloszenie ZOSTAJE - to nie jest drobiazg. Historia konta opiera sie
-         * na zamknietych zgloszeniach i wplywa na kolejne decyzje; kasowanie
-         * ich razem z postem po cichu czyscilo by kartoteke.
-         */
+        /* Zgloszenie ZOSTAJE - to nie jest drobiazg. */
         assertThat(reportRepository.findById(created.id()))
             .describedAs("zgloszenie ma przetrwac skasowanie posta")
             .isPresent();
@@ -414,14 +358,7 @@ class ReportServiceTest {
         assertThat(User.isForever(po.bannedUntil(BanKind.POSTING))).isTrue();
     }
 
-    /**
-     * Zmiana decyzji po fakcie - na prawdziwej bazie.
-     *
-     * <p>Decyzja bywa pochopna albo podjeta przy niepelnym obrazie sprawy.
-     * Bez mozliwosci jej cofniecia jedynym wyjsciem byloby poprawianie wiersza
-     * wprost w bazie - a zamkniete zgloszenia licza sie do historii konta
-     * i wplywaja na kolejne decyzje.</p>
-     */
+    /** Zmiana decyzji po fakcie - na prawdziwej bazie. */
     @Test
     @DisplayName("zamknieta sprawe mozna otworzyc i zdecydowac inaczej")
     void closedReportCanBeReopenedAndDecidedAgain() {
@@ -458,8 +395,8 @@ class ReportServiceTest {
     @DisplayName("drugie zamkniecie jest odrzucane - pierwsza decyzja jest wiazaca")
     void secondCloseIsRefused() {
         /*
-         * Dwoch administratorow klikajacych jednoczesnie nadpisywaloby sobie
-         * nawzajem notatki, a data zamkniecia przesuwalaby sie na pozniejsza.
+         * Dwoch administratorow klikajacych jednoczesnie nadpisywaloby sobie nawzajem notatki, a
+         * data zamkniecia przesuwalaby sie na pozniejsza.
          */
         ReportResponse created = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", created.id(),
@@ -484,9 +421,8 @@ class ReportServiceTest {
     @DisplayName("panel pokazuje, ile WCZESNIEJSZYCH zgloszen na te osobe bylo zasadnych")
     void panelShowsHistory() {
         /*
-         * Jedno zgloszenie moze byc nieporozumieniem; piate zasadne to juz
-         * wzorzec zachowania - i zupelnie inna decyzja. Bez tej liczby
-         * administrator musialby sam przegladac historie konta.
+         * Jedno zgloszenie moze byc nieporozumieniem; piate zasadne to juz wzorzec zachowania - i
+         * zupelnie inna decyzja.
          */
         ReportResponse first = reports.create("ala", "troll", profileReport());
         reports.resolve("admin", first.id(),
@@ -532,5 +468,76 @@ class ReportServiceTest {
 
     private SendMessageRequest text(String content) {
         return new SendMessageRequest(content, null, null, null);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Zglaszajacy dowiaduje sie, jak skonczyla sie sprawa                */
+    /* ------------------------------------------------------------------ */
+
+    /** Bez tego zgloszenie znika zglaszajacemu z oczu w chwili wyslania. */
+    @Test
+    @DisplayName("zamkniecie sprawy powiadamia ZGLASZAJACEGO")
+    void closingTheCaseNotifiesTheReporter() {
+        ReportResponse created = reports.create("ala", "troll", profileReport());
+        notificationRepository.deleteAll();   // czyscimy powiadomienia o samym zgloszeniu
+
+        decisions.resolve("admin", created.id(), new ResolveReportRequest(
+            ReportStatus.RESOLVED, "Konto dostalo ostrzezenie", ModerationAction.NONE, null, null));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(notificationRepository.findAll())
+            .describedAs("zglaszajacy ma dostac dokladnie jedno powiadomienie o decyzji")
+            .singleElement()
+            .satisfies(n -> {
+                assertThat(n.getType()).isEqualTo(NotificationType.REPORT_RESOLVED);
+                assertThat(n.getRecipient().getUsername()).isEqualTo("ala");
+            });
+    }
+
+    @Test
+    @DisplayName("zglaszajacy widzi decyzje i notatke administratora")
+    void reporterSeesTheDecisionAndTheNote() {
+        ReportResponse created = reports.create("ala", "troll", profileReport());
+        decisions.resolve("admin", created.id(), new ResolveReportRequest(
+            ReportStatus.DISMISSED, "Opis profilu nie lamie zasad",
+            ModerationAction.NONE, null, null));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(reports.mine("ala", PageRequest.of(0, 20)).getContent())
+            .singleElement()
+            .satisfies(mine -> {
+                assertThat(mine.status()).isEqualTo(ReportStatus.DISMISSED);
+                assertThat(mine.resolutionNote()).isEqualTo("Opis profilu nie lamie zasad");
+                assertThat(mine.reportedUsername()).isEqualTo("troll");
+                assertThat(mine.resolvedAt()).isNotNull();
+            });
+    }
+
+    /** Kazdy widzi WYLACZNIE swoje zgloszenia. */
+    @Test
+    @DisplayName("cudzych zgloszen nie widac na wlasnej liscie")
+    void everyoneSeesOnlyTheirOwnReports() {
+        reports.create("ala", "troll", profileReport());
+
+        assertThat(reports.mine("troll", PageRequest.of(0, 20)).getContent()).isEmpty();
+        assertThat(reports.mine("ala", PageRequest.of(0, 20)).getContent()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("otwarta sprawa nie ma jeszcze notatki")
+    void openCaseHasNoNoteYet() {
+        reports.create("ala", "troll", profileReport());
+
+        assertThat(reports.mine("ala", PageRequest.of(0, 20)).getContent())
+            .singleElement()
+            .satisfies(mine -> {
+                assertThat(mine.status()).isEqualTo(ReportStatus.OPEN);
+                assertThat(mine.resolutionNote()).isNull();
+                assertThat(mine.resolvedAt()).isNull();
+            });
     }
 }

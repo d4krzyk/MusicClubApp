@@ -21,27 +21,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Zgloszenie uzytkownika do administratora.
- *
- * <p><b>Czego dotyczy, mowi {@link #context}</b> - profil, konkretny post
- * albo rozmowa. To rozroznienie nie jest ozdoba: przy poscie administrator
- * potrzebuje odnosnika, przy rozmowie - migawki tresci, a przy profilu ani
- * jednego, ani drugiego. Jedno pole "opis" na wszystkie trzy przypadki
- * zmuszaloby zglaszajacego do wklejania linkow recznie.</p>
- *
- * <p><b>Realizuje kolejna relacje {@code ManyToOne}</b> - i to trzy naraz:
- * zglaszajacy, zglaszany i (opcjonalnie) post. Dochodzi do tego kolekcja
- * elementow ({@code @ElementCollection}) z migawka dowodow.</p>
- */
+/** Zgloszenie uzytkownika do administratora. */
 @Entity
 @Table(
     name = "reports",
     indexes = {
         /*
-         * Panel otwiera sie zawsze na tym samym pytaniu: "co czeka na moja
-         * decyzje, od najnowszego". Bez indeksu baza przegladalaby przy kazdym
-         * wejsciu cala tabele - a ta nie jest kasowana, tylko rosnie.
+         * Panel otwiera sie zawsze na tym samym pytaniu: "co czeka na moja decyzje, od
+         * najnowszego".
          */
         @Index(name = "idx_reports_status", columnList = "status, created_at"),
         // Drugie pytanie: "ile razy ta osoba byla juz zglaszana"
@@ -76,18 +63,7 @@ public class Report {
     @Column(nullable = false, length = 16)
     private ReportContext context = ReportContext.PROFILE;
 
-    /**
-     * Post, ktorego dotyczy zgloszenie - tylko przy {@link ReportContext#POST}.
-     *
-     * <p>Prawdziwy klucz obcy, tak samo jak przy powiadomieniach: baza pilnuje,
-     * ze zgloszenie nie wskaze posta, ktorego juz nie ma.</p>
-     *
-     * <p><b>Uwaga na skutek uboczny:</b> skasowanie posta zabiera zgloszeniu
-     * odnosnik. Dlatego przy zgloszeniu posta zapisujemy jego tresc TAKZE
-     * jako dowod ({@link #evidence}) - inaczej administrator, ktory najpierw
-     * skasowal post, a potem otworzyl zgloszenie, nie wiedzialby juz, o co
-     * chodzilo.</p>
-     */
+    /** Post, ktorego dotyczy zgloszenie - tylko przy ReportContext#POST. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
@@ -96,14 +72,7 @@ public class Report {
     @Column(length = MAX_DESCRIPTION_LENGTH, columnDefinition = "TEXT")
     private String description;
 
-    /**
-     * Migawka dowodow - patrz {@link ReportEvidence}.
-     *
-     * <p>{@code FetchType.LAZY}, bo lista zgloszen w panelu pokazuje same
-     * naglowki. Dowody sa potrzebne dopiero po otwarciu jednego zgloszenia -
-     * przy dwudziestu wierszach na stronie pobieranie ich od razu oznaczaloby
-     * czterysta linijek tekstu na jedno wejscie.</p>
-     */
+    /** Migawka dowodow - patrz ReportEvidence. */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
         name = "report_evidence",
@@ -125,13 +94,7 @@ public class Report {
     @Column(name = "resolved_by", length = 50)
     private String resolvedBy;
 
-    /**
-     * Co administrator zrobil - albo dlaczego uznal zgloszenie za bezpodstawne.
-     *
-     * <p>Pole obowiazkowe przy zamykaniu. Zgloszenie zamkniete bez slowa
-     * wyjasnienia jest dla nastepnej osoby patrzacej na historie tego konta
-     * bezuzyteczne: widac, ze cos bylo, ale nie wiadomo co.</p>
-     */
+    /** Co administrator zrobil - albo dlaczego uznal zgloszenie za bezpodstawne. */
     @Column(name = "resolution_note", length = MAX_DESCRIPTION_LENGTH, columnDefinition = "TEXT")
     private String resolutionNote;
 
@@ -160,16 +123,7 @@ public class Report {
         }
     }
 
-    /**
-     * Zamyka zgloszenie.
-     *
-     * <p>Powtorne zamkniecie nie zmienia juz niczego - pierwsza decyzja jest
-     * ta wiazaca. Bez tego dwoch administratorow klikajacych jednoczesnie
-     * nadpisaloby sobie nawzajem notatki, a data zamkniecia przesunelaby sie
-     * na pozniejsza.</p>
-     *
-     * @return czy cokolwiek sie zmienilo
-     */
+    /** Zamyka zgloszenie. */
     public boolean close(ReportStatus decision, String adminUsername, String note) {
         if (status != ReportStatus.OPEN) {
             return false;
@@ -181,23 +135,7 @@ public class Report {
         return true;
     }
 
-    /**
-     * Otwiera sprawe z powrotem, zeby mozna bylo zdecydowac inaczej.
-     *
-     * <p><b>Po co.</b> Decyzja bywa pochopna albo podjeta przy niepelnym
-     * obrazie - a bez tej mozliwosci jedynym wyjsciem byloby poprawianie
-     * wiersza wprost w bazie. Zamkniete zgloszenie liczy sie do historii
-     * konta i wplywa na kolejne decyzje, wiec pomylka nie jest tu bez
-     * znaczenia.</p>
-     *
-     * <p><b>Czego to NIE robi: nie cofa wykonanych dzialan.</b> Skasowanego
-     * posta nie ma, usunietego konta tym bardziej. Cofa sie <i>decyzja</i>,
-     * a nie jej skutki - i interfejs musi to mowic wprost, bo inaczej
-     * „zmien decyzje" brzmi jak „cofnij wszystko". Zdjecie zakazu to osobna
-     * czynnosc w panelu kont.</p>
-     *
-     * @return czy cokolwiek sie zmienilo (zgloszenie juz otwarte - nie)
-     */
+    /** Otwiera sprawe z powrotem, zeby mozna bylo zdecydowac inaczej. */
     public boolean reopen() {
         if (status == ReportStatus.OPEN) {
             return false;

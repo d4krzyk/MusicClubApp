@@ -14,13 +14,7 @@ function LoadingScreen() {
   );
 }
 
-/**
- * Strona tylko dla ZALOGOWANYCH.
- *
- * <p>Niezalogowanego odsylamy na ekran logowania i zapamietujemy, dokad
- * chcial wejsc ({@code state.from}) - po zalogowaniu wracamy dokladnie tam,
- * zamiast zawsze na strone glowna.</p>
- */
+/** Strona tylko dla ZALOGOWANYCH. */
 export function RequireAuth({ children }) {
   const { user, checkingSession } = useAuth();
   const location = useLocation();
@@ -34,14 +28,7 @@ export function RequireAuth({ children }) {
   return children;
 }
 
-/**
- * Strona tylko dla ADMINISTRATORA.
- *
- * <p><b>To NIE jest zabezpieczenie.</b> Ukrycie strony w przegladarce tylko
- * porzadkuje interfejs - kazdy moze zmienic sobie dane w konsoli albo wpisac
- * adres recznie. O tym, kto naprawde dostanie dane, decyduje wylacznie
- * backend ({@code SecurityConfig} zwraca 403 dla zwyklego uzytkownika).</p>
- */
+/** Strona tylko dla ADMINISTRATORA. */
 export function RequireAdmin({ children }) {
   const { user, checkingSession } = useAuth();
   const location = useLocation();
@@ -58,12 +45,7 @@ export function RequireAdmin({ children }) {
   return children;
 }
 
-/**
- * Strona tylko dla NIEZALOGOWANYCH (logowanie, rejestracja).
- *
- * <p>Bez tego zalogowany uzytkownik mogl wejsc na /login i zobaczyc formularz,
- * mimo ze jest juz w srodku - mylace.</p>
- */
+/** Strona tylko dla NIEZALOGOWANYCH (logowanie, rejestracja). */
 export function RequireAnonymous({ children }) {
   const { user, checkingSession } = useAuth();
 

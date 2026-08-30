@@ -4,28 +4,7 @@ import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
 import { szukaj } from '../api/muzyka';
 
-/**
- * Wyszukiwarka katalogu Deezera - do dodawania ulubionych artystow i utworow.
- *
- * <p><b>Wybor z listy zamiast wpisywania z reki.</b> Gdyby uzytkownik wpisywal
- * nazwe sam, w bazie wyladowaloby "Radiohead", "radiohead" i "Radiohed" jako
- * trzy rozne byty - a wtedy dopasowywanie ludzi po wspolnych artystach
- * przestaloby dzialac. Do tego kazdy moglby wpisac wykonawce, ktory nie
- * istnieje. Tutaj mozna tylko kliknac w cos, co Deezer naprawde ma.</p>
- *
- * <p><b>Odczekujemy z zapytaniem (debounce).</b> Bez tego kazde nacisniecie
- * klawisza wysylaloby osobne zapytanie - wpisanie "radiohead" to nie jedno
- * pytanie, tylko dziewiec. Odliczamy 350 ms od ostatniego znaku: tyle, zeby
- * nie gonic za pisaniem, i na tyle malo, zeby nie bylo czuc opoznienia.</p>
- *
- * <p><b>Wyniki starsze niz ostatnie zapytanie sa odrzucane.</b> Odpowiedzi
- * potrafia wrocic w innej kolejnosci niz zostaly wyslane, wiec bez tego
- * na liscie mogloby wyladowac cos, czego uzytkownik juz nie szuka.</p>
- *
- * @param rodzaj   'artists' albo 'tracks' - decyduje, ktory endpoint pytamy
- * @param onWybor  wywolywane z wybrana pozycja
- * @param wylaczone gdy true, pole jest zablokowane (np. osiagnieto limit)
- */
+/** Wyszukiwarka katalogu Deezera - do dodawania ulubionych artystow i utworow. */
 export default function CatalogSearch({ kind, onWybor, disabled = false }) {
   const { t } = useTranslation();
 
@@ -34,7 +13,7 @@ export default function CatalogSearch({ kind, onWybor, disabled = false }) {
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  /* Numer ostatniego wyslanego zapytania - patrz opis komponentu. */
+  /* Numer ostatniego zapytania - odpowiedzi na starsze ignorujemy. */
   const requestNumber = useRef(0);
 
   useEffect(() => {
@@ -89,6 +68,7 @@ export default function CatalogSearch({ kind, onWybor, disabled = false }) {
     <div className="position-relative-fix">
       <Form.Control
         type="search"
+        className="katalog-pole"
         value={phrase}
         onChange={(e) => setPhrase(e.target.value)}
         disabled={disabled}

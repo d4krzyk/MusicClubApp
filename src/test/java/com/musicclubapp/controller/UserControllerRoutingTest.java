@@ -35,26 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Kolizja adresow w panelu administratora.
- *
- * <p><b>Dokladnie ta sama pulapka co przy {@code /api/posts/reactions}</b>,
- * i dlatego ten test w ogole istnieje. Doszedl adres
- * {@code GET /api/users/blocked-ips}, a obok stoi juz
- * {@code GET /api/users/{id}}, gdzie {@code id} jest liczba. Oba wzorce maja
- * dwa czlony i oba pasuja do tego samego adresu.</p>
- *
- * <p>Spring wybiera ten z doslownym czlonem - ale gdyby kiedys ktos przestawil
- * adresy albo zmienil typ parametru, objawiloby sie to bledem 400 ("nie umiem
- * zamienic 'blocked-ips' na liczbe") przy wchodzeniu na liste blokad. Zaden
- * test logiki tego nie zlapie, bo problem siedzi wylacznie w mapowaniu.</p>
- *
- * <p><b>Ta klasa pilnuje tez samego ISTNIENIA koncowek panelu.</b> Adres,
- * ktory zniknal, wyglada w kodzie dokladnie tak samo jak adres, ktorego nigdy
- * nie bylo - kompilator milczy, testy serwisow przechodza, a panel dostaje
- * 405. Dopoki jakis test nie zapuka pod konkretny adres, nikt tego nie
- * zauwazy.</p>
- */
+/** Kolizja adresow w panelu administratora. */
 @WebMvcTest(UserController.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, I18nConfig.class, GlobalExceptionHandler.class})
@@ -104,20 +85,7 @@ class UserControllerRoutingTest {
         verify(userService).getByIdForAdmin(7L);
     }
 
-    /**
-     * Czy koncowka w ogole istnieje - i dlaczego to trzeba sprawdzac.
-     *
-     * <p><b>Ten test powstal po prawdziwym bledzie.</b> Przy scalaniu dwoch
-     * osobnych zakazow w jeden adres {@code /{id}/bans/{kind}} zniknelo przy
-     * okazji {@code DELETE /{id}}, ktore lezalo <b>pomiedzy</b> nimi w pliku.
-     * Kod dalej sie kompilowal, wszystkie 351 testow przechodzilo, a panel
-     * administratora dostawal 405 przy probie usuniecia konta - bo testy
-     * sprawdzaly, co robi {@code UserModerationService}, ale nikt nie
-     * sprawdzal, czy prowadzi do niego jakikolwiek adres.</p>
-     *
-     * <p>Brakujace mapowanie to blad, ktorego nie widac ani w kompilacji, ani
-     * w testach logiki. Widac go dopiero w przegladarce - albo tutaj.</p>
-     */
+    /** Czy koncowka w ogole istnieje - i dlaczego to trzeba sprawdzac. */
     @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     @DisplayName("DELETE /api/users/{id} istnieje i usuwa konto")

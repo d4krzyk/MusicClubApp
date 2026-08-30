@@ -1,11 +1,6 @@
 package com.musicclubapp.storage;
 
-/**
- * Wgrany plik nie nadaje sie do przyjecia (pusty albo nie jest obrazkiem).
- *
- * <p>Obslugiwany jako HTTP 422 z bledem przypietym do pola formularza,
- * dzieki czemu frontend podswietla pole wyboru pliku tak samo jak kazde inne.</p>
- */
+/** Wgrany plik nie nadaje sie do przyjecia (pusty albo nie jest obrazkiem). */
 public class InvalidFileException extends RuntimeException {
 
     private final String messageKey;

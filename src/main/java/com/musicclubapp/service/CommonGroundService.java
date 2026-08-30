@@ -16,27 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * <b>Co laczy dwie konkretne osoby.</b>
- *
- * <p>Aplikacja od poczatku umiala policzyc, ILE ktos ma z kim wspolnego -
- * na tym opiera sie kolejnosc proponowanych znajomych. Nie umiala natomiast
- * powiedziec, CO to jest, a to wlasnie ta druga rzecz daje powod, zeby
- * napisac do obcej osoby. Ten serwis odpowiada na to drugie pytanie.</p>
- *
- * <p><b>Dlaczego osobny serwis, a nie metoda w {@code FriendService}.</b>
- * Tamten zajmuje sie relacja: zaproszeniami, przyjmowaniem, usuwaniem
- * znajomosci - czyli tym, co ludzie sobie <i>robia</i>. Tutaj nikt nikomu nic
- * nie robi; to czysty odczyt porownujacy dwa profile i uzywany takze wtedy,
- * gdy zadna relacja nie istnieje.</p>
- *
- * <p><b>Czesc wspolna liczymy w Javie, a nie w SQL-u</b> - inaczej niz przy
- * proponowanych znajomych. Tam trzeba bylo policzyc dopasowanie dla
- * <i>wszystkich</i> uzytkownikow naraz i tylko baza mogla to zrobic sensownie.
- * Tutaj chodzi o dwie osoby i najwyzej po kilkadziesiat pozycji na liscie -
- * zapytanie z podwojnym zlaczeniem byloby trudniejsze do przeczytania, a nie
- * szybsze.</p>
- */
+/** Co laczy dwie konkretne osoby. */
 @Service
 public class CommonGroundService {
 
@@ -46,17 +26,9 @@ public class CommonGroundService {
         this.userRepository = userRepository;
     }
 
-    /**
-     * @param viewer kto oglada
-     * @param whose  czyj profil oglada
-     */
     @Transactional(readOnly = true)
     public CommonGroundResponse between(String viewer, String whose) {
-        /*
-         * Wlasny profil sprawdzamy PRZED pobraniem czegokolwiek. Bez tego
-         * wynikiem bylaby cala wlasna lista ulubionych opisana jako "co Was
-         * laczy" - technicznie prawdziwe, w interfejsie bez sensu.
-         */
+        /* Wlasny profil sprawdzamy PRZED pobraniem czegokolwiek. */
         if (viewer.equals(whose)) {
             return CommonGroundResponse.ownProfile();
         }
@@ -83,9 +55,8 @@ public class CommonGroundService {
             .toList();
 
         /*
-         * Gatunki bierzemy zapytaniem, a nie z encji artystow - inaczej
-         * doczytanie ich kosztowaloby jedno zapytanie NA KAZDEGO ulubionego
-         * wykonawce obu osob.
+         * Gatunki bierzemy zapytaniem, a nie z encji artystow - inaczej doczytanie ich
+         * kosztowaloby jedno zapytanie NA KAZDEGO ulubionego wykonawce obu osob.
          */
         Set<String> myGenres = new HashSet<>(userRepository.genresOf(viewer));
         List<String> genres = userRepository.genresOf(whose).stream()

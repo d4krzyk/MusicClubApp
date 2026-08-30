@@ -42,9 +42,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Testy jednostkowe serwisu postow - wymaganie nr 13.
- */
+/** Testy jednostkowe serwisu postow - wymaganie nr 13. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PostService - dodawanie i usuwanie postow")
 class PostServiceTest {
@@ -64,11 +62,7 @@ class PostServiceTest {
     @Mock
     private ReactionService reactionService;
 
-    /**
-     * Pobieranie tytulu przez oEmbed to zapytanie do OBCEGO serwera.
-     * W tescie jednostkowym podstawiamy atrape - inaczej test zalezalby
-     * od tego, czy Spotify akurat odpowiada.
-     */
+    /** Pobieranie tytulu przez oEmbed to zapytanie do OBCEGO serwera. */
     @Mock
     private MusicMetadataService musicMetadata;
 
@@ -105,8 +99,8 @@ class PostServiceTest {
     }
 
     /**
-     * Edycja dodatkowo pyta o reakcje, ktore post juz zebral - inaczej
-     * po zapisaniu zmiany liczniki zniknelyby z ekranu.
+     * Edycja dodatkowo pyta o reakcje, ktore post juz zebral - inaczej po zapisaniu zmiany
+     * liczniki zniknelyby z ekranu.
      */
     private void prepareEdit() {
         prepareSave();
@@ -394,8 +388,8 @@ class PostServiceTest {
     @DisplayName("konto z zakazem NIE przerobi tez starego posta na nowa tresc")
     void bannedAccountCannotEditEither() {
         /*
-         * Bez tego zakaz nie znaczylby nic: wystarczyloby wejsc w edycje
-         * dowolnego wlasnego posta i podmienic w nim cala tresc.
+         * Bez tego zakaz nie znaczylby nic: wystarczyloby wejsc w edycje dowolnego wlasnego posta
+         * i podmienic w nim cala tresc.
          */
         User banned = anna();
         banned.setBannedUntil(BanKind.POSTING, java.time.LocalDateTime.now().plusHours(5));
@@ -427,14 +421,7 @@ class PostServiceTest {
     /*  Sprzatanie po usunietym koncie                                     */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Kasowanie postow konta przenioslo sie tutaj z modulu moderacji.
-     *
-     * <p>Sedno jest w plikach: gdyby zdjecia zostawaly na dysku, konto
-     * usuniete z bazy dalej lezaloby na serwerze w postaci fotografii.
-     * A gdyby leciały z dysku PRZED skasowaniem wierszy i transakcja by sie
-     * wycofala - tablica pokazywalaby puste ramki.</p>
-     */
+    /** Kasowanie postow konta przenioslo sie tutaj z modulu moderacji. */
     @Test
     @DisplayName("kasowanie postow konta zdejmuje z dysku ich zdjecia")
     void deletingAllPostsRemovesTheirImages() {

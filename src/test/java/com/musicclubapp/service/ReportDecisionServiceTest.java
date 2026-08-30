@@ -31,16 +31,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Decyzja w zgloszeniu razem z jej wykonaniem.
- *
- * <p><b>Co tu sprawdzamy, a czego nie.</b> Ta klasa niczego sama nie kasuje
- * i nikogo nie karze - <b>spina</b> zgloszenia z moderacja kont. Testujemy
- * wiec to, co do niej nalezy: czy wola wlasciwe rzeczy, we wlasciwej
- * kolejnosci i czy odmawia tam, gdzie powinna. Ze kara faktycznie zapisuje
- * sie w bazie, sprawdza {@code UserModerationServiceTest}, a caly przeplyw
- * na prawdziwej bazie - {@code ReportServiceTest}.</p>
- */
+/** Decyzja w zgloszeniu razem z jej wykonaniem. */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Decyzja w zgloszeniu i jej wykonanie")
@@ -79,12 +70,7 @@ class ReportDecisionServiceTest {
 
         decisions.resolve("admin", 5L, decision(ModerationAction.NONE, null, null));
 
-        /*
-         * Sedno: "zasadne, ale bez kary" musi byc mozliwe do wyrazenia. Gdyby
-         * zamkniecie karalo automatycznie, jedynym sposobem na niekaranie
-         * byloby oddalenie zgloszenia jako bezpodstawnego - czyli zapisanie
-         * w historii konta nieprawdy.
-         */
+        /* Sedno: "zasadne, ale bez kary" musi byc mozliwe do wyrazenia. */
         verify(reports).resolve(eq("admin"), eq(5L), any(ResolveReportRequest.class));
         verify(moderation, never()).setBan(any(), any(), any(), any());
         verify(moderation, never()).deleteUser(any(), any());
@@ -111,15 +97,7 @@ class ReportDecisionServiceTest {
         verify(moderation).deleteUser(eq("admin"), any());
     }
 
-    /**
-     * Kasowanie posta wymaga NAJPIERW odpiecia go od zgloszen.
-     *
-     * <p>Zgloszenie wskazuje na post kluczem obcym, wiec dopoki wskazuje, baza
-     * posta nie odda - decyzja "usun post" konczyla sie przez to bledem 500.
-     * Atrapa repozytorium kluczy obcych nie ma, wiec tutaj pilnujemy samej
-     * KOLEJNOSCI; ze baza faktycznie odmawia, sprawdza {@code ReportServiceTest}
-     * na prawdziwej bazie.</p>
-     */
+    /** Kasowanie posta wymaga NAJPIERW odpiecia go od zgloszen. */
     @Test
     @DisplayName("post kasuje sie DOPIERO po odpieciu go od zgloszen")
     void postIsDetachedBeforeDeleting() {
@@ -143,11 +121,7 @@ class ReportDecisionServiceTest {
             decision(ModerationAction.DELETE_POST, null, null)))
             .isInstanceOf(OperationNotAllowedException.class);
 
-        /*
-         * Sprawa ma zostac OTWARTA. Odmowa po zamknieciu byla by najgorsza
-         * z mozliwosci: zgloszenie zamkniete z notatka "post usuniety",
-         * a post na miejscu - i nie da sie tego cofnac.
-         */
+        /* Sprawa ma zostac OTWARTA. */
         verify(reports, never()).resolve(any(), any(), any());
     }
 
@@ -186,13 +160,7 @@ class ReportDecisionServiceTest {
         verify(moderation).setBan(eq("admin"), any(), eq(BanKind.POSTING), any(BanRequest.class));
     }
 
-    /**
-     * Kolejnosc, ktora latwo przeoczyc.
-     *
-     * <p>Gdyby kara wykonywala sie PRZED zamknieciem sprawy, dwa klikniecia
-     * pod rzad (albo dwoje administratorow naraz) nalozylyby ja dwa razy -
-     * a dopiero potem wyszlo by na jaw, ze zgloszenie bylo juz zamkniete.</p>
-     */
+    /** Kolejnosc, ktora latwo przeoczyc. */
     @Test
     @DisplayName("gdy sprawa byla juz zamknieta, kara NIE wykonuje sie drugi raz")
     void doesNotPunishTwiceWhenAlreadyClosed() {

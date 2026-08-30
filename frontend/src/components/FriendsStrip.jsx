@@ -12,23 +12,7 @@ import { IconFriends, IconPersonPlus } from './Icons';
 /** Ilu znajomych mieści sie na jednym "ekranie" paska. */
 const PAGE_SIZE = 6;
 
-/**
- * Poziomy pasek znajomych pod profilem.
- *
- * <p><b>Dlaczego nie karuzela Bootstrapa?</b> Karuzela wymaga wszystkich
- * slajdow w dokumencie from razu, a my chcemy doczytywac kolejne osoby dopiero
- * po kliknieciu strzalki. Poza tym na telefonie pasek przewija sie palcem
- * sam z siebie, a karuzela wymusza klikanie.</p>
- *
- * <p><b>Strzalki = kolejna STRONA z serwera</b>, a nie przesuniecie tego,
- * co juz mamy. Dzieki temu profil z dwustoma znajomymi nie sciaga dwustu
- * kafelkow na wejsciu - wykorzystujemy stronicowanie, ktore backend i tak ma
- * (wymagania nr 3 i 5).</p>
- *
- * <p>Kolejnosc ustala serwer: from osob najbardziej powiazanych z ogladajacym.
- * Dzis liczy sie to po wspolnych znajomych; gdy dojda artysci ze Spotify,
- * zmieni sie samo zapytanie w bazie, a ten komponent zostanie bez zmian.</p>
- */
+/** Poziomy pasek znajomych pod profilem. */
 export default function FriendsStrip({ username, refresh, self = false }) {
   const { t } = useTranslation();
 
@@ -66,12 +50,7 @@ export default function FriendsStrip({ username, refresh, self = false }) {
   }
 
   if (total === 0) {
-    /*
-     * Samo "Brak znajomych." konczy rozmowe w miejscu, w ktorym uzytkownik
-     * ma najwiecej pytan. Na WLASNYM profilu mowimy wiec, co z tym zrobic,
-     * i dajemy jedno klikniecie; na cudzym wystarcza zdanie - tam nie ma
-     * czego zaproponowac.
-     */
+    /* Samo "Brak znajomych." konczy rozmowe w miejscu, w ktorym uzytkownik ma najwiecej pytan. */
     return self ? (
       <EmptyState
         icon={IconFriends}
@@ -102,12 +81,7 @@ export default function FriendsStrip({ username, refresh, self = false }) {
             className="friend-card text-decoration-none text-body"
             title={t('profile.visit', { username: friend.username })}
           >
-            {/*
-              Kropka obecnosci siedzi NA awatarze, a nie obok podpisu.
-              Kafelek jest waski - dopisanie "aktywny 5 minut temu" pod
-              loginem zajeloby trzeci wiersz i pasek uroslby o polowe.
-              Pelna informacje niesie dymek po najechaniu.
-            */}
+            {/* Kropka obecnosci siedzi NA awatarze, a nie obok podpisu. */}
             <span className="friend-card-avatar">
               <Avatar
                 avatarUrl={friend.avatarUrl}

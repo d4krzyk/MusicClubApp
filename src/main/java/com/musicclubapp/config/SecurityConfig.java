@@ -28,39 +28,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Konfiguracja Spring Security - wymaganie nr 15.
- *
- * <p>Napisane wedlug wykladu 7. Slajd 31 opisuje dokladnie nasza sytuacje:
- * dla aplikacji REST sa dwa podejscia - token (JWT) albo ciasteczka (sesja).
- * Wybralismy sesje, a wyklad zaznacza, ze wymaga to "stworzenia wlasnego
- * AuthenticationManager i recznego przebiegu logowania" - i tak wlasnie
- * to tu wyglada.</p>
- *
- * <p><b>Wymaganie nr 15 mowi wprost, ze konfiguracja NIE moze byc
- * "deprecated"</b>. Dwie rzeczy, na ktore trzeba uwazac:</p>
- * <ul>
- *   <li>Stare tutoriale kaza dziedziczyc po {@code WebSecurityConfigurerAdapter}.
- *       Ta klasa zostala usunieta w Spring Security 6 - dzis definiuje sie
- *       bean typu {@link SecurityFilterChain}, tak jak nizej.</li>
- *   <li>Wewnatrz uzywamy skladni lambda ({@code http.csrf(csrf -> ...)}).
- *       Stary lancuchowy zapis ({@code http.csrf().disable().and()...})
- *       jest oznaczony jako przestarzaly.</li>
- * </ul>
- *
- * <p><b>Sposob logowania: sesja + ciasteczko.</b> Po zalogowaniu serwer
- * zapamietuje uzytkownika w sesji, a przegladarka dostaje ciasteczko
- * {@code JSESSIONID} i odsyla je przy kazdym kolejnym zapytaniu.</p>
- */
+/** Konfiguracja Spring Security - wymaganie nr 15. */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Klucz do podpisywania ciasteczka "zapamietaj mnie". W prawdziwym projekcie
-     * czyta sie go ze zmiennej srodowiskowej - wartosc domyslna jest tylko po to,
-     * zeby aplikacja wstala na komputerze do nauki.
-     */
+    /** Klucz do podpisywania ciasteczka "zapamietaj mnie". */
     @Value("${app.remember-me.key:musicclub-dev-key-zmien-mnie}")
     private String rememberMeKey;
 
@@ -70,9 +43,7 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
     private String corsAllowedOrigins;
 
-    /**
-     * Serce konfiguracji - opisuje, co dzieje sie z kazdym przychodzacym zapytaniem.
-     */
+    /** Serce konfiguracji - opisuje, co dzieje sie z kazdym przychodzacym zapytaniem. */
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
@@ -80,33 +51,18 @@ public class SecurityConfig {
             SecurityContextRepository securityContextRepository) throws Exception {
 
         http
-            /*
-             * CORS - przegladarka domyslnie blokuje zapytania z innego adresu
-             * niz serwer. Frontend React chodzi na porcie 5173, backend na 8080,
-             * wiec musimy jawnie na to pozwolic.
-             */
+            /* CORS - przegladarka domyslnie blokuje zapytania z innego adresu niz serwer. */
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
             /*
-             * CSRF - ochrona przed tym, ze obca strona wysle zapytanie w imieniu
-             * zalogowanego uzytkownika (przegladarka sama dolaczy ciasteczko sesji).
-             *
-             * Przy logowaniu sesyjnym TEGO NIE WOLNO WYLACZAC - w tutorialach
-             * czesto widac ".csrf(csrf -> csrf.disable())", ale to bezpieczne
-             * dopiero przy tokenach JWT, gdzie przegladarka nic sama nie dolacza.
-             *
-             * withHttpOnlyFalse() pozwala JavaScriptowi odczytac ciasteczko
-             * XSRF-TOKEN i odeslac je w naglowku X-XSRF-TOKEN. Tak wlasnie
-             * dziala axios i fetch po stronie Reacta.
+             * CSRF - ochrona przed tym, ze obca strona wysle zapytanie w imieniu zalogowanego
+             * uzytkownika (przegladarka sama dolaczy ciasteczko sesji).
              */
             .csrf(csrf -> csrf
                 .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                 .csrfTokenRequestHandler(csrfTokenRequestHandler()))
 
-            /*
-             * Sesja tworzona dopiero, gdy jest potrzebna (czyli przy logowaniu).
-             * Anonimowe zapytania nie zajmuja pamieci serwera.
-             */
+            /* Sesja tworzona dopiero, gdy jest potrzebna (czyli przy logowaniu). */
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 // Ochrona przed przejeciem sesji: po zalogowaniu identyfikator
@@ -117,82 +73,36 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // rejestracja, logowanie i pobranie tokenu CSRF - dla wszystkich
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf").permitAll()
-                /*
-                 * Wgrane obrazki. Przegladarka pobiera je zwyklym <img src="...">,
-                 * bez naglowkow i bez sesji - gdyby wymagaly logowania, w tablicy
-                 * zamiast zdjec bylyby puste ramki.
-                 */
+                /* Wgrane obrazki. */
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
 
                 // dokumentacja API (wymaganie nr 24) - zeby dalo sie ja pokazac na obronie
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
 
                 /*
-                 * Sprawdzenie zdrowia aplikacji - uzywa go Docker (healthcheck
-                 * w docker-compose.yml), zeby wiedziec, kiedy backend jest
-                 * gotowy przyjmowac zapytania.
-                 *
-                 * Docker nie ma jak sie zalogowac, wiec ten jeden adres musi
-                 * byc otwarty. Nie zdradza niczego wrazliwego: odpowiedzia jest
-                 * samo {"status":"UP"} (patrz management.endpoint.health
-                 * .show-details=never w application.properties).
+                 * Sprawdzenie zdrowia aplikacji - uzywa go Docker (healthcheck w
+                 * docker-compose.yml), zeby wiedziec, kiedy backend jest gotowy przyjmowac
+                 * zapytania.
                  */
                 .requestMatchers("/actuator/health").permitAll()
 
-                /*
-                 * AUTORYZACJA - wyklad 7, slajdy 47-48.
-                 *
-                 * Przegladanie listy wszystkich kont to funkcja administracyjna.
-                 * Zwykly uzytkownik nie ma powodu widziec, kto jeszcze korzysta
-                 * z serwisu, ani ogladac cudzych adresow e-mail.
-                 *
-                 * Wyklad zaleca wlasnie ten sposob (regula w konfiguracji)
-                 * zamiast adnotacji @PreAuthorize przy metodach - "bo
-                 * konfiguracja jest w jednym miejscu" (slajd 47).
-                 *
-                 * hasRole("ADMIN") sprawdza uprawnienie "ROLE_ADMIN" -
-                 * przedrostek ROLE_ Spring dokleja sam, dlatego w kodzie
-                 * podajemy sama nazwe roli.
-                 */
+                /* AUTORYZACJA - wyklad 7, slajdy 47-48. */
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
 
                 // Wlasny profil - kazdy zalogowany, ale tylko swoj (patrz ProfileController)
                 .requestMatchers("/api/profile/**").authenticated()
 
                 /*
-                 * Publiczne profile innych uzytkownikow (liczba mnoga!).
-                 * "Publiczne" znaczy tu "widoczne dla kazdego ZALOGOWANEGO",
-                 * a nie dla calego internetu - z ulicy nie da sie przegladac,
-                 * kto korzysta z serwisu.
-                 *
-                 * Regule pisemy jawnie, mimo ze anyRequest() ponizej zrobilby
-                 * to samo: przy nastepnej zmianie widac wtedy od razu, ze to
-                 * decyzja, a nie przeoczenie.
+                 * Publiczne profile innych uzytkownikow (liczba mnoga!). "Publiczne" znaczy tu
+                 * "widoczne dla kazdego ZALOGOWANEGO", a nie dla calego internetu - z ulicy nie da
+                 * sie przegladac, kto korzysta z serwisu.
                  */
                 .requestMatchers("/api/profiles/**").authenticated()
 
-                /*
-                 * Czat. Regula mowi tylko "trzeba byc zalogowanym" - i wiecej
-                 * powiedziec sie tu nie da. Prawdziwa blokada jest w
-                 * {@code MessageService}: pisac wolno WYLACZNIE ze znajomymi,
-                 * a tego konfiguracja bezpieczenstwa nie umie sprawdzic,
-                 * bo musialaby zajrzec do bazy po liste znajomych.
-                 *
-                 * Wpisujemy ja mimo to, zeby przy nastepnej zmianie bylo
-                 * widac, ze czat jest zamkniety swiadomie, a nie przypadkiem.
-                 */
+                /* Czat. */
                 .requestMatchers("/api/messages/**").authenticated()
 
-                /*
-                 * Zgloszenia. Dwie reguly i KOLEJNOSC MA ZNACZENIE - pierwsza
-                 * pasujaca wygrywa, wiec gdyby ogolna stala wyzej, caly panel
-                 * administratora bylby otwarty dla kazdego zalogowanego.
-                 *
-                 * Dlatego adresy administracyjne maja WLASNY przedrostek
-                 * (/admin/), a nie roznia sie tylko metoda HTTP: przy takim
-                 * podziale regule widac wprost z adresu, a nie trzeba jej
-                 * skladac z trzech miejsc naraz.
-                 */
+                /* Zgloszenia. */
                 .requestMatchers("/api/reports/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/reports/**").authenticated()
                 // zapytania OPTIONS wysyla sama przegladarka przed wlasciwym zapytaniem (CORS preflight)
@@ -214,9 +124,8 @@ public class SecurityConfig {
                     response.setStatus(HttpStatus.NO_CONTENT.value())))
 
             /*
-             * Bez tego niezalogowany klient dostaje przekierowanie na formularz
-             * logowania (HTTP 302). Frontend REST-owy oczekuje kodu 401,
-             * zeby wiedziec, ze trzeba pokazac ekran logowania.
+             * Bez tego niezalogowany klient dostaje przekierowanie na formularz logowania (HTTP
+             * 302).
              */
             .exceptionHandling(handling -> handling
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
@@ -227,22 +136,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Sposob odczytu tokenu CSRF z przychodzacego zapytania.
-     *
-     * <p><b>Po co to nadpisujemy?</b> Domyslnie Spring Security 6 uzywa
-     * {@code XorCsrfTokenRequestAttributeHandler}, ktory maskuje token
-     * operacja XOR (ochrona przed atakiem BREACH). Problem w tym, ze
-     * w ciasteczku XSRF-TOKEN siedzi token <i>surowy</i>. Frontend odczytuje
-     * ciasteczko i odsyla je jako naglowek, a handler XOR oczekuje wersji
-     * zamaskowanej - i odrzuca zapytanie. Objawia sie to tym, ze KAZDY POST
-     * konczy sie odmowa, mimo poprawnie ustawionego ciasteczka.</p>
-     *
-     * <p>Zwykly {@code CsrfTokenRequestAttributeHandler} porownuje wartosc
-     * z naglowka wprost z ta z ciasteczka, co dziala z frontendem w stylu
-     * React/axios. Tak wlasnie ten przypadek opisuje dokumentacja Spring
-     * Security w rozdziale o aplikacjach jednostronicowych.</p>
-     */
+    /** Sposob odczytu tokenu CSRF z przychodzacego zapytania. */
     private CsrfTokenRequestAttributeHandler csrfTokenRequestHandler() {
         CsrfTokenRequestAttributeHandler handler = new CsrfTokenRequestAttributeHandler();
         // null = token wyliczany od razu, a nie leniwie przy pierwszym uzyciu
@@ -250,34 +144,13 @@ public class SecurityConfig {
         return handler;
     }
 
-    /**
-     * BCrypt - standard do hashowania hasel.
-     *
-     * <p>Do bazy trafia hash, nigdy samo haslo. BCrypt celowo liczy sie wolno
-     * i dokleja losowa "sol", wiec dwa takie same hasla daja rozne hashe -
-     * to psuje ataki z gotowych tablic.</p>
-     */
+    /** BCrypt - standard do hashowania hasel. */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Menedzer uwierzytelniania - uzywa go nasz kontroler logowania.
-     *
-     * <p>Skladamy go jawnie, dokladnie jak na wykladzie 7 (slajd 34):</p>
-     * <ul>
-     *   <li>{@code DaoAuthenticationProvider} - sprawdza login i haslo
-     *       korzystajac z bazy danych,</li>
-     *   <li>dostaje nasz {@code AppUserDetailsService} (skad wziac uzytkownika)
-     *       oraz {@link #passwordEncoder()} (jak porownac haslo z hashem),</li>
-     *   <li>{@code ProviderManager} opakowuje providery w jeden menedzer.</li>
-     * </ul>
-     *
-     * <p>Da sie krocej ({@code AuthenticationConfiguration.getAuthenticationManager()}),
-     * ale wtedy nie widac, co sie w srodku dzieje - a tu chodzi o to, zeby bylo
-     * widac, ktory element za co odpowiada.</p>
-     */
+    /** Menedzer uwierzytelniania - uzywa go nasz kontroler logowania. */
     @Bean
     public AuthenticationManager authenticationManager(
             UserDetailsService userDetailsService,
@@ -290,16 +163,7 @@ public class SecurityConfig {
         return new ProviderManager(authenticationProvider);
     }
 
-    /**
-     * Obsluga "zapamietaj mnie" (wymaganie nr 17).
-     *
-     * <p>Po zaznaczeniu tej opcji przegladarka dostaje dodatkowe ciasteczko
-     * wazne 14 dni. Gdy sesja wygasnie, Spring rozpozna to ciasteczko
-     * i zaloguje uzytkownika ponownie bez pytania o haslo.</p>
-     *
-     * <p>Uzywamy wlasnej klasy {@link JsonRememberMeServices}, bo logujemy
-     * sie JSON-em, a nie formularzem HTML - szczegoly w komentarzu tamtej klasy.</p>
-     */
+    /** Obsluga "zapamietaj mnie" (wymaganie nr 17). */
     @Bean
     public JsonRememberMeServices rememberMeServices(UserDetailsService userDetailsService) {
         JsonRememberMeServices services =
@@ -310,23 +174,15 @@ public class SecurityConfig {
         return services;
     }
 
-    /**
-     * Miejsce, w ktorym trzymany jest zalogowany uzytkownik - czyli sesja HTTP.
-     * Potrzebujemy go jako beana, bo nasz kontroler logowania zapisuje tam
-     * uzytkownika recznie po udanym sprawdzeniu hasla.
-     */
+    /** Miejsce, w ktorym trzymany jest zalogowany uzytkownik - czyli sesja HTTP. */
     @Bean
     public SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
     }
 
     /**
-     * Ustawienia CORS.
-     *
-     * <p>{@code setAllowCredentials(true)} jest konieczne, zeby przegladarka
-     * w ogole wyslala ciasteczko sesji na inny port. Przy wlaczonym
-     * {@code allowCredentials} nie wolno uzyc gwiazdki w dozwolonych adresach -
-     * trzeba wypisac je konkretnie, stad lista z application.properties.</p>
+     * Ustawienia CORS. setAllowCredentials(true) jest konieczne, zeby przegladarka w ogole wyslala
+     * ciasteczko sesji na inny port.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -341,17 +197,7 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
-        /*
-         * Naglowki, ktore przegladarka moze ODCZYTAC.
-         *
-         * Przy zapytaniach na inny adres (front na porcie 5173, backend na
-         * 8080) JavaScript widzi domyslnie tylko kilka standardowych
-         * naglowkow - wszystkie wlasne sa przed nim ukryte, nawet jesli
-         * serwer je wyslal. Bez tej linijki X-Current-User dochodzil by do
-         * przegladarki i byl przez nia po cichu chowany, wiec wykrywanie
-         * zmiany konta nigdy by nie zadzialalo - i to bez zadnego bledu
-         * w konsoli, co jest tu najbardziej mylace.
-         */
+        /* Naglowki, ktore przegladarka moze ODCZYTAC. */
         config.setExposedHeaders(List.of("X-Current-User"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

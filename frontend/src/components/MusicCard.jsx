@@ -4,20 +4,7 @@ import { IconNote } from './Icons';
 import { playerHeight } from '../utils/player';
 import { toMinutes } from '../utils/time';
 
-/**
- * Nagranie dolaczone do wiadomosci - <b>najpierw wizytowka, dopiero
- * po kliknieciu odtwarzacz</b>.
- *
- * <p><b>Dlaczego nie od razu odtwarzacz, tak jak w postach.</b> Bo to sa dwie
- * rozne sytuacje. Post oglada sie pojedynczo, przewijajac tablice; rozmowa to
- * kilkanascie dymkow naraz na waskim panelu. Dziesiec osadzonych ramek
- * Spotify w jednej rozmowie oznacza dziesiec obcych stron ladowanych
- * jednoczesnie - panel staje sie ociezaly, a przewijanie skacze, bo kazda
- * z nich dochodzi w swoim czasie i dopiero wtedy zajmuje miejsce.</p>
- *
- * <p>Wizytowka ma stala wysokosc, wiec rozmowa nie podskakuje. Odtwarzacz
- * pojawia sie dopiero tam, gdzie ktos naprawde chce posluchac.</p>
- */
+/** Nagranie dolaczone do wiadomosci - najpierw wizytowka, dopiero po kliknieciu odtwarzacz. */
 export default function MusicCard({ message }) {
   const { t } = useTranslation();
   const [playing, setPlaying] = useState(false);
@@ -58,9 +45,8 @@ export default function MusicCard({ message }) {
           <img src={message.musicThumbnailUrl} alt="" className="music-card-cover" />
         ) : (
           /*
-             Zastepnik, gdy serwis nie oddal miniaturki (Apple Music nie ma
-             publicznego oEmbed). Pusta ramka wygladalaby jak blad ladowania.
-          */
+           * Zastepnik, gdy serwis nie oddal miniaturki (Apple Music nie ma publicznego oEmbed).
+           */
           <span className="music-card-cover music-card-cover-empty" aria-hidden="true">
             <IconNote size={18} />
           </span>
@@ -77,11 +63,7 @@ export default function MusicCard({ message }) {
         </span>
       </button>
 
-      {/*
-        Link do serwisu OBOK przycisku odtwarzania, a nie zamiast niego.
-        Czesc ludzi slucha w aplikacji Spotify, a nie w przegladarce - i dla
-        nich osadzony odtwarzacz jest bezuzyteczny.
-      */}
+      {/* Link do serwisu OBOK przycisku odtwarzania, a nie zamiast niego. */}
       <a
         href={message.musicUrl}
         target="_blank"

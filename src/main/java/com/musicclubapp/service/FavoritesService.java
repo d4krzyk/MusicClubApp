@@ -22,26 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Ulubieni artysci i utwory na profilu.
- *
- * <p><b>Zasada, na ktorej wszystko tu stoi: do ulubionych trafia wylacznie
- * to, co istnieje w katalogu Deezera.</b> Nie ma sciezki, ktora pozwalalaby
- * wpisac nazwe z klawiatury - i to nie jest utrudnienie dla utrudnienia.
- * Bez tego mielibysmy w bazie "Radiohead", "radiohead" i "Radiohed" jako trzy
- * rozne byty (koniec dopasowywania ludzi po guscie) oraz wykonawcow, ktorzy
- * nie istnieja (poczatek zabawy dla trolli).</p>
- *
- * <p><b>Nazwa i zdjecie NIE pochodza z zapytania.</b> Przychodzi sam
- * identyfikator, a kto sie za nim kryje - ustala serwer, pytajac Deezera.
- * Gdyby bylo inaczej, wystarczyloby wyslac zapytanie z pominieciem
- * przegladarki, zeby dodac cokolwiek. Kosztuje to jedno dodatkowe zapytanie
- * na zewnatrz i jest to koszt, ktory warto poniesc.</p>
- *
- * <p><b>Gatunki pobieramy RAZ NA ARTYSTE, nie raz na uzytkownika.</b> Wiersz
- * w tabeli {@code artists} jest wspolny, wiec druga osoba, ktora polubi tego
- * samego wykonawce, nie kosztuje juz ani jednego zapytania do Last.fm.</p>
- */
+/** Ulubieni artysci i utwory na profilu. */
 @Service
 public class FavoritesService {
 
@@ -117,11 +98,7 @@ public class FavoritesService {
     @Transactional
     public FavoritesResponse removeArtist(String username, String externalId) {
         User user = find(username);
-        /*
-         * Kasujemy tylko POWIAZANIE, a nie samego artyste. Wiersz w tabeli
-         * artists jest wspolny - usuniecie go zabraloby wykonawce takze tym,
-         * ktorzy nadal go maja w ulubionych.
-         */
+        /* Kasujemy tylko POWIAZANIE, a nie samego artyste. */
         user.getFavoriteArtists().removeIf(a -> a.getExternalId().equals(externalId));
         return favorites(username, username);
     }
@@ -161,25 +138,7 @@ public class FavoritesService {
         return lastFm.available();
     }
 
-    /**
-     * Pobiera najczesciej sluchanych artystow i utwory z Last.fm i dopisuje je
-     * do ulubionych.
-     *
-     * <p><b>Dwa serwisy, dwie role.</b> Last.fm mowi, CZEGO ktos sluchal -
-     * ale oddaje same nazwy, a w miejscu zdjec od 2019 roku stala szara
-     * ikonke. Deezer mowi, KTO to jest: daje identyfikator i prawdziwe
-     * zdjecie. Dopiero polaczenie obu daje wpis, ktory da sie z czymkolwiek
-     * porownac.</p>
-     *
-     * <p><b>Czego nie ma w katalogu, tego nie dodajemy.</b> Pozycja jest
-     * pomijana i wliczona do {@code skipped} w podsumowaniu. Wolimy pokazac
-     * "12 z 15" niz dopisac cos, czego nie umiemy potwierdzic.</p>
-     *
-     * <p><b>To dziala synchronicznie i moze potrwac kilka sekund</b> - kazda
-     * pozycja to osobne zapytanie do Deezera. Przy 15 artystach i 15 utworach
-     * jest to akceptowalne; gdyby limity mialy urosnac, trzeba by to przeniesc
-     * do zadania w tle.</p>
-     */
+    /** Pobiera najczesciej sluchanych artystow i utwory z Last.fm i dopisuje je do ulubionych. */
     @Transactional
     public ImportSummary importFromLastFm(String username, String lastFmUsername) {
         if (!lastFm.available()) {
@@ -258,13 +217,7 @@ public class FavoritesService {
     //  Wspolne
     // =========================================================================
 
-    /**
-     * Znajduje artyste w naszej bazie albo sciaga go z Deezera i zapisuje.
-     *
-     * <p>Kolejnosc ma znaczenie: <b>najpierw baza, potem siec</b>. Wykonawca,
-     * ktorego ktos juz polubil, nie kosztuje ani jednego zapytania na zewnatrz -
-     * a to najczestszy przypadek, bo popularnych artystow lubi wiele osob.</p>
-     */
+    /** Znajduje artyste w naszej bazie albo sciaga go z Deezera i zapisuje. */
     private Optional<Artist> loadOrFetchArtist(String externalId) {
         Optional<Artist> fromDatabase = artistRepository.findByExternalId(externalId);
         if (fromDatabase.isPresent()) {

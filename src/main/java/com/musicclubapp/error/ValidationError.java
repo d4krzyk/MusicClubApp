@@ -1,9 +1,6 @@
 package com.musicclubapp.error;
 
-/**
- * Pojedynczy blad walidacji - ktore pole i co z nim nie tak.
- * Struktura wprost z wykladu 3, slajd 70.
- */
+/** Pojedynczy blad walidacji - ktore pole i co z nim nie tak. */
 public class ValidationError {
 
     private final String field;

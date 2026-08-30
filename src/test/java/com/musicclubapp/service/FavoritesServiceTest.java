@@ -23,21 +23,7 @@ import java.io.UncheckedIOException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Testy ulubionych <b>na prawdziwej bazie i z prawdziwym HTTP</b>.
- *
- * <p>Zewnetrzne serwisy zastepuje {@link TestHttpServer} - maly serwer
- * oddajacy odpowiedzi w formacie Deezera i Last.fm. Adresy podstawiamy
- * przez {@code @DynamicPropertySource}, bo port serwera znamy dopiero
- * po jego uruchomieniu.</p>
- *
- * <p><b>Najwazniejszy test w tej klasie</b> to
- * {@link #serverDoesNotTrustNameFromRequest()}. Cala zasada "tylko artysci
- * z katalogu" opiera sie na tym, ze serwer bierze z zapytania sam
- * identyfikator, a nazwe pobiera sobie sam. Gdyby przyjmowal nazwe
- * przyslana przez klienta, ochrona przed wymyslonymi wykonawcami bylaby
- * wylacznie ozdoba formularza.</p>
- */
+/** Testy ulubionych na prawdziwej bazie i z prawdziwym HTTP. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -119,10 +105,8 @@ class FavoritesServiceTest {
     @DisplayName("SERWER NIE UFA danym z zapytania - bierze tylko identyfikator")
     void serverDoesNotTrustNameFromRequest() {
         /*
-         * Zapytanie da sie wyslac z pominieciem przegladarki, wiec nazwa
-         * i zdjecie moglyby byc dowolne. Metoda serwisu przyjmuje WYLACZNIE
-         * identyfikator - nazwy nie ma nawet jak przyslac. Sprawdzamy tu,
-         * ze to, co wyladowalo w bazie, pochodzi z katalogu, a nie od klienta.
+         * Zapytanie da sie wyslac z pominieciem przegladarki, wiec nazwa i zdjecie moglyby byc
+         * dowolne.
          */
         favoritesService.addArtist("ala", "27");
 
@@ -162,12 +146,7 @@ class FavoritesServiceTest {
 
         favoritesService.addArtist("bob", "27");
 
-        /*
-         * To nie jest optymalizacja dla samej optymalizacji. Wiersz w tabeli
-         * artists jest WSPOLNY, wiec drugie polubienie to samo dopisanie
-         * powiazania. Przy popularnym wykonawcy oszczedza to tyle zapytan,
-         * ilu jest uzytkownikow.
-         */
+        /* To nie jest optymalizacja dla samej optymalizacji. */
         assertThat(server.requests()).hasSize(poPierwszym);
         assertThat(favoritesService.favorites("bob", "bob").artists()).hasSize(1);
     }
@@ -192,8 +171,8 @@ class FavoritesServiceTest {
 
         assertThat(favoritesService.favorites("ala", "ala").artists()).isEmpty();
         /*
-         * Gdyby usuwanie kasowalo wiersz z tabeli artists, zabraloby tego
-         * wykonawce takze wszystkim innym, ktorzy nadal go maja u siebie.
+         * Gdyby usuwanie kasowalo wiersz z tabeli artists, zabraloby tego wykonawce takze
+         * wszystkim innym, ktorzy nadal go maja u siebie.
          */
         assertThat(artistRepository.findByExternalId("27")).isPresent();
     }
@@ -223,9 +202,8 @@ class FavoritesServiceTest {
     @DisplayName("import z Last.fm: nazwy stamtad, identyfikatory i zdjecia z Deezera")
     void importFromLastFmWorks() {
         /*
-         * Tak wyglada podzial rol: Last.fm mowi, CZEGO ktos sluchal (same
-         * nazwy - ich API od 2019 roku nie oddaje uzytecznych zdjec),
-         * a Deezer mowi, KTO to jest.
+         * Tak wyglada podzial rol: Last.fm mowi, CZEGO ktos sluchal (same nazwy - ich API od 2019
+         * roku nie oddaje uzytecznych zdjec), a Deezer mowi, KTO to jest.
          */
         server.odpowiadaj("/2.0/", """
             {"topartists": {"artist": [{"name": "Daft Punk"}, {"name": "Nie Ma Takiego"}]}}

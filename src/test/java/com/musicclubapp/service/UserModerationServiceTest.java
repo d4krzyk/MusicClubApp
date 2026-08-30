@@ -36,14 +36,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Uprawnienia administratora: usuwanie kont i zakaz publikowania.
- *
- * <p>Testujemy tu <b>decyzje</b>, a nie zapis w bazie - dlatego atrapy.
- * To, ze usuniecie konta faktycznie sprzata wszystkie powiazane wiersze,
- * sprawdza {@code UserDeletionTest} na prawdziwej bazie: jedno i drugie
- * jest potrzebne, bo blad moze siedziec albo w regule, albo w SQL-u.</p>
- */
+/** Uprawnienia administratora: usuwanie kont i zakaz publikowania. */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("Moderacja kont - usuwanie i zakaz publikowania")
@@ -73,12 +66,7 @@ class UserModerationServiceTest {
     @Test
     @DisplayName("administrator NIE MOZE usunac wlasnego konta")
     void adminCannotDeleteSelf() {
-        /*
-         * To nie jest przesadna ostroznosc. Bez tej blokady jedno klikniecie
-         * moze zostawic portal bez nikogo, kto ma do niego dostep - a konta
-         * administratora nie da sie potem odzyskac inaczej niz recznie
-         * w bazie. Ta sama mysl co przy zmianie wlasnej roli.
-         */
+        /* To nie jest przesadna ostroznosc. */
         given(userRepository.findById(1L)).willReturn(Optional.of(user("admin")));
 
         assertThatThrownBy(() -> moderationService.deleteUser("admin", 1L))
@@ -95,14 +83,7 @@ class UserModerationServiceTest {
 
         moderationService.deleteUser("admin", 7L);
 
-        /*
-         * Kolejnosc nie jest tu dowolna. Powiadomienia musza pojsc pierwsze,
-         * bo wskazuja kluczami obcymi i na konto, i na posty kasowane nizej;
-         * samo konto - ostatnie, gdy nic juz na nie nie wskazuje. Pominiecie
-         * ktoregokolwiek kroku konczy sie tym, ze baza odmawia usuniecia
-         * z powodu klucza obcego - albo, gorzej, zostawia wiersz wskazujacy
-         * na uzytkownika, ktorego juz nie ma.
-         */
+        /* Kolejnosc nie jest tu dowolna. */
         InOrder kolejnosc = inOrder(notifications, reactions, posts, friends,
             messages, reports, network, playlists, users, userRepository);
 
@@ -118,15 +99,7 @@ class UserModerationServiceTest {
         kolejnosc.verify(userRepository).delete(target);
     }
 
-    /**
-     * Pliki z dysku kasuja ich wlasciciele.
-     *
-     * <p>Ze {@code PostService} faktycznie zdejmuje zdjecia z postow, a
-     * {@code UserService} awatar - sprawdzaja ich wlasne testy. Tutaj
-     * pilnujemy tego, za co ta klasa jeszcze odpowiada: ze w ogole o to
-     * poprosila. Wczesniej kasowala te pliki sama i trzymala z tego powodu
-     * zaleznosc do skladnicy plikow.</p>
-     */
+    /** Pliki z dysku kasuja ich wlasciciele. */
     @Test
     @DisplayName("o pliki z dysku moderacja prosi ich wlascicieli")
     void filesAreLeftToTheirOwners() {
@@ -195,16 +168,7 @@ class UserModerationServiceTest {
         assertThat(User.isForever(target.bannedUntil(BanKind.POSTING))).isTrue();
     }
 
-    /**
-     * Pulapka, ktora latwo zastawic na siebie samemu.
-     *
-     * <p>Zakaz bezterminowy przychodzi <b>bez</b> liczby godzin - dokladnie
-     * tak samo jak polecenie "zdejmij zakaz". Gdyby serwer sprawdzal najpierw
-     * {@code hours == null}, klikniecie "na zawsze" <b>zdejmowaloby</b> kare
-     * zamiast ja nakladac, czyli robiloby doslownie odwrotnosc decyzji
-     * administratora. Zaden z pozostalych testow by tego nie zauwazyl,
-     * bo kazdy z nich podaje albo godziny, albo nic.</p>
-     */
+    /** Pulapka, ktora latwo zastawic na siebie samemu. */
     @Test
     @DisplayName("zakaz na zawsze NIE jest mylony ze zdjeciem zakazu, choc oba nie maja godzin")
     void foreverIsNotConfusedWithLifting() {
@@ -226,11 +190,7 @@ class UserModerationServiceTest {
     @Test
     @DisplayName("ukarany bezterminowo widzi komunikat BEZ daty 9999")
     void foreverBanMessageHasNoAbsurdDate() {
-        /*
-         * Termin 31.12.9999 jest umowny i ma nie wychodzic na wierzch.
-         * Komunikat "zakaz do 31.12.9999" wyglada jak usterka aplikacji,
-         * a nie jak decyzja administratora.
-         */
+        /* Termin 31.12.9999 jest umowny i ma nie wychodzic na wierzch. */
         OperationNotAllowedException problem =
             OperationNotAllowedException.banned(BanKind.POSTING, User.FOREVER);
 
@@ -245,12 +205,7 @@ class UserModerationServiceTest {
         User target = new User("bylyTroll", "byly@example.com", "hash");
         target.setBannedUntil(BanKind.POSTING, LocalDateTime.now().minusMinutes(1));
 
-        /*
-         * Nie ma tu zadnego zadania w tle ani pola "czy zablokowany" do
-         * odswiezenia. Liczy sie wylacznie porownanie z biezaca chwila,
-         * wiec kara konczy sie dokladnie wtedy, kiedy miala sie skonczyc.
-         * Wpis zostaje - administrator widzi w panelu, ze ktos byl karany.
-         */
+        /* Nie ma tu zadnego zadania w tle ani pola "czy zablokowany" do odswiezenia. */
         assertThat(target.isBanned(BanKind.POSTING)).isFalse();
         assertThat(target.bannedUntil(BanKind.POSTING)).isNotNull();
     }

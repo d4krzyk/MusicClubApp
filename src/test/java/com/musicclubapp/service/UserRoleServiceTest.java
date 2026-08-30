@@ -28,9 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Testy zmiany rol przez administratora - wymaganie nr 13.
- */
+/** Testy zmiany rol przez administratora - wymaganie nr 13. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService - zmiana roli przez administratora")
 class UserRoleServiceTest {

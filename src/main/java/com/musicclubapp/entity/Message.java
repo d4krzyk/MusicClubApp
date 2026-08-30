@@ -20,33 +20,12 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Jedna wiadomosc wyslana miedzy dwiema osobami.
- *
- * <p><b>Nie ma tu encji "rozmowa"</b> - i to jest decyzja, a nie
- * przeoczenie. Rozmowa dwoch osob nie ma zadnego wlasnego stanu:
- * wszystko, co o niej wiemy (kto z kim, kiedy ostatnio, ile
- * nieprzeczytanych), da sie policzyc z samych wiadomosci. Osobna tabela
- * bylaby wiec druga kopia tej samej prawdy - a dwie kopie predzej czy
- * pozniej sie rozjezdzaja. Tutaj rozjechac sie nie ma czemu.</p>
- *
- * <p>Cena jest jedna: liste rozmow trzeba <b>wyliczyc</b> zapytaniem
- * grupujacym zamiast odczytac wprost. Robi to {@code MessageRepository}
- * dwoma zapytaniami na cale okno czatu - patrz komentarze tam.</p>
- *
- * <p><b>Kolejne relacje {@code ManyToOne}</b> (wymaganie nr 6): nadawca
- * i odbiorca, oboje wskazujacy na te sama tabele {@code users}.</p>
- */
+/** Jedna wiadomosc wyslana miedzy dwiema osobami. */
 @Entity
 @Table(
     name = "messages",
     indexes = {
-        /*
-         * Historia jednej rozmowy to zawsze pytanie "wiadomosci miedzy A i B,
-         * od najnowszej". Baza szuka wtedy po nadawcy albo po odbiorcy, wiec
-         * potrzebne sa OBA indeksy - jeden nie zastapi drugiego, bo zapytanie
-         * laczy warunki przez OR.
-         */
+        /* Historia jednej rozmowy to zawsze pytanie "wiadomosci miedzy A i B, od najnowszej". */
         @Index(name = "idx_messages_sender", columnList = "sender_id, created_at"),
         @Index(name = "idx_messages_recipient", columnList = "recipient_id, created_at")
     })
@@ -67,42 +46,11 @@ public class Message {
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
 
-    /**
-     * Tresc wiadomosci. <b>Moze byc pusta</b> - gdy ktos wysyla sam link
-     * do utworu, dopisywanie do niego tekstu byloby udawaniem, ze cos
-     * napisal.
-     *
-     * <p>Pilnujemy tylko tego, zeby wiadomosc nie byla pusta CALA -
-     * bez tresci i bez muzyki nie ma czego wyslac. Sprawdza to
-     * {@code MessageHasContentValidator}.</p>
-     */
+    /** Tresc wiadomosci. */
     @Column(length = MAX_CONTENT_LENGTH, columnDefinition = "TEXT")
     private String content;
 
-    /*
-     * ------------------------------------------------------------------
-     *  Zalacznik muzyczny - te same szesc kolumn co w encji Post.
-     * ------------------------------------------------------------------
-     *
-     *  DLACZEGO NIE WSPOLNY @Embeddable DLA OBU ENCJI. Kusi, zeby wyciagnac
-     *  to do jednej klasy osadzonej i uzyc jej w Poscie i tutaj. Dwa powody,
-     *  dla ktorych tego nie robimy:
-     *
-     *  1. Tabela "posts" ISTNIEJE i ma dane. Przepisanie jej mapowania to
-     *     zmiana w dzialajacym, przetestowanym kodzie w zamian za oszczednosc
-     *     szesciu deklaracji pol - zla proporcja ryzyka do zysku.
-     *
-     *  2. Hibernate zwraca dla klasy osadzonej NULL, gdy wszystkie jej
-     *     kolumny sa puste. Post bez muzyki (czyli wiekszosc postow) dawalby
-     *     wiec puste odwolanie zamiast pustego obiektu, a kazdy odczyt
-     *     wymagalby sprawdzenia. To pulapka, ktora odzywa sie dopiero
-     *     w dzialajacej aplikacji.
-     *
-     *  Powtarzaja sie tu wylacznie DEKLARACJE KOLUMN. Cala logika muzyki -
-     *  rozpoznawanie linku (MusicLinkParser), skladanie adresow (MusicEmbed),
-     *  pobieranie tytulu (MusicMetadataService) i walidacja (@ValidMusicLink) -
-     *  jest jedna i wspolna. To ona bylaby kosztowna w duplikacji.
-     */
+    /* Zalacznik muzyczny - te same szesc kolumn co w encji Post. */
 
     @Enumerated(EnumType.STRING)
     @Column(name = "music_provider", length = 16)
@@ -127,12 +75,7 @@ public class Message {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * Kiedy odbiorca ja przeczytal; {@code null} znaczy "jeszcze nie".
-     *
-     * <p>Data zamiast flagi - tak samo jak przy powiadomieniach. Kosztuje
-     * tyle samo, a pozwala kiedys pokazac "przeczytano o 14:32".</p>
-     */
+    /** Kiedy odbiorca ja przeczytal; null znaczy "jeszcze nie". */
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
@@ -152,13 +95,7 @@ public class Message {
         }
     }
 
-    /**
-     * Podpina nagranie - albo je usuwa, gdy {@code link} jest pusty.
-     *
-     * <p>Jedna metoda na wszystkie pola naraz, dokladnie jak
-     * {@code Post.applyMusic}: inaczej dalo by sie zostawic wiadomosc
-     * w polowicznym stanie, np. z identyfikatorem, ale bez serwisu.</p>
-     */
+    /** Podpina nagranie - albo je usuwa, gdy link jest pusty. */
     public void applyMusic(ParsedMusicLink link, Integer startSeconds,
                            String title, String thumbnailUrl) {
         if (link == null) {
@@ -185,10 +122,7 @@ public class Message {
         return musicProvider != null && musicExternalId != null;
     }
 
-    /**
-     * Oznacza jako przeczytana. Powtorne wywolanie nic nie zmienia -
-     * pierwsza chwila przeczytania jest ta prawdziwa.
-     */
+    /** Oznacza jako przeczytana. */
     public void markRead() {
         if (readAt == null) {
             readAt = LocalDateTime.now();

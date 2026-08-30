@@ -9,18 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Wiadomosc musi niesc <b>cokolwiek</b>: tekst albo nagranie.
- *
- * <p><b>Dlaczego nie zwykle {@code @NotBlank} na tresci.</b> Bo wyslanie
- * samego utworu, bez ani jednego slowa, jest zupelnie normalne - i wlasnie
- * po to ten czat powstal. {@code @NotBlank} zmuszaloby do dopisywania
- * czegokolwiek obok linku, czyli do udawania, ze sie cos napisalo.</p>
- *
- * <p>Zabraniamy tylko przypadku, w ktorym nie ma NICZEGO. Taka wiadomosc
- * nie jest cisza w rozmowie - jest pustym dymkiem, ktorego odbiorca nie ma
- * jak zinterpretowac.</p>
- */
+/** Wiadomosc musi niesc cokolwiek: tekst albo nagranie. */
 @Documented
 @Constraint(validatedBy = MessageHasContentValidator.class)
 @Target(ElementType.TYPE)

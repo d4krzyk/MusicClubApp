@@ -354,7 +354,7 @@
   border-radius: 1.1rem;
   background: var(--bs-secondary-bg);
   font-size: .875rem;
-  animation: fade-in-up .28s var(--mc-ease) both;
+  animation: fade-in-up .28s var(--mc-ease) backwards;
 }
 
 /*
@@ -619,7 +619,7 @@
 
 .chat-music-picker {
   padding: .25rem .1rem 0;
-  animation: fade-in-up .24s var(--mc-ease) both;
+  animation: fade-in-up .24s var(--mc-ease) backwards;
 }
 
 /* Wybor nagrania w waskim panelu nie potrzebuje dolnego marginesu posta */

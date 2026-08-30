@@ -15,30 +15,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * Artysta z katalogu Deezera - element ulubionych na profilu.
- *
- * <p><b>Dlaczego artysta nie jest zwyklym tekstem w profilu.</b> Gdyby kazdy
- * wpisywal nazwe recznie, w bazie wyladowaloby "Radiohead", "radiohead",
- * "Radiohed" i "Radiohead ", czyli cztery rozne byty. Dopasowanie ludzi po
- * wspolnych artystach przestaloby dzialac dokladnie wtedy, kiedy jest
- * potrzebne. Do tego kazdy moglby wpisac cokolwiek - a wymyslony artysta
- * to gotowe pole do popisu dla trolli.</p>
- *
- * <p><b>Dlatego jedynym zrodlem jest katalog Deezera.</b> Nie da sie dodac
- * artysty, ktorego tam nie ma. {@code externalId} to identyfikator z Deezera
- * i jest UNIKALNY - ten sam wykonawca ma w naszej bazie dokladnie jeden
- * wiersz, niezaleznie od tego, ilu uzytkownikow go polubilo.</p>
- *
- * <p><b>Encja jest WSPOLNA dla wszystkich uzytkownikow</b>, a nie kopiowana
- * do kazdego profilu. Ma to dwa skutki, oba dobre: porownanie gustow to
- * porownanie identyfikatorow (a nie tekstow), a gatunki pobieramy z sieci
- * <i>raz na artyste</i> - druga osoba, ktora polubi tego samego wykonawce,
- * nie kosztuje juz ani jednego zapytania na zewnatrz.</p>
- *
- * <p>Realizuje wymaganie nr 7 - kolejna relacja {@code @ManyToMany}
- * (patrz {@code User.favoriteArtists}).</p>
- */
+/** Artysta z katalogu Deezera - element ulubionych na profilu. */
 @Entity
 @Table(name = "artists")
 public class Artist {
@@ -48,8 +25,8 @@ public class Artist {
     private Long id;
 
     /**
-     * Identyfikator z Deezera. {@code unique = true} zaklada w bazie indeks
-     * unikalny - to on gwarantuje, ze jeden wykonawca = jeden wiersz.
+     * Identyfikator z Deezera. unique = true zaklada w bazie indeks unikalny - to on gwarantuje,
+     * ze jeden wykonawca = jeden wiersz.
      */
     @Column(name = "external_id", nullable = false, unique = true, length = 64)
     private String externalId;
@@ -62,16 +39,9 @@ public class Artist {
     private String imageUrl;
 
     /**
-     * Gatunki - do przyblizania dopasowan miedzy ludzmi, ktorzy nie maja
-     * wspolnego ani jednego wykonawcy.
-     *
-     * <p>{@code @ElementCollection} zaklada osobna tabele {@code artist_genres}
-     * z kolumnami {@code artist_id} i {@code genre}. To NIE jest encja - gatunek
-     * nie ma wlasnego zycia ani identyfikatora, jest tylko etykieta artysty.</p>
-     *
-     * <p>Zbior bywa <b>pusty</b> i to normalny stan: gatunki pochodza
-     * z Last.fm, a klucz do Last.fm jest opcjonalny. Bez niego dopasowanie
-     * dziala dalej, tylko opiera sie na wspolnych artystach i znajomych.</p>
+     * Gatunki - do przyblizania dopasowan miedzy ludzmi, ktorzy nie maja wspolnego ani jednego
+     * wykonawcy. @ElementCollection zaklada osobna tabele artist_genres z kolumnami artist_id i
+     * genre.
      */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "artist_genres", joinColumns = @JoinColumn(name = "artist_id"))
@@ -119,14 +89,7 @@ public class Artist {
         }
     }
 
-    /**
-     * Rownosc po {@code externalId}, a nie po {@code id}.
-     *
-     * <p>Artysta jest wkladany do {@link Set} (ulubione uzytkownika) juz
-     * w momencie, gdy dopiero powstaje i nie ma jeszcze nadanego {@code id}.
-     * Porownywanie po {@code id} dawaloby wtedy {@code null == null} dla dwoch
-     * ROZNYCH wykonawcow - i drugi z nich cicho znikalby ze zbioru.</p>
-     */
+    /** Rownosc po externalId, a nie po id. */
     @Override
     public boolean equals(Object other) {
         if (this == other) {

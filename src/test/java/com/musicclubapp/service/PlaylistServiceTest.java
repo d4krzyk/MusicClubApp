@@ -25,17 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-/**
- * Gablotka playlist na profilu.
- *
- * <p>Na prawdziwej bazie, bo sprawdzamy tez rzeczy, ktorych atrapa nie
- * pokaze: numerowanie miejsc po usunieciu pozycji ze srodka i ograniczenie
- * {@code UNIQUE} na parze wlasciciel-playlista.</p>
- *
- * <p><b>Pobieranie tytulu podstawiamy atrapa.</b> To zapytanie do OBCEGO
- * serwera - bez tego test zalezalby od tego, czy Spotify akurat odpowiada,
- * a takie testy przestaja cokolwiek znaczyc.</p>
- */
+/** Gablotka playlist na profilu. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -80,9 +70,8 @@ class PlaylistServiceTest {
         assertThat(playlist.title()).isEqualTo("Skladanka");
 
         /*
-         * Adres odtwarzacza sklada SERWER - frontend nie musi wiedziec, ze
-         * kazdy serwis robi to inaczej. Zwykly adres strony sie nie nada,
-         * bo Spotify blokuje osadzanie swoich normalnych stron.
+         * Adres odtwarzacza sklada SERWER - frontend nie musi wiedziec, ze kazdy serwis robi to
+         * inaczej.
          */
         assertThat(playlist.embedUrl())
             .isEqualTo("https://open.spotify.com/embed/playlist/37i9dQZF1DXcBWIGoYBM5M");
@@ -102,10 +91,7 @@ class PlaylistServiceTest {
     @Test
     @DisplayName("link do UTWORU jest odrzucany - to gablotka playlist")
     void aTrackIsNotAPlaylist() {
-        /*
-         * Najczestsza pomylka: adres utworu wyglada bardzo podobnie.
-         * Wpuszczony tutaj zrobilby z gablotki playlist gablotke czegokolwiek.
-         */
+        /* Najczestsza pomylka: adres utworu wyglada bardzo podobnie. */
         assertThatThrownBy(() -> playlistService.add("ala", SPOTIFY_TRACK))
             .isInstanceOf(OperationNotAllowedException.class);
 
@@ -136,11 +122,7 @@ class PlaylistServiceTest {
         playlistService.add("ala", SPOTIFY_1);
         playlistService.add("bartek", SPOTIFY_1);
 
-        /*
-         * Ograniczenie UNIQUE obejmuje pare wlasciciel-playlista, a nie sama
-         * playliste. Inaczej pierwsza osoba, ktora wystawi popularna
-         * skladanke, zablokowalaby ja wszystkim pozostalym.
-         */
+        /* Ograniczenie UNIQUE obejmuje pare wlasciciel-playlista, a nie sama playliste. */
         assertThat(playlistService.playlists("ala", "ala").items()).hasSize(1);
         assertThat(playlistService.playlists("bartek", "bartek").items()).hasSize(1);
     }
@@ -170,9 +152,8 @@ class PlaylistServiceTest {
         entityManager.clear();
 
         /*
-         * Dziury w numeracji same z siebie nie szkodza - szkodzi to, ze
-         * kolejna dodana pozycja dostalaby wtedy numer 3 przy dwoch
-         * pozycjach na ekranie.
+         * Dziury w numeracji same z siebie nie szkodza - szkodzi to, ze kolejna dodana pozycja
+         * dostalaby wtedy numer 3 przy dwoch pozycjach na ekranie.
          */
         List<FavoritePlaylist> left =
             playlistRepository.findByOwnerUsernameOrderByPositionAsc("ala");
@@ -212,9 +193,8 @@ class PlaylistServiceTest {
             .isInstanceOf(OperationNotAllowedException.class);
 
         /*
-         * Piec wywolan, a nie szesc: przy pelnej gablotce sprawdzamy limit
-         * PRZED pojsciem do serwisu po tytul nagrania, ktorego i tak nie
-         * zapiszemy.
+         * Piec wywolan, a nie szesc: przy pelnej gablotce sprawdzamy limit PRZED pojsciem do
+         * serwisu po tytul nagrania, ktorego i tak nie zapiszemy.
          */
         org.mockito.Mockito.verify(musicMetadata,
             org.mockito.Mockito.times(FavoritePlaylist.MAX_PER_USER)).fetch(any());

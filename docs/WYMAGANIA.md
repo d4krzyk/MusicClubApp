@@ -70,7 +70,7 @@ wymagane 17 na piątkę.
 
 W zapasie zostają jeszcze 16 (potwierdzenie maila) i 23 (HATEOAS) — oba opcjonalne.
 
-**Testy: 354 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
+**Testy: 358 przechodzi** (`mvn clean test`) — Mockito dla serwisów,
 `@DataJpaTest` dla zapytań, `@WebMvcTest` dla kontrolerów, `@SpringBootTest`
 dla całego kontekstu. Rozmowy z Deezerem i Last.fm sprawdzamy na **prawdziwym
 HTTP**: mały serwer testowy (`TestHttpServer`) oddaje odpowiedzi w formacie obu
@@ -225,6 +225,24 @@ dopiero na uruchomionej aplikacji:
   jakikolwiek adres. Znalazło to dopiero przejście przez aplikację
   w przeglądarce. Stąd `UserControllerRoutingTest` pilnuje teraz samego
   **istnienia** końcówek panelu, nie tylko kolizji między nimi;
+- **funkcja, która nic nie zwraca, i wywołanie, które czegoś od niej oczekuje.**
+  Przy przenoszeniu adresów do modułów `api/` cztery operacje na ulubionych
+  zostały napisane bez `return` — a komponent dalej czytał z wyniku `.data`.
+  Efekt na ekranie: „Nie można połączyć się z serwerem", czyli komunikat
+  **o zupełnie czymś innym**, bo `describeError` widzi wyjątek bez odpowiedzi
+  HTTP i uznaje go za awarię sieci. Ani kompilacja, ani `npm run build`, ani
+  354 testy backendu nie mają jak tego zauważyć: to zgodność dwóch stron
+  JavaScriptu, której nikt nie sprawdza. Stąd przegląd **wszystkich** funkcji
+  API pod kątem „czy ktoś czyta wynik z funkcji, która go nie zwraca";
+- **animacja, która zostawia po sobie `transform` — i chowa listę pod sąsiadem.**
+  Lista podpowiedzi w wyszukiwarce ucinała się na krawędzi sekcji i wchodziła pod
+  następny kafelek, mimo `z-index: 20`. Powód: wejście kafelków
+  (`animation: fade-in-up … both`) zostawia na elemencie `transform`, a element
+  z `transform` **tworzy kontekst układania** — z którego żadne `z-index`
+  potomka nie ma jak wyjść. Ostatnia klatka animacji i tak kończy się na
+  `transform: none`, więc `both` zamieniono na `backwards`: wygląda identycznie,
+  a nie zostawia po sobie kontekstu. Diagnoza wymagała zapytania przeglądarki
+  `elementFromPoint`, bo w CSS nie widać, kto kogo przykrywa;
 - **liczba zależności to nie to samo co jakość zależności.** Przenosząc
   sprzątanie po koncie do modułów-właścicieli spodziewaliśmy się, że
   `UserModerationService` schudnie z 12 zależności — a wyszło 12 na 12: pięć

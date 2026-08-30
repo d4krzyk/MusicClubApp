@@ -1,27 +1,4 @@
-/**
- * Ikony jako male, wbudowane obrazki SVG.
- *
- * <p><b>Skad pochodza ksztalty.</b> Z <b>Bootstrap Icons</b> (wersja 1.13,
- * licencja MIT) - oficjalnego zestawu ikon Bootstrapa, ktorego uzywamy juz
- * do calej reszty wygladu. Wczesniej ksztalty byly rysowane recznie i przy
- * kilku sztukach to wystarczalo, ale przy dwudziestu kilku zaczely sie
- * rozjezdzac: ikona znajomych byla przycieta, grubosci kresek roznily sie
- * miedzy ikonami, a caly pasek przestal wygladac na jeden zestaw.</p>
- *
- * <p><b>Dlaczego mimo to nie ma tu zaleznosci do biblioteki.</b> Bo paczka
- * to ponad dwa tysiace ikon, a uzywamy trzydziestu. Zamiast
- * dociagac cala paczke, przepisalismy sciezki tych, ktore sa nam potrzebne -
- * kod strony nie rosnie, a ksztalty sa dokladnie te same co w oryginale.
- * Zrobil to skrypt, a nie reka, wiec nie ma tu miejsca na literowke.</p>
- *
- * <p><b>Jak dolozyc kolejna.</b> Wejdz na icons.getbootstrap.com, znajdz
- * ikone, skopiuj zawartosc jej pliku SVG i wstaw ponizej w takiej samej
- * postaci co reszta - pamietajac o zamianie {@code fill-rule} na
- * {@code fillRule} (JSX nie przyjmuje myslnikow w nazwach atrybutow).</p>
- *
- * <p>{@code currentColor} sprawia, ze ikona przyjmuje kolor tekstu obok -
- * dziala wiec poprawnie na przyciskach w kazdym kolorze i w obu motywach.</p>
- */
+/** Ikony jako male, wbudowane obrazki SVG. */
 
 function Svg({ children, size = 16, ...rest }) {
   return (
@@ -207,15 +184,7 @@ export function IconBoard(props) {
   );
 }
 
-/**
- * Nuty - znak marki w logo.
- *
- * <p><b>Nie uzywamy jej nigdzie indziej</b> i to jest cala rzecz. Logo
- * dostalo kiedys te sama ikone co pozycja "Tablica" w menu, przez co jedno
- * i drugie wygladalo identycznie, a aplikacja o muzyce przestala miec
- * w logo cokolwiek muzycznego. Znak marki musi byc rozpoznawalny sam
- * z siebie, wiec ma wlasny ksztalt.</p>
- */
+/** Nuty - znak marki w logo. */
 export function IconNote(props) {
   return (
     <Svg {...props}>

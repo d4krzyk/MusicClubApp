@@ -6,22 +6,10 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.music.MusicEmbed;
 import org.springframework.stereotype.Component;
 
-/**
- * Przepisuje encje {@link Message} na DTO wysylane do przegladarki.
- *
- * <p>Ta sama rola co {@link PostMapper} i te same zasady - w szczegolnosci
- * adresy odtwarzacza sklada {@link MusicEmbed}, wiec frontend nie musi znac
- * formatu zadnego serwisu.</p>
- */
+/** Przepisuje encje Message na DTO wysylane do przegladarki. */
 @Component
 public class MessageMapper {
 
-    /**
-     * @param viewer kto oglada - po nim rozstrzyga sie pole {@code mine}.
-     *               <b>Nie moze byc {@code null}</b>: wiadomosci nie widzi
-     *               nikt niezalogowany, wiec brak ogladajacego oznaczalby
-     *               blad w kodzie, a nie sytuacje do obsluzenia
-     */
     public MessageResponse toResponse(Message message, User viewer) {
         User sender = message.getSender();
 

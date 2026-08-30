@@ -2,23 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconArrowLeft, IconArrowRight } from './Icons';
 
-/**
- * Pozioma lista przewijana strzalkami.
- *
- * <p><b>Po co osobny komponent.</b> Uklad poziomy mamy juz w trzech miejscach
- * (znajomi, propozycje, ulubieni) i wszedzie znaczy to samo: "to jest lista,
- * zacznij od lewej". Jedno miejsce zamiast trzech kopii sprawia, ze zachowanie
- * strzalek jest wszedzie identyczne - a to wlasnie po nim uzytkownik poznaje,
- * ze ma do czynienia z tym samym rodzajem listy.</p>
- *
- * <p><b>Dlaczego strzalki, a nie samo przewijanie.</b> Palcem przewija sie
- * naturalnie, ale myszka juz nie: pasek poziomy bez widocznego sterowania
- * wyglada jak lista, ktora sie po prostu urywa. Strzalki mowia wprost, ze
- * dalej cos jest.</p>
- *
- * <p>Strzalki pokazujemy <b>tylko wtedy, gdy jest co przewijac</b>, i wygaszamy
- * na koncach. Przycisk, ktory nic nie robi, jest gorszy niz jego brak.</p>
- */
+/** Pozioma lista przewijana strzalkami. */
 export default function HorizontalStrip({ children, itemWidth = 132, className = '' }) {
   const { t } = useTranslation();
   const track = useRef(null);
@@ -43,10 +27,8 @@ export default function HorizontalStrip({ children, itemWidth = 132, className =
     refreshArrows();
 
     /*
-     * Samo nasluchiwanie przewijania nie wystarczy: lista zmienia sie takze
-     * przy zwezeniu okna i po dodaniu pozycji. ResizeObserver lapie oba
-     * przypadki - bez niego strzalka potrafilaby zostac aktywna, choc nie ma
-     * juz czego przewijac.
+     * Samo nasluchiwanie przewijania nie wystarczy: lista zmienia sie takze przy zwezeniu okna i
+     * po dodaniu pozycji.
      */
     const observer = new ResizeObserver(refreshArrows);
     observer.observe(el);
@@ -63,11 +45,7 @@ export default function HorizontalStrip({ children, itemWidth = 132, className =
     const el = track.current;
     if (!el) return;
 
-    /*
-     * Przewijamy o cala widoczna szerokosc pomniejszona o jeden kafelek.
-     * Ten jeden kafelek zostaje na widoku celowo - daje punkt zaczepienia
-     * i od razu widac, ze to ta sama lista, a nie nowy ekran.
-     */
+    /* Przewijamy o cala widoczna szerokosc pomniejszona o jeden kafelek. */
     const step = Math.max(el.clientWidth - itemWidth, itemWidth);
     el.scrollBy({ left: direction * step, behavior: 'smooth' });
   }

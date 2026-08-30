@@ -15,7 +15,8 @@
     "themeDark": "Włącz motyw ciemny",
     "friends": "Znajomi",
     "myProfile": "Mój profil",
-    "reports": "Zgłoszenia"
+    "reports": "Zgłoszenia",
+    "myReports": "Moje zgłoszenia"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -362,7 +363,8 @@
     "friendRequest": "{{username}} wysłał(a) Ci zaproszenie do znajomych",
     "friendAccepted": "{{username}} jest teraz Twoim znajomym",
     "report": "Nowe zgłoszenie do sprawdzenia",
-    "delete": "Usuń powiadomienie"
+    "delete": "Usuń powiadomienie",
+    "reportResolved": "Twoje zgłoszenie zostało rozpatrzone"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -496,5 +498,21 @@
     "reopen": "Zmień decyzję",
     "reopenHint": "Otwiera sprawę ponownie. Nie cofa działań, które już zostały wykonane.",
     "selfReportHint": "To zgłoszenie dotyczy Twojego konta — możesz je zamknąć, ale nie możesz nałożyć na siebie kary."
+  },
+  "myReports": {
+    "title": "Moje zgłoszenia",
+    "intro": "Zgłoszenia, które wysłałeś, i to, jak się skończyły. Administrator zawsze zostawia notatkę przy zamknięciu sprawy.",
+    "empty": "Nie wysłałeś jeszcze żadnego zgłoszenia",
+    "emptyHint": "Zgłoszenie wysyła się z profilu albo spod posta.",
+    "reported": "Zgłoszony",
+    "filed": "Wysłane",
+    "open": "Czeka na decyzję",
+    "openHint": "Administrator jeszcze się tym nie zajął.",
+    "resolved": "Uznane za zasadne",
+    "dismissed": "Oddalone",
+    "note": "Odpowiedź administratora",
+    "resolvedAt": "Rozpatrzone",
+    "noPunishmentInfo": "Nie pokazujemy, jaką karę dostała zgłoszona osoba - to jej sprawa.",
+    "loadFailed": "Nie udało się pobrać zgłoszeń"
   }
 }

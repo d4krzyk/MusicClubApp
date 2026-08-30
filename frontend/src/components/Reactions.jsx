@@ -4,17 +4,7 @@ import Button from 'react-bootstrap/Button';
 import { cofnijReakcje, ustawReakcje } from '../api/posty';
 import ReactionAuthors from './ReactionAuthors';
 
-/**
- * Trzy summary pod postem: ogien, "mid" i "meh".
- *
- * <p><b>Emotki sa TYLKO tutaj.</b> Backend zna wylacznie nazwy
- * ({@code FIRE}, {@code MID}, {@code MEH}) - dzieki temu podmiana obrazka
- * albo dodanie tlumaczenia nie wymaga ruszania bazy ani serwera.</p>
- *
- * <p><b>Skad wiadomo, co jest zaznaczone?</b> Z pola {@code reactions.mine},
- * ktore wylicza serwer. Nie zgadujemy tego lokalnie - inaczej po odswiezeniu
- * strony podswietlenie mogloby sie rozjechac z tym, co naprawde jest w bazie.</p>
- */
+/** Trzy summary pod postem: ogien, "mid" i "meh". */
 
 /** Kolejnosc na ekranie - od najbardziej pozytywnej. */
 const KINDS = [
@@ -40,12 +30,7 @@ export default function Reactions({ post, onChange }) {
     setError(false);
 
     try {
-      /*
-       * Klikniecie we WLASNA summary ja cofa, klikniecie w inna - podmienia.
-       * Decyzje podejmujemy tutaj, bo to przegladarka wie, co jest aktualnie
-       * zaznaczone. Backend zostaje prosty: PUT ustawia, DELETE kasuje,
-       * i oba mozna wyslac dwa razy bez niespodzianek.
-       */
+      /* Klikniecie we WLASNA summary ja cofa, klikniecie w inna - podmienia. */
       const zmieniony = summary.mine === code
         ? await cofnijReakcje(post.id)
         : await ustawReakcje(post.id, code);
@@ -84,12 +69,7 @@ export default function Reactions({ post, onChange }) {
         );
       })}
 
-      {/*
-        Podsumowanie jest przyciskiem, a nie napisem. Liczba mowi ILE osob,
-        ale nie mowi KTO - a przy paru reakcjach to wlasnie druga rzecz jest
-        ciekawa. Okienko otwiera sie na zadanie, wiec lista osob nie jest
-        pobierana dla kazdego posta na tablicy z osobna.
-      */}
+      {/* Podsumowanie jest przyciskiem, a nie napisem. */}
       {summary.total > 0 && (
         <button
           type="button"

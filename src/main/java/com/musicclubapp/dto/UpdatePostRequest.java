@@ -10,16 +10,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Zmiana istniejacego posta: tresc i nagranie.
- *
- * <p><b>Czego tu nie ma: zdjec.</b> Dokladanie i usuwanie plikow na juz
- * opublikowanym poscie to osobny temat (trzeba by sprzatac pliki z dysku
- * i pilnowac kolejnosci), wiec na razie go nie otwieramy. Formularz mowi
- * o tym wprost, zamiast milczec.</p>
- *
- * <p>Puste {@code musicUrl} oznacza "usun nagranie z posta".</p>
- */
+/** Zmiana istniejacego posta: tresc i nagranie. */
 @ValidMusicLink
 public record UpdatePostRequest(
 
@@ -35,13 +26,7 @@ public record UpdatePostRequest(
     @Max(value = Post.MAX_SEKUNDA_STARTU, message = "{validation.post.start.range}")
     Integer musicStartSeconds,
 
-    /**
-     * Kto ma widziec post po zmianie. {@code null} = zostaw jak bylo.
-     *
-     * <p>Zwezenie widocznosci po fakcie dziala <b>tylko na przyszlosc</b>:
-     * kto post juz przeczytal, ten go przeczytal. Nie jest to wada tego
-     * rozwiazania, tylko wlasciwosc kazdej publikacji.</p>
-     */
+    /** Kto ma widziec post po zmianie. null = zostaw jak bylo. */
     PostVisibility visibility
 
 ) implements MusicLinkToValidate {

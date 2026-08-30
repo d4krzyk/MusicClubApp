@@ -7,31 +7,7 @@ import Col from 'react-bootstrap/Col';
 import Field from './Field';
 import { linkError } from '../utils/musicLinks';
 
-/**
- * Wybor nagrania do posta: rodzaj, link i (tylko dla utworu) moment startu.
- *
- * <p><b>Rodzaj wybiera uzytkownik, my sprawdzamy zgodnosc.</b> Moglibysmy
- * rozpoznawac go z samego adresu, ale wtedy pomylka konczy sie cicha
- * niespodzianka - "wrzucalem album, a wyszedl utwor". Przy jawnym wyborze
- * niezgodnosc to blad, ktory widac od razu.</p>
- *
- * <p><b>Field momentu startu POKAZUJE SIE tylko przy utworze.</b> Album to
- * wiele nagran, a profil artysty w ogole nie jest nagraniem - "zacznij
- * od 1:30" nic tam nie znaczy. Zamiast tlumaczyc to napisem, po prostu
- * chowamy pole.</p>
- *
- * <p>Blad linku pokazujemy juz przy wpisywaniu, ale <b>o wysylce decyduje
- * i tak serwer</b> - ta walidacja jest wygoda, nie zabezpieczeniem.</p>
- *
- * <p><b>Po co {@code idPrefix}.</b> Ten sam wybor nagrania stoi teraz
- * w dwoch miejscach naraz: w formularzu nowego posta i w oknie czatu.
- * Bez przedrostka oba pola dostawaly identyfikator {@code musicUrl} - a dwa
- * elementy o tym samym identyfikatorze to nie jest drobiazg: etykieta
- * {@code <label for="musicUrl">} zawsze wskazuje PIERWSZY z nich, wiec
- * klikniecie podpisu w czacie ustawialo kursor w formularzu posta pod
- * spodem. Znalazlo to sprawdzenie w przegladarce, ktore trafilo na dwa
- * pasujace elementy zamiast jednego.</p>
- */
+/** Wybor nagrania do posta: rodzaj, link i (tylko dla utworu) moment startu. */
 
 /** Kolejnosc na przelaczniku - od najczestszego przypadku. */
 const KINDS = ['TRACK', 'ALBUM', 'ARTIST', 'PLAYLIST'];

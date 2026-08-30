@@ -1,20 +1,6 @@
 import Card from 'react-bootstrap/Card';
 
-/**
- * Szkielet posta - szare ksztalty w miejscu, gdzie za chwile bedzie tresc.
- *
- * <p><b>Dlaczego to jest lepsze niz kreccace sie kolko.</b> Kolko mowi
- * "czekaj" i nic wiecej; strona pozostaje pusta, a po wczytaniu tresc
- * wskakuje i przesuwa wszystko w dol. Szkielet od razu zajmuje <i>to samo
- * miejsce</i>, co prawdziwe posty: nic nie skacze, a ksztalt bloczkow mowi,
- * czego sie spodziewac.</p>
- *
- * <p><b>Pokazujemy go tylko przy PIERWSZYM ladowaniu.</b> Przy doladowywaniu
- * kolejnych postow na dole jest juz co ogladac, wiec wystarcza trzy kropki -
- * pol ekranu szarych prostokatow wygladaloby wtedy jak awaria.</p>
- *
- * @param count ile szkieletow narysowac
- */
+/** Szkielet posta - szare ksztalty w miejscu, gdzie za chwile bedzie tresc. */
 export default function PostSkeleton({ count = 3 }) {
   return (
     <div aria-hidden="true">

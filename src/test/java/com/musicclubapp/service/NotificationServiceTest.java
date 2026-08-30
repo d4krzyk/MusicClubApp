@@ -20,20 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Powiadomienia <b>na prawdziwej bazie</b>.
- *
- * <p>Atrapy nie mialyby tu czego sprawdzic: najwazniejsze reguly dotycza
- * tego, ile WIERSZY powstaje (albo nie powstaje) - a to widac dopiero
- * wtedy, gdy naprawde sie zapisuja.</p>
- *
- * <p>Trzy reguly, na ktorych stoi caly ten mechanizm:</p>
- * <ul>
- *   <li>reakcja na wlasny post nie powiadamia nikogo,</li>
- *   <li>zmiana zdania odswieza wpis zamiast dokladac kolejny,</li>
- *   <li>cofniecie reakcji kasuje powiadomienie o niej.</li>
- * </ul>
- */
+/** Powiadomienia na prawdziwej bazie. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -85,10 +72,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("reakcja na WLASNY post nie powiadamia nikogo")
     void reactionOnOwnPostNotifiesNobody() {
-        /*
-         * Wiadomo, co sie samemu zrobilo. Bez tej reguly dzwonek zapelnialby
-         * sie wlasnymi klknieciami i przestalby cokolwiek znaczyc.
-         */
+        /* Wiadomo, co sie samemu zrobilo. */
         reactionService.set(postAli.getId(), "ala", ReactionType.FIRE);
         entityManager.flush();
 
@@ -104,11 +88,7 @@ class NotificationServiceTest {
         reactionService.set(postAli.getId(), "bob", ReactionType.MID);
         entityManager.flush();
 
-        /*
-         * Trzy klikniecia, jedno powiadomienie. Inaczej jedna osoba
-         * przebierajaca w emotkach zasypywalaby autora - a to najkrotsza
-         * droga do tego, zeby przestal je czytac.
-         */
+        /* Trzy klikniecia, jedno powiadomienie. */
         assertThat(ile("ala")).isEqualTo(1);
         assertThat(notifications.forUser("ala", PageRequest.of(0, 10))
             .getContent().get(0).reactionType()).isEqualTo(ReactionType.MID);
@@ -125,8 +105,8 @@ class NotificationServiceTest {
         entityManager.flush();
 
         /*
-         * Zostawione powiadomienie prowadziloby do posta, pod ktorym nie ma
-         * juz sladu po tej reakcji - czyli do czegos, co sie "odstalo".
+         * Zostawione powiadomienie prowadziloby do posta, pod ktorym nie ma juz sladu po tej
+         * reakcji - czyli do czegos, co sie "odstalo".
          */
         assertThat(ile("ala")).isZero();
     }
@@ -186,8 +166,8 @@ class NotificationServiceTest {
         entityManager.flush();
 
         /*
-         * Inaczej powiadomienie prowadziloby na strone znajomych, gdzie nic
-         * juz nie czeka - a to wyglada jak usterka aplikacji.
+         * Inaczej powiadomienie prowadziloby na strone znajomych, gdzie nic juz nie czeka - a to
+         * wyglada jak usterka aplikacji.
          */
         assertThat(ile("ala")).isZero();
     }
@@ -203,9 +183,8 @@ class NotificationServiceTest {
         entityManager.flush();
 
         /*
-         * Powiadomienie wskazuje posta KLUCZEM OBCYM, wiec gdyby nie znikalo,
-         * baza w ogole nie pozwolilaby skasowac posta. Ta asercja pilnuje
-         * obu rzeczy naraz.
+         * Powiadomienie wskazuje posta KLUCZEM OBCYM, wiec gdyby nie znikalo, baza w ogole nie
+         * pozwolilaby skasowac posta.
          */
         assertThat(ile("ala")).isZero();
     }
@@ -245,14 +224,7 @@ class NotificationServiceTest {
         assertThat(cezary.getUsername()).isEqualTo("cezary");
     }
 
-    /**
-     * Usuwanie pojedynczego powiadomienia.
-     *
-     * <p><b>Kasowanie to co innego niz „przeczytane".</b> Przeczytane gasi
-     * kropke, ale wpis zostaje na liscie i przy kilkudziesieciu powiadomieniach
-     * nowe gina wsrod starych. To dwie rozne czynnosci i dlatego sa dwa
-     * osobne przyciski.</p>
-     */
+    /** Usuwanie pojedynczego powiadomienia. */
     @Test
     @DisplayName("wlasne powiadomienie mozna usunac, a licznik sie zmniejsza")
     void ownNotificationCanBeDeleted() {
@@ -274,11 +246,7 @@ class NotificationServiceTest {
     @Test
     @DisplayName("CUDZEGO powiadomienia nie da sie usunac")
     void cannotDeleteSomeoneElsesNotification() {
-        /*
-         * Sprawdzamy odbiorce, a nie sam identyfikator. Bez tego wystarczyloby
-         * zgadnac numer, zeby czyscic komus dzwonek - a numery ida po kolei,
-         * wiec zgadywanie nie jest tu zadnym wyzwaniem.
-         */
+        /* Sprawdzamy odbiorce, a nie sam identyfikator. */
         reactionService.set(postAli.getId(), "bob", ReactionType.FIRE);
         entityManager.flush();
 

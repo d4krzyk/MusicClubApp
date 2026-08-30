@@ -9,23 +9,7 @@ import jakarta.persistence.Table;
 
 import java.util.Objects;
 
-/**
- * Utwor z katalogu Deezera - element ulubionych na profilu.
- *
- * <p>Zasada ta sama co przy {@link Artist}: <b>tylko z katalogu, nigdy
- * z klawiatury</b>. Dzieki temu ten sam utwor u dwoch osob to ten sam wiersz
- * w bazie, a nie dwa podobnie wygladajace teksty.</p>
- *
- * <p><b>Po co osobne pole {@code artistExternalId}</b>, skoro jest juz
- * {@code artistName}? Bo utwor jest tez <i>slabszym sygnalem o artyscie</i>.
- * Ktos moze nie miec Radiohead wsrod ulubionych wykonawcow, ale miec trzy ich
- * piosenki wsrod ulubionych utworow - i to tez o czyms swiadczy. Identyfikator
- * pozwala to policzyc bez porownywania tekstow.</p>
- *
- * <p>Nie kopiujemy tu okladki jako pliku - trzymamy sam adres. Zdjecie zostaje
- * na serwerach Deezera, a my nie zajmujemy sie ani miejscem na dysku, ani
- * prawami do obrazkow.</p>
- */
+/** Utwor z katalogu Deezera - element ulubionych na profilu. */
 @Entity
 @Table(name = "tracks")
 public class Track {
@@ -44,7 +28,7 @@ public class Track {
     @Column(name = "artist_name", nullable = false, length = 200)
     private String artistName;
 
-    /** Identyfikator wykonawcy w Deezerze - patrz opis klasy. */
+    /** Identyfikator wykonawcy w Deezerze. */
     @Column(name = "artist_external_id", length = 64)
     private String artistExternalId;
 

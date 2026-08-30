@@ -19,37 +19,9 @@ import useOdswiezanie from '../hooks/useOdswiezanie';
 /** Co ile odswiezamy liste rozmow, gdy jest widoczna. */
 const LIST_REFRESH_MS = 10_000;
 
-/*
- * Wyszukiwarka stoi w panelu ZAWSZE, gdy jest kogokolwiek szukac.
- *
- * Wczesniej pojawiala sie dopiero od szesciu rozmow - z rozumowaniem, ze przy
- * trzech osobach jest tylko zajetym miejscem. Rozumowanie bylo bledne
- * z prostego powodu: <b>nie widac pola, ktorego nie ma</b>. Ktos, kto szuka
- * wyszukiwarki i jej nie znajduje, nie wnioskuje "pewnie mam za malo
- * znajomych" - wnioskuje, ze aplikacja jej nie ma. Znikajace sterowanie jest
- * gorsze niz sterowanie, ktore czasem nie jest potrzebne.
- */
+/* Wyszukiwarka stoi w panelu ZAWSZE, gdy jest kogokolwiek szukac. */
 
-/**
- * Panel czatu wysuwany z prawej strony.
- *
- * <p><b>Panel, a nie osobna strona</b> - i to jest cala idea. Rozmowa toczy
- * sie <i>obok</i> tego, co sie akurat oglada: mozna napisac o poscie, ktory
- * ma sie przed oczami, nie tracac go z widoku. Osobna strona zmuszalaby do
- * skakania tam i z powrotem.</p>
- *
- * <p><b>Dwa widoki, jedno okno.</b> Lista znajomych i otwarty watek zajmuja
- * to samo miejsce, a nie stoja obok siebie. Panel ma dwadziescia kilka
- * centymetrow szerokosci - podzial na dwie kolumny zostawilby na wiadomosci
- * pasek na piec slow.</p>
- *
- * <p><b>Strona pod spodem NIE jest blokowana.</b> Popularne rozwiazanie -
- * zablokowanie przewijania na czas otwarcia okna - dokleja przegladarce
- * margines w miejscu paska przewijania i cala strona przeskakuje w bok
- * w chwili otwarcia. Ten sam problem naprawialismy juz przy oknach
- * Bootstrapa (patrz {@code styles.css}); nie ma powodu wprowadzac go tutaj
- * z powrotem.</p>
- */
+/** Panel czatu wysuwany z prawej strony. */
 export default function ChatDrawer() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -60,14 +32,7 @@ export default function ChatDrawer() {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  /*
-   * Blad pobierania trzymamy OSOBNO od pustej listy - i to nie jest
-   * ozdobnik. Wczesniej nieudane zapytanie ustawialo pusta liste, wiec
-   * awaria serwera wygladala identycznie jak "nie masz jeszcze znajomych":
-   * uzytkownik z kilkunastoma znajomymi widzial komunikat, ze nie ma z kim
-   * pisac, i nie mial zadnej wskazowki, ze cokolwiek sie zepsulo.
-   * Dwa rozne stany swiata musza dawac dwa rozne ekrany.
-   */
+  /* Blad pobierania trzymamy OSOBNO od pustej listy - i to nie jest ozdobnik. */
   const [error, setError] = useState(null);
 
   const panel = useRef(null);
@@ -80,11 +45,7 @@ export default function ChatDrawer() {
       setConversations(data);
       setError(null);
     } catch (problem) {
-      /*
-       * Poprzedniej listy NIE kasujemy. Zapytanie powtarza sie co kilka
-       * sekund, wiec jedna nieudana proba (chwilowy brak sieci) nie ma
-       * prawa czyscic ekranu komus, kto wlasnie czyta rozmowe.
-       */
+      /* Poprzedniej listy NIE kasujemy. */
       const details = describeError(problem, 'chat.listFailed');
       setError(details.message);
     } finally {
@@ -93,10 +54,8 @@ export default function ChatDrawer() {
   }, [t]);
 
   /*
-   * Liste odswiezamy tylko wtedy, gdy jest WIDOCZNA - czyli panel jest
-   * otwarty i nie zaslania jej otwarta rozmowa. Przy otwartym watku
-   * odpytywanie i tak chodzi w nim samym; dwa liczniki naraz pytalyby
-   * o to samo.
+   * Liste odswiezamy tylko wtedy, gdy jest WIDOCZNA - czyli panel jest otwarty i nie zaslania jej
+   * otwarta rozmowa.
    */
   useEffect(() => {
     if (!open || !user) {
@@ -124,12 +83,7 @@ export default function ChatDrawer() {
     return () => document.removeEventListener('keydown', onEscape);
   }, [open, closeChat]);
 
-  /*
-   * Ognisko klawiatury. Po otwarciu przenosimy je do panelu, po zamknieciu
-   * wraca tam, skad przyszlo. Bez tego osoba korzystajaca z klawiatury
-   * po zamknieciu czatu ladowala na poczatku strony i musiala przejsc
-   * cala nawigacje od nowa.
-   */
+  /* Ognisko klawiatury. */
   useEffect(() => {
     if (open) {
       returnFocusTo.current = document.activeElement;
@@ -144,15 +98,8 @@ export default function ChatDrawer() {
   }, [open]);
 
   /*
-   * Obie funkcje sa zapamietane (useCallback), zeby nie powstawaly na nowo
-   * przy kazdym rysowaniu panelu. Watek rozmowy broni sie przed tym takze
-   * po swojej stronie, ale przekazywanie w dol funkcji zmieniajacej sie
-   * co render to zaproszenie do dokladnie tego bledu, ktory juz raz tu byl.
-   *
-   * Stoja TU, a nie nizej przy uzyciu - hooki musza byc wywolane przy kazdym
-   * rysowaniu w tej samej kolejnosci, a nizej jest juz wyjscie "brak
-   * zalogowanego". Wywolanie hooka po takim wyjsciu to blad, ktory objawia
-   * sie dopiero przy wylogowaniu, i to komunikatem o niczym.
+   * Obie funkcje sa zapamietane (useCallback), zeby nie powstawaly na nowo przy kazdym rysowaniu
+   * panelu.
    */
 
   /** Zdejmuje kropki z rozmowy od razu po jej otwarciu - bez czekania na serwer. */
@@ -174,13 +121,7 @@ export default function ChatDrawer() {
 
   const active = conversations.find((c) => c.username === activeUsername);
 
-  /*
-   * Lista ma DWIE czesci i to jest sedno tej poprawki. Wczesniej wszyscy
-   * znajomi stali w jednym ciagu, posortowani od najnowszej rozmowy - przez
-   * co osoby, z ktorymi jeszcze nic nie napisano, ladowaly na samym dole,
-   * za wszystkimi watkami. Przy kilkunastu rozmowach nie bylo ich po prostu
-   * widac, a to wlasnie ich szuka ktos, kto chce ZACZAC rozmowe.
-   */
+  /* Lista ma DWIE czesci i to jest sedno tej poprawki. */
   const matching = conversations.filter(
     (c) => c.username.toLowerCase().includes(search.trim().toLowerCase()));
 
@@ -192,10 +133,7 @@ export default function ChatDrawer() {
 
   return (
     <>
-      {/*
-        Przycisk-tlo. Klikniecie obok panelu go zamyka - jak w kazdym oknie.
-        Jest <button>, a nie <div>, zeby dalo sie tu dojsc klawiatura.
-      */}
+      {/* Przycisk-tlo. */}
       <button
         type="button"
         className={`chat-backdrop${open ? ' is-open' : ''}`}
@@ -205,11 +143,7 @@ export default function ChatDrawer() {
         aria-label={t('common.close')}
       />
 
-      {/*
-        Panel jest w drzewie ZAWSZE, tylko przesuniety poza ekran. Gdyby
-        powstawal dopiero przy otwarciu, przegladarka nie mialaby czego
-        animowac - element pojawialby sie od razu na miejscu.
-      */}
+      {/* Panel jest w drzewie ZAWSZE, tylko przesuniety poza ekran. */}
       <aside
         ref={panel}
         className={`chat-drawer${open ? ' is-open' : ''}`}
@@ -280,12 +214,7 @@ export default function ChatDrawer() {
             <div className="chat-list">
               {loading && <PeopleSkeleton count={5} variant="suggestion" />}
 
-              {/*
-                Awaria pobierania listy. Stoi NAD lista, a nie zamiast niej:
-                jesli poprzednie pobranie sie udalo, rozmowy zostaja na
-                ekranie i mozna dalej pisac - komunikat mowi tylko, ze
-                to, co widac, moze byc nieaktualne.
-              */}
+              {/* Awaria pobierania listy. */}
               {!loading && error && (
                 <Alert variant="danger" className="m-3 py-2 small">
                   {error}
@@ -298,11 +227,7 @@ export default function ChatDrawer() {
               )}
 
               {!loading && !error && conversations.length === 0 && (
-                /*
-                  Czat bez znajomych to nie jest awaria - to jest poczatek.
-                  Zamiast "brak rozmow" mowimy, co zrobic, i dajemy jedno
-                  klikniecie; ta sama zasada co przy pustej liscie znajomych.
-                */
+                /* Czat bez znajomych to nie jest awaria - to jest poczatek. */
                 <EmptyState
                   icon={IconChat}
                   title={t('chat.noFriends')}
@@ -330,11 +255,7 @@ export default function ChatDrawer() {
                     </div>
                   )}
 
-                  {/*
-                    Naglowki pokazujemy tylko wtedy, gdy jest co rozdzielac.
-                    Napis "Rozmowy" nad jedyna sekcja na liscie nie niesie
-                    zadnej informacji, a zabiera wiersz.
-                  */}
+                  {/* Naglowki pokazujemy tylko wtedy, gdy jest co rozdzielac. */}
                   {threads.length > 0 && silent.length > 0 && (
                     <p className="chat-group">{t('chat.groupThreads')}</p>
                   )}
@@ -374,13 +295,7 @@ export default function ChatDrawer() {
   );
 }
 
-/**
- * Jedna linijka podgladu ostatniej wiadomosci.
- *
- * <p>Sklada ja przegladarka, a nie serwer - inaczej "Ty: " i nazwa rodzaju
- * nagrania musialyby przyjsc z backendu w obu jezykach naraz. Ta sama
- * zasada co przy tresci powiadomien.</p>
- */
+/** Jedna linijka podgladu ostatniej wiadomosci. */
 function preview(message, t) {
   if (!message) {
     return <span className="chat-row-nothing">{t('chat.noMessagesYet')}</span>;
@@ -395,13 +310,7 @@ function preview(message, t) {
   return `${prefix}♪ ${message.musicTitle ?? t(`posts.musicKinds.${message.musicKind}`)}`;
 }
 
-/**
- * Jeden wiersz listy - rozmowa albo znajomy, z ktorym jeszcze nic nie napisano.
- *
- * <p>Wydzielony, bo rysujemy go w dwoch miejscach (obie sekcje listy).
- * Powtorzony dwadziescia linijek dalej rozjechalby sie przy pierwszej
- * zmianie wygladu.</p>
- */
+/** Jeden wiersz listy - rozmowa albo znajomy, z ktorym jeszcze nic nie napisano. */
 function ChatRow({ conversation, onOpen, language, t }) {
   return (
     <button
@@ -430,9 +339,8 @@ function ChatRow({ conversation, onOpen, language, t }) {
 
         <span className="chat-row-preview">
           {/*
-            Byly znajomy zostaje na liscie, ale musi byc od razu odrozniony -
-            inaczej ktos zaczyna pisac i dopiero po otwarciu rozmowy dowiaduje
-            sie, ze nie moze.
+            Byly znajomy zostaje na liscie, ale musi byc od razu odrozniony - inaczej ktos zaczyna
+            pisac i dopiero po otwarciu rozmowy dowiaduje sie, ze nie moze.
           */}
           {conversation.friend === false
             ? <span className="chat-row-former">{t('chat.formerFriend')}</span>

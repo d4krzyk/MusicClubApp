@@ -12,33 +12,21 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
+import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
 
-/**
- * Mapa adresow aplikacji.
- *
- * <p>Kazda sciezka jest owinieta straznikiem, ktory decyduje, kto moze ja
- * zobaczyc. Dzieki temu regula "trzeba byc zalogowanym" jest w JEDNYM
- * miejscu, a nie sprawdzana osobno w kazdym komponencie.</p>
- */
+/** Mapa adresow aplikacji. */
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         {/*
-          Czat obejmuje CALA aplikacje, bo otwiera go kilka miejsc naraz:
-          ikona w pasku, przycisk "Napisz" na profilu znajomego. Gdyby stan
-          siedzial w samym panelu, kazde z tych miejsc musialoby przekazywac
-          "otworz rozmowe z ta osoba" przez wszystkie komponenty po drodze.
+          Czat obejmuje CALA aplikacje, bo otwiera go kilka miejsc naraz: ikona w pasku, przycisk
+          "Napisz" na profilu znajomego.
         */}
         <ChatProvider>
           <Layout>
             <Routes>
-              {/*
-                Strona glowna TO tablica. Wczesniej byla tu osobna strona
-                powitalna z zapowiedzia kolejnych krokow - a po wejsciu do
-                aplikacji chce sie zobaczyc, co nowego u innych, a nie wlasny
-                adres e-mail.
-              */}
+              {/* Strona glowna TO tablica. */}
               <Route
                 path="/"
                 element={
@@ -49,8 +37,8 @@ export default function App() {
               />
 
               {/*
-                Pojedynczy post pod wlasnym adresem - tu prowadza powiadomienia
-                o reakcjach i taki link da sie komus wyslac.
+                Pojedynczy post pod wlasnym adresem - tu prowadza powiadomienia o reakcjach i taki
+                link da sie komus wyslac.
               */}
               <Route
                 path="/post/:id"
@@ -61,17 +49,11 @@ export default function App() {
                 }
               />
 
-              {/*
-                Stary adres tablicy zostaje jako przekierowanie. Ktos moze go
-                miec w zakladkach albo w wyslanym komus linku - pusta strona
-                bylaby tu najgorsza mozliwa odpowiedzia.
-              */}
+              {/* Stary adres tablicy zostaje jako przekierowanie. */}
               <Route path="/feed" element={<Navigate to="/" replace />} />
               {/*
-                Dwie sciezki, jedna strona: /profil to skrot do wlasnego profilu
-                (wygodny link z menu), /profil/:username to czyjs profil.
-                Rozne adresy sa wazne - dzieki nim da sie wyslac komus link
-                do konkretnego profilu.
+                Dwie sciezki, jedna strona: /profil to skrot do wlasnego profilu (wygodny link z
+                menu), /profil/:username to czyjs profil.
               */}
               <Route
                 path="/profil"
@@ -97,6 +79,15 @@ export default function App() {
                   </RequireAuth>
                 }
               />
+              {/* Wlasne zgloszenia - kazdy zalogowany widzi tylko swoje */}
+              <Route
+                path="/moje-zgloszenia"
+                element={
+                  <RequireAuth>
+                    <MojeZgloszeniaPage />
+                  </RequireAuth>
+                }
+              />
               <Route
                 path="/settings"
                 element={
@@ -116,11 +107,7 @@ export default function App() {
                 }
               />
 
-              {/*
-                Panel zgloszen. Osobna strona od panelu kont, bo to dwie rozne
-                prace: tu sie CZYTA i decyduje, tam DZIALA. Powiadomienia
-                o zgloszeniach prowadza wprost tutaj.
-              */}
+              {/* Panel zgloszen. */}
               <Route
                 path="/zgloszenia"
                 element={

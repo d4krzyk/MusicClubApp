@@ -20,7 +20,7 @@
   align-items: center;
   gap: .4rem;
   /* Kafelki rozjasniaja sie po kolei, tak samo jak wchodza posty */
-  animation: fade-in-up .34s var(--mc-ease) both;
+  animation: fade-in-up .34s var(--mc-ease) backwards;
   animation-delay: calc(var(--i, 0) * 55ms);
 }
 

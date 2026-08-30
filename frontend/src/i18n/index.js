@@ -7,12 +7,6 @@ import { setRequestLanguage } from '../api/client';
 export const LANGUAGES = ['pl', 'en'];
 const STORAGE_KEY = 'musicclub.lang';
 
-/**
- * Ustala jezyk przy starcie aplikacji, w kolejnosci:
- *   1. wybor zapamietany wczesniej przez uzytkownika,
- *   2. jezyk ustawiony w przegladarce,
- *   3. polski.
- */
 function initialLanguage() {
   const stored = localStorage.getItem(STORAGE_KEY);
   if (LANGUAGES.includes(stored)) {
@@ -41,8 +35,8 @@ i18n.use(initReactI18next).init({
 setRequestLanguage(language);
 
 /**
- * Przelacza jezyk calej aplikacji - napisy w interfejsie ORAZ komunikaty
- * bledow przychodzace z serwera.
+ * Przelacza jezyk calej aplikacji - napisy w interfejsie ORAZ komunikaty bledow przychodzace z
+ * serwera.
  */
 export function changeLanguage(newLanguage) {
   if (!LANGUAGES.includes(newLanguage)) {

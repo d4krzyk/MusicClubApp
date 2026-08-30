@@ -5,13 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy skladania adresow osadzenia.
- *
- * <p>Najwazniejsze jest tu pilnowanie, ze <b>moment startu dokleja sie
- * WYLACZNIE przy utworze</b> - przy albumie i artyscie nie ma czego
- * przewijac, a doklejony parametr tylko zasmiecalby adres.</p>
- */
+/** Testy skladania adresow osadzenia. */
 @DisplayName("MusicEmbed - adresy odtwarzaczy")
 class MusicEmbedTest {
 
@@ -75,13 +69,7 @@ class MusicEmbedTest {
     @Test
     @DisplayName("adres zwykly dla YouTube prowadzi do YouTube MUSIC")
     void canonicalUrlIsYouTubeMusic() {
-        /*
-         * To NIE jest kosmetyka. Ten adres trafia do formularza edycji posta,
-         * a formularz sprawdzamy tym samym walidatorem co przy dodawaniu -
-         * ktory zwykly youtube.com odrzuca. Gdyby stalo tu www.youtube.com,
-         * edycja kazdego posta z YouTube'a konczylaby sie bledem walidacji
-         * na adresie, ktory sami wygenerowalismy.
-         */
+        /* To NIE jest kosmetyka. */
         assertThat(MusicEmbed.canonicalUrl(MusicProvider.YOUTUBE, MusicKind.TRACK, ID_YOUTUBE))
             .isEqualTo("https://music.youtube.com/watch?v=" + ID_YOUTUBE);
         assertThat(MusicEmbed.canonicalUrl(MusicProvider.YOUTUBE, MusicKind.PLAYLIST, "OLAK5uy_abc"))
@@ -124,11 +112,7 @@ class MusicEmbedTest {
     @Test
     @DisplayName("Apple: przy ?i= NIE zgadujemy tytulu - w adresie jest nazwa ALBUMU")
     void appleTrackOnAlbumHasNoTitle() {
-        /*
-         * "pl/album/abbey-road/...?i=..." to konkretna piosenka z tej plyty.
-         * Podpisanie jej tytulem "Abbey Road" byloby informacja falszywa,
-         * a odtwarzacz i tak pokazuje wlasciwa nazwe.
-         */
+        /* "pl/album/abbey-road/...?i=..." to konkretna piosenka z tej plyty. */
         assertThat(MusicEmbed.titleFromUrl(
             MusicProvider.APPLE_MUSIC, "pl/album/abbey-road/1441164426?i=1441164468")).isNull();
     }

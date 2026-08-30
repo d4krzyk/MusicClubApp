@@ -18,15 +18,7 @@ import PanelSieciowy from '../components/PanelSieciowy';
 import { formatDate, formatDateTime, isForever } from '../utils/dates';
 import { OKRESY_KARY, BEZTERMINOWO, ZDEJMIJ, trescKary } from '../moderacja/kary';
 
-/**
- * Napisy zalezne od rodzaju kary.
- *
- * <p>Obsluga obu kar jest jedna (patrz {@code setBan}) - rozne sa wylacznie
- * teksty. Trzymamy je w jawnej mapie, a NIE sklejamy kluczy z nazwy rodzaju
- * (np. {@code `users.col${kind}`}): klucz zlozony w locie jest nie do
- * znalezienia grepem, wiec przy porzadkach w tlumaczeniach nikt nie zauwazy,
- * ze jeszcze go uzywamy. Tutaj kazdy klucz stoi wprost.</p>
- */
+/** Napisy zalezne od rodzaju kary. */
 const BAN_LABELS = {
   POSTING: {
     column: 'users.colPostingBan',
@@ -42,14 +34,7 @@ const BAN_LABELS = {
   },
 };
 
-/**
- * Panel administratora: lista kont ze stronicowaniem, sortowaniem
- * i zmiana rol.
- *
- * <p>Widoczne sterowanie stronicowaniem i sortowaniem pokazuje dzialanie
- * wymagan nr 3 i 5 - cala praca dzieje sie po stronie backendu, tutaj tylko
- * wysylamy parametry i rysujemy to, co przyszlo.</p>
- */
+/** Panel administratora: lista kont ze stronicowaniem, sortowaniem i zmiana rol. */
 export default function UsersPage() {
   const { t, i18n } = useTranslation();
   const { user: loggedIn } = useAuth();
@@ -67,24 +52,14 @@ export default function UsersPage() {
   const [message, setMessage] = useState(null);
   const [refresh, setRefresh] = useState(0);
 
-  /*
-   * Konto wybrane do usuniecia. Trzymamy caly obiekt, a nie samo id, zeby
-   * w oknie z pytaniem pokazac login - "czy na pewno usunac?" bez nazwy
-   * konta to zaproszenie do pomylki.
-   */
+  /* Konto wybrane do usuniecia. */
   const [toDelete, setToDelete] = useState(null);
 
   /** Okienko "powiazane konta" - null, gdy zamkniete. */
   const [related, setRelated] = useState(null);
 
 
-  /*
-   * Odpytujemy backend przy kazdej zmianie parametrow.
-   *
-   * Wyszukiwanie jest opoznione o 300 ms (debounce) - bez tego kazde
-   * nacisniecie klawisza wysylaloby osobne zapytanie i przy szybkim pisaniu
-   * odpowiedzi potrafilyby wrocic w zlej kolejnosci.
-   */
+  /* Odpytujemy backend przy kazdej zmianie parametrow. */
   useEffect(() => {
     let cancelled = false;
     const counter = setTimeout(async () => {
@@ -115,11 +90,7 @@ export default function UsersPage() {
     };
   }, [fragment, page, size, sortBy, direction, refresh, t]);
 
-  /*
-   * Zmiana filtra musi cofac na pierwsza strone. Bez tego przy wejsciu
-   * na strone 3 i zawezeniu wyszukiwania do jednego wyniku uzytkownik
-   * zobaczylby pusta liste - bo strona 3 wtedy nie istnieje.
-   */
+  /* Zmiana filtra musi cofac na pierwsza strone. */
   function changeFilter(setter) {
     return (value) => {
       setter(value);
@@ -129,18 +100,7 @@ export default function UsersPage() {
 
 
 
-  /**
-   * Pyta o potwierdzenie i mowi wprost, co zaraz sie stanie.
-   *
-   * <p>Kary nakladalo sie dotad <b>jednym ruchem myszy na liscie</b>, bez
-   * zadnego kroku pomiedzy - a lista stoi w wierszu tabeli, tuz obok
-   * sasiednich kont. Pomylka o jeden wiersz konczyla sie kara dla
-   * niewlasciwej osoby i nikt o tym nie wiedzial.</p>
-   *
-   * <p>Pytanie zawiera <b>nazwe konta i tresc kary</b>, bo "czy na pewno?"
-   * bez tych dwoch rzeczy nie pozwala wychwycic wlasnie tej pomylki,
-   * przed ktora ma chronic.</p>
-   */
+  /** Pyta o potwierdzenie i mowi wprost, co zaraz sie stanie. */
   function confirmed(username, opis) {
     return window.confirm(t('users.confirmAction', { username, action: opis }));
   }
@@ -155,14 +115,7 @@ export default function UsersPage() {
       : t('users.banFor', { count: Number(value) });
   }
 
-  /**
-   * Naklada albo zdejmuje kare - <b>jedna funkcja na oba rodzaje</b>.
-   *
-   * <p>Wczesniej byly dwie, {@code setPostingBan} i {@code setMessagingBan},
-   * rozniace sie wylacznie adresem i tekstem komunikatu. Rodzaj kary jest
-   * wartoscia, a nie osobna sciezka w kodzie - dlatego wedruje jako argument
-   * i trafia wprost do adresu.</p>
-   */
+  /** Naklada albo zdejmuje kare - jedna funkcja na oba rodzaje. */
   async function setBan(id, kind, value, username) {
     const napisy = BAN_LABELS[kind];
     if (!value || !confirmed(username, `${t(napisy.column)}: ${describeChoice(value)}`)) {
@@ -210,11 +163,6 @@ export default function UsersPage() {
   }
 
   async function changeRole(id, newRole, username) {
-    /*
-     * Nadanie uprawnien administratora jednym ruchem myszy na liscie w tabeli
-     * jest az za latwe - i to jest zmiana, ktorej najtrudniej sie potem
-     * dopatrzec, bo wiersz wyglada tak samo jak przedtem.
-     */
     const opis = t('users.colRole') + ': '
       + t(newRole === 'ADMIN' ? 'users.roleAdmin' : 'users.roleUser');
     if (!confirmed(username, opis)) {
@@ -371,13 +319,8 @@ export default function UsersPage() {
                               aria-label={t('users.colPostingBan')}
                             >
                               {/*
-                                Pusta pozycja to WYLACZNIE stan neutralny ("nic nie
-                                wybrano"), do ktorego lista wraca po kazdej akcji.
-                                Zdejmowanie zakazu ma wlasna wartosc i to nie jest
-                                drobiazg: gdy obie pozycje mialy puste value,
-                                wybranie "zdejmij" nie zmienialo wartosci listy,
-                                wiec przegladarka nie zglaszala zmiany i zakazu
-                                NIE DALO SIE ZDJAC.
+                                Pusta pozycja to WYLACZNIE stan neutralny ("nic nie wybrano"), do
+                                ktorego lista wraca po kazdej akcji.
                               */}
                               <option value="">{t('users.chooseAction')}</option>
                               {banned && <option value={ZDEJMIJ}>{t('users.banLift')}</option>}
@@ -386,11 +329,7 @@ export default function UsersPage() {
                                   {t('users.banFor', { count: h })}
                                 </option>
                               ))}
-                              {/*
-                                "Na zawsze" stoi na koncu, za wszystkimi
-                                terminami. To najciezsza z kar w tej kolumnie,
-                                wiec nie ma prawa byc pierwsza pod kursorem.
-                              */}
+                              {/* "Na zawsze" stoi na koncu, za wszystkimi terminami. */}
                               <option value={BEZTERMINOWO}>{t('users.banForever')}</option>
                             </Form.Select>
 
@@ -405,12 +344,7 @@ export default function UsersPage() {
                             )}
                           </td>
 
-                          {/*
-                            Zakaz WIADOMOSCI - osobny od zakazu publikowania.
-                            Ktos moze zasmiecac tablice, nie dokuczajac nikomu
-                            prywatnie, i odwrotnie; jeden przelacznik na oba
-                            przypadki nie pozwalalby wyrazic zadnego z nich.
-                          */}
+                          {/* Zakaz WIADOMOSCI - osobny od zakazu publikowania. */}
                           <td>
                             <Form.Select
                               size="sm"
@@ -440,11 +374,7 @@ export default function UsersPage() {
                             )}
                           </td>
 
-                          {/*
-                            Liczba ZASADNYCH zgloszen. Najwazniejsza liczba
-                            w calym panelu: jedno zgloszenie moze byc
-                            nieporozumieniem, piate to juz wzorzec zachowania.
-                          */}
+                          {/* Liczba ZASADNYCH zgloszen. */}
                           <td>
                             {u.resolvedReports > 0 ? (
                               <Link to="/zgloszenia" className="badge text-bg-warning text-decoration-none">
@@ -517,10 +447,8 @@ export default function UsersPage() {
         </Card.Body>
 
         {/*
-          Usuniecie konta jest nieodwracalne i zabiera ze soba posty, zdjecia
-          i znajomosci - dlatego pytamy, zamiast kasowac od razu po klikniecu.
-          Okno wymienia wprost, co zniknie: "czy na pewno?" bez tej listy nie
-          daje podstawy do decyzji.
+          Usuniecie konta jest nieodwracalne i zabiera ze soba posty, zdjecia i znajomosci -
+          dlatego pytamy, zamiast kasowac od razu po klikniecu.
         */}
         <Modal show={toDelete != null} onHide={() => setToDelete(null)} centered>
           <Modal.Header closeButton>
@@ -544,9 +472,8 @@ export default function UsersPage() {
       </Card>
 
       {/*
-        Powiazania sieciowe (multikonta, blokada adresu) maja wlasny komponent
-        razem ze swoim stanem i zapytaniami. Ta strona zajmuje sie kontami -
-        adresy IP to osobny temat i nie musi tu byc widoczny.
+        Powiazania sieciowe (multikonta, blokada adresu) maja wlasny komponent razem ze swoim
+        stanem i zapytaniami.
       */}
       <PanelSieciowy
         target={related}

@@ -14,24 +14,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Lista rozmow na prawdziwej bazie.
- *
- * <p><b>Po co ten test istnieje.</b> {@code MessageServiceTest} pracuje na
- * atrapie repozytorium, wiec sprawdza wylacznie to, co sami tej atrapie
- * kazemy oddac - do SQL-a nie zaglada nigdy. Tymczasem wlasnie w SQL-u byl
- * blad, przez ktory czat u uzytkownika w ogole sie nie otwieral: kazde
- * wejscie w wiadomosci konczylo sie odpowiedzia 500, a na ekranie widac bylo
- * komunikat „nie masz jeszcze z kim pisac" - bo przegladarka traktowala
- * awarie jak pusta liste.</p>
- *
- * <p><b>Uczciwe zastrzezenie.</b> Ten test chodzi po H2, a blad, o ktorym
- * mowa, <b>na H2 nie wystepuje</b> - poprzednia wersja zapytania przechodzila
- * tu na zielono i dopiero PostgreSQL ja odrzucil (szczegoly przy
- * {@link MessageRepository#lastSentPerPartner}). Nie udaje wiec, ze pilnuje
- * zgodnosci z Postgresem; pilnuje tego, co sprawdzic tu mozna, czyli czy
- * scalanie dwoch zapytan w jedna liste rozmow daje poprawny wynik.</p>
- */
+/** Lista rozmow na prawdziwej bazie. */
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("Lista rozmow - zapytania na bazie")
@@ -85,10 +68,8 @@ class MessageRepositoryTest {
         Message ostatnia = send(ala, bob, "trzecia");
 
         /*
-         * Sedno scalania: ta sama osoba wystepuje w obu zapytaniach - raz
-         * jako odbiorca, raz jako nadawca. Gdyby scalanie bralo dowolna
-         * z dwoch wartosci zamiast wiekszej, na liscie rozmow swiecilby
-         * podglad SPRZED odpowiedzi.
+         * Sedno scalania: ta sama osoba wystepuje w obu zapytaniach - raz jako odbiorca, raz jako
+         * nadawca.
          */
         assertThat(conversationsOf(ala))
             .hasSize(1)
@@ -127,10 +108,8 @@ class MessageRepositoryTest {
         List<ConversationRow> rows = messageRepository.lastMessagePerConversation(ala.getId());
 
         /*
-         * Rozroznienie, ktore w tej funkcji okazalo sie kluczowe: „pusto"
-         * i „nie udalo sie" to DWA rozne stany. Zapytanie ma tu spokojnie
-         * oddac pusta liste - komunikat o braku znajomych ma sie pokazywac
-         * tylko wtedy, gdy naprawde ich nie ma.
+         * Rozroznienie, ktore w tej funkcji okazalo sie kluczowe: „pusto" i „nie udalo sie" to DWA
+         * rozne stany.
          */
         assertThat(rows).isEmpty();
     }

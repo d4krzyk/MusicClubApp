@@ -17,29 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Wyszukiwarka artystow i utworow oparta na <b>publicznym API Deezera</b>.
- *
- * <p><b>Deezer NIE jest tu kontem uzytkownika.</b> Nikt sie do niego nie
- * loguje i nikt nie musi go miec - uzywamy wylacznie czesci katalogowej,
- * ktora jest otwarta: bez klucza, bez tokenu, bez rejestracji aplikacji.
- * Traktujemy go jak encyklopedie muzyki, a nie jak serwis spolecznosciowy.</p>
- *
- * <p><b>Po co w ogole katalog.</b> Zeby ulubieni artysci nie byli wpisywani
- * z klawiatury. Reczne wpisywanie daje dwa problemy naraz: ten sam zespol
- * zapisany na cztery sposoby (a wiec zadnego dopasowania ludzi po guscie)
- * oraz mozliwosc wpisania czegokolwiek - w tym artystow, ktorzy nie istnieja.
- * Wybor z katalogu zalatwia oba: nazwa jest jedna, a artysta na pewno wydal
- * muzyke, skoro jest w serwisie streamingowym.</p>
- *
- * <p><b>Zapytanie idzie z serwera, nie z przegladarki.</b> Tak jak przy
- * oEmbed - nie polegamy na tym, ze obcy serwis wysle naglowki CORS, i nie
- * pokazujemy uzytkownikowi, dokad naprawde idzie ruch.</p>
- *
- * <p><b>Awaria Deezera nie moze wywrocic strony.</b> Kazdy blad konczy sie
- * pusta lista i wpisem w logu. Uzytkownik zobaczy "brak wynikow" zamiast
- * bledu 500 - a reszta profilu dziala dalej.</p>
- */
+/** Wyszukiwarka artystow i utworow oparta na publicznym API Deezera. */
 @Service
 public class DeezerCatalogService {
 
@@ -50,13 +28,7 @@ public class DeezerCatalogService {
 
     private final RestClient restClient;
 
-    /**
-     * Adres API. Wyciagniety do ustawien nie dla elastycznosci, tylko po to,
-     * zeby dalo sie go PRZETESTOWAC: test podstawia tu wlasny serwer oddajacy
-     * przykladowe odpowiedzi Deezera i sprawdza, czy poprawnie je czytamy.
-     * Bez tego caly kod parsujacy JSON byloby widziany po raz pierwszy dopiero
-     * na zywej aplikacji.
-     */
+    /** Adres API. */
     private final String api;
 
     public DeezerCatalogService(
@@ -66,10 +38,8 @@ public class DeezerCatalogService {
         this.api = api;
 
         /*
-         * Krotki limit czasu z tego samego powodu co przy oEmbed: zawieszony
-         * obcy serwer nie moze blokowac naszego watku az do limitu systemowego.
-         * Tu jest odrobine dluzszy niz przy oEmbed, bo wyszukiwanie po tekscie
-         * jest dla Deezera drozsze niz oddanie tytulu jednego nagrania.
+         * Krotki limit czasu z tego samego powodu co przy oEmbed: zawieszony obcy serwer nie moze
+         * blokowac naszego watku az do limitu systemowego.
          */
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofMillis(timeoutMs));
@@ -111,15 +81,7 @@ public class DeezerCatalogService {
         return score;
     }
 
-    /**
-     * Pierwszy artysta pasujacy do nazwy - uzywane przy imporcie z Last.fm.
-     *
-     * <p>Last.fm oddaje same NAZWY, i to takie, jakie wpisali jego uzytkownicy.
-     * Zeby zrobic z tego wpis w naszej bazie, potrzebujemy identyfikatora
-     * i zdjecia - a te ma Deezer. Jesli czegos w katalogu nie ma, ta metoda
-     * zwraca pusty wynik i pozycja jest po prostu pomijana. To celowe:
-     * <b>wolimy pominac artyste niz dodac wymyslonego</b>.</p>
-     */
+    /** Pierwszy artysta pasujacy do nazwy - uzywane przy imporcie z Last.fm. */
     public Optional<CatalogArtist> findArtist(String name) {
         return searchArtists(name, 1).stream().findFirst();
     }
@@ -129,19 +91,7 @@ public class DeezerCatalogService {
         return searchTracks(artistName + " " + title, 1).stream().findFirst();
     }
 
-    /**
-     * Artysta pobrany <b>po identyfikatorze</b> - potwierdzenie, ze naprawde istnieje.
-     *
-     * <p><b>To jest miejsce, w ktorym ochrona przed wymyslonymi artystami
-     * naprawde dziala.</b> Formularz w przegladarce pozwala tylko wybrac
-     * pozycje z wynikow wyszukiwania, ale zapytanie da sie wyslac z pominieciem
-     * przegladarki - i wtedy nic nie stoi na przeszkodzie, zeby przyslac
-     * {@code {"externalId": "999", "name": "Zespol Ktorego Nie Ma"}}. Dlatego
-     * serwer <b>nie ufa nazwie ani zdjeciu z zapytania</b>: bierze z niego sam
-     * identyfikator i pyta Deezera, kto to jest.</p>
-     *
-     * @return dane artysty albo pusty wynik, gdy takiego identyfikatora nie ma
-     */
+    /** Artysta pobrany po identyfikatorze - potwierdzenie, ze naprawde istnieje. */
     public Optional<CatalogArtist> fetchArtist(String externalId) {
         JsonNode w = fetchObject("/artist/", externalId);
         if (w == null) {
@@ -168,11 +118,7 @@ public class DeezerCatalogService {
             album == null ? null : text(album, "cover_medium")));
     }
 
-    /**
-     * Pobiera pojedynczy obiekt po identyfikatorze.
-     *
-     * @return wezel JSON albo {@code null}, gdy nie ma takiego wpisu
-     */
+    /** Pobiera pojedynczy obiekt po identyfikatorze. */
     private JsonNode fetchObject(String path, String externalId) {
         // Identyfikatory w Deezerze sa liczbami - sprawdzamy to, zanim
         // doklejymy cokolwiek do adresu
@@ -198,8 +144,8 @@ public class DeezerCatalogService {
     }
 
     /**
-     * Wspolna czesc obu wyszukiwan: zapytanie, obsluga bledow i wyciagniecie
-     * tablicy {@code data} z odpowiedzi.
+     * Wspolna czesc obu wyszukiwan: zapytanie, obsluga bledow i wyciagniecie tablicy data z
+     * odpowiedzi.
      */
     private JsonNode fetchJson(String path, String phrase, int limit) {
         if (phrase == null || phrase.isBlank()) {
@@ -221,9 +167,8 @@ public class DeezerCatalogService {
                 return MissingNode.getInstance();
             }
             /*
-             * Deezer sygnalizuje bledy POLEM "error" w tresci, a nie kodem
-             * HTTP - odpowiedz z bledem ma status 200. Gdybysmy patrzyli tylko
-             * na kod, przekroczony limit zapytan wygladalby jak "brak wynikow".
+             * Deezer sygnalizuje bledy POLEM "error" w tresci, a nie kodem HTTP - odpowiedz z
+             * bledem ma status 200.
              */
             if (response.has("error")) {
                 log.warn("Deezer odmowil ({}): {}", path, response.get("error"));

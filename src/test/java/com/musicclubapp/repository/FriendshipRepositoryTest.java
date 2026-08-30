@@ -13,15 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy znajomosci na prawdziwej bazie - wymaganie nr 14.
- *
- * <p><b>Po co osobny test, skoro jest juz {@code FriendServiceTest}?</b>
- * Bo tamten pracuje na atrapach i obiektach tworzonych przez {@code new} -
- * a najgrozniejszy blad, jaki nas tu spotkal, ujawnia sie WYLACZNIE na
- * prawdziwym Hibernate. Szczegoly przy tescie
- * {@link #friendshipIsSavedBothWaysEvenThroughProxy()}.</p>
- */
+/** Testy znajomosci na prawdziwej bazie - wymaganie nr 14. */
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("Znajomosci - zapis w bazie")
@@ -47,19 +39,7 @@ class FriendshipRepositoryTest {
         User bob = save("bob");
         FriendRequest invitation = requestRepository.save(new FriendRequest(ala, bob));
 
-        /*
-         * clear() wyrzuca encje z pamieci sesji. Dzieki temu ponizsze
-         * getSender()/getRecipient() zwroca PROXY, a nie te same obiekty,
-         * ktore przed chwila zapisalismy - czyli dokladnie taka sytuacje,
-         * jaka wystepuje w prawdziwym dzialaniu aplikacji.
-         *
-         * TO JEST SEDNO TEGO TESTU. Pierwsza wersja metody addFriend()
-         * siegala wprost do pola (inny.friends), a nie przez getter. Na
-         * zwyklych obiektach dzialalo to bez zarzutu i testy jednostkowe
-         * przechodzily - ale odczyt POLA na proxy trafia do pustego pola
-         * samego proxy, wiec druga strona znajomosci znikala. Bez bledu,
-         * bez ostrzezenia: po prostu jeden z dwoch wierszy sie nie zapisywal.
-         */
+        /* clear() wyrzuca encje z pamieci sesji. */
         entityManager.flush();
         entityManager.clear();
 
@@ -102,19 +82,8 @@ class FriendshipRepositoryTest {
     @DisplayName("lista znajomych sortuje sie po liczbie WSPOLNYCH znajomych z ogladajacym")
     void sortingBySharedFriends() {
         /*
-         * Uklad testowy - warto go przesledzic, bo "wspolni znajomi" liczy sie
-         * inaczej, niz podpowiada intuicja. Liczymy osoby, ktore sa znajomymi
-         * KANDYDATA i jednoczesnie OGLADAJACEGO - a nie te, ktore laczy
-         * kandydata z wlascicielem listy.
-         *
-         *   ala   - znajomi: cezary, dawid   (jej liste ogladamy)
-         *   ela   - znajomi: bob             (ona oglada)
-         *   cezary- znajomi: ala, bob
-         *   dawid - znajomi: ala
-         *
-         * cezary i ela maja wspolnego boba  -> 1
-         * dawid  i ela nie maja nikogo      -> 0
-         * Wiec cezary musi byc nad dawidem.
+         * Uklad testowy - warto go przesledzic, bo "wspolni znajomi" liczy sie inaczej, niz
+         * podpowiada intuicja.
          */
         User ala = save("ala");
         User bob = save("bob");

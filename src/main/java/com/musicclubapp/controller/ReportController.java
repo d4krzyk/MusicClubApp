@@ -1,6 +1,7 @@
 package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.CreateReportRequest;
+import com.musicclubapp.dto.MyReportResponse;
 import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.entity.ReportStatus;
@@ -27,21 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * Zgloszenia uzytkownikow.
- *
- * <p><b>Dwa poziomy dostepu w jednym kontrolerze i to jest tu wyjatek.</b>
- * Skladanie zgloszenia jest dla kazdego zalogowanego, a wszystko pozostale -
- * wylacznie dla administratora. Zwykle takie rzeczy rozdzielamy na dwa
- * kontrolery ({@code ProfileController} / {@code UserController}), ale tutaj
- * chodzi o ten sam zasob i rozdzielenie go dawaloby dwie klasy o niemal
- * identycznej nazwie.</p>
- *
- * <p>Podzial pilnuje {@code SecurityConfig}: adresy administracyjne siedza
- * pod {@code /api/reports/admin/**}, a skladanie zgloszenia pod
- * {@code /api/reports/on/{login}}. Przedrostki sa rozlaczne, wiec regula
- * bezpieczenstwa jest jednoznaczna i widac ja z samego adresu.</p>
- */
+/** Zgloszenia uzytkownikow. */
 @RestController
 @RequestMapping("/api/reports")
 @Tag(name = "Zgloszenia", description = "Zglaszanie uzytkownikow i panel administratora")
@@ -52,11 +39,7 @@ public class ReportController {
     private final ReportService reportService;
     private final ReportDecisionService decisions;
 
-    /*
-     * Dwa serwisy, bo to dwie rozne warstwy. Odczyty ida do ReportService,
-     * a decyzja POLACZONA z dzialaniem - do ReportDecisionService, ktory
-     * spina zgloszenia z karami (szczegoly w jego opisie).
-     */
+    /* Dwa serwisy, bo to dwie rozne warstwy. */
     public ReportController(ReportService reportService,
                             ReportDecisionService decisions) {
         this.reportService = reportService;
@@ -67,12 +50,7 @@ public class ReportController {
     /*  Dla kazdego zalogowanego                                           */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Zglasza uzytkownika.
-     *
-     * <p>Kogo - w adresie, kto zglasza - z sesji. Zadnej z tych dwoch rzeczy
-     * nie da sie podmienic trescia zapytania.</p>
-     */
+    /** Zglasza uzytkownika. */
     @PostMapping("/on/{username}")
     @Operation(summary = "Zglasza uzytkownika do administratora")
     @ApiResponses({
@@ -92,6 +70,20 @@ public class ReportController {
             authentication.getName(), username, request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /** Wlasne zgloszenia - login bierzemy z sesji, wiec kazdy widzi tylko swoje. */
+    @GetMapping("/mine")
+    @Operation(summary = "Moje zgloszenia i to, jak sie skonczyly")
+    @ApiResponse(responseCode = "200", description = "Strona wlasnych zgloszen")
+    public ResponseEntity<Page<MyReportResponse>> mine(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        return ResponseEntity.ok(reportService.mine(
+            authentication.getName(),
+            PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE))));
     }
 
     /* ------------------------------------------------------------------ */
@@ -116,13 +108,7 @@ public class ReportController {
             PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE))));
     }
 
-    /**
-     * Jedno zgloszenie razem z dowodami.
-     *
-     * <p>Osobny adres od listy, bo dowody sa doczytywane leniwie: lista
-     * dwudziestu zgloszen z pelnymi migawkami rozmow to kilkaset linijek
-     * tekstu na jedno wejscie do panelu.</p>
-     */
+    /** Jedno zgloszenie razem z dowodami. */
     @GetMapping("/admin/{id}")
     @Operation(summary = "Jedno zgloszenie z migawka dowodow")
     public ResponseEntity<ReportResponse> get(@PathVariable Long id) {
@@ -153,13 +139,7 @@ public class ReportController {
             decisions.resolve(authentication.getName(), id, request));
     }
 
-    /**
-     * Otwiera zamknieta sprawe z powrotem - zeby dalo sie zdecydowac inaczej.
-     *
-     * <p><b>Nie cofa wykonanych dzialan.</b> Skasowanego posta nie ma,
-     * a zakaz zdejmuje sie osobno w panelu kont; cofa sie decyzja, nie jej
-     * skutki.</p>
-     */
+    /** Otwiera zamknieta sprawe z powrotem - zeby dalo sie zdecydowac inaczej. */
     @PostMapping("/admin/{id}/reopen")
     @Operation(summary = "Otwiera zamkniete zgloszenie z powrotem")
     @ApiResponses({

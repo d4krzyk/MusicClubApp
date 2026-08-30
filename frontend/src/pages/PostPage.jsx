@@ -10,14 +10,7 @@ import { jeden, usun } from '../api/posty';
 import Post from '../components/Post';
 import { IconArrowLeft } from '../components/Icons';
 
-/**
- * Jeden post na osobnej stronie.
- *
- * <p><b>Po co, skoro jest tablica.</b> Dla powiadomien: "ktos zareagowal na
- * Twoj post" ma prowadzic do <b>tego</b> wpisu, a nie na tablice, gdzie
- * moze byc setny od gory. Przy okazji daje adres, ktory da sie komus
- * wyslac.</p>
- */
+/** Jeden post na osobnej stronie. */
 export default function PostPage() {
   const { t } = useTranslation();
   const { id } = useParams();

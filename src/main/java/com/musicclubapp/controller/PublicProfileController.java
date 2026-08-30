@@ -31,23 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Publiczne profile uzytkownikow.
- *
- * <p><b>Uwaga na dwie podobne sciezki</b> - latwo je pomylic:</p>
- * <ul>
- *   <li>{@code /api/profile} (l. poj.) - MOJE konto: zmiana loginu, e-maila,
- *       hasla, awatara. Dotyczy wylacznie zalogowanego uzytkownika.</li>
- *   <li>{@code /api/profiles/{username}} (l. mn.) - CZYJS profil do ogladania.
- *       Tylko odczyt i tylko dane jawne.</li>
- * </ul>
- *
- * <p>Osobno od {@code /api/users/**}, ktore jest zarezerwowane dla
- * administratora i zwraca m.in. adresy e-mail oraz role. Gdyby profil
- * publiczny wisial pod tamta sciezka, musialby albo zlamac te regule,
- * albo dorobic wyjatek w konfiguracji bezpieczenstwa - a wyjatki
- * w regulach dostepu to najlatwiejszy sposob na przypadkowa dziure.</p>
- */
+/** Publiczne profile uzytkownikow. */
 @RestController
 @RequestMapping("/api/profiles")
 @Tag(name = "Profile", description = "Publiczne profile uzytkownikow")
@@ -91,16 +75,7 @@ public class PublicProfileController {
             publicProfileService.profile(username, authentication.getName()));
     }
 
-    /**
-     * Znajomi danej osoby - od najbardziej powiazanych z ogladajacym.
-     *
-     * <p>Lista jest tutaj, a nie w {@code /api/friends}, bo to informacja
-     * O KIMS - tak samo jak jego posty. Pod {@code /api/friends} sa czynnosci
-     * dotyczace wlasnych relacji zalogowanego uzytkownika.</p>
-     *
-     * <p>Stronicowana (wymagania nr 3 i 5): pasek na profilu pobiera kolejne
-     * strony po kliknieciu strzalki, zamiast sciagac wszystkich naraz.</p>
-     */
+    /** Znajomi danej osoby - od najbardziej powiazanych z ogladajacym. */
     @GetMapping("/{username}/friends")
     @Operation(summary = "Znajomi uzytkownika, od najbardziej powiazanych z ogladajacym")
     @ApiResponses({
@@ -126,16 +101,7 @@ public class PublicProfileController {
             friendService.friends(username, authentication.getName(), pageable));
     }
 
-    /**
-     * Najczesciej wrzucane przez uzytkownika nagrania - "top 5" na profilu.
-     *
-     * <p>Osobny endpoint, a nie pole w profilu: to zestawienie jest widgetem,
-     * ktory da sie doladowac osobno, a sam profil pobieramy czesto i nie ma
-     * sensu za kazdym razem ciagnac razem z nim zapytania grupujacego.</p>
-     *
-     * <p>Parametr {@code kind} pozwoli pozniej pokazac takze najczesciej
-     * wrzucane albumy i artystow, bez dokladania kolejnych endpointow.</p>
-     */
+    /** Najczesciej wrzucane przez uzytkownika nagrania - "top 5" na profilu. */
     @GetMapping("/{username}/top-music")
     @Operation(summary = "Najczesciej wrzucane przez uzytkownika nagrania")
     @ApiResponses({
@@ -165,23 +131,12 @@ public class PublicProfileController {
             @PathVariable String username,
             Authentication authentication) {
 
-        /*
-         * Login ogladajacego idzie do serwisu, bo to on wylicza pole canEdit.
-         * Frontend na tej podstawie rysuje (albo nie) przyciski dodawania -
-         * ale prawdziwa blokada i tak siedzi w FavoritesController, ktory
-         * w ogole nie przyjmuje cudzego loginu.
-         */
+        /* Login ogladajacego idzie do serwisu, bo to on wylicza pole canEdit. */
         return ResponseEntity.ok(
             favoritesService.favorites(username, authentication.getName()));
     }
 
-    /**
-     * Co laczy ogladajacego z ta osoba - <b>konkretnie, a nie w liczbach</b>.
-     *
-     * <p>Osobny endpoint, a nie pole w profilu: to zestawienie porownuje dwie
-     * pelne listy ulubionych i przydaje sie takze poza profilem (w okienku
-     * przy propozycjach znajomych), a sam profil pobieramy czesto.</p>
-     */
+    /** Co laczy ogladajacego z ta osoba - konkretnie, a nie w liczbach. */
     @GetMapping("/{username}/common")
     @Operation(summary = "Wspolni artysci, utwory, gatunki i znajomi")
     @ApiResponses({

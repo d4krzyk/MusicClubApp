@@ -25,14 +25,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * "Co Was laczy" - czesc wspolna dwoch profili.
- *
- * <p>Na prawdziwej bazie, bo gatunki pochodza z osobnej tabeli
- * ({@code artist_genres}) i sa pobierane wlasnym zapytaniem JPQL. Atrapa
- * repozytorium oddalaby to, co jej kazemy, i test przechodzilby takze
- * wtedy, gdyby zapytanie bylo bledne.</p>
- */
+/** "Co Was laczy" - czesc wspolna dwoch profili. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -85,10 +78,7 @@ class CommonGroundServiceTest {
 
         CommonGroundResponse wynik = commonGround.between("ala", "bartek");
 
-        /*
-         * To jest cala rzecz w tej funkcji. Wczesniej aplikacja umiala
-         * powiedziec "1 wspolny artysta" - i na tym sie konczylo.
-         */
+        /* To jest cala rzecz w tej funkcji. */
         assertThat(wynik.artists()).extracting(CatalogArtist::name)
             .containsExactly("Radiohead");
         assertThat(wynik.self()).isFalse();
@@ -129,11 +119,7 @@ class CommonGroundServiceTest {
 
         CommonGroundResponse wynik = commonGround.between("ala", "bartek");
 
-        /*
-         * Gatunek jest tu jedynym pomostem: wspolnego wykonawcy nie ma.
-         * Wlasnie po to gatunki w ogole sa - zeby dopasowac ludzi, ktorych
-         * listy nie pokrywaja sie ani w jednym punkcie.
-         */
+        /* Gatunek jest tu jedynym pomostem: wspolnego wykonawcy nie ma. */
         assertThat(wynik.genres()).containsExactly("alternative");
         assertThat(wynik.artists()).isEmpty();
     }
@@ -175,9 +161,8 @@ class CommonGroundServiceTest {
         CommonGroundResponse wynik = commonGround.between("ala", "ala");
 
         /*
-         * Bez tego wyjatku wynikiem bylaby cala wlasna lista ulubionych
-         * opisana jako "co Was laczy" - technicznie prawda, w interfejsie
-         * bez sensu.
+         * Bez tego wyjatku wynikiem bylaby cala wlasna lista ulubionych opisana jako "co Was
+         * laczy" - technicznie prawda, w interfejsie bez sensu.
          */
         assertThat(wynik.self()).isTrue();
         assertThat(wynik.isEmpty()).isTrue();

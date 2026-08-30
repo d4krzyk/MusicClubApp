@@ -9,20 +9,7 @@ import com.musicclubapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Profil uzytkownika ogladany przez innych.
- *
- * <p><b>Dlaczego to nie jest czesc {@code UserService}?</b> Tamten serwis
- * obsluguje rejestracje i panel administratora - operacje na KONTACH.
- * Tutaj chodzi o publiczna wizytowke, ktora z czasem obrosnie w ulubionych
- * artystow, utwory i liste znajomych. Trzymanie tego osobno sprawia, ze
- * dokladanie tych rzeczy nie rozdmuchuje klasy odpowiedzialnej
- * za bezpieczenstwo kont.</p>
- *
- * <p>Profil widzi kazdy ZALOGOWANY uzytkownik (regula w {@code SecurityConfig}).
- * Bez logowania nie da sie ogladac cudzych profili - to nie jest serwis
- * publiczny jak blog.</p>
- */
+/** Profil uzytkownika ogladany przez innych. */
 @Service
 public class PublicProfileService {
 
@@ -41,11 +28,6 @@ public class PublicProfileService {
         this.presence = presence;
     }
 
-    /**
-     * @param username     czyj profil ogladamy
-     * @param viewerUsername kto oglada - po to, zeby oznaczyc profil wlasny
-     * @throws NoSuchElementFoundException gdy takiego uzytkownika nie ma (404)
-     */
     @Transactional(readOnly = true)
     public PublicProfileResponse profile(String username, String viewerUsername) {
         User user = userRepository.findByUsername(username)
@@ -66,8 +48,8 @@ public class PublicProfileService {
     }
 
     /**
-     * Ta sama zasada co przy postach: baza trzyma nazwe pliku, a serwer sklada
-     * z niej gotowy adres. Frontend nie musi wiedziec, gdzie leza zdjecia.
+     * Ta sama zasada co przy postach: baza trzyma nazwe pliku, a serwer sklada z niej gotowy
+     * adres.
      */
     private String avatarUrl(User user) {
         return user.getAvatarFileName() == null

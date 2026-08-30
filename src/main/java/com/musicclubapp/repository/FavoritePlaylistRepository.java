@@ -20,24 +20,11 @@ public interface FavoritePlaylistRepository extends JpaRepository<FavoritePlayli
 
     long countByOwnerUsername(String username);
 
-    /**
-     * Czy ta osoba ma juz te playliste.
-     *
-     * <p>Osobne sprawdzenie, mimo ze pilnuje tego takze ograniczenie
-     * {@code UNIQUE} w bazie. Ograniczenie chroni dane, ale odzywa sie
-     * wyjatkiem bazodanowym, z ktorego uzytkownik nic nie wyczyta - to
-     * sprawdzenie pozwala odpowiedziec mu po ludzku.</p>
-     */
+    /** Czy ta osoba ma juz te playliste. */
     Optional<FavoritePlaylist> findByOwnerUsernameAndProviderAndExternalId(
         String username, MusicProvider provider, String externalId);
 
-    /**
-     * Kasuje gablotke razem z kontem.
-     *
-     * <p>Jednym {@code DELETE}, bez pobierania encji: nie ma tu plikow na
-     * dysku ani niczego, co trzeba by sprzatnac po drodze - w przeciwienstwie
-     * do postow ze zdjeciami.</p>
-     */
+    /** Kasuje gablotke razem z kontem. */
     @Modifying
     @Query("DELETE FROM FavoritePlaylist p WHERE p.owner.id = :userId")
     void deleteByOwnerId(@Param("userId") Long userId);

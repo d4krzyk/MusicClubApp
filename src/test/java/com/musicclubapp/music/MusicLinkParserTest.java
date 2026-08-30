@@ -9,13 +9,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy rozpoznawania wklejanych adresow.
- *
- * <p>Nastepca {@code SpotifyLinkTest}. Doszly tu dwie rzeczy, ktorych stara
- * wersja nie umiala: <b>rodzaj</b> nagrania (utwor / album / artysta)
- * i <b>YouTube</b>.</p>
- */
+/** Testy rozpoznawania wklejanych adresow. */
 @DisplayName("MusicLinkParser - rozpoznawanie linkow muzycznych")
 class MusicLinkParserTest {
 
@@ -95,9 +89,7 @@ class MusicLinkParserTest {
     @DisplayName("ZWYKLY YouTube jest odrzucany - przyjmujemy tylko YouTube Music")
     void plainYouTubeRejected(String url) {
         /*
-         * To jest decyzja o charakterze aplikacji, nie ograniczenie techniczne:
-         * film jest ten sam. Na zwyklym YouTube jest jednak wszystko - vlogi,
-         * filmiki, wykopki - a tablica ma byc o muzyce.
+         * To jest decyzja o charakterze aplikacji, nie ograniczenie techniczne: film jest ten sam.
          */
         assertThat(MusicLinkParser.parse(url)).isEmpty();
         // ...ale rozpoznajemy, ZE to YouTube, zeby dac trafniejszy komunikat
@@ -107,11 +99,7 @@ class MusicLinkParserTest {
     @Test
     @DisplayName("adres z YouTube Music NIE jest uznany za zwykly YouTube")
     void musicIsNotPlainYouTube() {
-        /*
-         * Pulapka warta testu: tekst "music.youtube.com" ZAWIERA "youtube.com".
-         * Gdyby sprawdzac to w zlej kolejnosci, kazdy poprawny adres z YT Music
-         * dostawalby komunikat "to zwykly YouTube".
-         */
+        /* Pulapka warta testu: tekst "music.youtube.com" ZAWIERA "youtube.com". */
         assertThat(MusicLinkParser.isPlainYouTube(
             "https://music.youtube.com/watch?v=" + ID_YOUTUBE)).isFalse();
         assertThat(MusicLinkParser.isPlainYouTube(
@@ -130,12 +118,7 @@ class MusicLinkParserTest {
     })
     @DisplayName("nierozpoznany adres zwraca pusty wynik - i to KONCZY sie bledem walidacji")
     void unrecognizedUrls(String url) {
-        /*
-         * Podcasty swiadomie NIE sa obslugiwane - aplikacja jest o muzyce.
-         * Wazne jest to, ze taki adres zwraca pusty wynik, a walidator
-         * zamienia go na czytelny blad. Wczesniej byl po cichu polykany
-         * i post powstawal bez odtwarzacza.
-         */
+        /* Podcasty swiadomie NIE sa obslugiwane - aplikacja jest o muzyce. */
         assertThat(MusicLinkParser.parse(url)).isEmpty();
     }
 
@@ -154,9 +137,8 @@ class MusicLinkParserTest {
     @DisplayName("ALBUM z YouTube Music przychodzi jako playlista - i tak ma byc")
     void youtubeMusicAlbumIsPlaylist() {
         /*
-         * W YouTube Music nie ma osobnego adresu albumu - udostepniajac album
-         * dostajemy adres playlisty (OLAK5uy_...). To nie jest nasza pomylka,
-         * tylko sposob dzialania tamtego serwisu.
+         * W YouTube Music nie ma osobnego adresu albumu - udostepniajac album dostajemy adres
+         * playlisty (OLAK5uy_...).
          */
         ParsedMusicLink link = MusicLinkParser
             .parse("https://music.youtube.com/playlist?list=OLAK5uy_abcdefghij")

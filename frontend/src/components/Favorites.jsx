@@ -10,26 +10,7 @@ import { useAuth } from '../auth/AuthContext';
 import CatalogSearch from './CatalogSearch';
 import HorizontalStrip from './HorizontalStrip';
 
-/**
- * Ulubieni artysci i utwory na profilu.
- *
- * <p><b>Po co to w ogole jest.</b> To sa dane, na ktorych opiera sie
- * dopasowywanie ludzi. "Najczesciej wrzucane" (blok obok) mowi, co ktos
- * postuje - a to nie to samo, co lubi: mozna wrzucic cos raz dla zartu.
- * Ulubieni to swiadoma deklaracja i dlatego wazy w dopasowaniu najwiecej.</p>
- *
- * <p><b>Dodac da sie tylko to, co jest w katalogu Deezera.</b> Nie ma pola
- * "wpisz nazwe" i nie jest to przeoczenie - patrz {@code CatalogSearch}.</p>
- *
- * <p><b>Import z Last.fm jest opcjonalny w dwoch znaczeniach.</b> Uzytkownik
- * nie musi z niego korzystac, a serwer nie musi go miec wlaczonego: gdy nie
- * ma klucza API, przycisk w ogole sie nie pokazuje. Lepsze to niz przycisk,
- * ktory zawsze konczy sie bledem.</p>
- *
- * @param username kogo profil ogladamy
- * @param onChange wolane po kazdej zmianie - profil odswieza wtedy
- *                 propozycje znajomych, bo dopasowania sie zmienily
- */
+/** Ulubieni artysci i utwory na profilu. */
 export default function Favorites({ username, onChange }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -66,8 +47,7 @@ export default function Favorites({ username, onChange }) {
   async function run(query) {
     setError(null);
     try {
-      const response = await query();
-      setData(response.data);
+      setData(await query());
       onChange?.();
     } catch (error) {
       const details = describeError(error);
@@ -104,7 +84,7 @@ export default function Favorites({ username, onChange }) {
   }
 
   return (
-    <section className="mb-4">
+    <section className="profil-panel mb-4">
       <div className="d-flex align-items-center justify-content-between mb-2">
         <h2 className="h5 mb-0">{t('favorites.title')}</h2>
 
@@ -124,11 +104,8 @@ export default function Favorites({ username, onChange }) {
       )}
 
       {/*
-        Gdy importu nie ma, przycisk sie nie pojawia - i wlasciciel profilu
-        nie ma jak sie domyslic, dlaczego. Sam brak przycisku nie jest
-        informacja, tylko zagadka. Krotka notka mowi, ze funkcja istnieje
-        i jest wylaczona; administrator dostaje dodatkowo nazwe zmiennej,
-        bo tylko on moze to wlaczyc.
+        Gdy importu nie ma, przycisk sie nie pojawia - i wlasciciel profilu nie ma jak sie
+        domyslic, dlaczego.
       */}
       {canEdit && !importAvailable && (
         <p className="text-body-secondary small mb-2">
@@ -145,11 +122,7 @@ export default function Favorites({ username, onChange }) {
             artists: summary.addedArtists,
             tracks: summary.addedTracks,
           })}
-          {/*
-            Pominiete i juz istniejace pokazujemy OSOBNO. Bez tego ktos, kto
-            ma na Last.fm 15 artystow, a dostal 12, mialby prawo sadzic,
-            ze cos sie zepsulo.
-          */}
+          {/* Pominiete i juz istniejace pokazujemy OSOBNO. */}
           {summary.skipped > 0
             && ' ' + t('favorites.importSkipped', { count: summary.skipped })}
           {summary.alreadyPresent > 0
@@ -203,16 +176,7 @@ export default function Favorites({ username, onChange }) {
   );
 }
 
-/**
- * Cover kafelka z zapasowym wygladem.
- *
- * <p>Adresy zdjec pochodza z cudzego CDN-u, wiec musimy zalozyc, ze czasem
- * sie nie wczytaja - obrazek moze zniknac po stronie katalogu, a siec
- * uzytkownika moze go blokowac. Puste miejsce po nieudanym obrazku wyglada
- * jak bledny uklad strony, dlatego w takim wypadku pokazujemy zastepnik
- * z pierwsza litera nazwy - tak samo jak przy pozycji, ktora zdjecia
- * w ogole nie ma.</p>
- */
+/** Cover kafelka z zapasowym wygladem. */
 function Cover({ url, caption }) {
   const [failed, setFailed] = useState(false);
 
@@ -235,13 +199,7 @@ function Cover({ url, caption }) {
   );
 }
 
-/**
- * Jeden blok: naglowek, kafelki i (u wlasciciela) wyszukiwarka.
- *
- * <p>Artysci i utwory roznia sie wylacznie tym, ktory endpoint obsluguja -
- * caly uklad jest ten sam, wiec jeden komponent zamiast dwoch prawie
- * identycznych.</p>
- */
+/** Jeden blok: naglowek, kafelki i (u wlasciciela) wyszukiwarka. */
 function Section({ title, items, emptyText, canEdit, limitReached, kind, onAdd, onRemove }) {
   const { t } = useTranslation();
 
@@ -251,12 +209,7 @@ function Section({ title, items, emptyText, canEdit, limitReached, kind, onAdd, 
 
       {items.length === 0 && <p className="text-body-secondary small mb-2">{emptyText}</p>}
 
-      {/*
-        Pasek poziomy zamiast zawijanej siatki. Przy dwudziestu pozycjach
-        siatka rozpychala profil na kilka ekranow w dol i wypychala z widoku
-        to, co jest pod spodem. Pasek zajmuje zawsze jeden rzad, a reszte
-        pokazuje na zadanie - strzalkami albo palcem.
-      */}
+      {/* Pasek poziomy zamiast zawijanej siatki. */}
       {items.length > 0 && (
         <HorizontalStrip className="mb-2" itemWidth={132}>
           {items.map((p) => (

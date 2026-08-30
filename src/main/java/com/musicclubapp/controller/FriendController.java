@@ -24,13 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Znajomi: zaproszenia i usuwanie znajomosci.
- *
- * <p>Sama LISTA znajomych wisi pod profilem
- * ({@code GET /api/profiles/{username}/friends}), bo to informacja o kims -
- * tak samo jak jego posty. Tutaj sa czynnosci dotyczace MOICH relacji.</p>
- */
+/** Znajomi: zaproszenia i usuwanie znajomosci. */
 @RestController
 @RequestMapping("/api/friends")
 @Tag(name = "Znajomi", description = "Zaproszenia i lista znajomych")
@@ -42,15 +36,7 @@ public class FriendController {
         this.friendService = friendService;
     }
 
-    /**
-     * Proponowani znajomi - <b>cala spolecznosc, od najlepiej dopasowanych</b>.
-     *
-     * <p>Wisi pod {@code /api/friends}, a nie pod profilem, bo to lista
-     * liczona <b>wzgledem zalogowanego uzytkownika</b>. Login bierzemy
-     * z sesji i nie ma tu parametru, ktorym dalo by sie zapytac "a kogo
-     * proponujecie tamtej osobie" - takie pytanie zdradzaloby, kto z kim
-     * ma cos wspolnego.</p>
-     */
+    /** Proponowani znajomi - cala spolecznosc, od najlepiej dopasowanych. */
     @GetMapping("/suggestions")
     @Operation(summary = "Proponowani znajomi: wszyscy uzytkownicy, od najlepiej dopasowanych")
     @ApiResponses({
@@ -79,13 +65,7 @@ public class FriendController {
             Map.of("count", friendService.countPending(authentication.getName())));
     }
 
-    /**
-     * Wysyla zaproszenie.
-     *
-     * <p>Odpowiedz mowi, czy znajomosc powstala OD RAZU - dzieje sie tak, gdy
-     * druga osoba wczesniej zaprosila nas. Frontend dzieki temu od razu
-     * pokazuje "Znajomi" zamiast "Zaproszenie wyslane".</p>
-     */
+    /** Wysyla zaproszenie. */
     @PostMapping("/requests")
     @Operation(summary = "Zaprasza uzytkownika do znajomych")
     @ApiResponses({
@@ -117,12 +97,7 @@ public class FriendController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Odrzuca zaproszenie do mnie albo anuluje moje wlasne.
-     *
-     * <p>Jeden endpoint na oba przypadki, bo w obu chodzi o skasowanie tego
-     * samego wiersza. Kto stoi po ktorej stronie, serwer sprawdza sam.</p>
-     */
+    /** Odrzuca zaproszenie do mnie albo anuluje moje wlasne. */
     @DeleteMapping("/requests/{id}")
     @Operation(summary = "Odrzuca zaproszenie do mnie albo anuluje wyslane przeze mnie")
     @ApiResponses({

@@ -15,14 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Adresy sieciowe: skad kto sie loguje i ktore adresy sa zablokowane.
- *
- * <p>Dwie rzeczy, ktore robi ta klasa, sa ze soba scisle zwiazane: zeby
- * zablokowac adres, trzeba najpierw wiedziec, ktory to - a zeby to wiedziec,
- * trzeba go poprawnie odczytac z zapytania. Ten drugi krok jest znacznie
- * mniej oczywisty, niz wyglada.</p>
- */
+/** Adresy sieciowe: skad kto sie loguje i ktore adresy sa zablokowane. */
 @Service
 public class NetworkService {
 
@@ -34,13 +27,7 @@ public class NetworkService {
     private final BlockedIpRepository blockedIpRepository;
 
     /**
-     * Czy przed aplikacja stoi wlasny posrednik (nginx), ktory dokleja
-     * naglowek {@code X-Forwarded-For}.
-     *
-     * <p>W ukladzie z {@code docker-compose.yml} stoi - caly ruch idzie przez
-     * nginx frontendu, wiec bez tego naglowka kazdy uzytkownik mialby ten sam
-     * adres: adres kontenera nginxa. Przy uruchomieniu backendu wprost
-     * (tryb deweloperski) posrednika nie ma i naglowka nie wolno ufac.</p>
+     * Czy przed aplikacja stoi wlasny posrednik (nginx), ktory dokleja naglowek X-Forwarded-For.
      */
     private final boolean behindProxy;
 
@@ -56,29 +43,7 @@ public class NetworkService {
     /*  Odczyt adresu                                                      */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Adres, z ktorego naprawde przyszlo zapytanie.
-     *
-     * <p><b>Bierzemy OSTATNI wpis z {@code X-Forwarded-For}, nie pierwszy.</b>
-     * To jest cala sztuczka i warto ja rozumiec, bo intuicja podpowiada
-     * odwrotnie.</p>
-     *
-     * <p>Naglowek jest lista: {@code klient, posrednik1, posrednik2}. Nasz
-     * nginx uzywa {@code $proxy_add_x_forwarded_for}, ktore <b>dokleja</b>
-     * adres rozmowcy na KONIEC tego, co przyszlo. Jesli wiec ktos wysle
-     * zapytanie z podrobionym naglowkiem {@code X-Forwarded-For: 1.2.3.4},
-     * do aplikacji dotrze {@code 1.2.3.4, <jego prawdziwy adres>}.</p>
-     *
-     * <p>Pierwszy wpis jest zatem tym, ktory <b>napisal atakujacy</b>, a ostatni
-     * tym, ktory <b>dokleil nasz wlasny nginx</b> - i tylko on jest wiarygodny.
-     * Branie pierwszego wpisu (co robi wiekszosc tutoriali) sprawiloby, ze
-     * blokade adresu obchodzi sie jednym dodatkowym naglowkiem.</p>
-     *
-     * <p>Przy jednym posredniku ta regula jest scisla. Przy lancuchu kilku
-     * posrednikow trzeba by liczyc od konca tyle wpisow, ile ich jest -
-     * ale tego ukladu tutaj nie ma i dopisywanie go "na wszelki wypadek"
-     * dodaloby ustawienie, ktorego nikt nie umialby poprawnie ustawic.</p>
-     */
+    /** Adres, z ktorego naprawde przyszlo zapytanie. */
     public String clientIp(HttpServletRequest request) {
         if (request == null) {
             return "unknown";
@@ -110,12 +75,7 @@ public class NetworkService {
     /*  Blokada                                                            */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Przerywa, gdy adres jest zablokowany.
-     *
-     * <p>Wolane przy rejestracji i logowaniu - i tylko tam. Dlaczego akurat
-     * tam, opisuje {@link BlockedIp}.</p>
-     */
+    /** Przerywa, gdy adres jest zablokowany. */
     @Transactional(readOnly = true)
     public void requireNotBlocked(String address) {
         if (blockedIpRepository.existsByAddress(address)) {
@@ -124,16 +84,7 @@ public class NetworkService {
         }
     }
 
-    /**
-     * Blokuje adres.
-     *
-     * <p><b>Administrator nie moze zablokowac adresu, z ktorego sam wlasnie
-     * jest.</b> To nie jest teoretyczna ostroznosc: przy testowaniu na jednym
-     * komputerze albo w sieci firmowej administrator siedzi za tym samym
-     * adresem co osoba, ktora blokuje - i jednym klknieciem odcialby sobie
-     * mozliwosc ponownego zalogowania. Odzyskanie dostepu wymagaloby wtedy
-     * recznej zmiany w bazie.</p>
-     */
+    /** Blokuje adres. */
     @Transactional
     public BlockedIp block(String adminUsername, String adminAddress,
                            String address, String reason) {
@@ -163,14 +114,7 @@ public class NetworkService {
     /*  Historia logowan                                                   */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Odnotowuje udane logowanie z danego adresu.
-     *
-     * <p><b>Blad tutaj nie moze przerwac logowania.</b> To jest notatka
-     * pomocnicza dla administratora, a nie warunek wejscia - odmowa
-     * zalogowania z powodu problemu przy zapisie historii bylaby awaria
-     * wywolana funkcja pomocnicza.</p>
-     */
+    /** Odnotowuje udane logowanie z danego adresu. */
     @Transactional
     public void recordLogin(User user, String address) {
         try {
@@ -189,14 +133,7 @@ public class NetworkService {
         return accountIpRepository.findByUserIdOrderByLastSeenAtDesc(userId);
     }
 
-    /**
-     * Konta logujace sie z tych samych adresow co wskazane.
-     *
-     * <p><b>To jest poszlaka, a nie dowod</b> - patrz komentarz przy
-     * {@link AccountIp}. Aplikacja nigdy nie blokuje nikogo automatycznie
-     * na tej podstawie; decyzje podejmuje czlowiek, ktory widzi tez, ile
-     * razy i kiedy z tego adresu korzystano.</p>
-     */
+    /** Konta logujace sie z tych samych adresow co wskazane. */
     @Transactional(readOnly = true)
     public List<AccountIp> relatedAccounts(Long userId) {
         return accountIpRepository.sharingAddressWith(userId);

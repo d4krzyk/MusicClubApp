@@ -34,12 +34,7 @@ export async function zmienHaslo(dane) {
   await client.put('/profile/password', dane);
 }
 
-/**
- * Wgrywa zdjecie profilowe. Oddaje konto po zmianie.
- *
- * <p>Nazwa pola w kopercie ({@code file}) zostaje tutaj - formularz podaje
- * sam plik i nie musi wiedziec, jak serwer go nazywa.</p>
- */
+/** Wgrywa zdjecie profilowe. */
 export async function ustawAwatar(plik) {
   const formData = new FormData();
   formData.append('file', plik);

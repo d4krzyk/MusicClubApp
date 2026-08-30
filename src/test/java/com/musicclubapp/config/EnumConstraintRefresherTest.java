@@ -24,23 +24,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Test bledu, ktorego zwykle testy nie mialy jak zlapac.
- *
- * <p><b>Na czym polegal.</b> Do {@link MusicKind} doszła wartość
- * {@code PLAYLIST}. Wszystkie testy przechodziły, a na prawdziwej bazie
- * <b>każda</b> próba wrzucenia playlisty kończyła się błędem 500: baza miała
- * ograniczenie {@code CHECK} z listą wartości sprzed zmiany, a
- * {@code ddl-auto=update} takiego ograniczenia nigdy nie rusza.</p>
- *
- * <p><b>Dlaczego testy tego nie widziały.</b> H2 zakłada schemat od zera przy
- * każdym uruchomieniu, czyli od razu z pełną listą wartości. Błąd wymaga
- * bazy, która <i>istniała przed zmianą</i> — a takiej w testach nie ma.</p>
- *
- * <p><b>Sztuczka użyta tutaj.</b> Zanim cokolwiek sprawdzimy, ręcznie
- * <b>cofamy</b> ograniczenie do starej postaci. Dopiero na tak przygotowanej
- * bazie test ma sens — i wtedy rzeczywiście czerwienieje bez poprawki.</p>
- */
+/** Test bledu, ktorego zwykle testy nie mialy jak zlapac. */
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("Ograniczenia CHECK nadazaja za wyliczeniami")
@@ -82,13 +66,8 @@ class EnumConstraintRefresherTest {
         revertConstraintToOldForm();
 
         /*
-         * Gdyby ten wyjatek nie polecial, test nie sprawdzalby niczego -
-         * upewniamy sie, ze sytuacja z produkcji jest tu naprawde odtworzona.
-         *
-         * Sprawdzamy sam TYP wyjatku, a nie tresc komunikatu: H2 pisze
-         * "Check constraint violation: POSTS_MUSIC_KIND_CHECK", a PostgreSQL
-         * "violates check constraint posts_music_kind_check". Test przypiety
-         * do jednego z tych zdan pekalby po zmianie bazy, choc kod bylby dobry.
+         * Gdyby ten wyjatek nie polecial, test nie sprawdzalby niczego - upewniamy sie, ze
+         * sytuacja z produkcji jest tu naprawde odtworzona.
          */
         assertThatThrownBy(() -> insertPost("PLAYLIST"))
             .isInstanceOf(JDBCException.class);
@@ -122,23 +101,7 @@ class EnumConstraintRefresherTest {
             .hasMessageContaining("PODCAST");
     }
 
-    /**
-     * Pilnuje, ze lista kolumn w odswiezaczu <b>nadaza za modelem encji</b>.
-     *
-     * <p><b>Po co ten test.</b> Trzy testy powyzej sprawdzaja, czy odswiezanie
-     * <i>dziala</i>. Zaden z nich nie pyta, czy obejmuje <i>wszystko</i> - i to
-     * wlasnie przepuscilo prawdziwy blad: do {@code NotificationType} doszła
-     * wartość {@code REPORT}, a kolumny {@code notifications.type} nie było na
-     * liście. Każde zgłoszenie użytkownika kończyło się wtedy błędem 500,
-     * przy komplecie zielonych testów.</p>
-     *
-     * <p><b>Dlatego test nie wymienia zadnej kolumny z nazwy.</b> Czyta model
-     * encji i zada, by kazde pole {@code @Enumerated(EnumType.STRING)} mialo
-     * odpowiednik w odswiezaczu. Dzieki temu <b>przyszla</b> kolumna
-     * wyliczeniowa tez zapali sie na czerwono - a o to tu chodzi. Test
-     * wymieniajacy kolumny recznie wymagalby pamietania o dwoch miejscach
-     * zamiast jednego, czyli chronilby przed bledem, sam go umozliwiajac.</p>
-     */
+    /** Pilnuje, ze lista kolumn w odswiezaczu nadaza za modelem encji. */
     @Test
     @DisplayName("kazda kolumna wyliczeniowa w modelu jest objeta odswiezaniem")
     void everyEnumColumnIsCovered() {

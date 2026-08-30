@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.CreateReportRequest;
 import com.musicclubapp.dto.EvidenceLineResponse;
+import com.musicclubapp.dto.MyReportResponse;
 import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
 import com.musicclubapp.entity.Message;
@@ -32,30 +33,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Zgloszenia uzytkownikow: skladanie, limity i decyzje administratora.
- *
- * <p><b>Zgloszenie jest narzedziem, ktore rownie latwo obrocic przeciwko
- * komus.</b> Trzy osoby zglaszajace kogos "dla zabawy" potrafia zajac
- * administratorowi tyle samo czasu co trzy prawdziwe sprawy - i to jest
- * najprostszy sposob, zeby caly ten mechanizm przestal dzialac. Dlatego
- * limity ({@link #MAX_PER_DAY} i zakaz drugiego OTWARTEGO zgloszenia na te
- * sama osobe) nie sa dodatkiem, tylko warunkiem tego, zeby funkcja miala
- * sens.</p>
- */
+/** Zgloszenia uzytkownikow: skladanie, limity i decyzje administratora. */
 @Service
 public class ReportService {
 
     private static final Logger log = LoggerFactory.getLogger(ReportService.class);
 
-    /**
-     * Ile zgloszen mozna zlozyc w ciagu doby.
-     *
-     * <p>Piec to duzo jak na uczciwe uzycie (trudno w jeden dzien natknac sie
-     * na piec osob lamiacych zasady) i malo jak na zasypanie panelu. Liczymy
-     * ruchome 24 godziny, a nie "dzien kalendarzowy" - inaczej dalo by sie
-     * zlozyc dziesiec zgloszen w godzine, po piec z kazdej strony polnocy.</p>
-     */
+    /** Ile zgloszen mozna zlozyc w ciagu doby. */
     public static final int MAX_PER_DAY = 5;
 
     private final ReportRepository reportRepository;
@@ -102,36 +86,8 @@ public class ReportService {
         Report saved = reportRepository.save(report);
 
         /*
-         * Powiadomienie dla administratorow - w TEJ SAMEJ transakcji, bez
-         * zadnego "na wszelki wypadek" wokol.
-         *
-         * Stalo tu wczesniej try/catch z komentarzem, ze blad powiadomienia
-         * nie moze przerwac zgloszenia. Zamiar byl dobry, ale tak to nie
-         * dziala i skonczylo sie bledem 500 u uzytkownika:
-         *
-         *   ERROR: new row for relation "notifications"
-         *          violates check constraint "notifications_type_check"
-         *   HHH000099: null id in Notification entry
-         *          (don't flush the Session after an exception occurs)
-         *
-         * Czyli: zapis powiadomienia odbil sie od bazy, catch ladnie zapisal
-         * ostrzezenie do logu i pozwolil isc dalej - tylko ze wtedy bylo juz
-         * za pozno. Odrzucone zapytanie SQL uniewaznia CALA transakcje;
-         * zlapanie wyjatku nie cofa tego faktu, a sesja Hibernate zostaje
-         * w stanie, z ktorego kazdy nastepny krok konczy sie bledem. Zamiast
-         * lagodnego "zgloszenie jest, powiadomienia nie ma" wychodzil twardy
-         * blad 500 i zgloszenie NIE zapisywalo sie wcale - dokladnie
-         * odwrotnie niz obiecywal komentarz.
-         *
-         * Zasada, ktora z tego zostaje: wyjatku z operacji bazodanowej nie da
-         * sie "przemilczec" wewnatrz transakcji. Albo cos jest jej czescia
-         * i wolno mu ja wywrocic, albo musi dziac sie poza nia.
-         *
-         * Tutaj wybor jest swiadomy: powiadomienie NALEZY do zgloszenia.
-         * Jesli mialoby sie nie zapisac, lepiej zeby cale zgloszenie
-         * przepadlo z czytelnym bledem, niz zeby wpadlo do panelu, o ktorym
-         * nikt sie nie dowie. Zgloszenie, ktorego nikt nie przeczyta, jest
-         * gorsze niz zgloszenie wyslane drugi raz.
+         * Powiadomienie dla administratorow - w TEJ SAMEJ transakcji, bez zadnego "na wszelki
+         * wypadek" wokol.
          */
         notifications.reportFiled(userRepository.findByRole(Role.ADMIN), reporter);
 
@@ -141,15 +97,7 @@ public class ReportService {
         return toResponse(saved);
     }
 
-    /**
-     * Dwie blokady przed nadużywaniem - w tej kolejnosci, i to ma znaczenie.
-     *
-     * <p>Najpierw sprawdzamy zgloszenie na TE SAMA osobe, bo ten komunikat
-     * jest konkretniejszy: mowi "to juz zglosiles", a nie ogolne "za duzo
-     * zgloszen". Przy odwrotnej kolejnosci ktos, kto omylkowo klika drugi raz
-     * to samo, dostawalby informacje o wyczerpanym limicie dziennym -
-     * mylaca i niepotrzebnie niepokojaca.</p>
-     */
+    /** Dwie blokady przed nadużywaniem - w tej kolejnosci, i to ma znaczenie. */
     private void checkLimits(User reporter, User reported) {
         boolean alreadyOpen = reportRepository.existsByReporterIdAndReportedIdAndStatus(
             reporter.getId(), reported.getId(), ReportStatus.OPEN);
@@ -166,20 +114,7 @@ public class ReportService {
         }
     }
 
-    /**
-     * Dokłada do zgloszenia migawke tresci - patrz {@link ReportEvidence}.
-     *
-     * <p>Kazdy rodzaj zgloszenia dostaje inny dowod, bo w kazdym co innego
-     * jest dowodem:</p>
-     * <ul>
-     *   <li><b>post</b> - jego tresc; administrator moze go tez otworzyc,
-     *       ale post bywa skasowany zanim ktos zajrzy do zgloszenia,</li>
-     *   <li><b>rozmowa</b> - ostatnie wiadomosci; administrator NIE MA innej
-     *       drogi, zeby je zobaczyc, i mieć nie powinien,</li>
-     *   <li><b>profil</b> - nic; dowodem jest sam profil, ktory kazdy
-     *       zalogowany moze obejrzec.</li>
-     * </ul>
-     */
+    /** Dokłada do zgloszenia migawke tresci - patrz ReportEvidence. */
     private void attachEvidence(Report report, User reporter, User reported,
                                 CreateReportRequest request) {
         switch (request.context()) {
@@ -197,20 +132,12 @@ public class ReportService {
         Post post = postRepository.findById(postId)
             .orElseThrow(() -> new NoSuchElementFoundException("post", postId));
 
-        /*
-         * Post musi nalezec do zglaszanego. Bez tego sprawdzenia dalo by sie
-         * podpiac pod zgloszenie cudzy post - na przyklad wlasny - i wywolac
-         * dzialanie administratora wobec osoby, ktora go nie napisala.
-         */
+        /* Post musi nalezec do zglaszanego. */
         if (!post.getAuthor().getId().equals(reported.getId())) {
             throw OperationNotAllowedException.reportWrongAuthor();
         }
 
-        /*
-         * ...i musi byc widoczny dla zglaszajacego. Post "tylko dla znajomych"
-         * kogos obcego jest dla nas niewidoczny - zgloszenie go oznaczaloby
-         * przyznanie sie do tego, ze jednak sie go widzialo.
-         */
+        /* ...i musi byc widoczny dla zglaszajacego. */
         if (!post.isVisibleTo(reporter)) {
             throw OperationNotAllowedException.friendsOnlyPost();
         }
@@ -231,15 +158,7 @@ public class ReportService {
             throw OperationNotAllowedException.reportEmptyConversation();
         }
 
-        /*
-         * Zapytanie oddaje od NAJNOWSZEJ, a dowod czyta sie jak rozmowe -
-         * od poczatku. Odwracamy tutaj, zeby administrator nie musial
-         * czytac od dolu.
-         *
-         * Recznie, a nie przez List.reversed(): tamta metoda pochodzi
-         * z Javy 21, a projekt jest budowany na poziomie 17. Kompilowalby sie
-         * na tej maszynie i przestal u kogos z nowszym JDK ustawionym inaczej.
-         */
+        /* Zapytanie oddaje od NAJNOWSZEJ, a dowod czyta sie jak rozmowe - od poczatku. */
         List<Message> ordered = new ArrayList<>(recent.getContent());
         Collections.reverse(ordered);
 
@@ -287,16 +206,7 @@ public class ReportService {
         return reportRepository.countByStatus(ReportStatus.OPEN);
     }
 
-    /**
-     * Zamyka zgloszenie decyzja administratora.
-     *
-     * <p><b>Samo zamkniecie NICZEGO nie robi z kontem</b> - nie naklada
-     * zakazu, nie kasuje posta. To jest celowe: dzialania sa osobnymi
-     * operacjami w panelu i administrator wykonuje te, ktore uzna za
-     * potrzebne. Gdyby zamkniecie zgloszenia automatycznie karalo, kazda
-     * decyzja "zasadne, ale wystarczy upomnienie" bylaby niemozliwa
-     * do wyrazenia.</p>
-     */
+    /** Zamyka zgloszenie decyzja administratora. */
     @Transactional
     public ReportResponse resolve(String adminUsername, Long id, ResolveReportRequest request) {
         if (request.decision() == ReportStatus.OPEN) {
@@ -313,19 +223,32 @@ public class ReportService {
         log.info("Administrator {} zamknal zgloszenie {} jako {}",
             adminUsername, id, request.decision());
 
+        /* Zglaszajacy dowiaduje sie, ze sprawa zostala rozpatrzona. */
+        notifications.reportResolved(report.getReporter(), requireUser(adminUsername));
+
         return toResponse(report);
+    }
+
+    /** Wlasne zgloszenia zalogowanego wraz z tym, jak sie skonczyly. */
+    @Transactional(readOnly = true)
+    public Page<MyReportResponse> mine(String username, Pageable pageable) {
+        return reportRepository.findByReporterUsernameOrderByCreatedAtDesc(username, pageable)
+            .map(report -> new MyReportResponse(
+                report.getId(),
+                report.getReported().getUsername(),
+                report.getReason(),
+                report.getContext(),
+                report.getCreatedAt(),
+                report.getStatus(),
+                report.getResolutionNote(),
+                report.getResolvedAt()));
     }
 
     /* ------------------------------------------------------------------ */
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Kasuje zgloszenia zwiazane z kontem - przy jego usuwaniu.
-     *
-     * <p>Odpina tez posty tej osoby od CUDZYCH zgloszen: zgloszenie wskazuje
-     * na post kluczem obcym, a posty ida do kasacji razem z kontem.</p>
-     */
+    /** Kasuje zgloszenia zwiazane z kontem - przy jego usuwaniu. */
     @Transactional
     public void deleteAllOf(Long userId) {
         reportRepository.detachPostsOfAuthor(userId);
@@ -369,12 +292,7 @@ public class ReportService {
             report.getResolvedAt(),
             report.getResolvedBy(),
             report.getResolutionNote(),
-            /*
-             * Ile WCZESNIEJSZYCH zgloszen na te osobe uznano za zasadne.
-             * Liczymy przy kazdym odczycie, a nie trzymamy w kolumnie -
-             * kolumna musialaby byc uaktualniana przy kazdej decyzji i przy
-             * kazdym kasowaniu, czyli w dwoch miejscach naraz.
-             */
+            /* Ile WCZESNIEJSZYCH zgloszen na te osobe uznano za zasadne. */
             reportRepository.countByReportedIdAndStatus(
                 reported.getId(), ReportStatus.RESOLVED));
     }

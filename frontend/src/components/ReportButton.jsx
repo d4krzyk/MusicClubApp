@@ -14,25 +14,7 @@ const REASONS = ['HARASSMENT', 'SPAM', 'HATE', 'INAPPROPRIATE', 'IMPERSONATION',
 /** Minimalna dlugosc opisu - ta sama liczba, ktorej pilnuje serwer. */
 const MIN_DESCRIPTION = 10;
 
-/**
- * Przycisk „Zgłoś" razem z okienkiem wyboru powodu.
- *
- * <p><b>Zgloszenie jest narzedziem, ktore rownie latwo obrocic przeciwko
- * komus</b> - i interfejs powinien to uwzgledniac. Dlatego przycisk jest
- * dyskretny (obrys, nie wypelnienie, i stoi na koncu rzedu), a okienko
- * wymaga napisania <b>wlasnymi slowami</b>, co sie stalo. To drugie odsiewa
- * zgloszenia klikniete ze zloscia, bez zastanowienia - a przy okazji daje
- * administratorowi cokolwiek do czytania poza sama nazwa powodu.</p>
- *
- * <p><b>Czego dotyczy zgloszenie, wybiera zglaszajacy</b> spomiedzy
- * przekazanych wariantow. Przy poscie wariant jest jeden i wtedy w ogole nie
- * pokazujemy wyboru - pytanie z jedna odpowiedzia to zmarnowane klikniecie.</p>
- *
- * @param username kogo zglaszamy
- * @param contexts dozwolone rodzaje zgloszenia, np. {@code ['PROFILE', 'CONVERSATION']}
- * @param postId   identyfikator posta - wymagany przy rodzaju {@code POST}
- * @param compact  wersja bez podpisu, sama ikona (do naglowka posta)
- */
+/** Przycisk „Zgłoś" razem z okienkiem wyboru powodu. */
 export default function ReportButton({
   username, contexts = ['PROFILE'], postId = null, compact = false,
 }) {
@@ -48,12 +30,7 @@ export default function ReportButton({
 
   function close() {
     setOpen(false);
-    /*
-     * Stan czyscimy przy ZAMYKANIU, a nie przy otwieraniu. Dzieki temu
-     * okienko zamkniete przez pomylke po napisaniu polowy opisu nie oddaje
-     * tekstu z powrotem - ale i nie zostawia go na nastepny raz, przy
-     * zupelnie innej osobie.
-     */
+    /* Stan czyscimy przy ZAMYKANIU, a nie przy otwieraniu. */
     setReason(REASONS[0]);
     setContext(contexts[0]);
     setDescription('');
@@ -104,12 +81,7 @@ export default function ReportButton({
         </Modal.Header>
 
         {done ? (
-          /*
-             Po wyslaniu pokazujemy potwierdzenie, a nie zamykamy okienka
-             od razu. Zgloszenie jest czynnoscia, po ktorej czlowiek chce
-             wiedziec, ze faktycznie doszla - ciche zamkniecie zostawia
-             pytanie "czy to sie w ogole wyslalo".
-          */
+          /* Po wyslaniu pokazujemy potwierdzenie, a nie zamykamy okienka od razu. */
           <>
             <Modal.Body>
               <Alert variant="success" className="mb-0">

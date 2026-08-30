@@ -20,32 +20,17 @@ import { playerHeight } from '../utils/player';
 import { toMinutes, toSeconds } from '../utils/time';
 import { linkError } from '../utils/musicLinks';
 
-/**
- * Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify.
- *
- * <p>Autor moze post edytowac i usunac, administrator - tylko usunac
- * (moderacja polega na kasowaniu, nie na przerabianiu cudzych tresci).
- * O tym, ktore przyciski sie pokazuja, decyduja pola {@code canEdit}
- * i {@code canDelete} wyliczane przez SERWER.</p>
- */
+/** Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify. */
 export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }) {
   const { t, i18n } = useTranslation();
   const [edycja, setEdycja] = useState(false);
 
   return (
-    /*
-      --i steruje opoznieniem wejscia karty (patrz styles.css). Liczy sie od
-      poczatku PARTII, a nie od poczatku listy - inaczej dwudziesty post
-      czekalby prawie sekunde, zanim by sie pokazal.
-    */
+    /* --i steruje opoznieniem wejscia karty (patrz styles.css). */
     <Card className="mb-3 post-card" style={{ '--i': index }}>
       <Card.Body>
         <div className="d-flex align-items-center gap-2 mb-3">
-          {/*
-            Awatar i nazwa prowadza na profil autora - tak jak na Facebooku.
-            Oba sa w JEDNYM linku, zeby czytnik ekranu przeczytal to jako
-            jedno odniesienie ("profil uzytkownika X"), a nie dwa osobne.
-          */}
+          {/* Awatar i nazwa prowadza na profil autora - tak jak na Facebooku. */}
           <Link
             to={`/profil/${post.authorUsername}`}
             className="d-flex align-items-center gap-2 text-decoration-none text-body"
@@ -60,12 +45,7 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
               {formatDate(post.createdAt, i18n.language)}
             </span>
 
-            {/*
-              Plakietke pokazujemy TYLKO przy postach dla znajomych.
-              Publiczny jest domyslny, wiec podpisywanie go "publiczny"
-              byloby szumem przy kazdym wpisie na tablicy - a plakietka
-              ma zwracac uwage wtedy, gdy cos odbiega od normy.
-            */}
+            {/* Plakietke pokazujemy TYLKO przy postach dla znajomych. */}
             {post.visibility === 'FRIENDS' && (
               <span className="visibility-badge" title={t('posts.visibility.FRIENDSHint')}>
                 <IconLock size={11} />
@@ -98,12 +78,7 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
                 </Button>
               )}
 
-              {/*
-                Zgloszenie posta - tylko przy CUDZYCH wpisach. Wlasny post
-                sie kasuje, a nie zglasza; przycisk przy nim byloby tylko
-                mylacy. O tym, czy post jest moj, mowi pole canEdit -
-                wylicza je serwer i ma je wylacznie autor.
-              */}
+              {/* Zgloszenie posta - tylko przy CUDZYCH wpisach. */}
               {!post.canEdit && (
                 <ReportButton
                   username={post.authorUsername}
@@ -138,12 +113,7 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
 
             {post.musicEmbedUrl && <Player post={post} />}
 
-            {/*
-              Reakcja NIE jest edycja posta. Wczesniej obie rzeczy szly tym
-              samym wywolaniem i klikniecie emotki pod CUDZYM postem pokazywalo
-              komunikat "Post zostal zaktualizowany" - czyli aplikacja mowila,
-              ze zmienilismy cudza tresc.
-            */}
+            {/* Reakcja NIE jest edycja posta. */}
             <Reactions post={post} onChange={onReaction ?? onUpdate} />
           </>
         )}
@@ -216,9 +186,8 @@ function EditForm({ post, onSaved, onAnuluj }) {
       <p className="text-body-secondary small">{t('posts.musicClearHint')}</p>
 
       {/*
-        Widocznosc da sie zmienic takze po opublikowaniu - ale dziala to
-        WYLACZNIE na przyszlosc: kto post juz przeczytal, ten go przeczytal.
-        To nie jest wada tego rozwiazania, tylko wlasciwosc kazdej publikacji.
+        Widocznosc da sie zmienic takze po opublikowaniu - ale dziala to WYLACZNIE na przyszlosc:
+        kto post juz przeczytal, ten go przeczytal.
       */}
       <VisibilityPicker
         id={`visibility-${post.id}`}
@@ -242,17 +211,7 @@ function EditForm({ post, onSaved, onAnuluj }) {
   );
 }
 
-/**
- * Player nagrania.
- *
- * <p><b>Adres skladamy na SERWERZE</b>, nie tutaj. Kazdy serwis ma inny format
- * adresu osadzenia (i inny parametr momentu startu), a gdyby wiedza o tym
- * siedziala w Reakcie, dolozenie kolejnego serwisu wymagaloby zmian
- * w dwoch miejscach.</p>
- *
- * <p>Tutaj zostaje wylacznie to, czego serwer nie moze wiedziec: <b>ile
- * miejsca</b> odtwarzacz potrzebuje na ekranie.</p>
- */
+/** Player nagrania. */
 function Player({ post }) {
   const { t } = useTranslation();
 
@@ -273,25 +232,12 @@ function Player({ post }) {
 
   return (
     <div>
-      {/*
-        Zaokraglenie musi byc na OTOCZCE z overflow: hidden, a nie na samej
-        ramce. Strona serwisu w srodku ma wlasne, prostokatne tlo - przy
-        border-radius na iframe wystawalo ono w rogach jako biale narozniki.
-
-        "ratio ratio-16x9" to gotowe klasy Bootstrapa: otoczka dostaje
-        wysokosc rowna 56,25% swojej szerokosci, a ramka w srodku wypelnia
-        ja w calosci. Dzieki temu film skaluje sie razem z szerokoscia
-        tablicy i na telefonie nie trzeba niczego przeliczac.
-      */}
+      {/* Zaokraglenie musi byc na OTOCZCE z overflow: hidden, a nie na samej ramce. */}
       <div className={`player-frame${hasVideo ? ' ratio ratio-16x9' : ''}`}>
         {frame}
       </div>
 
-      {/*
-        Tytul pobrany przy dodawaniu posta. Moze go nie byc, gdy serwis
-        wtedy nie odpowiedzial - wtedy pokazujemy sama nazwe serwisu,
-        bo odtwarzacz i tak wyswietla wszystko sam.
-      */}
+      {/* Tytul pobrany przy dodawaniu posta. */}
       <div className="text-body-secondary small mt-1 d-flex gap-2 align-items-center">
         <span>{t(`posts.providers.${post.musicProvider}`)}</span>
         {post.musicTitle && <span className="text-truncate">· {post.musicTitle}</span>}

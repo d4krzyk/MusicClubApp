@@ -27,22 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Czat: rozmowy zalogowanego uzytkownika z jego znajomymi.
- *
- * <p><b>Dlaczego rozmowy siedza pod {@code /with/{login}}, a nie wprost pod
- * {@code /api/messages/{login}}.</b> Adresy {@code /conversations}
- * i {@code /unread-count} sa staleymi czlonami sciezki, a login jest wartoscia
- * zmienna - i te dwie rzeczy stoja na tym samym poziomie. Spring wybralby
- * wprawdzie czlon staly (jest bardziej szczegolowy), ale skutek bylby taki,
- * ze uzytkownik o loginie {@code conversations} traci mozliwosc rozmowy -
- * i to bez zadnego bledu, po prostu wchodzac na cudza liste. Dodatkowy
- * czlon {@code /with/} usuwa ten przypadek calkowicie, zamiast liczyc na to,
- * ze nikt takiego loginu nie zalozy.</p>
- *
- * <p><b>Kim jestem, bierzemy z sesji</b> - nigdy z adresu ani z tresci
- * zapytania. Nie ma tu wiec czego podmienic, zeby czytac cudza rozmowe.</p>
- */
+/** Czat: rozmowy zalogowanego uzytkownika z jego znajomymi. */
 @RestController
 @RequestMapping("/api/messages")
 @Tag(name = "Wiadomosci", description = "Czat ze znajomymi")
@@ -67,13 +52,7 @@ public class MessageController {
         return ResponseEntity.ok(messageService.conversations(authentication.getName()));
     }
 
-    /**
-     * Sama liczba nieprzeczytanych - to ona wisi przy ikonie czatu.
-     *
-     * <p>Osobny, lekki adres, dokladnie tak jak przy powiadomieniach:
-     * pytamy o to przy kazdej zmianie strony, a pobieranie calej listy rozmow
-     * tylko po to, zeby narysowac liczbe, byloby marnotrawstwem.</p>
-     */
+    /** Sama liczba nieprzeczytanych - to ona wisi przy ikonie czatu. */
     @GetMapping("/unread-count")
     @Operation(summary = "Laczna liczba nieprzeczytanych wiadomosci")
     public ResponseEntity<Map<String, Long>> unreadCount(Authentication authentication) {
@@ -99,26 +78,14 @@ public class MessageController {
 
             Authentication authentication) {
 
-        /*
-         * Bez sortowania z Pageable. Kolejnosc ustala samo zapytanie
-         * (od najnowszej), a Spring Data doklejalby swoja na jego koncu -
-         * co przy stronicowaniu potrafi zgubic albo powtorzyc wiadomosc.
-         */
+        /* Bez sortowania z Pageable. */
         return ResponseEntity.ok(messageService.conversation(
             authentication.getName(),
             username,
             PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE))));
     }
 
-    /**
-     * Co nowego w otwartej rozmowie: wiadomosci, dymek "pisze" i obecnosc.
-     *
-     * <p>Trzy odpowiedzi w jednym zapytaniu - po co, opisuje
-     * {@link ConversationSyncResponse}.</p>
-     *
-     * @param after identyfikator ostatniej wiadomosci, ktora przegladarka juz
-     *              ma. Puste znaczy "nie mam zadnej"
-     */
+    /** Co nowego w otwartej rozmowie: wiadomosci, dymek "pisze" i obecnosc. */
     @GetMapping("/with/{username}/sync")
     @Operation(summary = "Nowe wiadomosci, sygnal pisania i obecnosc rozmowcy")
     public ResponseEntity<ConversationSyncResponse> sync(
@@ -156,13 +123,7 @@ public class MessageController {
             "marked", messageService.markRead(authentication.getName(), username)));
     }
 
-    /**
-     * "Wlasnie pisze" - sygnal wysylany przez przegladarke przy pisaniu.
-     *
-     * <p>Odpowiadamy 204 i niczym wiecej: to jest notatka o stanie, ktory
-     * zyje pare sekund, a nie operacja tworzaca cokolwiek trwalego.
-     * Przechowuje ja {@code TypingRegistry} - w pamieci, nie w bazie.</p>
-     */
+    /** "Wlasnie pisze" - sygnal wysylany przez przegladarke przy pisaniu. */
     @PostMapping("/with/{username}/typing")
     @Operation(summary = "Sygnal, ze wlasnie pisze do tej osoby")
     public ResponseEntity<Void> typing(@PathVariable String username,

@@ -22,18 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * Ulubieni artysci i utwory <b>zalogowanego uzytkownika</b>.
- *
- * <p>Ta sama zasada, co przy profilu: {@code /api/profile/...} (liczba
- * pojedyncza) dotyczy MOICH danych i zawsze bierze login z sesji, a nie
- * ze sciezki. Dzieki temu nie ma jak podac cudzego loginu i zmienic komus
- * ulubionych - nie trzeba tego nawet sprawdzac, bo takiego parametru
- * po prostu nie ma.</p>
- *
- * <p>CUDZE ulubione czyta sie z {@code /api/profiles/{username}/favorites}
- * (liczba mnoga) - obok postow i znajomych tej osoby.</p>
- */
+/** Ulubieni artysci i utwory zalogowanego uzytkownika. */
 @RestController
 @RequestMapping("/api/profile/favorites")
 @Tag(name = "Ulubione", description = "Ulubieni artysci i utwory na profilu")

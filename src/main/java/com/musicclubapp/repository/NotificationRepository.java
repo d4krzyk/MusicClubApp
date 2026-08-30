@@ -12,13 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-/**
- * Dostep do powiadomien.
- *
- * <p>Zapytania celowo pobieraja od razu sprawce ({@code JOIN FETCH}) - lista
- * powiadomien zawsze pokazuje, KTO cos zrobil, wiec bez tego kazdy wiersz
- * dociagalby uzytkownika osobnym zapytaniem (problem N+1).</p>
- */
+/** Dostep do powiadomien. */
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -37,12 +31,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("SELECT COUNT(n) FROM Notification n WHERE n.recipient.username = :username AND n.readAt IS NULL")
     long countUnread(@Param("username") String username);
 
-    /**
-     * Istniejace powiadomienie o tej samej rzeczy.
-     *
-     * <p>Sluzy do <b>odswiezania zamiast dokladania</b>: gdy ta sama osoba
-     * zmienia reakcje pod tym samym postem, ma zostac jeden wpis.</p>
-     */
+    /** Istniejace powiadomienie o tej samej rzeczy. */
     @Query("""
            SELECT n FROM Notification n
            WHERE n.recipient.id = :recipientId
@@ -55,12 +44,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                                 @Param("postId") Long postId,
                                 @Param("type") NotificationType type);
 
-    /**
-     * Kasuje powiadomienie o reakcji, ktora zostala cofnieta.
-     *
-     * <p>Bez tego zostawaloby powiadomienie o czyms, co juz sie "odstalo" -
-     * klikniecie prowadziloby do posta bez sladu po tej reakcji.</p>
-     */
+    /** Kasuje powiadomienie o reakcji, ktora zostala cofnieta. */
     @Modifying
     @Query("""
            DELETE FROM Notification n
@@ -75,8 +59,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                         @Param("type") NotificationType type);
 
     /**
-     * Kasuje powiadomienia o zaproszeniu, ktore przestalo istniec
-     * (zostalo odrzucone albo anulowane).
+     * Kasuje powiadomienia o zaproszeniu, ktore przestalo istniec (zostalo odrzucone albo
+     * anulowane).
      */
     @Modifying
     @Query("""
@@ -99,13 +83,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("DELETE FROM Notification n WHERE n.post.id = :postId")
     void deleteByPostId(@Param("postId") Long postId);
 
-    /**
-     * Powiadomienia zwiazane z kontem - w OBIE strony.
-     *
-     * <p>Przy kasowaniu konta trzeba usunac zarowno to, co ta osoba dostala,
-     * jak i to, co wywolala u innych. Pominiecie drugiej strony konczy sie
-     * odmowa bazy z powodu klucza obcego.</p>
-     */
+    /** Powiadomienia zwiazane z kontem - w OBIE strony. */
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.recipient.id = :userId OR n.actor.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);

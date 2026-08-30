@@ -7,19 +7,7 @@ const OPTIONS = [
   { value: 'FRIENDS', icon: IconLock },
 ];
 
-/**
- * Wybor: post publiczny czy tylko dla znajomych.
- *
- * <p><b>Dwa widoczne przyciski, a nie lista rozwijana ani przelacznik.</b>
- * Lista chowa drugie mozliwosc za klknieciem, a przelacznik ("tylko dla
- * znajomych: wl./wyl.") wymaga przeczytania podpisu, zeby wiedziec, co
- * znaczy jego biezacy stan. Tutaj oba warianty sa nazwane i widac, ktory
- * jest wybrany.</p>
- *
- * <p>Pod spodem jest jedno zdanie o skutkach wyboru. Sama nazwa "tylko dla
- * znajomych" nie mowi przeciez, czy chodzi o dzisiejszych znajomych,
- * czy takze przyszlych.</p>
- */
+/** Wybor: post publiczny czy tylko dla znajomych. */
 export default function VisibilityPicker({ value = 'PUBLIC', onChange, id = 'visibility' }) {
   const { t } = useTranslation();
 

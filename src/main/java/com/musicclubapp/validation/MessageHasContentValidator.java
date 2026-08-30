@@ -3,15 +3,7 @@ package com.musicclubapp.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-/**
- * Walidator dla {@link MessageHasContent}: odrzuca wiadomosc bez tresci
- * <b>i</b> bez nagrania.
- *
- * <p>Blad przypinamy do pola {@code content}, a nie do calej klasy - tak samo
- * jak {@code ValidMusicLinkValidator}. Bez tego frontend dostaje komunikat
- * z pustym polem {@code field} i nie wie, co podswietlic; tutaj podswietli
- * pole tekstowe, czyli to, w ktorym uzytkownik ma cos zrobic.</p>
- */
+/** Walidator dla MessageHasContent: odrzuca wiadomosc bez tresci i bez nagrania. */
 public class MessageHasContentValidator
     implements ConstraintValidator<MessageHasContent, MessageToValidate> {
 

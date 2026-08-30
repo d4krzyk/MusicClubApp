@@ -12,22 +12,7 @@ import { IconLink, IconPlaylist } from './Icons';
 import { playerHeight } from '../utils/player';
 import { linkError } from '../utils/musicLinks';
 
-/**
- * Gablotka playlist na profilu - do pieciu skladanek "posluchaj tego, co ja".
- *
- * <p><b>Czym to sie rozni od bloku "Ulubieni".</b> Tamten opiera sie na
- * katalogu Deezera i sluzy dopasowywaniu ludzi - dlatego kazda pozycja musi
- * byc porownywalna co do identyfikatora. Playlista jest dla czlowieka,
- * nie dla maszyny: nie liczy sie do zadnego dopasowania, bo dwie osoby moga
- * wystawic te sama skladanke, majac na mysli zupelnie co innego.</p>
- *
- * <p><b>Odtwarzacz otwiera sie dopiero po kliknieciu.</b> Piec ramek
- * {@code <iframe>} wczytywanych od razu to piec polaczen do obcych serwisow
- * przy kazdym wejsciu na profil - i profil, ktory wstaje sekunde dluzej.
- * W gablotce widac okladki, a granie zaczyna sie na zadanie.</p>
- *
- * @param username czyj profil ogladamy
- */
+/** Gablotka playlist na profilu - do pieciu skladanek "posluchaj tego, co ja". */
 export default function Playlists({ username }) {
   const { t } = useTranslation();
 
@@ -62,11 +47,7 @@ export default function Playlists({ username }) {
     return null;
   }
 
-  /*
-   * Zly link BLOKUJE wysylke - tak samo jak przy dodawaniu posta. Rodzaj
-   * jest tu z gory ustalony na PLAYLIST, wiec komunikat od razu mowi, co
-   * uzytkownik wkleil (np. "to jest link do UTWORU").
-   */
+  /* Zly link BLOKUJE wysylke - tak samo jak przy dodawaniu posta. */
   const clientError = linkError(url, 'PLAYLIST');
 
   async function add(event) {
@@ -95,7 +76,7 @@ export default function Playlists({ username }) {
   }
 
   return (
-    <section className="mb-4">
+    <section className="profil-panel mb-4">
       <div className="d-flex align-items-center justify-content-between mb-2">
         <h2 className="h5 mb-0">{t('playlists.title')}</h2>
         {canEdit && (
@@ -186,13 +167,7 @@ export default function Playlists({ username }) {
   );
 }
 
-/**
- * Okladka playlisty z zapasowym wygladem.
- *
- * <p>Adresy zdjec pochodza z cudzego CDN-u, wiec trzeba zalozyc, ze czasem
- * sie nie wczytaja. Puste miejsce po nieudanym obrazku wyglada jak bledny
- * uklad strony - dlatego wtedy pokazujemy ikone.</p>
- */
+/** Okladka playlisty z zapasowym wygladem. */
 function Cover({ playlist }) {
   const [failed, setFailed] = useState(false);
 
@@ -215,12 +190,7 @@ function Cover({ playlist }) {
   );
 }
 
-/**
- * Odtwarzacz w okienku.
- *
- * <p>Ramka powstaje dopiero razem z okienkiem, wiec zamkniecie go faktycznie
- * przerywa granie - inaczej muzyka leciałaby dalej z niewidocznego elementu.</p>
- */
+/** Odtwarzacz w okienku. */
 function Player({ playlist, onHide }) {
   const { t } = useTranslation();
 

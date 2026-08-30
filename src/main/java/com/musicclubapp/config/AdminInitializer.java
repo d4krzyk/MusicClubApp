@@ -11,24 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Zaklada konto administratora przy pierwszym uruchomieniu aplikacji.
- *
- * <p><b>Po co to?</b> Rejestracja przez formularz zawsze tworzy zwyklego
- * uzytkownika ({@code Role.USER}) - i tak ma byc, bo inaczej kazdy moglby
- * zrobic sobie konto administratora. Musi wiec istniec inna droga do
- * pierwszego admina. Recznie wpisywac go do bazy jest niewygodnie (haslo
- * trzeba by zahashowac BCryptem), dlatego robi to aplikacja przy starcie.</p>
- *
- * <p>{@link CommandLineRunner} uruchamia sie raz, tuz po wstaniu kontekstu
- * Springa. Konto powstaje TYLKO wtedy, gdy w bazie nie ma jeszcze zadnego
- * administratora - kolejne restarty nic nie nadpisuja, wiec zmienione haslo
- * nie wroci do wartosci domyslnej.</p>
- *
- * <p>Dane logowania czytamy z {@code application.properties}. Wartosci
- * domyslne sluza tylko do nauki - przy oddawaniu projektu ustaw wlasne
- * przez zmienne srodowiskowe.</p>
- */
+/** Zaklada konto administratora przy pierwszym uruchomieniu aplikacji. */
 @Component
 public class AdminInitializer implements CommandLineRunner {
 
@@ -62,9 +45,8 @@ public class AdminInitializer implements CommandLineRunner {
         }
 
         /*
-         * Zabezpieczenie przed sytuacja, w ktorej ktos zdazyl zarejestrowac
-         * zwykle konto o loginie "admin" - wtedy zapis zlamalby ograniczenie
-         * UNIQUE i aplikacja nie wstalaby w ogole.
+         * Zabezpieczenie przed sytuacja, w ktorej ktos zdazyl zarejestrowac zwykle konto o loginie
+         * "admin" - wtedy zapis zlamalby ograniczenie UNIQUE i aplikacja nie wstalaby w ogole.
          */
         if (userRepository.existsByUsername(adminUsername)
             || userRepository.existsByEmail(adminEmail)) {

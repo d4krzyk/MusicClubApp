@@ -15,24 +15,7 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Zaproszenie do znajomych, ktore czeka na odpowiedz.
- *
- * <p><b>Dlaczego nie ma tu pola "status"?</b> Bo w tabeli trzymamy WYLACZNIE
- * zaproszenia oczekujace. Akceptacja dopisuje znajomosc do
- * {@code user_friends} i kasuje ten wiersz; odrzucenie po prostu go kasuje.
- * Dzieki temu nie trzeba w kazdym zapytaniu pamietac o dopisaniu
- * {@code WHERE status = 'PENDING'} - a to jeden z tych warunkow, ktore
- * najlatwiej przeoczyc i potem dziwic sie, skad na liscie wzieli sie ludzie,
- * ktorzy nas odrzucili.</p>
- *
- * <p>Cena: nie wiemy, kto kogo kiedys odrzucil. Do dzialania aplikacji nie jest
- * to potrzebne, a odrzucona osoba moze sprobowac ponownie - co akurat jest
- * zachowaniem oczekiwanym.</p>
- *
- * <p>Kolejna para {@code ManyToOne} w projekcie: zaproszenie wskazuje
- * na nadawce ORAZ na odbiorce.</p>
- */
+/** Zaproszenie do znajomych, ktore czeka na odpowiedz. */
 @Entity
 @Table(
     name = "friend_requests",

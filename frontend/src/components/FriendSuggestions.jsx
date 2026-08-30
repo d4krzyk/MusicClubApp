@@ -15,24 +15,7 @@ import { IconPersonCheck, IconPersonPlus } from './Icons';
 /** Ile osob pobieramy do paska propozycji. */
 const ILE_PROPOZYCJI = 24;
 
-/**
- * Proponowani znajomi - <b>cala spolecznosc, od najlepiej dopasowanych</b>.
- *
- * <p><b>Dlaczego wszyscy, a nie tylko dopasowani.</b> Bo aplikacja dla
- * kilkunastu osob, ktora po odsianiu "za malo podobnych" pokazuje pusta
- * strone, jest bezuzyteczna dokladnie wtedy, kiedy najbardziej potrzeba
- * w niej ludzi - na starcie. Pasek przewija sie od lewej: najpierw osoby,
- * z ktorymi cos nas laczy, dalej po prostu pozostali uzytkownicy.</p>
- *
- * <p><b>Na karcie widac POWOD dopasowania, a nie wynik punktowy.</b>
- * "2 wspolnych artystow" mowi wszystko; "14 punktow" nie mowi nic
- * i nie da sie tego sensownie wytlumaczyc.</p>
- *
- * <p>Znajomi zostaja na liscie, tylko z innym oznaczeniem. Gdyby znikali,
- * osoba z najlepszym dopasowaniem przepadalaby w chwili dodania jej do
- * znajomych - czyli dokladnie ta, ktora najlepiej tlumaczy, po co ta lista
- * w ogole jest.</p>
- */
+/** Proponowani znajomi - cala spolecznosc, od najlepiej dopasowanych. */
 export default function FriendSuggestions({ refresh, onChange }) {
   const { t } = useTranslation();
 
@@ -64,11 +47,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
     setError(null);
     try {
       const data = await zapros(username);
-      /*
-       * Karta zmienia sie od razu, bez czekania na ponowne pobranie listy.
-       * Przy pelnym odswiezeniu kolejnosc kart moglaby sie przesunac
-       * dokladnie w chwili klikniecia - i palec wyladowalby na kims innym.
-       */
+      /* Karta zmienia sie od razu, bez czekania na ponowne pobranie listy. */
       setSent((p) => ({ ...p, [username]: data.friendsNow ? 'friends' : 'sent' }));
       onChange?.();
     } catch (error) {
@@ -78,11 +57,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
   }
 
   if (loading) {
-    /*
-     * Szkielet, a nie kolko z napisem. Kolko zajmowalo jedna linijke,
-     * a zaraz po nim wskakiwal rzad kafelkow wysokich na kilkanascie
-     * razy tyle - cala strona podskakiwala w tym momencie.
-     */
+    /* Szkielet, a nie kolko z napisem. */
     return <PeopleSkeleton count={5} variant="suggestion" />;
   }
 
@@ -96,11 +71,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
     <div>
       {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 
-      {/*
-        Podpowiedz pokazujemy TYLKO wtedy, gdy nikt nie jest dopasowany.
-        Przy dobrych dopasowaniach byloby to czepianie sie o nic, a tak -
-        tlumaczy, dlaczego lista wyglada przypadkowo, i mowi, co z tym zrobic.
-      */}
+      {/* Podpowiedz pokazujemy TYLKO wtedy, gdy nikt nie jest dopasowany. */}
       {!anyoneMatched && (
         <Alert variant="info" className="py-2 small">
           {t('friends.betterMatchesHint')}{' '}
@@ -123,13 +94,7 @@ export default function FriendSuggestions({ refresh, onChange }) {
                 <div className="fw-semibold text-truncate mt-1">{o.username}</div>
               </Link>
 
-              {/*
-                Powody sa PRZYCISKIEM, a nie napisem. Liczba mowi, ze cos nas
-                laczy, ale nie mowi CO - a to dopiero jest powod, zeby do kogos
-                napisac. Klikniecie otwiera okienko z konkretami. Osoby bez
-                zadnego dopasowania nie maja czego pokazac, wiec u nich zostaje
-                zwykly napis.
-              */}
+              {/* Powody sa PRZYCISKIEM, a nie napisem. */}
               {o.matched ? (
                 <button
                   type="button"
@@ -178,9 +143,9 @@ export default function FriendSuggestions({ refresh, onChange }) {
       </HorizontalStrip>
 
       {/*
-        Okienko powstaje DOPIERO po kliknieciu (a nie jest ukryte przy kazdej
-        karcie), wiec zapytanie porownujace listy ulubionych leci raz - dla
-        tej jednej osoby, o ktora ktos naprawde zapytal.
+        Okienko powstaje DOPIERO po kliknieciu (a nie jest ukryte przy kazdej karcie), wiec
+        zapytanie porownujace listy ulubionych leci raz - dla tej jednej osoby, o ktora ktos
+        naprawde zapytal.
       */}
       <Modal show={Boolean(showCommon)} onHide={() => setShowCommon(null)} centered scrollable>
         <Modal.Header closeButton>

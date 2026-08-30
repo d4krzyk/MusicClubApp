@@ -26,19 +26,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Widocznosc postow i kolejnosc tablicy - <b>na prawdziwej bazie</b>.
- *
- * <p><b>Dlaczego nie na atrapach.</b> Cala rzecz dzieje sie w SQL-u:
- * warunek widocznosci, {@code ORDER BY CASE} stawiajacy znajomych na gorze
- * i liczenie stron. Atrapa repozytorium zwrocilaby to, co jej kazemy,
- * i test przechodzilby takze wtedy, gdyby zapytanie bylo zupelnie zle.</p>
- *
- * <p>Najwazniejszy jest {@link #theRuleInJavaAndInTheDatabaseAgree()}: regula
- * "kto moze zobaczyc post" jest zapisana <b>dwa razy</b> - w JPQL-u dla
- * tablicy i w Javie dla pojedynczego posta. Ten test pilnuje, zeby oba zapisy
- * mowily to samo.</p>
- */
+/** Widocznosc postow i kolejnosc tablicy - na prawdziwej bazie. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -64,8 +52,8 @@ class PostVisibilityTest {
         obcy = userRepository.save(new User("obcy", "obcy@example.com", "hash"));
 
         /*
-         * NIE "admin": konto o tej nazwie zaklada przy starcie
-         * AdminInitializer, a login jest unikalny w bazie.
+         * NIE "admin": konto o tej nazwie zaklada przy starcie AdminInitializer, a login jest
+         * unikalny w bazie.
          */
         admin = new User("szef", "szef@example.com", "hash");
         admin.setRole(Role.ADMIN);
@@ -76,21 +64,13 @@ class PostVisibilityTest {
         userRepository.save(kumpel);
 
         /*
-         * Zapytania natywne (circleIds) czytaja WPROST z bazy, wiec zmiany
-         * musza tam byc, zanim je zawolamy - stad jawne flush().
+         * Zapytania natywne (circleIds) czytaja WPROST z bazy, wiec zmiany musza tam byc, zanim je
+         * zawolamy - stad jawne flush().
          */
         entityManager.flush();
     }
 
-    /**
-     * Zapisuje post z narzucona data.
-     *
-     * <p>Data jest ustawiana osobnym {@code UPDATE}, bo encja nadaje ja sama
-     * przy zapisie ({@code @PrePersist}) i nie ma settera - i slusznie, bo
-     * w aplikacji nikt nie powinien podawac wlasnej daty utworzenia.
-     * <b>Bez narzuconych dat test byloby chwiejny</b>: kolejnosc zalezalaby
-     * od tego, czy dwa zapisy trafily w te sama mikrosekunde.</p>
-     */
+    /** Zapisuje post z narzucona data. */
     private Post post(User author, String content, PostVisibility visibility, int minutesAgo) {
         Post post = new Post(author, content);
         post.setVisibility(visibility);
@@ -127,8 +107,8 @@ class PostVisibilityTest {
         fiveMixedPosts();
 
         /*
-         * Post obcego jest najnowszy ze wszystkich, wiec przy zwyklym
-         * sortowaniu po dacie bylby na samej gorze. Ma byc na dole.
+         * Post obcego jest najnowszy ze wszystkich, wiec przy zwyklym sortowaniu po dacie bylby na
+         * samej gorze.
          */
         assertThat(feed("ja", FeedScope.ALL)).containsExactly(
             "kumpel tylko dla swoich",
@@ -152,12 +132,7 @@ class PostVisibilityTest {
     void adminIsNotAnException() {
         fiveMixedPosts();
 
-        /*
-         * To nie jest przeoczenie, tylko decyzja - patrz PostVisibility.FRIENDS.
-         * Interfejs obiecuje "tylko znajomi"; obietnica z cichym wyjatkiem dla
-         * obslugi serwisu nie jest obietnica. Moderacja przez usuniecie posta
-         * po identyfikatorze dziala niezaleznie od tego.
-         */
+        /* To nie jest przeoczenie, tylko decyzja - patrz PostVisibility.FRIENDS. */
         assertThat(feed("szef", FeedScope.ALL))
             .doesNotContain("kumpel tylko dla swoich", "obcy tylko dla swoich");
     }
@@ -182,10 +157,7 @@ class PostVisibilityTest {
         entityManager.flush();
 
         /*
-         * Konto bez ani jednego znajomego to zbior pusty, a "IN ()" jest
-         * w SQL-u bledem skladni. Dlatego circleIds zwraca takze wlasny
-         * identyfikator - bez tego tablica nowego uzytkownika wywalalaby sie
-         * wyjatkiem zamiast cokolwiek pokazac.
+         * Konto bez ani jednego znajomego to zbior pusty, a "IN ()" jest w SQL-u bledem skladni.
          */
         assertThat(feed(nowy.getUsername(), FeedScope.ALL))
             .containsExactly("obcy publicznie NAJNOWSZY", "kumpel publicznie",
@@ -201,11 +173,7 @@ class PostVisibilityTest {
             .getContent().stream().map(PostResponse::content).toList();
         var second = postService.feed("ja", FeedScope.ALL, PageRequest.of(1, 2));
 
-        /*
-         * To jest powod, dla ktorego kolejnosc liczy BAZA, a nie Java.
-         * Przesiewanie po pobraniu dawaloby na kazdej stronie inny zestaw,
-         * a licznik stron klamalby przy kazdym zapytaniu.
-         */
+        /* To jest powod, dla ktorego kolejnosc liczy BAZA, a nie Java. */
         assertThat(first).containsExactly("kumpel tylko dla swoich", "kumpel publicznie");
         assertThat(second.getContent().stream().map(PostResponse::content))
             .containsExactly("moj wlasny NAJSTARSZY", "obcy publicznie NAJNOWSZY");
@@ -246,10 +214,9 @@ class PostVisibilityTest {
         entityManager.flush();
 
         /*
-         * Samo ukrycie posta na tablicy nie wystarcza: identyfikatory sa
-         * kolejnymi liczbami, wiec bez tego sprawdzenia wystarczyloby wyslac
-         * PUT z pominieciem przegladarki, zeby autor dostal powiadomienie
-         * od osoby, ktora nie miala prawa tego posta przeczytac.
+         * Samo ukrycie posta na tablicy nie wystarcza: identyfikatory sa kolejnymi liczbami, wiec
+         * bez tego sprawdzenia wystarczyloby wyslac PUT z pominieciem przegladarki, zeby autor
+         * dostal powiadomienie od osoby, ktora nie miala prawa tego posta przeczytac.
          */
         assertThatThrownBy(() -> reactionService.set(ukryty.getId(), "obcy", ReactionType.FIRE))
             .isInstanceOf(OperationNotAllowedException.class);
@@ -269,10 +236,7 @@ class PostVisibilityTest {
         assertThat(forStranger.getContent()).extracting(PostResponse::content)
             .containsExactly("kumpel publicznie");
 
-        /*
-         * Licznik w naglowku profilu musi zgadzac sie z tym, co widac nizej.
-         * Napis "2 posty" nad jednym wpisem wyglada jak zepsuta strona.
-         */
+        /* Licznik w naglowku profilu musi zgadzac sie z tym, co widac nizej. */
         assertThat(publicProfileService.profile("kumpel", "obcy").postCount()).isEqualTo(1);
         assertThat(publicProfileService.profile("kumpel", "ja").postCount()).isEqualTo(2);
     }
@@ -283,12 +247,8 @@ class PostVisibilityTest {
         fiveMixedPosts();
 
         /*
-         * "Kto moze zobaczyc post" jest zapisane dwa razy: w JPQL-u
-         * (PostRepository.findFeed - dla calej tablicy) i w Javie
-         * (Post.isVisibleTo - dla pojedynczego posta). Nie da sie tego
-         * uniknac: baza musi odsiac tablice u siebie, bo inaczej
-         * stronicowanie liczy zle. Da sie za to sprawdzic, ze oba zapisy
-         * mowia to samo - i to robi ten test.
+         * "Kto moze zobaczyc post" jest zapisane dwa razy: w JPQL-u (PostRepository.findFeed - dla
+         * calej tablicy) i w Javie (Post.isVisibleTo - dla pojedynczego posta).
          */
         for (String viewerName : List.of("ja", "kumpel", "obcy", "szef")) {
             User viewer = userRepository.findByUsername(viewerName).orElseThrow();
@@ -313,11 +273,8 @@ class PostVisibilityTest {
         entityManager.flush();
 
         /*
-         * Tak wygladaja wiersze sprzed dolozenia kolumny: Hibernate dokłada ja
-         * pusta, a PostVisibilityMigration wypelnia je przy starcie. Gdyby
-         * ktoregos startu zabraklo, cala dotychczasowa tablica nie moze
-         * zniknac uzytkownikom z oczu - stad warunek IS NULL w zapytaniu
-         * i to samo zalozenie w Post.getVisibility().
+         * Tak wygladaja wiersze sprzed dolozenia kolumny: Hibernate dokłada ja pusta, a
+         * PostVisibilityMigration wypelnia je przy starcie.
          */
         entityManager.createNativeQuery(
                 "UPDATE posts SET visibility = NULL WHERE id = " + stary.getId())

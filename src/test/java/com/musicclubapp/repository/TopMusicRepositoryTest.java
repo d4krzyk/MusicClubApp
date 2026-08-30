@@ -16,20 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy zestawienia "najczesciej wrzucane" na prawdziwej bazie - wymaganie nr 14.
- *
- * <p><b>Skad wzial sie ten test.</b> Zapytanie jest natywne i sortuje po
- * kolumnie WYLICZONEJ ({@code COUNT(*)}), a nie po zwyklym polu. Przy zmianie
- * nazw w projekcie alias tej kolumny zmienil sie w jednym miejscu, a w
- * {@code ORDER BY} zostal stary - i nikt tego nie zauwazyl, bo zadnego testu
- * na to zapytanie nie bylo. Blad wyszedl dopiero w przegladarce, jako 500
- * na profilu. Ten test pilnuje, zeby to sie nie powtorzylo.</p>
- *
- * <p>Sprawdzamy dwie rzeczy naraz: ze zapytanie <b>w ogole sie wykonuje</b>
- * (alias w {@code ORDER BY} musi istniec) i ze <b>kolejnosc jest wlasciwa</b> -
- * od najczesciej wrzucanych.</p>
- */
+/** Testy zestawienia "najczesciej wrzucane" na prawdziwej bazie - wymaganie nr 14. */
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("Najczesciej wrzucane - zapytanie natywne")
@@ -105,10 +92,8 @@ class TopMusicRepositoryTest {
     @DisplayName("playlisty nie mieszaja sie do zestawienia utworow")
     void playlistsDoNotMixWithTracks() {
         /*
-         * Rodzaj jest parametrem zapytania, wiec playlista wrzucona przez te
-         * sama osobe nie ma prawa pojawic sie wsrod utworow. To nie jest
-         * drobiazg: playlista to zwykle cudza skladanka i celowo nie liczy sie
-         * do statystyk gustu.
+         * Rodzaj jest parametrem zapytania, wiec playlista wrzucona przez te sama osobe nie ma
+         * prawa pojawic sie wsrod utworow.
          */
         post(MusicProvider.SPOTIFY, MusicKind.PLAYLIST, "lista1", "Skladanka");
         post(MusicProvider.SPOTIFY, MusicKind.TRACK, "aaa", "Utwor");

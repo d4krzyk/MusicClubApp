@@ -28,13 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Testy jednostkowe edycji wlasnego profilu - wymaganie nr 13.
- *
- * <p>Osobna klasa od {@code UserServiceTest}, bo dotyczy innego obszaru
- * (ustawienia konta, nie rejestracja). Wyklad 5, slajd 8: jedna klasa testow
- * powinna sprawdzac jedna rzecz.</p>
- */
+/** Testy jednostkowe edycji wlasnego profilu - wymaganie nr 13. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService - edycja wlasnego profilu i zmiana hasla")
 class UserProfileServiceTest {
@@ -70,11 +64,7 @@ class UserProfileServiceTest {
 
         userService.updateProfile("anna", new UpdateProfileRequest("anna", "nowy@example.com"));
 
-        /*
-         * Kluczowe: przy niezmienionym loginie w ogole nie pytamy bazy
-         * o jego zajetosc. Gdybysmy pytali, dostalibysmy "true" (bo login
-         * nalezy do tego samego uzytkownika) i zapis by sie wywalil.
-         */
+        /* Kluczowe: przy niezmienionym loginie w ogole nie pytamy bazy o jego zajetosc. */
         verify(userRepository, never()).existsByUsername("anna");
     }
 

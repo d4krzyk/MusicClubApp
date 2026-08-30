@@ -60,7 +60,7 @@
    tablicy opoznienie nigdy nie uroslo ponad pol sekundy.
 */
 .feed-page .post-card {
-  animation: fade-in-up .42s var(--mc-ease) both;
+  animation: fade-in-up .42s var(--mc-ease) backwards;
   animation-delay: calc(var(--i, 0) * 55ms);
 }
 

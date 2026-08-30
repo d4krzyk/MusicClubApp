@@ -15,21 +15,7 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Czy komunikaty bledow daja sie <b>faktycznie zlozyc</b> - w obu jezykach.
- *
- * <p><b>Skad wzial sie ten test.</b> Zakaz publikowania dzialal poprawnie:
- * post sie nie zapisywal, wyjatek leciał, test serwisu byl zielony. Tyle ze
- * uzytkownik zamiast komunikatu dostawal blad 500. Powod:
- * {@code MessageFormat} przy zapisie {@code {0,date,...}} nie potrafi
- * sformatowac {@code LocalDateTime} i rzucal wyjatkiem <b>w srodku obslugi
- * bledu</b> - czyli tam, gdzie nie ma juz komu go przechwycic.</p>
- *
- * <p>Test sprawdzajacy sam typ wyjatku nie mial szans tego zauwazyc, bo
- * wyjatek byl w porzadku. Zepsute bylo dopiero to, co z niego wynika.
- * Dlatego skladamy tu komunikat tak, jak robi to
- * {@link GlobalExceptionHandler}.</p>
- */
+/** Czy komunikaty bledow daja sie faktycznie zlozyc - w obu jezykach. */
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Komunikaty bledow - czy w ogole daja sie zlozyc")
@@ -42,22 +28,7 @@ class ErrorMessagesTest {
         return messageSource.getMessage(ex.getMessageKey(), ex.getArguments(), locale);
     }
 
-    /**
-     * Termin kary <b>nie jest juz wklejany w komunikat</b> - i to jest zmiana,
-     * a nie usterka.
-     *
-     * <p>Wczesniej ten test sprawdzal, ze komunikat zawiera „14.03.2026 09:47",
-     * i przechodzil. Mimo to uzytkownik widzial bzdure: zakaz nalozony o 16:55
-     * na godzine pokazywal sie jako <i>„do 15:55"</i>. Powod - serwer liczy
-     * czas w UTC i formatowal te godzine u siebie, nie wiedzac nic o strefie
-     * uzytkownika. Test byl zielony, bo pytal o <i>obecnosc</i> daty, a nie
-     * o to, czy jest ona <i>prawdziwa</i> dla ogladajacego.</p>
-     *
-     * <p>Teraz komunikat mowi samo „zakaz publikowania", a chwila konca kary
-     * jedzie osobnym polem i zamienia sie w godzine dopiero w przegladarce -
-     * bo tylko ona zna zegar uzytkownika. Test pilnuje wiec dwoch rzeczy:
-     * ze termin jest <b>przekazany</b> i ze <b>nie ma go w tekscie</b>.</p>
-     */
+    /** Termin kary nie jest juz wklejany w komunikat - i to jest zmiana, a nie usterka. */
     @Test
     @DisplayName("komunikat o zakazie NIE zawiera godziny - ta sklada przegladarka")
     void banMessageCarriesTheDeadlineSeparately() {
@@ -82,10 +53,8 @@ class ErrorMessagesTest {
     @DisplayName("kazdy komunikat tej klasy ma tlumaczenie w OBU jezykach")
     void everyMessageExistsInBothLanguages() {
         /*
-         * Brakujacy klucz konczy sie wyjatkiem przy skladaniu komunikatu -
-         * a wiec bledem 500 zamiast czytelnej odpowiedzi. Wyliczenie
-         * wszystkich przypadkow w jednym miejscu sprawia, ze nowy komunikat
-         * bez tlumaczenia nie przejdzie niezauwazony.
+         * Brakujacy klucz konczy sie wyjatkiem przy skladaniu komunikatu - a wiec bledem 500
+         * zamiast czytelnej odpowiedzi.
          */
         var przypadki = new OperationNotAllowedException[] {
             OperationNotAllowedException.ownRole(),

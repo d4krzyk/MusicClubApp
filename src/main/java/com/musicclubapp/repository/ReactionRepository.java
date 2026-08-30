@@ -11,28 +11,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Dostep do reakcji na posty.
- *
- * <p>Kolejne wlasne zapytania {@code @Query} (wymaganie nr 8) - tym razem
- * z grupowaniem.</p>
- */
+/** Dostep do reakcji na posty. */
 @Repository
 public interface ReactionRepository extends JpaRepository<Reaction, Long> {
 
-    /**
-     * Liczniki reakcji dla CALEJ strony postow naraz.
-     *
-     * <p><b>Dlaczego jedno zapytanie na cala strone, a nie jedno na post?</b>
-     * Przy dwudziestu postach dostalibysmy dwadziescia zapytan do bazy zamiast
-     * jednego (problem N+1). Baza policzy to sama i odesle gotowe sumy -
-     * a przesylanych wierszy jest tyle, ile faktycznie uzytych reakcji,
-     * czyli najwyzej trzy na post.</p>
-     *
-     * <p>{@code SELECT new ...} to <b>wyrazenie konstruktora</b> JPQL: wynik
-     * kazdego wiersza trafia od razu do rekordu {@link ReactionCount},
-     * zamiast wracac jako tablica {@code Object[]}.</p>
-     */
+    /** Liczniki reakcji dla CALEJ strony postow naraz. */
     @Query("""
            SELECT new com.musicclubapp.repository.ReactionCount(r.post.id, r.type, COUNT(r))
            FROM Reaction r
@@ -42,8 +25,7 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
     List<ReactionCount> countForPosts(@Param("postIds") Collection<Long> postIds);
 
     /**
-     * Reakcje JEDNEGO uzytkownika na podane posty - zeby podswietlic
-     * przycisk, ktory sam wybral.
+     * Reakcje JEDNEGO uzytkownika na podane posty - zeby podswietlic przycisk, ktory sam wybral.
      */
     @Query("""
            SELECT r FROM Reaction r
@@ -61,25 +43,14 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
                               @Param("username") String username);
 
     /**
-     * Kasuje wszystkie reakcje jednej osoby - przy usuwaniu konta.
-     *
-     * <p>{@code @Modifying} jest tu obowiazkowe: bez niego Spring probowalby
-     * potraktowac to jako zapytanie czytajace i odmowilby wykonania.</p>
+     * Kasuje wszystkie reakcje jednej osoby - przy usuwaniu konta. @Modifying jest tu obowiazkowe:
+     * bez niego Spring probowalby potraktowac to jako zapytanie czytajace i odmowilby wykonania.
      */
     @Modifying
     @Query("DELETE FROM Reaction r WHERE r.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
 
-    /**
-     * Kto zareagowal na dany post - do okienka "kto zareagowal".
-     *
-     * <p>{@code JOIN FETCH} pobiera od razu uzytkownika: lista bez nazw
-     * bylaby bezuzyteczna, a bez tego kazdy wiersz dociagalby ja osobnym
-     * zapytaniem (problem N+1).</p>
-     *
-     * <p>Kolejnosc od najnowszych - tak samo jak wszedzie indziej
-     * w aplikacji.</p>
-     */
+    /** Kto zareagowal na dany post - do okienka "kto zareagowal". */
     @Query("""
            SELECT r FROM Reaction r
            JOIN FETCH r.user
@@ -88,16 +59,7 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
            """)
     List<Reaction> findForPost(@Param("postId") Long postId);
 
-    /**
-     * Kasuje wszystkie reakcje pod danym postem - przed jego usunieciem.
-     *
-     * <p><b>Dlaczego wprost, skoro encja ma {@code cascade = ALL}.</b>
-     * Kaskada dziala na kolekcji zaladowanej do pamieci. Reakcje dopisane
-     * w tej samej transakcji przez {@code reactionRepository.save(...)} nie
-     * trafiaja do niej automatycznie, wiec Hibernate o nich nie wie i baza
-     * odrzuca skasowanie posta z powodu klucza obcego. Jawny {@code DELETE}
-     * nie zalezy od tego, co akurat jest zaladowane.</p>
-     */
+    /** Kasuje wszystkie reakcje pod danym postem - przed jego usunieciem. */
     @Modifying
     @Query("DELETE FROM Reaction r WHERE r.post.id = :postId")
     void deleteByPostId(@Param("postId") Long postId);

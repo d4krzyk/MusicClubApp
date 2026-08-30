@@ -30,20 +30,7 @@ import { formatDate } from '../utils/dates';
 /** Ile postow pobieramy za jednym razem. */
 const PAGE_SIZE = 10;
 
-/**
- * Profil uzytkownika - wlasny albo cudzy.
- *
- * <p><b>Jedna strona na oba przypadki.</b> Roznica sprowadza sie do kilku
- * przyciskow, wiec osobny komponent na "moj profil" oznaczalby dwa pliki
- * robiace prawie to samo - i dwa miejsca do poprawiania przy kazdej zmianie.
- * O tym, ktory wariant widzimy, decyduje pole {@code self} <b>z serwera</b>.</p>
- *
- * <p>Adres {@code /profil} (bez nazwy) pokazuje profil zalogowanego
- * uzytkownika - wygodny link z menu.</p>
- *
- * <p>Miejsce na liste znajomych i ulubionych artystow ze Spotify jest
- * przygotowane nizej - dojda w kolejnych krokach.</p>
- */
+/** Profil uzytkownika - wlasny albo cudzy. */
 export default function ProfilePage() {
   const { t, i18n } = useTranslation();
   const { username } = useParams();
@@ -61,11 +48,7 @@ export default function ProfilePage() {
   const [postsLoading, setPostsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  /*
-   * Licznik wymuszajacy przeladowanie paska znajomych. Po przyjeciu albo
-   * usunieciu znajomosci lista musi sie odswiezyc - a pasek pobiera dane sam,
-   * wiec trzeba mu dac znac. Zwykla zmiana liczby wystarczy jako sygnal.
-   */
+  /* Licznik wymuszajacy przeladowanie paska znajomych. */
   const [refreshFriends, setRefreshFriends] = useState(0);
 
   const loadProfile = useCallback(async () => {
@@ -74,12 +57,7 @@ export default function ProfilePage() {
     try {
       setProfile(await publiczny(whose));
     } catch (error) {
-      /*
-       * Przy 404 pokazujemy WLASNY komunikat. Serwer odsyla ogolne
-       * "Nie znaleziono: user o identyfikatorze ...", co jest w porzadku
-       * w logach i w Swaggerze, ale odwiedzajacemu profil nic nie mowi -
-       * "user" to nazwa z kodu, nie slowo z jego swiata.
-       */
+      /* Przy 404 pokazujemy WLASNY komunikat. */
       const details = describeError(error);
       setError(error.response?.status === 404
         ? t('profile.notFound')
@@ -140,9 +118,8 @@ export default function ProfilePage() {
 
   if (loading && !profile) {
     /*
-     * Szkielet zamiast kolka - te same ksztalty co gotowa strona, wiec po
-     * wczytaniu nic nie podskakuje. Szerokosc kolumny musi byc TA SAMA co
-     * nizej, inaczej tresc przeskoczylaby w bok w chwili podmiany.
+     * Szkielet zamiast kolka - te same ksztalty co gotowa strona, wiec po wczytaniu nic nie
+     * podskakuje.
      */
     return (
       <Row className="justify-content-center">
@@ -168,11 +145,7 @@ export default function ProfilePage() {
 
   return (
     <Row className="justify-content-center">
-      {/*
-        tiles-in sprawia, ze sekcje profilu wchodza PO KOLEI - tak samo jak
-        karty na tablicy. Wczesniej cala strona pojawiala sie naraz i przejscie
-        z tablicy na profil wygladalo jak przeskok do innej aplikacji.
-      */}
+      {/* tiles-in sprawia, ze sekcje profilu wchodza PO KOLEI - tak samo jak karty na tablicy. */}
       <Col lg={8} className="tiles-in">
         <Card className="mb-4">
           <Card.Body className="d-flex align-items-center gap-3 flex-wrap">
@@ -181,11 +154,7 @@ export default function ProfilePage() {
             <div className="flex-grow-1">
               <h1 className="h4 mb-1">{profile.username}</h1>
 
-              {/*
-                Obecnosc pokazujemy tylko na CUDZYM profilu. Napis "jestes
-                online" jest dla wlasciciela konta bezuzyteczny - i tak wie,
-                ze tu jest.
-              */}
+              {/* Obecnosc pokazujemy tylko na CUDZYM profilu. */}
               {!profile.self && (
                 <div className="mb-1">
                   <PresenceDot presence={profile.presence} withLabel />
@@ -205,9 +174,8 @@ export default function ProfilePage() {
             </div>
 
             {/*
-              Ustawienia konta (login, e-mail, haslo) sa czyms innym niz profil -
-              dlatego przycisk prowadzi do osobnej strony i widzi go tylko
-              wlasciciel. O tym, czy to jego profil, mowi serwer.
+              Ustawienia konta (login, e-mail, haslo) sa czyms innym niz profil - dlatego przycisk
+              prowadzi do osobnej strony i widzi go tylko wlasciciel.
             */}
             <div className="d-flex flex-column align-items-end gap-2">
               {profile.self && (
@@ -224,13 +192,7 @@ export default function ProfilePage() {
                 }}
               />
 
-              {/*
-                "Napisz" pokazuje sie WYLACZNIE przy znajomym - bo tylko
-                z nim wolno pisac. Przycisk prowadzacy do komunikatu
-                "pisac mozna tylko ze znajomymi" byloby zaproszeniem
-                do bledu. O relacji rozstrzyga serwer (pole
-                friendshipStatus), a nie warunek w przegladarce.
-              */}
+              {/* "Napisz" pokazuje sie WYLACZNIE przy znajomym - bo tylko z nim wolno pisac. */}
               {profile.friendshipStatus === 'FRIENDS' && (
                 <Button
                   variant="outline-primary"
@@ -241,14 +203,7 @@ export default function ProfilePage() {
                 </Button>
               )}
 
-              {/*
-                Zgloszenie - tylko na CUDZYM profilu, z oczywistego powodu.
-
-                Wariant "rozmowa" pokazujemy wylacznie znajomym: tylko z nimi
-                da sie w ogole wymienic wiadomosci, a wybor prowadzacy do
-                komunikatu "nie macie zadnej rozmowy" bylby zaproszeniem
-                do bledu.
-              */}
+              {/* Zgloszenie - tylko na CUDZYM profilu, z oczywistego powodu. */}
               {!profile.self && (
                 <ReportButton
                   username={profile.username}
@@ -261,38 +216,19 @@ export default function ProfilePage() {
           </Card.Body>
         </Card>
 
-        {/*
-          "Co Was laczy" stoi NAD ulubionymi i to jest celowe. Na cudzym
-          profilu pierwsze pytanie brzmi "czy mamy cos wspolnego", a nie
-          "czego ta osoba slucha" - odpowiedz na to drugie jest nizej
-          i nigdzie nie ucieknie. Na wlasnym profilu sekcja sie nie pokazuje:
-          nie ma czego z czym porownywac.
-        */}
+        {/* "Co Was laczy" stoi NAD ulubionymi i to jest celowe. */}
         <CommonGround username={profile.username} />
 
         {/*
-          Dwa bloki obok siebie, ktore latwo pomylic, a mowia co innego:
-
-          ULUBIENI to swiadoma deklaracja - "lubie tych wykonawcow". To na
-          nich opiera sie dopasowywanie ludzi.
-
-          NAJCZESCIEJ WRZUCANE jest wyliczone z postow. Mowi, co ktos
-          wrzuca na tablice - a to nie to samo: cos mozna wrzucic raz
-          dla zartu albo dlatego, ze akurat bylo glosno.
+          Dwa bloki obok siebie, ktore latwo pomylic, a mowia co innego: ULUBIENI to swiadoma
+          deklaracja - "lubie tych wykonawcow".
         */}
         <Favorites
           username={profile.username}
           onChange={() => setRefreshFriends((n) => n + 1)}
         />
 
-        {/*
-          GABLOTKA PLAYLIST to trzeci, jeszcze inny rodzaj informacji.
-          Ulubieni sluza dopasowywaniu ludzi, "najczesciej wrzucane" jest
-          statystyka z postow, a playlisty sa po prostu zaproszeniem:
-          "posluchaj tego, co ja". Celowo nie licza sie do zadnego
-          dopasowania - ta sama skladanka u dwoch osob moze znaczyc
-          zupelnie co innego.
-        */}
+        {/* GABLOTKA PLAYLIST to trzeci, jeszcze inny rodzaj informacji. */}
         <Playlists username={profile.username} />
 
         <TopMusic username={profile.username} refresh={refreshFriends} />

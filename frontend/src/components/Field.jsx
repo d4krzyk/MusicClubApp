@@ -1,13 +1,6 @@
 import Form from 'react-bootstrap/Form';
 
-/**
- * Pojedyncze pole formularza: etykieta, input, suggestion-item i komunikat bledu.
- *
- * <p>Po przejsciu na Bootstrapa korzystamy z gotowych komponentow
- * {@code Form.Control} i {@code Form.Control.Feedback}. Wlasnosc
- * {@code isInvalid} sama dokleja czerwona ramke i pokazuje komunikat -
- * wczesniej trzeba bylo to obslugiwac recznie klasami CSS.</p>
- */
+/** Pojedyncze pole formularza: etykieta, input, suggestion-item i komunikat bledu. */
 export default function Field({
   id,
   label,

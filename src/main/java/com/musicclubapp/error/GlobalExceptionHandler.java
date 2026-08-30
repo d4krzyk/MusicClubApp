@@ -18,28 +18,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-/**
- * Jedno miejsce na obsluge wszystkich wyjatkow w aplikacji - wymaganie nr 11.
- *
- * <p>Zbudowane wedlug wykladu 3 (slajdy 68-72):</p>
- * <ul>
- *   <li>jedna klasa {@code @ControllerAdvice} na caly projekt,</li>
- *   <li>dziedziczy z {@link ResponseEntityExceptionHandler}, ktory ma juz
- *       gotowe metody na wyjatki Springa,</li>
- *   <li>kazda metoda ma {@code @ResponseStatus}, loguje blad i zwraca
- *       {@link ResponseEntity} z wlasnym typem {@link ErrorResponse}.</li>
- * </ul>
- *
- * <p><b>Uwaga do slajdu 71:</b> sygnatura {@code handleMethodArgumentNotValid}
- * na wykladzie pochodzi ze starszej wersji Springa. W Spring Framework 6
- * (czyli Spring Boot 3, ktorego uzywamy) metoda w klasie nadrzednej wyglada
- * tak jak nizej - z {@code HttpHeaders} i {@code HttpStatusCode}. Ze starej
- * sygnatury {@code @Override} po prostu by sie nie skompilowal.</p>
- *
- * <p>Komunikaty pobieramy z {@link MessageSource}, czyli z plikow
- * {@code lang/messages*.properties} - dzieki temu bledy sa po polsku albo po
- * angielsku, zaleznie od naglowka {@code Accept-Language} (wymaganie nr 2).</p>
- */
+/** Jedno miejsce na obsluge wszystkich wyjatkow w aplikacji - wymaganie nr 11. */
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -49,11 +28,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         this.messageSource = messageSource;
     }
 
-    /**
-     * Blad walidacji {@code @Valid} na ciele zapytania (wymagania nr 9 i 10).
-     * Zwracamy 422 wraz z lista pol, ktore nie przeszly walidacji - frontend
-     * moze podswietlic konkretne pola formularza.
-     */
+    /** Blad walidacji @Valid na ciele zapytania (wymagania nr 9 i 10). */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex,
@@ -75,8 +50,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Walidacja, ktora nie zadzialala na argumencie metody kontrolera,
-     * tylko np. na encji przy zapisie (wyklad 3, slajd 65).
+     * Walidacja, ktora nie zadzialala na argumencie metody kontrolera, tylko np. na encji przy
+     * zapisie (wyklad 3, slajd 65).
      */
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
@@ -127,11 +102,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 translate("error.badcredentials")));
     }
 
-    /**
-     * Zle obecne haslo przy zmianie hasla w ustawieniach.
-     * Zwracamy 422 z bledem przypietym do konkretnego pola, zeby frontend
-     * podswietlil je tak samo jak kazdy inny blad walidacji.
-     */
+    /** Zle obecne haslo przy zmianie hasla w ustawieniach. */
     @ExceptionHandler(InvalidCurrentPasswordException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     public ResponseEntity<ErrorResponse> handleInvalidCurrentPassword(
@@ -165,8 +136,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Wgrany plik nie przeszedl kontroli (pusty albo nie jest obrazkiem).
-     * 422 z bledem przypietym do pola, zeby frontend podswietlil wybor pliku.
+     * Wgrany plik nie przeszedl kontroli (pusty albo nie jest obrazkiem). 422 z bledem przypietym
+     * do pola, zeby frontend podswietlil wybor pliku.
      */
     @ExceptionHandler(InvalidFileException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
@@ -184,17 +155,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.unprocessableEntity().body(errorResponse);
     }
 
-    /**
-     * Wgrany plik przekroczyl limit rozmiaru z application.properties.
-     *
-     * <p>Bez tego uzytkownik dostawalby domyslna odpowiedz Springa, ktora nie
-     * ma naszego formatu bledu - frontend nie umialby jej pokazac przy polu.</p>
-     *
-     * <p><b>Uwaga:</b> to musi byc {@code @Override}, a NIE nowa metoda
-     * z {@code @ExceptionHandler}. Klasa nadrzedna obsluguje juz ten wyjatek,
-     * wiec dolozenie drugiej metody konczy sie bledem przy starcie:
-     * "Ambiguous @ExceptionHandler method mapped for MaxUploadSizeExceededException".</p>
-     */
+    /** Wgrany plik przekroczyl limit rozmiaru z application.properties. */
     @Override
     protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
             MaxUploadSizeExceededException ex,
@@ -222,24 +183,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorResponse odpowiedz = new ErrorResponse(
             HttpStatus.CONFLICT.value(), translate(ex.getMessageKey()));
 
-        /*
-         * Termin konca kary dokladamy jako OSOBNE POLE, a nie wklejamy
-         * w komunikat. Serwer liczy czas w UTC i nie wie, w jakiej strefie
-         * siedzi uzytkownik - wklejona przez niego godzina bywala wiec
-         * cofnieta (zakaz nalozony o 16:55 pokazywal sie jako "do 15:55").
-         * Zegar uzytkownika zna tylko jego przegladarka i to ona sklada
-         * z tej chwili czytelny napis.
-         */
+        /* Termin konca kary dokladamy jako OSOBNE POLE, a nie wklejamy w komunikat. */
         odpowiedz.setDeadline(ex.getDeadline());
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(odpowiedz);
     }
 
-    /**
-     * Siatka bezpieczenstwa na wszystko, czego nie przewidzielismy
-     * (wyklad 3, slajd 72). Bez tego uzytkownik dostalby domyslna strone bledu
-     * Springa ze szczegolami dzialania serwera.
-     */
+    /** Siatka bezpieczenstwa na wszystko, czego nie przewidzielismy (wyklad 3, slajd 72). */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<ErrorResponse> handleAllUncaughtException(
@@ -253,11 +203,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 translate("error.internal")));
     }
 
-    /**
-     * Pobiera tekst z pliku messages dla jezyka biezacego zapytania.
-     * {@link LocaleContextHolder} zwraca jezyk ustalony przez LocaleResolver
-     * (u nas: na podstawie naglowka Accept-Language albo parametru ?lang=).
-     */
+    /** Pobiera tekst z pliku messages dla jezyka biezacego zapytania. */
     private String translate(String key, Object... arguments) {
         return messageSource.getMessage(key, arguments, LocaleContextHolder.getLocale());
     }

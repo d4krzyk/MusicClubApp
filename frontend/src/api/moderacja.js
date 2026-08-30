@@ -1,13 +1,6 @@
 import client from './client';
 
-/**
- * Co aplikacja moze poprosic serwer w sprawie moderacji.
- *
- * <p>Wszystkie te operacje wymagaja roli administratora - serwer sprawdza to
- * sam i nie wierzy przegladarce. Zebranie ich w jednym pliku ma ten skutek
- * uboczny, ze widac tu na jednym ekranie <b>caly</b> zakres wladzy
- * administratora nad kontami.</p>
- */
+/** Co aplikacja moze poprosic serwer w sprawie moderacji. */
 
 /* ---------------------------------------------------------------- */
 /*  Konta                                                            */
@@ -31,12 +24,7 @@ export async function zmienRole(id, rola) {
   await client.patch(`/users/${id}/role`, { role: rola });
 }
 
-/**
- * Nadaje albo zdejmuje zakaz.
- *
- * <p>Jeden adres na oba rodzaje kary - {@code kind} to POSTING albo
- * MESSAGING. Pusta liczba godzin w tresci znaczy "zdejmij".</p>
- */
+/** Nadaje albo zdejmuje zakaz. */
 export async function ustawZakaz(id, rodzaj, kara) {
   await client.patch(`/users/${id}/bans/${rodzaj}`, kara);
 }
@@ -74,9 +62,15 @@ export async function odblokujAdres(id) {
 /*  Zgloszenia                                                       */
 /* ---------------------------------------------------------------- */
 
-/** Zglasza konto. Jedyna operacja z tego pliku dostepna dla kazdego. */
+/** Zglasza konto. Dostepne dla kazdego zalogowanego, tak jak funkcja nizej. */
 export async function zglos(login, zgloszenie) {
   await client.post(`/reports/on/${encodeURIComponent(login)}`, zgloszenie);
+}
+
+/** Wlasne zgloszenia razem z decyzja administratora - kazdy widzi tylko swoje. */
+export async function mojeZgloszenia() {
+  const { data } = await client.get('/reports/mine');
+  return data;
 }
 
 /** Strona listy zgloszen. Pusty status znaczy "wszystkie". */

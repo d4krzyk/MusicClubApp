@@ -11,16 +11,16 @@ import './i18n'; // musi byc zaimportowane PRZED pierwszym uzyciem useTranslatio
 import './styles.css';
 
 /*
- * Motyw (jasny/ciemny) ustawia maly skrypt w index.html - jeszcze zanim
- * przegladarka cokolwiek narysuje. Tutaj celowo go NIE ustawiamy, bo React
- * startuje za pozno i strona zdazylaby mignac w zlych kolorach.
- * Przelaczaniem zajmuje sie potem ThemeContext.
+ * Motyw (jasny/ciemny) ustawia maly skrypt w index.html - jeszcze zanim przegladarka cokolwiek
+ * narysuje.
  */
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    {/* ThemeProvider owija cala aplikacje - motyw dotyczy kazdego ekranu,
-        takze logowania, ktore jest poza routingiem chronionym */}
+    {/*
+      ThemeProvider owija cala aplikacje - motyw dotyczy kazdego ekranu, takze logowania, ktore
+      jest poza routingiem chronionym
+    */}
     <ThemeProvider>
       <App />
     </ThemeProvider>

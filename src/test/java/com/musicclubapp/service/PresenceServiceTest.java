@@ -16,14 +16,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Obecnosc: kto jest "online" i jak czesto to zapisujemy.
- *
- * <p>Dwie rzeczy warte sprawdzenia i obie latwo popsuc niezauwazenie:
- * granica okna "online" (zbyt krotka - ludzie migaja; zbyt dluga - kropka
- * klamie) oraz ograniczenie czestotliwosci zapisow (bez niego kazde
- * odpytanie czatu to zapis do tabeli {@code users}).</p>
- */
+/** Obecnosc: kto jest "online" i jak czesto to zapisujemy. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -37,10 +30,8 @@ class PresenceServiceTest {
     @BeforeEach
     void setUp() {
         /*
-         * Licznik zapisow zyje w beanie wspolnym dla calego kontekstu Springa,
-         * a kazdy test dostaje czysta baze. Bez wyczyszczenia jeden test
-         * "zablokowalby" zapis w drugim, a wynik zalezalby od kolejnosci
-         * ich uruchomienia.
+         * Licznik zapisow zyje w beanie wspolnym dla calego kontekstu Springa, a kazdy test
+         * dostaje czysta baze.
          */
         presence.forgetWriteThrottle();
         userRepository.save(new User("ala", "ala@example.com", "hash"));
@@ -89,14 +80,7 @@ class PresenceServiceTest {
     @Test
     @DisplayName("okno online jest dluzsze niz odstep miedzy zapisami")
     void onlineWindowOutlivesTheWriteInterval() {
-        /*
-         * To nie jest test na liczbe, tylko na ZALEZNOSC miedzy dwiema
-         * liczbami. Gdyby okno bylo krotsze albo rowne odstepowi zapisow,
-         * ktos siedzacy przed ekranem migalby miedzy "online" i "offline"
-         * w rytmie wlasnego licznika - i nikt by nie wiedzial dlaczego.
-         * Ten test pilnuje, zeby zmiana jednej z tych stalych nie przeszla
-         * bez zastanowienia nad druga.
-         */
+        /* To nie jest test na liczbe, tylko na ZALEZNOSC miedzy dwiema liczbami. */
         assertThat(PresenceService.ONLINE_MINUTES * 60)
             .isGreaterThan(PresenceService.WRITE_EVERY_SECONDS * 2);
     }
@@ -119,16 +103,7 @@ class PresenceServiceTest {
     @Test
     @DisplayName("druga aktywnosc TUZ PO pierwszej nie wraca juz do bazy")
     void repeatedTouchDoesNotWriteAgain() {
-        /*
-         * Sedno oszczednosci. Otwarte okno czatu odpytuje serwer co kilka
-         * sekund - bez tego ograniczenia kazde takie odpytanie bylby zapisem
-         * do tabeli users, czyli tej samej, ktora czyta prawie kazde inne
-         * zapytanie w aplikacji.
-         *
-         * Sprawdzamy to tak: po pierwszym zapisie kasujemy date wprost
-         * w bazie. Jesli ograniczenie dziala, drugie wywolanie jej NIE
-         * przywroci - bo w ogole nie pojdzie do bazy.
-         */
+        /* Sedno oszczednosci. */
         presence.touch("ala");
         setLastSeen(null);
 
@@ -140,11 +115,7 @@ class PresenceServiceTest {
     @Test
     @DisplayName("nieznany login nie wywraca zapisu aktywnosci")
     void unknownUsernameIsHarmless() {
-        /*
-         * Konto moze zostac skasowane w chwili, gdy jego wlasciciel ma jeszcze
-         * otwarta karte. Aktywnosc jest notatka na boku - nie moze przerwac
-         * zapytania, ktore i tak zaraz skonczy sie sensownym bledem.
-         */
+        /* Konto moze zostac skasowane w chwili, gdy jego wlasciciel ma jeszcze otwarta karte. */
         presence.touch("nie-ma-takiego");
         presence.touch(null);
         presence.touch("  ");

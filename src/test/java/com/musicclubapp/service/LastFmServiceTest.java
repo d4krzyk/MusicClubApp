@@ -11,15 +11,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Testy czytania odpowiedzi Last.fm.
- *
- * <p>Odpowiedzi sa przepisane z dokumentacji Last.fm i skrocone. Najwiecej
- * uwagi poswiecamy dwóm rzeczom, ktore w tym API potrafia zaskoczyc:
- * <b>bledy przychodza z kodem HTTP 200</b> (a wiec status nic nie mowi)
- * oraz <b>tagi to nie sa gatunki</b> - wsrod najpopularniejszych sa
- * "seen live" i "favorites".</p>
- */
+/** Testy czytania odpowiedzi Last.fm. */
 @DisplayName("Last.fm - czytanie historii sluchania")
 class LastFmServiceTest {
 
@@ -134,8 +126,8 @@ class LastFmServiceTest {
 
         assertThat(genres).containsExactlyInAnyOrder("alternative", "rock", "indie");
         /*
-         * To jest sedno: bez odsiania tych etykiet dopasowanie po gatunkach
-         * laczyloby ludzi na zasadzie "oboje byli na jakims koncercie".
+         * To jest sedno: bez odsiania tych etykiet dopasowanie po gatunkach laczyloby ludzi na
+         * zasadzie "oboje byli na jakims koncercie".
          */
         assertThat(genres).doesNotContain("seen live", "favorites");
         // Tag z popularnoscia 3 to zwykle etykieta wpisana przez jedna osobe
@@ -145,14 +137,7 @@ class LastFmServiceTest {
     @Test
     @DisplayName("nieznany uzytkownik konczy sie WYJATKIEM, a nie pusta lista")
     void unknownLastFmUser() {
-        /*
-         * Ta roznica jest istotna. Literowka w nazwie to pomylka, o ktorej
-         * uzytkownik musi sie dowiedziec - cicho zwrocona pusta lista
-         * wygladalaby jak "nic nie sluchasz".
-         *
-         * Uwaga: Last.fm oddaje ten blad z kodem HTTP 200 i polem "error"
-         * w tresci. Kod patrzacy tylko na status nie zauwazylby niczego.
-         */
+        /* Ta roznica jest istotna. */
         server.odpowiadaj("/2.0/", """
             {"error": 6, "message": "User not found"}
             """);

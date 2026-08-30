@@ -10,21 +10,7 @@ const IDLE_REFRESH_MS = 60_000;
 
 const ChatContext = createContext(null);
 
-/**
- * Stan czatu wspolny dla calej aplikacji.
- *
- * <p><b>Po co osobny kontekst, skoro czat to jeden panel.</b> Bo otwiera go
- * kilka miejsc naraz: ikona w gornym pasku, przycisk "Napisz" na profilu
- * znajomego, a docelowo takze klikniecie w awatar. Bez wspolnego stanu kazde
- * z nich musialoby przekazywac "otworz czat na tej osobie" przez wszystkie
- * komponenty po drodze - a profil i pasek nie maja ze soba nic wspolnego
- * poza tym, ze oba stoja na stronie.</p>
- *
- * <p><b>Licznik nieprzeczytanych tez jest tutaj</b>, a nie w samej ikonie.
- * Zmienia go otwarty watek rozmowy (przeczytanie kasuje kropki), a rysuje
- * ikona w pasku - to dwa rozne komponenty, ktore musza widziec te sama
- * liczbe.</p>
- */
+/** Stan czatu wspolny dla calej aplikacji. */
 export function ChatProvider({ children }) {
   const { user } = useAuth();
 
@@ -41,12 +27,7 @@ export function ChatProvider({ children }) {
     }
   }, []);
 
-  /*
-   * Odpytujemy tylko wtedy, gdy czat jest ZAMKNIETY. Przy otwartym panelu
-   * licznik i tak przychodzi razem z kazda odpowiedzia o nowe wiadomosci
-   * (patrz ConversationSyncResponse) - dodatkowe zapytanie co minute byloby
-   * pytaniem o cos, co wlasnie przyszlo.
-   */
+  /* Odpytujemy tylko wtedy, gdy czat jest ZAMKNIETY. */
   useEffect(() => {
     if (!user) {
       setUnread(0);
@@ -61,12 +42,7 @@ export function ChatProvider({ children }) {
 
   useOdswiezanie(refreshUnread, IDLE_REFRESH_MS, Boolean(user) && !open);
 
-  /**
-   * Otwiera czat - z konkretna osoba albo na liscie rozmow.
-   *
-   * <p>Ponowne klikniecie w ikone przy otwartym panelu go zamyka; to samo
-   * zachowanie ma dzwonek powiadomien obok.</p>
-   */
+  /** Otwiera czat - z konkretna osoba albo na liscie rozmow. */
   const openChat = useCallback((username = null) => {
     setActiveUsername(username);
     setOpen(true);
@@ -90,13 +66,7 @@ export function ChatProvider({ children }) {
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
-/**
- * Dostep do stanu czatu.
- *
- * <p>Rzuca zrozumialym bledem zamiast oddawac {@code undefined} - inaczej
- * uzycie poza dostawca konczy sie komunikatem o odczycie pola z niczego,
- * kilka warstw dalej.</p>
- */
+/** Dostep do stanu czatu. */
 export function useChat() {
   const context = useContext(ChatContext);
   if (!context) {

@@ -26,16 +26,7 @@ const PAGE_SIZE = 25;
 /** Ile pikseli od dolu uznajemy jeszcze za "czyta koniec rozmowy". */
 const STICK_TO_BOTTOM_PX = 80;
 
-/**
- * Jedna rozmowa: historia, pisanie i wysylanie.
- *
- * <p><b>Odpytywanie zamiast polaczenia na zywo.</b> Prawdziwy czat "na zywo"
- * wymaga WebSocketa, a to znaczy druga sciezka uwierzytelniania obok sesji,
- * wlasny stan polaczen na serwerze i obsluga zrywania sieci tutaj. Przy
- * rozmowie dwoch osob roznica miedzy "natychmiast" a "w ciagu trzech sekund"
- * jest niezauwazalna. Odpytywanie chodzi TYLKO przy otwartej rozmowie
- * i pyta o same nowosci - patrz {@code ConversationSyncResponse}.</p>
- */
+/** Jedna rozmowa: historia, pisanie i wysylanie. */
 export default function ChatThread({ username, avatarUrl, friend = true, onPresence, onRead }) {
   const { t, i18n } = useTranslation();
   const { setUnread } = useChat();
@@ -58,12 +49,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 
   const [partnerTyping, setPartnerTyping] = useState(false);
 
-  /*
-   * Czy z ta osoba wolno teraz PISAC. Wartosc poczatkowa przychodzi z listy
-   * rozmow, a odpytywanie ja odswieza - dzieki temu zerwanie znajomosci przy
-   * OTWARTYM oknie zamyka pole do pisania od razu, a nie dopiero przy probie
-   * wyslania.
-   */
+  /* Czy z ta osoba wolno teraz PISAC. */
   const [canWrite, setCanWrite] = useState(friend);
 
   const scroller = useRef(null);
@@ -71,26 +57,13 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   const lastTypingPing = useRef(0);
 
   /*
-   * Funkcje od rodzica trzymamy w UCHWYTACH, a nie bierzemy wprost do listy
-   * zaleznosci efektow.
-   *
-   * Powod jest konkretny i kosztowal jeden prawdziwy blad. Rodzic tworzy je
-   * na nowo przy kazdym rysowaniu, wiec dla Reacta za kazdym razem sa to
-   * INNE funkcje. Efekt wczytujacy historie mial je w zaleznosciach - i przez
-   * to uruchamial sie w kolko, za kazdym razem czyszczac liste wiadomosci.
-   * Objaw: wyslana wiadomosc znikala w tej samej chwili, w ktorej sie
-   * pojawiala. Uchwyt zawsze wskazuje najswiezsza wersje, ale sam sie nie
-   * zmienia - wiec efekt zalezy juz tylko od tego, od czego naprawde zalezy.
+   * Funkcje od rodzica trzymamy w UCHWYTACH, a nie bierzemy wprost do listy zaleznosci efektow.
    */
   const callbacks = useRef({ onPresence, onRead });
   useEffect(() => {
     callbacks.current = { onPresence, onRead };
   }, [onPresence, onRead]);
-  /*
-   * Ostatni znany identyfikator trzymamy TAKZE w ref, a nie tylko w stanie.
-   * Odpytywanie zyje w interwale zalozonym raz - gdyby czytalo stan, widzialoby
-   * na zawsze wartosc z chwili zalozenia (domkniecie nad stara zmienna).
-   */
+  /* Ostatni znany identyfikator trzymamy TAKZE w ref, a nie tylko w stanie. */
   const lastId = useRef(null);
 
   /* ---------------------------------------------------------------- */
@@ -109,9 +82,8 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
         if (cancelled) return;
 
         /*
-         * Serwer oddaje OD NAJNOWSZEJ (czat otwiera sie na koncu rozmowy),
-         * a na ekranie kolejnosc jest odwrotna. Odwracamy tutaj, w jednym
-         * miejscu - dalej caly komponent pracuje juz na kolejnosci ekranu.
+         * Serwer oddaje OD NAJNOWSZEJ (czat otwiera sie na koncu rozmowy), a na ekranie kolejnosc
+         * jest odwrotna.
          */
         const ordered = [...data.content].reverse();
         setMessages(ordered);
@@ -140,12 +112,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
         username, Math.floor(messages.length / PAGE_SIZE), PAGE_SIZE);
 
       const older = [...data.content].reverse();
-      /*
-       * Dokladamy NA POCZATEK i odsiewamy powtorki po identyfikatorze.
-       * Powtorka jest tu realna: jesli w czasie czytania przyszla nowa
-       * wiadomosc, strony przesuwaja sie o jeden i ostatnia pozycja
-       * poprzedniej strony wraca w nastepnej.
-       */
+      /* Dokladamy NA POCZATEK i odsiewamy powtorki po identyfikatorze. */
       setMessages((current) => {
         const known = new Set(current.map((m) => m.id));
         return [...older.filter((m) => !known.has(m.id)), ...current];
@@ -171,15 +138,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
       callbacks.current.onPresence?.(username, data.presence);
       setUnread(data.unread);
 
-      /*
-       * Ptaszek "przeczytane". Przeczytanie NIE tworzy nowej wiadomosci -
-       * zmienia jedna kolumne w starej, ktora dawno zostala wyslana. Same
-       * "nowsze wiadomosci" nigdy by wiec o tym nie powiedzialy i ptaszek
-       * nie pojawialby sie bez odswiezenia calej strony.
-       *
-       * Serwer podaje NAJWYZSZY przeczytany numer, a nie liste - wiadomosci
-       * czyta sie po kolei, wiec wszystko do tego numeru jest przeczytane.
-       */
+      /* Ptaszek "przeczytane". */
       const readUpTo = data.lastReadOutgoingId;
       if (readUpTo != null) {
         setMessages((current) => (
@@ -203,11 +162,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 
       lastId.current = data.messages[data.messages.length - 1].id;
     } catch {
-      /*
-       * Cisza. Odpytywanie chodzi co trzy sekundy - jedna nieudana proba
-       * (uspiony laptop, chwilowa utrata sieci) nie moze zasypac panelu
-       * komunikatami o bledzie. Nastepna proba za chwile.
-       */
+      /* Cisza. */
     }
   }, [username, setUnread]);
 
@@ -222,10 +177,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   /* ---------------------------------------------------------------- */
 
   /*
-   * Zjezdzamy na dol po nowych wiadomosciach - ale TYLKO wtedy, gdy
-   * uzytkownik juz jest na dole. Bez tego warunku odczytywanie starszej
-   * czesci rozmowy bylo by przerywane skokiem w dol za kazdym razem,
-   * gdy druga strona cos napisze.
+   * Zjezdzamy na dol po nowych wiadomosciach - ale TYLKO wtedy, gdy uzytkownik juz jest na dole.
    */
   useEffect(() => {
     const box = scroller.current;
@@ -250,11 +202,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   function handleTyping(value) {
     setText(value);
 
-    /*
-     * Sygnal "pisze" wysylamy najwyzej raz na dwie sekundy. Bez tego kazde
-     * uderzenie w klawisz bylo by osobnym zapytaniem do serwera - przy
-     * normalnym tempie pisania kilkanascie na sekunde.
-     */
+    /* Sygnal "pisze" wysylamy najwyzej raz na dwie sekundy. */
     const now = Date.now();
     if (value && now - lastTypingPing.current > TYPING_PING_MS) {
       lastTypingPing.current = now;
@@ -283,12 +231,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
         musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
       });
 
-      /*
-       * Dopisujemy odpowiedz serwera, a nie to, co wpisal uzytkownik.
-       * Tylko serwer zna identyfikator, dokladny czas i rozpoznane dane
-       * nagrania - a bez identyfikatora odpytywanie przyslaloby te sama
-       * wiadomosc jeszcze raz, jako "nowa".
-       */
+      /* Dopisujemy odpowiedz serwera, a nie to, co wpisal uzytkownik. */
       setMessages((current) => [...current, data]);
       lastId.current = data.id;
 
@@ -310,13 +253,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     }
   }
 
-  /**
-   * Enter wysyla, Shift+Enter przechodzi do nowej linii.
-   *
-   * <p>To jest zachowanie, ktorego ludzie oczekuja po kazdym komunikatorze.
-   * Zwykle pole tekstowe wstawialoby tu nowa linie, a wiadomosc czekalaby
-   * na klikniecie w przycisk.</p>
-   */
+  /** Enter wysyla, Shift+Enter przechodzi do nowej linii. */
   function onKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
       send(event);
@@ -356,11 +293,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
             key={message.id}
             className={`bubble-row${message.mine ? ' is-mine' : ''}`}
           >
-            {/*
-              Awatar tylko przy PIERWSZEJ wiadomosci z serii tej samej osoby.
-              Powtarzanie go przy kazdym zdaniu robi z rozmowy kolumne
-              zdjec, w ktorej trudno znalezc tresc.
-            */}
+            {/* Awatar tylko przy PIERWSZEJ wiadomosci z serii tej samej osoby. */}
             {!message.mine && (
               <span className="bubble-avatar">
                 {startsRun(messages, index) && (
@@ -385,10 +318,8 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
         {partnerTyping && (
           <div className="bubble-row">
             {/*
-              Awatar przy dymku "pisze" jest ZAWSZE, a nie tylko przy pierwszej
-              wiadomosci z serii. Ten dymek nie należy do żadnej serii - stoi
-              pod koniec rozmowy jako osobne zdarzenie i bez zdjęcia wyglądał
-              jak trzy kropki, które wzięły się znikąd.
+              Awatar przy dymku "pisze" jest ZAWSZE, a nie tylko przy pierwszej wiadomosci z
+              serii.
             */}
             <span className="bubble-avatar">
               <Avatar avatarUrl={avatarUrl} username={username} size={26} />
@@ -402,15 +333,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
         )}
       </div>
 
-      {/*
-        Po zerwaniu znajomosci rozmowa ZOSTAJE do przeczytania, ale pole do
-        pisania znika. Wczesniej cala rozmowa po prostu przepadala z listy,
-        co dla obu stron wygladalo jak awaria - nie bylo wiadomo, czy ktos
-        usunal konto, zerwal znajomosc, czy cos sie zepsulo.
-
-        Komunikat widza OBIE strony i mowi wprost, jaki jest warunek -
-        samo wygaszone pole kazaloby sie domyslac, dlaczego nie dziala.
-      */}
+      {/* Po zerwaniu znajomosci rozmowa ZOSTAJE do przeczytania, ale pole do pisania znika. */}
       {!canWrite ? (
         <div className="chat-composer chat-closed">
           <p className="mb-0 small text-body-secondary">{t('chat.friendsOnly')}</p>
@@ -474,12 +397,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   );
 }
 
-/**
- * Czy ta wiadomosc zaczyna nowa serie od tej samej osoby.
- *
- * <p>Po tym poznajemy, gdzie postawic awatar. Pierwsza wiadomosc w rozmowie
- * zawsze zaczyna serie.</p>
- */
+/** Czy ta wiadomosc zaczyna nowa serie od tej samej osoby. */
 function startsRun(messages, index) {
   return index === 0 || messages[index - 1].mine !== messages[index].mine;
 }

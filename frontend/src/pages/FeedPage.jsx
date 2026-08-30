@@ -28,24 +28,7 @@ const PAGE_SIZE = 10;
 /** Limit zdjec w jednym poscie - taki sam jak po stronie backendu. */
 const MAX_IMAGES = 10;
 
-/**
- * Tablica: przycisk dodawania posta i lista wpisow.
- *
- * <p><b>Kolejnosc ustala serwer</b>: najpierw posty znajomych (i wlasne),
- * pod nimi publiczne posty pozostalych osob. Nie da sie tego zrobic po
- * stronie przegladarki - przesiewanie po pobraniu psuloby stronicowanie,
- * bo kazda strona zawieralaby wtedy inny zestaw wpisow.</p>
- *
- * <p>Przelacznik nad tablica pozwala zawezic ja do samych znajomych.
- * <b>Domyslnie jest szeroka</b>, bo konto zalozone przed chwila nie ma
- * jeszcze ani jednego znajomego - a aplikacja, ktora wita takiego
- * uzytkownika pusta strona, jest bezuzyteczna dokladnie wtedy, kiedy
- * najbardziej potrzebuje go przekonac.</p>
- *
- * <p>Posty doladowujemy przyciskiem "pokaz starsze" zamiast klasycznego
- * stronicowania z numerami - na tablicy naturalniej jest doklejac kolejne
- * wpisy pod spodem. Backend i tak stronicuje normalnie (wymagania nr 3 i 5).</p>
- */
+/** Tablica: przycisk dodawania posta i lista wpisow. */
 export default function FeedPage() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -84,25 +67,14 @@ export default function FeedPage() {
     fetch(0, false, scope);
   }, [fetch, scope]);
 
-  /*
-   * Klikniecie w logo albo w ikone tablicy - takze wtedy, gdy juz tu
-   * jestesmy. Layout zostawia w stanie trasy znacznik czasu; jego zmiana
-   * jest jedynym sygnalem, bo adres pozostaje ten sam.
-   *
-   * Pobieramy PIERWSZA strone od nowa, a nie doklejamy: kto wraca na gore,
-   * ten chce zobaczyc, co doszlo, a nie te same wpisy w dwoch kopiach.
-   */
+  /* Klikniecie w logo albo w ikone tablicy - takze wtedy, gdy juz tu jestesmy. */
   useEffect(() => {
     if (location.state?.refreshAt) {
       fetch(0, false, scope);
     }
   }, [location.state?.refreshAt, fetch, scope]);
 
-  /*
-   * Odswiezanie licznikow reakcji po powrocie do karty. Wywolanie MUSI byc
-   * stabilne (useCallback bez zaleznosci), inaczej zegar w srodku
-   * przestawialby sie przy kazdym renderze - czyli po kazdym kliknieciu.
-   */
+  /* Odswiezanie licznikow reakcji po powrocie do karty. */
   const applyCounts = useCallback((counts) => {
     setPosts((previous) => previous.map((post) =>
       (counts[post.id] ? { ...post, reactions: counts[post.id] } : post)));
@@ -133,10 +105,8 @@ export default function FeedPage() {
   }
 
   /*
-   * Reakcja tez zwraca odswiezonego posta (ze swiezymi licznikami), ale
-   * NIE jest zmiana tresci - wiec zadnego komunikatu. Wczesniej obie rzeczy
-   * szly tym samym wywolaniem i klikniecie emotki pod cudzym postem
-   * oglaszalo "Post zostal zaktualizowany".
+   * Reakcja tez zwraca odswiezonego posta (ze swiezymi licznikami), ale NIE jest zmiana tresci -
+   * wiec zadnego komunikatu.
    */
   function afterReaction(updated) {
     replacePost(updated);
@@ -161,15 +131,7 @@ export default function FeedPage() {
     }
   }
 
-  /*
-   * Gdzie konczy sie krag, a zaczyna reszta swiata. Liczymy to z pola
-   * fromFriend wyliczonego przez SERWER - przegladarka nie zna listy naszych
-   * znajomych i nie ma z czego tego odtworzyc.
-   *
-   * Kreske rysujemy tylko wtedy, gdy NAD nia cos jest: u kogos bez znajomych
-   * napis "dalej: osoby, ktorych jeszcze nie znasz" na samej gorze tablicy
-   * brzmialby jak wyrzut.
-   */
+  /* Gdzie konczy sie krag, a zaczyna reszta swiata. */
   const strangersStartAt = posts.findIndex((post) => !post.fromFriend);
   const showDivider = scope === 'ALL' && strangersStartAt > 0;
 
@@ -325,19 +287,10 @@ function PostForm({ onAdded }) {
     setMusicKind('TRACK');
     setStartAt('');
     setFiles([]);
-    /*
-     * Widocznosci NIE resetujemy. Kto raz wybral "tylko dla znajomych",
-     * najpewniej chce tak pisac dalej - a ciche przestawienie z powrotem
-     * na publiczny przy drugim poscie byloby ujawnieniem tresci wbrew
-     * decyzji, ktora ta osoba przed chwila podjela.
-     */
+    /* Widocznosci NIE resetujemy. */
   }
 
-  /*
-   * Zly link BLOKUJE wysylke. Wczesniej taki adres byl po cichu polykany:
-   * post powstawal bez odtwarzacza i bez slowa wyjasnienia, co dla
-   * uzytkownika wygladalo jak zepsuta aplikacja.
-   */
+  /* Zly link BLOKUJE wysylke. */
   const blokada = linkError(musicUrl, musicKind);
 
   async function submit(e) {

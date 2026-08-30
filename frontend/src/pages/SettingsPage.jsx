@@ -12,18 +12,7 @@ import { usunAwatar, ustawAwatar } from '../api/konto';
 import Field from '../components/Field';
 import Avatar from '../components/Avatar';
 
-/**
- * Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla.
- *
- * <p>Trzy OSOBNE formularze, a nie jeden wielki. Powody:</p>
- * <ul>
- *   <li>zmiana hasla wymaga podania obecnego hasla, a zmiana e-maila nie -
- *       w jednym formularzu trzeba by pytac o haslo takze przy poprawianiu
- *       literowki w adresie,</li>
- *   <li>bledy i komunikaty o sukcesie dotycza wtedy tej czesci, ktorej
- *       naprawde dotycza.</li>
- * </ul>
- */
+/** Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla. */
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -36,11 +25,7 @@ export default function SettingsPage() {
 
         <AvatarForm />
 
-        {/*
-          key = login. Gdy login sie zmieni, React tworzy formularz od nowa,
-          wiec pola startuja z nowymi wartosciami. Bez tego stan formularza
-          zostalby przy starych danych, mimo ze konto ma juz inna nazwe.
-        */}
+        {/* key = login. */}
         <ProfileForm key={user.username} />
         <PasswordForm />
       </Col>

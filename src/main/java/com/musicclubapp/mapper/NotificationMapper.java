@@ -9,12 +9,7 @@ import org.springframework.stereotype.Component;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Encja powiadomienia -&gt; DTO, razem z adresem, pod ktory ma prowadzic.
- *
- * <p><b>Adres wylicza serwer</b> - patrz uzasadnienie przy polu
- * {@code link} w {@link NotificationResponse}.</p>
- */
+/** Encja powiadomienia -&gt; DTO, razem z adresem, pod ktory ma prowadzic. */
 @Component
 public class NotificationMapper {
 
@@ -43,16 +38,7 @@ public class NotificationMapper {
             : PostMapper.UPLOADS_PATH + user.getAvatarFileName();
     }
 
-    /**
-     * Dokad prowadzi klikniecie.
-     *
-     * <p>Reakcja prowadzi do <b>konkretnego posta</b>, a nie na tablice:
-     * post moze byc setny od gory, a odeslanie na tablice znaczyloby
-     * "poszukaj sobie". Przyjete zaproszenie prowadzi na profil tej osoby,
-     * bo skoro wlasnie zostalismy znajomymi, to jego najpewniej chcemy
-     * zobaczyc. Nowe zaproszenie - na strone znajomych, gdzie sie je
-     * przyjmuje.</p>
-     */
+    /** Dokad prowadzi klikniecie. */
     private String link(Notification notification) {
         return switch (notification.getType()) {
             case REACTION -> notification.getPost() != null
@@ -64,16 +50,12 @@ public class NotificationMapper {
             // Zgloszenie prowadzi do panelu, a nie na profil zglaszajacego -
             // administrator ma tam podjac decyzje, a nie ogladac czyjs profil
             case REPORT -> "/zgloszenia";
+            // Zglaszajacy trafia na wlasna liste zgloszen, a nie do panelu admina
+            case REPORT_RESOLVED -> "/moje-zgloszenia";
         };
     }
 
-    /**
-     * Poczatek tresci posta.
-     *
-     * <p>Bez tego wszystkie powiadomienia o reakcjach wygladalyby tak samo
-     * i nie dalo by sie poznac, ktorego posta dotycza, bez wchodzenia
-     * w kazde po kolei.</p>
-     */
+    /** Poczatek tresci posta. */
     private String excerpt(Post post) {
         if (post == null || post.getContent() == null) {
             return null;

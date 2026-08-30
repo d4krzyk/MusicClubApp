@@ -21,7 +21,7 @@
    wygladac jak plynne wejscie, a zaczyna jak zacinanie sie.
 */
 .tiles-in > * {
-  animation: fade-in-up .34s var(--mc-ease) both;
+  animation: fade-in-up .34s var(--mc-ease) backwards;
 }
 
 .tiles-in > *:nth-child(1) { animation-delay: 0ms; }
@@ -37,7 +37,7 @@
    jest wiecej i stoja gesto obok siebie.
 */
 .tiles-in-form > * {
-  animation: fade-in-up .3s var(--mc-ease) both;
+  animation: fade-in-up .3s var(--mc-ease) backwards;
 }
 
 .tiles-in-form > *:nth-child(1) { animation-delay: 0ms; }

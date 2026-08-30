@@ -15,16 +15,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy walidacji linku muzycznego.
- *
- * <p>To najwazniejsza zmiana tej rundy: <b>zly link ma ZATRZYMAC wysylke</b>,
- * a nie zostac po cichu polkniety. Kazdy test sprawdza takze, DO KTOREGO POLA
- * trafil komunikat - bez tego frontend nie wiedzialby, co podswietlic.</p>
- *
- * <p>Walidator uruchamiamy tu bezposrednio, bez podnoszenia calego Springa -
- * to zwykly test jednostkowy.</p>
- */
+/** Testy walidacji linku muzycznego. */
 @DisplayName("ValidMusicLink - blokada zlych linkow")
 class ValidMusicLinkValidatorTest {
 
@@ -86,8 +77,8 @@ class ValidMusicLinkValidatorTest {
     @DisplayName("moment startu przy ALBUMIE jest odrzucany")
     void startSecondsOnAlbum() {
         /*
-         * Formularz chowa to pole przy albumie, ale serwer nie moze na tym
-         * polegac - zapytanie da sie wyslac z pominieciem przegladarki.
+         * Formularz chowa to pole przy albumie, ale serwer nie moze na tym polegac - zapytanie da
+         * sie wyslac z pominieciem przegladarki.
          */
         assertThat(bledneP0la(
             new CreatePostRequest("tresc", ALBUM, MusicKind.ALBUM, 70, null)))
@@ -141,11 +132,7 @@ class ValidMusicLinkValidatorTest {
     @Test
     @DisplayName("zwykly YouTube dostaje WLASNY komunikat, a nie ogolne 'nieznany serwis'")
     void plainYouTubeHasItsOwnMessage() {
-        /*
-         * Sama blokada to za malo. Komunikat "to nie jest link do zadnego
-         * znanego serwisu" przy adresie z YouTube'a wyglada jak blad aplikacji -
-         * przeciez YouTube kazdy zna. Uzytkownik ma sie dowiedziec, CO zrobic.
-         */
+        /* Sama blokada to za malo. */
         Set<ConstraintViolation<CreatePostRequest>> naruszenia = validator.validate(
             new CreatePostRequest(
                 "tresc", "https://youtu.be/dQw4w9WgXcQ", MusicKind.TRACK, null, null));
@@ -154,12 +141,7 @@ class ValidMusicLinkValidatorTest {
         ConstraintViolation<CreatePostRequest> error = naruszenia.iterator().next();
 
         assertThat(error.getPropertyPath()).hasToString("musicUrl");
-        /*
-         * Poza Springiem walidator nie ma skad wziac tlumaczen, wiec oddaje
-         * sam KLUCZ. To nam wystarczy - sprawdzamy, ze wybrany zostal klucz
-         * o YouTube Music, a nie ogolny "invalid". Same teksty siedza
-         * w messages.properties i messages_pl.properties.
-         */
+        /* Poza Springiem walidator nie ma skad wziac tlumaczen, wiec oddaje sam KLUCZ. */
         assertThat(error.getMessage()).isEqualTo("{validation.music.url.youtubeNotMusic}");
     }
 

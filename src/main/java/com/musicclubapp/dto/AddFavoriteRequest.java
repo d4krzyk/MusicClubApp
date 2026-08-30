@@ -4,15 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-/**
- * Dodanie pozycji do ulubionych.
- *
- * <p><b>Jedno pole i to nie przypadek.</b> Nazwa, zdjecie i wykonawca NIE sa
- * tu przyjmowane - serwer pobiera je sam z Deezera na podstawie
- * identyfikatora. Gdyby przychodzily z zapytania, kazdy moglby wyslac
- * {@code {"externalId":"1","name":"Zespol Ktorego Nie Ma"}} z pominieciem
- * przegladarki i cala zasada "tylko z katalogu" bylaby ozdoba.</p>
- */
+/** Dodanie pozycji do ulubionych. */
 @Schema(description = "Identyfikator pozycji z katalogu Deezera")
 public record AddFavoriteRequest(
 

@@ -16,14 +16,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Testy repozytorium - wymaganie nr 14 z listy.
- *
- * <p>{@code @DataJpaTest} podnosi TYLKO warstwe JPA (encje, repozytoria, baze
- * w pamieci) - bez kontrolerow i bez Spring Security. Dzieki temu test jest
- * szybki i sprawdza dokladnie jedna rzecz: czy zapytania do bazy dzialaja.</p>
- *
- * <p>Kazda metoda testowa dziala we wlasnej transakcji, ktora na koniec jest
- * wycofywana (rollback) - testy nie zostawiaja po sobie danych.</p>
+ * Testy repozytorium - wymaganie nr 14 z listy. @DataJpaTest podnosi TYLKO warstwe JPA (encje,
+ * repozytoria, baze w pamieci) - bez kontrolerow i bez Spring Security.
  */
 @DataJpaTest
 @ActiveProfiles("test")

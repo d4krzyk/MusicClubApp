@@ -17,23 +17,7 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-/**
- * Reakcja jednego uzytkownika na jeden post.
- *
- * <p>Kolejna para {@code OneToMany}/{@code ManyToOne} w projekcie
- * (wymaganie nr 6): reakcja wskazuje na post ORAZ na autora reakcji,
- * a {@link Post} trzyma ich liste.</p>
- *
- * <p><b>Jeden uzytkownik = jedna reakcja na dany post.</b> Pilnuje tego
- * ograniczenie {@code UNIQUE} na parze kolumn, a nie tylko kod serwisu.
- * Warunek w Javie da sie obejsc dwoma zapytaniami wyslanymi w tej samej
- * chwili (oba sprawdza "czy juz jest?", oba dostana odpowiedz "nie ma"
- * i oba zapisza) - baza odrzuci taki duplikat niezaleznie od tego,
- * co robi aplikacja.</p>
- *
- * <p>Zmiana zdania (ogien zamiast "meh") NIE tworzy drugiego wiersza,
- * tylko podmienia {@code type} w istniejacym - patrz {@code ReactionService}.</p>
- */
+/** Reakcja jednego uzytkownika na jeden post. */
 @Entity
 @Table(
     name = "reactions",
@@ -55,14 +39,7 @@ public class Reaction {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /**
-     * {@code EnumType.STRING} zapisuje w bazie napis "FIRE", a nie liczbe.
-     *
-     * <p>Przy domyslnym {@code ORDINAL} baza trzyma pozycje na liscie (0, 1, 2).
-     * Wystarczy wtedy dopisac nowa wartosc W SRODKU enuma, zeby wszystkie
-     * dotychczasowe reakcje zmienily znaczenie - i nikt tego nie zauwazy,
-     * bo zadne zapytanie sie nie wywali.</p>
-     */
+    /** EnumType.STRING zapisuje w bazie napis "FIRE", a nie liczbe. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private ReactionType type;

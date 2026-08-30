@@ -11,35 +11,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-/**
- * Odnotowuje aktywnosc zalogowanego uzytkownika przy kazdym zapytaniu do API.
- *
- * <p><b>Dlaczego przechwytywacz (interceptor), a nie filtr.</b> Filtr dziala
- * na kazdym zapytaniu, jakie trafia do serwera - takze na pobieraniu zdjec
- * spod {@code /uploads}. Te pobiera przegladarka sama, wstawiajac obrazki
- * w tablice, i jest ich kilkadziesiat na jedno wejscie na strone. To nie jest
- * aktywnosc czlowieka, tylko doladowywanie obrazkow. Przechwytywacz MVC
- * wpina sie dopiero przy zapytaniach obslugiwanych przez kontrolery, i o to
- * wlasnie chodzi.</p>
- *
- * <p><b>Dlaczego {@link ObjectProvider}, a nie zwykle wstrzykniecie.</b>
- * Ta klasa implementuje {@link WebMvcConfigurer}, a testy pisane
- * z {@code @WebMvcTest} wciagaja automatycznie wszystkie takie klasy - ta sama
- * pulapka, ktora opisuje {@code UploadsWebConfig}. Gdyby wymagala tu gotowego
- * {@code PresenceService}, kazdy test kontrolera musialby go podstawiac,
- * inaczej caly kontekst nie wstaje. {@code ObjectProvider} siega po bean
- * dopiero w chwili uzycia, a gdy go nie ma - przechwytywacz po prostu nic
- * nie robi.</p>
- */
+/** Odnotowuje aktywnosc zalogowanego uzytkownika przy kazdym zapytaniu do API. */
 @Configuration
 public class PresenceWebConfig implements WebMvcConfigurer {
 
-    /**
-     * Naglowek z nazwa konta, ktore serwer widzi jako zalogowane.
-     *
-     * <p>Musi byc wymieniony w {@code setExposedHeaders} w konfiguracji CORS,
-     * inaczej przegladarka go ukryje przed JavaScriptem - bez sladu w konsoli.</p>
-     */
+    /** Naglowek z nazwa konta, ktore serwer widzi jako zalogowane. */
     public static final String CURRENT_USER_HEADER = "X-Current-User";
 
     private final ObjectProvider<PresenceService> presence;
@@ -54,14 +30,7 @@ public class PresenceWebConfig implements WebMvcConfigurer {
             .addPathPatterns("/api/**");
     }
 
-    /**
-     * Zapisuje "byl tu przed chwila" i przepuszcza zapytanie dalej.
-     *
-     * <p>Dziala w {@code preHandle}, czyli PRZED wlasciwa obsluga. Gdyby
-     * dzialal po niej, kazdy blad w kontrolerze gubilby przy okazji informacje
-     * o aktywnosci - a to, ze ktos wywolal cos, co sie nie udalo, i tak znaczy,
-     * ze byl obecny.</p>
-     */
+    /** Zapisuje "byl tu przed chwila" i przepuszcza zapytanie dalej. */
     private record PresenceInterceptor(ObjectProvider<PresenceService> presence)
         implements HandlerInterceptor {
 
@@ -73,10 +42,8 @@ public class PresenceWebConfig implements WebMvcConfigurer {
                 SecurityContextHolder.getContext().getAuthentication();
 
             /*
-             * isAuthenticated() nie wystarczy: niezalogowany uzytkownik ma
-             * w kontekscie token anonimowy, ktory tez odpowiada "tak", a jego
-             * nazwa to "anonymousUser". Bez tego sprawdzenia probowalibysmy
-             * zapisywac aktywnosc konta, ktore nie istnieje.
+             * isAuthenticated() nie wystarczy: niezalogowany uzytkownik ma w kontekscie token
+             * anonimowy, ktory tez odpowiada "tak", a jego nazwa to "anonymousUser".
              */
             if (authentication != null
                 && authentication.isAuthenticated()
@@ -87,24 +54,7 @@ public class PresenceWebConfig implements WebMvcConfigurer {
                     service.touch(authentication.getName());
                 }
 
-                /*
-                 * Kto JEST teraz zalogowany - wedlug serwera.
-                 *
-                 * Sluzy do wykrycia sytuacji, ktora na jednym komputerze
-                 * zdarza sie bardzo latwo: w drugiej karcie ktos loguje sie
-                 * na inne konto. Ciasteczko sesji jest wspolne dla calej
-                 * przegladarki, wiec od tej chwili STARA karta - nadal
-                 * wygladajaca jak konto A - wysyla zapytania jako konto B
-                 * i dostaje jego dane. Objawia sie to tym, ze "na starym
-                 * uzytkowniku widac znajomych nowego".
-                 *
-                 * Serwer nie ma jak temu zapobiec (jedna przegladarka to
-                 * jedno ciasteczko, czyli jedna tozsamosc), ale moze o tym
-                 * UPRZEDZIC. Dopisujemy wiec do kazdej odpowiedzi nazwe
-                 * zalogowanego konta, a przegladarka porownuje ja z tym,
-                 * kogo sama u siebie wyswietla - szczegoly w kliencie HTTP
-                 * po stronie Reacta.
-                 */
+                /* Kto JEST teraz zalogowany - wedlug serwera. */
                 response.setHeader(CURRENT_USER_HEADER, authentication.getName());
             }
 

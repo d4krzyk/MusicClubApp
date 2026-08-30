@@ -36,21 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Przegladanie uzytkownikow - stronicowanie i sortowanie po stronie backendu.
- *
- * <p>Realizuje wymagania nr 3 (stronicowanie + wybor liczby elementow),
- * nr 5 (sortowanie) i nr 22 ({@link ResponseEntity}).</p>
- *
- * <p>Parametry przyjmujemy przez {@code @RequestParam} z wartosciami
- * domyslnymi - dokladnie jak mowi wyklad 3, slajd 42: "Zazwyczaj robi sie to
- * poprzez {@code @RequestParam} z ustawieniem domyslnych wartosci".
- * Obiekty {@link Sort} i {@link Pageable} skladamy recznie (slajdy 38 i 43),
- * zeby bylo widac, skad sie biora.</p>
- *
- * <p>Przyklad zapytania:</p>
- * <pre>GET /api/users?fragment=an&amp;page=0&amp;size=10&amp;sortBy=createdAt&amp;direction=desc</pre>
- */
+/** Przegladanie uzytkownikow - stronicowanie i sortowanie po stronie backendu. */
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Uzytkownicy", description = "Przegladanie i wyszukiwanie uzytkownikow")
@@ -107,12 +93,7 @@ public class UserController {
         return ResponseEntity.ok(userService.search(fragment, pageable));
     }
 
-    /**
-     * Pojedynczy uzytkownik po ID.
-     *
-     * <p>Gdy takiego nie ma, serwis rzuca {@code NoSuchElementFoundException},
-     * a {@code GlobalExceptionHandler} zamienia to na 404 - wymaganie nr 11.</p>
-     */
+    /** Pojedynczy uzytkownik po ID. */
     @GetMapping("/{id}")
     @Operation(summary = "Zwraca uzytkownika o podanym ID")
     @ApiResponses({
@@ -123,16 +104,7 @@ public class UserController {
         return ResponseEntity.ok(userService.getByIdForAdmin(id));
     }
 
-    /**
-     * Zmiana roli innego uzytkownika.
-     *
-     * <p>Uzywamy PATCH, a nie PUT - zmieniamy JEDNO pole, a nie podmieniamy
-     * calego zasobu (wyklad 4, slajd 5 o metodach HTTP).</p>
-     *
-     * <p>Login administratora bierzemy z sesji ({@code authentication}),
-     * nigdy z tresci zapytania - inaczej dalo by sie obejsc blokade zmiany
-     * wlasnej roli, podajac w JSON-ie cudzy login.</p>
-     */
+    /** Zmiana roli innego uzytkownika. */
     @PatchMapping("/{id}/role")
     @Operation(summary = "Zmienia role uzytkownika (tylko administrator)")
     @ApiResponses({
@@ -150,22 +122,7 @@ public class UserController {
             userService.changeRole(authentication.getName(), id, payload));
     }
 
-    /**
-     * Naklada albo zdejmuje kare - <b>jeden adres na oba rodzaje</b>.
-     *
-     * <p>Kara dotyczy publikowania albo pisania wiadomosci. Czytanie, reakcje
-     * i usuwanie wlasnych tresci zostaja dozwolone - kara ma powstrzymac
-     * przed konkretna czynnoscia, a nie odciac od portalu. Od odciecia jest
-     * usuniecie konta ({@link #delete}).</p>
-     *
-     * <p>Rodzaj kary jest czescia adresu ({@code .../bans/POSTING}), a nie
-     * pola w tresci. Adres mowi wtedy wprost, co zmieniamy, a nie da sie
-     * przyslac zapytania, w ktorym adres i tresc mowia co innego.</p>
-     *
-     * <p>Wczesniej byly tu dwa endpointy z dwoma rekordami zapytania i dwiema
-     * metodami serwisu, ktore po znormalizowaniu nazw okazaly sie identyczne
-     * co do znaku. Rodzaj kary jest wartoscia, a nie osobna sciezka w kodzie.</p>
-     */
+    /** Naklada albo zdejmuje kare - jeden adres na oba rodzaje. */
     @PatchMapping("/{id}/bans/{kind}")
     @Operation(summary = "Naklada albo zdejmuje kare na koncie (tylko administrator)")
     @ApiResponses({
@@ -185,12 +142,7 @@ public class UserController {
             moderationService.setBan(authentication.getName(), id, kind, payload));
     }
 
-    /**
-     * Usuwa konto razem z jego postami, reakcjami, znajomosciami i plikami.
-     *
-     * <p>Odpowiadamy kodem 204 (no content), a nie 200 z trescia - po
-     * usunieciu nie ma juz czego zwrocic (wyklad 4, slajd 32).</p>
-     */
+    /** Usuwa konto razem z jego postami, reakcjami, znajomosciami i plikami. */
     @DeleteMapping("/{id}")
     @Operation(summary = "Usuwa konto uzytkownika (tylko administrator)")
     @ApiResponses({
@@ -204,15 +156,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    /**
-     * Konta logujace sie z tych samych adresow co wskazane - <b>poszlaka
-     * multikonta</b>.
-     *
-     * <p>Odpowiedz zawiera adres, liczbe logowan i date ostatniego. To nie
-     * jest dowod: pod jednym adresem siedzi cala rodzina, akademik albo
-     * tysiace klientow operatora komorkowego. Dlatego aplikacja nikogo tu
-     * nie blokuje sama - pokazuje dane i zostawia decyzje czlowiekowi.</p>
-     */
+    /** Konta logujace sie z tych samych adresow co wskazane - poszlaka multikonta. */
     @GetMapping("/{id}/related")
     @Operation(summary = "Konta z tego samego adresu sieciowego (tylko administrator)")
     public ResponseEntity<List<RelatedAccountResponse>> related(@PathVariable Long id) {
@@ -240,14 +184,7 @@ public class UserController {
             .toList());
     }
 
-    /**
-     * Blokuje adres sieciowy.
-     *
-     * <p>Blokada dziala przy <b>rejestracji i logowaniu</b>, a nie na calym
-     * ruchu - dlaczego, opisuje encja {@code BlockedIp}. Adresu, z ktorego
-     * administrator wlasnie korzysta, zablokowac sie nie da: przy testowaniu
-     * na jednym komputerze odcialby sam siebie.</p>
-     */
+    /** Blokuje adres sieciowy. */
     @PostMapping("/blocked-ips")
     @Operation(summary = "Blokuje adres sieciowy (tylko administrator)")
     @ApiResponses({

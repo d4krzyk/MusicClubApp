@@ -22,19 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Usuwanie konta <b>na prawdziwej bazie</b>.
- *
- * <p><b>Po co, skoro jest juz {@code UserModerationServiceTest}?</b> Tamten
- * pracuje na atrapach i sprawdza, ze serwis <i>wola</i> odpowiednie metody.
- * Nie ma jednak zadnej mozliwosci zauwazyc, ze wywolanie o jedna tabele za
- * malo konczy sie odmowa bazy z powodu klucza obcego - bo atrapa zgodzi sie
- * na wszystko.</p>
- *
- * <p>Najwazniejszy jest tu {@link #friendshipIsRemovedOnBothSides()}: wiersz
- * znajomosci powstaje w obie strony, a przy kasowaniu konta Hibernate sam
- * sprzata tylko jedna z nich.</p>
- */
+/** Usuwanie konta na prawdziwej bazie. */
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
@@ -79,12 +67,7 @@ class UserDeletionTest {
     @Test
     @DisplayName("wiadomosci z czatu znikaja w OBIE strony")
     void chatMessagesGoBothWays() {
-        /*
-         * Wiadomosc wskazuje na konto DWOMA kluczami obcymi - jako nadawca
-         * i jako odbiorca. Skasowanie tylko jednej strony konczy sie odmowa
-         * bazy, a pominiecie obu - odmowa przy kasowaniu samego konta.
-         * Dlatego sprawdzamy tu obie polowy rozmowy naraz.
-         */
+        /* Wiadomosc wskazuje na konto DWOMA kluczami obcymi - jako nadawca i jako odbiorca. */
         troll.addFriend(ala);
         userRepository.save(troll);
         userRepository.save(ala);
@@ -118,10 +101,7 @@ class UserDeletionTest {
         entityManager.flush();
         entityManager.clear();
 
-        /*
-         * Post ma zostac. Usuwamy konto, a nie cudze tresci - inaczej
-         * skasowanie jednego trolla zabieraloby fragmenty cudzych rozmow.
-         */
+        /* Post ma zostac. */
         assertThat(postRepository.findById(postAli.getId())).isPresent();
         assertThat(reactionRepository.find(postAli.getId(), "troll")).isEmpty();
     }
@@ -141,9 +121,8 @@ class UserDeletionTest {
         entityManager.clear();
 
         /*
-         * Gdyby zostala druga polowa wiersza, Ala nadal "mialaby znajomego",
-         * ktorego konto juz nie istnieje - a kazde wyswietlenie jej listy
-         * konczyloby sie bledem.
+         * Gdyby zostala druga polowa wiersza, Ala nadal "mialaby znajomego", ktorego konto juz nie
+         * istnieje - a kazde wyswietlenie jej listy konczyloby sie bledem.
          */
         assertThat(userRepository.countFriends("ala")).isZero();
     }
@@ -152,13 +131,8 @@ class UserDeletionTest {
     @DisplayName("gablotka playlist znika razem z kontem")
     void playlistShowcaseIsRemoved() {
         /*
-         * Wiersze gablotki wskazuja na konto kluczem obcym, a encja User
-         * nic o nich nie wie - kaskada ich nie zabierze. Gdyby zostaly,
-         * baza po prostu odmowilaby skasowania konta.
-         *
-         * Wiersz zakladamy WPROST, a nie przez PlaylistService: tamten
-         * poszedlby do Spotify po tytul playlisty, czyli test zalezalby od
-         * cudzego serwera. Tu chodzi wylacznie o sprzatanie przy usuwaniu.
+         * Wiersze gablotki wskazuja na konto kluczem obcym, a encja User nic o nich nie wie -
+         * kaskada ich nie zabierze.
          */
         playlistRepository.save(new FavoritePlaylist(
             troll, MusicProvider.SPOTIFY, "37i9dQZF1DXcBWIGoYBM5M", "Skladanka", null, 0));
@@ -195,11 +169,7 @@ class UserDeletionTest {
     @Test
     @DisplayName("ulubieni znikaja razem z kontem, ale artysci w katalogu zostaja")
     void favoritesAreUnlinkedNotDeleted() {
-        /*
-         * Wiersz w tabeli artists jest WSPOLNY dla wszystkich. Skasowanie
-         * konta ma zdjac powiazanie, a nie zabrac wykonawce reszcie
-         * uzytkownikow - to ta sama zasada co przy usuwaniu z ulubionych.
-         */
+        /* Wiersz w tabeli artists jest WSPOLNY dla wszystkich. */
         moderationService.deleteUser("admin", troll.getId());
         entityManager.flush();
 
@@ -210,16 +180,7 @@ class UserDeletionTest {
     @Test
     @DisplayName("da sie usunac post, pod ktorym sa CUDZE reakcje")
     void postWithSomeoneElsesReactionsCanBeDeleted() {
-        /*
-         * Wyglada na oczywiste, a przez dlugi czas nie dzialalo. Encja posta
-         * ma cascade = ALL na reakcjach, wiec wydawalo sie, ze temat jest
-         * zalatwiony - tyle ze kaskada opiera sie na kolekcji zaladowanej do
-         * pamieci. Reakcja dopisana w tej samej transakcji do niej nie trafia
-         * i baza odrzucala skasowanie posta z powodu klucza obcego.
-         *
-         * Testy na atrapach nie mialy szans tego zobaczyc: atrapa repozytorium
-         * zgadza sie na wszystko. Wychodzi to dopiero na prawdziwej bazie.
-         */
+        /* Wyglada na oczywiste, a przez dlugi czas nie dzialalo. */
         Post post = postRepository.save(new Post(ala, "post z reakcjami"));
         reactionService.set(post.getId(), "troll", ReactionType.FIRE);
         entityManager.flush();

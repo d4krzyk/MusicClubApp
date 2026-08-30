@@ -15,7 +15,8 @@
     "themeDark": "Switch to dark theme",
     "friends": "Friends",
     "myProfile": "My profile",
-    "reports": "Reports"
+    "reports": "Reports",
+    "myReports": "My reports"
   },
   "common": {
     "loading": "Loading…",
@@ -342,7 +343,8 @@
     "friendRequest": "{{username}} sent you a friend request",
     "friendAccepted": "{{username}} is now your friend",
     "report": "A new report to review",
-    "delete": "Delete notification"
+    "delete": "Delete notification",
+    "reportResolved": "Your report has been reviewed"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -474,5 +476,21 @@
     "reopen": "Change the decision",
     "reopenHint": "Reopens the case. It does not undo actions that were already carried out.",
     "selfReportHint": "This report is about your own account - you can close it, but you cannot punish yourself."
+  },
+  "myReports": {
+    "title": "My reports",
+    "intro": "Reports you have sent and how they ended. An administrator always leaves a note when closing a case.",
+    "empty": "You have not sent any reports yet",
+    "emptyHint": "You can report someone from their profile or from a post.",
+    "reported": "Reported",
+    "filed": "Sent",
+    "open": "Awaiting a decision",
+    "openHint": "An administrator has not looked at it yet.",
+    "resolved": "Upheld",
+    "dismissed": "Dismissed",
+    "note": "Administrator response",
+    "resolvedAt": "Reviewed",
+    "noPunishmentInfo": "We do not show what penalty the reported person received - that is their business.",
+    "loadFailed": "Could not load your reports"
   }
 }

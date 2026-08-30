@@ -12,14 +12,7 @@ import jakarta.persistence.Table;
 
 import java.util.Objects;
 
-/**
- * Pojedyncze zdjecie nalezace do posta - strona ManyToOne relacji z {@link Post}.
- *
- * <p>W bazie trzymamy TYLKO nazwe pliku, nie jego zawartosc. Same obrazki leza
- * na dysku w katalogu z wgranymi plikami. Wrzucanie zdjec do bazy dziala,
- * ale przy kilkuset postach kazde zapytanie o tablice ciagneloby megabajty
- * danych - a tak baza zostaje lekka.</p>
- */
+/** Pojedyncze zdjecie nalezace do posta - strona ManyToOne relacji z Post. */
 @Entity
 @Table(name = "post_images")
 public class PostImage {

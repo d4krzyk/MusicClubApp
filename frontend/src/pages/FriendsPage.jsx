@@ -17,14 +17,7 @@ import FriendSuggestions from '../components/FriendSuggestions';
 import { IconCross, IconPersonCheck, IconPersonPlus } from '../components/Icons';
 import { formatDate } from '../utils/dates';
 
-/**
- * Ekran "Znajomi": zaproszenia oczekujace, wyszukiwarka i wlasna lista.
- *
- * <p>Obie listy zaproszen (do mnie i ode mnie) przychodza JEDNYM zapytaniem.
- * Przy dwoch osobnych endpointach po kazdej akcji trzeba by odswiezac dwie
- * rzeczy i jedna z nich potrafilaby przez chwile pokazywac stan sprzed
- * klikniecia.</p>
- */
+/** Ekran "Znajomi": zaproszenia oczekujace, wyszukiwarka i wlasna lista. */
 export default function FriendsPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -79,11 +72,6 @@ export default function FriendsPage() {
       await fetch();
       setRefreshFriends((n) => n + 1);
       setSearched('');
-      /*
-       * Serwer mowi, czy znajomosc powstala OD RAZU - dzieje sie tak, gdy
-       * ta osoba wczesniej zaprosila nas. Wtedy komunikat "zaproszenie
-       * wyslane" bylby mylacy.
-       */
       setMessage(data.friendsNow ? t('friends.nowFriends') : t('friends.invited'));
       setError(null);
     } catch (error) {
@@ -137,8 +125,10 @@ export default function FriendsPage() {
                   onChange={(e) => setSearched(e.target.value)}
                   placeholder={t('friends.usernamePlaceholder')}
                 />
-                {/* text-nowrap: bez tego ikona i napis lamia sie na dwa
-                    wiersze i przycisk robi sie dwa razy wyzszy niz pole obok */}
+                {/*
+                  text-nowrap: bez tego ikona i napis lamia sie na dwa wiersze i przycisk robi sie
+                  dwa razy wyzszy niz pole obok
+                */}
                 <Button
                   type="submit"
                   className="text-nowrap"
@@ -153,17 +143,11 @@ export default function FriendsPage() {
         </Card>
 
         {/*
-          Szkielet zamiast kolka: zaproszenia to lista osob, wiec pokazujemy
-          ksztalt listy osob. Kolko zostawialo w tym miejscu pusta przerwe,
-          a po wczytaniu cala reszta strony przeskakiwala w dol.
+          Szkielet zamiast kolka: zaproszenia to lista osob, wiec pokazujemy ksztalt listy osob.
         */}
         {loading && <PeopleSkeleton count={3} variant="friend" />}
 
-        {/*
-          Propozycje stoja WYZEJ niz zaproszenia. Zaproszenia ogląda sie
-          wtedy, gdy juz sa; propozycje sa po to, zeby w ogole bylo co
-          ogladac - i to one maja sens na pustym koncie.
-        */}
+        {/* Propozycje stoja WYZEJ niz zaproszenia. */}
         <h2 className="h5 mb-2">{t('friends.suggestions')}</h2>
         <Card className="mb-4">
           <Card.Body>

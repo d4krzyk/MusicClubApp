@@ -1,18 +1,6 @@
 import client from './client';
 
-/**
- * Co aplikacja moze poprosic serwer w sprawie rozmow.
- *
- * <p><b>Po co ten plik.</b> Adresy koncowek byly wczesniej sklejane w miejscu
- * uzycia - w komponentach, po kilka razy ten sam. Przy zmianie po stronie
- * serwera nie dalo sie ich znalezc po nazwie, bo w kodzie nie wystepowaly
- * jako calosc, tylko jako kawalki szablonu. Tutaj kazda operacja ma nazwe.</p>
- *
- * <p><b>Funkcje oddaja dane, a nie odpowiedz HTTP.</b> Komponent dostaje to,
- * po co przyszedl - liste rozmow albo liczbe nieprzeczytanych - i nie musi
- * wiedziec, ze pod spodem jest {@code response.data} ani jak nazywa sie pole
- * w kopercie od serwera.</p>
- */
+/** Co aplikacja moze poprosic serwer w sprawie rozmow. */
 
 /** Login w adresie MUSI byc zakodowany - inaczej kropka albo spacja psuje sciezke. */
 const rozmowaZ = (login) => `/messages/with/${encodeURIComponent(login)}`;
@@ -31,12 +19,7 @@ export async function historia(login, strona, rozmiar) {
   return data;
 }
 
-/**
- * Co nowego od czasu wiadomosci o podanym numerze.
- *
- * <p>Przy pierwszym pytaniu numeru jeszcze nie ma - wtedy serwer sam
- * decyduje, od czego zaczac.</p>
- */
+/** Co nowego od czasu wiadomosci o podanym numerze. */
 export async function nowsze(login, poNumerze) {
   const { data } = await client.get(`${rozmowaZ(login)}/sync`, {
     params: poNumerze ? { after: poNumerze } : {},

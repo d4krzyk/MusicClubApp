@@ -9,21 +9,7 @@ import Col from 'react-bootstrap/Col';
 /** Powyzej tylu zdjec pokazujemy karuzele zamiast siatki miniatur. */
 const CAROUSEL_THRESHOLD = 4;
 
-/**
- * Zdjecia posta.
- *
- * <p><b>Dwa tryby wyswietlania:</b></p>
- * <ul>
- *   <li><b>do 4 zdjec</b> - siatka miniatur; wszystko widac naraz,</li>
- *   <li><b>wiecej</b> - karuzela, ktora zajmuje tyle miejsca co jedno zdjecie.
- *       Bez tego post z dwunastoma zdjeciami rozpychalby cala tablice.</li>
- * </ul>
- *
- * <p><b>Sterowanie pod zdjeciem, nie na nim.</b> Wbudowane strzalki Bootstrapa
- * sa biale i lezą NA zdjeciu - na jasnym obrazku po prostu znikaja. Dlatego
- * dokladamy pasek pod karuzela: strzalki na tle przycisku, licznik "3 / 6"
- * i kropki. Wbudowane strzalki zostawiamy, bo na ciemnych zdjeciach sa wygodne.</p>
- */
+/** Zdjecia posta. */
 export default function ImageGallery({ urls, author }) {
   const { t } = useTranslation();
   const [enlarged, setEnlarged] = useState(null);

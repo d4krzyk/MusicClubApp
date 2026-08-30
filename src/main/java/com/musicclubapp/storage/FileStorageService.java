@@ -16,35 +16,13 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Zapisuje wgrane obrazki na dysku i usuwa je, gdy przestaja byc potrzebne.
- *
- * <p><b>Dlaczego pliki na dysku, a nie w bazie?</b> Do bazy da sie wrzucic
- * obrazek jako {@code byte[]}, ale wtedy kazde zapytanie o tablice postow
- * ciagnie megabajty danych, kopie zapasowe puchna, a baza robi sie wolna.
- * Standardem jest trzymanie w bazie samej NAZWY pliku.</p>
- *
- * <p><b>Bezpieczenstwo - trzy rzeczy, ktore tu pilnujemy:</b></p>
- * <ol>
- *   <li><b>Nigdy nie uzywamy nazwy pliku podanej przez klienta.</b> Nazwa
- *       w stylu {@code ../../etc/passwd} pozwolilaby nadpisac pliki poza
- *       katalogiem uploadow. Zamiast tego generujemy losowa nazwe (UUID),
- *       a rozszerzenie bierzemy z typu MIME, nie z tego, co przyszlo.</li>
- *   <li><b>Przepuszczamy tylko obrazki</b> z listy dozwolonych typow -
- *       inaczej ktos wgralby plik wykonywalny albo skrypt.</li>
- *   <li><b>Limit rozmiaru</b> ustawiony w application.properties, zeby
- *       jeden uzytkownik nie zapchal dysku.</li>
- * </ol>
- */
+/** Zapisuje wgrane obrazki na dysku i usuwa je, gdy przestaja byc potrzebne. */
 @Service
 public class FileStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
 
-    /**
-     * Dozwolone typy obrazkow wraz z rozszerzeniem, ktore im nadajemy.
-     * Klucz to typ MIME zgloszony przez przegladarke.
-     */
+    /** Dozwolone typy obrazkow wraz z rozszerzeniem, ktore im nadajemy. */
     private static final Map<String, String> DOZWOLONE_TYPY = Map.of(
         "image/jpeg", ".jpg",
         "image/png", ".png",
@@ -68,11 +46,7 @@ public class FileStorageService {
         }
     }
 
-    /**
-     * Zapisuje wgrany obrazek i zwraca nadana mu nazwe.
-     *
-     * @throws InvalidFileException gdy plik jest pusty albo nie jest obrazkiem
-     */
+    /** Zapisuje wgrany obrazek i zwraca nadana mu nazwe. */
     public String saveImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw InvalidFileException.empty();
@@ -97,23 +71,13 @@ public class FileStorageService {
         return name;
     }
 
-    /**
-     * Kasuje plik, ignorujac jego brak.
-     *
-     * <p>Brak pliku nie jest bledem: mogl zostac skasowany recznie albo
-     * przy poprzedniej probie. Wywalanie sie z tego powodu tylko blokowaloby
-     * usuniecie posta.</p>
-     */
+    /** Kasuje plik, ignorujac jego brak. */
     public void remove(String fileName) {
         if (fileName == null || fileName.isBlank()) {
             return;
         }
 
-        /*
-         * Dodatkowe zabezpieczenie: bierzemy sama nazwe pliku, odcinajac
-         * ewentualne sciezki. Nawet gdyby do bazy trafilo kiedys "../coś",
-         * nie skasujemy niczego poza katalogiem uploadow.
-         */
+        /* Dodatkowe zabezpieczenie: bierzemy sama nazwe pliku, odcinajac ewentualne sciezki. */
         Path target = catalog.resolve(Paths.get(fileName).getFileName());
 
         try {

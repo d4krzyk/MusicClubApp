@@ -21,14 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * Powiadomienia zalogowanego uzytkownika.
- *
- * <p>Wszystkie metody biora odbiorce <b>z sesji</b>, nie ze sciezki. Nie ma
- * tu wiec adresu w rodzaju {@code /api/notifications/{username}} - i dobrze,
- * bo taki adres trzeba by pilnowac osobnym sprawdzeniem, a tak nie ma czego
- * podmienic.</p>
- */
+/** Powiadomienia zalogowanego uzytkownika. */
 @RestController
 @RequestMapping("/api/notifications")
 @Tag(name = "Powiadomienia", description = "Co sie wydarzylo w sprawach uzytkownika")
@@ -63,13 +56,7 @@ public class NotificationController {
             PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE))));
     }
 
-    /**
-     * Sama liczba nieprzeczytanych - to ona wisi przy dzwonku.
-     *
-     * <p>Osobny, lekki adres: pytamy o to przy kazdej zmianie strony, a
-     * pobieranie calej listy tylko po to, zeby policzyc kropki, byloby
-     * marnotrawstwem.</p>
-     */
+    /** Sama liczba nieprzeczytanych - to ona wisi przy dzwonku. */
     @GetMapping("/unread-count")
     @Operation(summary = "Liczba nieprzeczytanych powiadomien")
     public ResponseEntity<Map<String, Long>> countUnread(Authentication authentication) {
@@ -95,12 +82,7 @@ public class NotificationController {
             "marked", notificationService.markAllRead(authentication.getName())));
     }
 
-    /**
-     * Kasuje jedno powiadomienie.
-     *
-     * <p>Odpowiadamy 204, a nie 200 z trescia - po usunieciu nie ma juz czego
-     * zwrocic. Cudzego powiadomienia nie da sie tknac; pilnuje tego serwis.</p>
-     */
+    /** Kasuje jedno powiadomienie. */
     @DeleteMapping("/{id}")
     @Operation(summary = "Usuwa jedno powiadomienie")
     @ApiResponses({

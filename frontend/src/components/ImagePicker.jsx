@@ -6,17 +6,7 @@ import Col from 'react-bootstrap/Col';
 import { IconCross, IconPlus, IconImage } from './Icons';
 
 /**
- * Wybor zdjec do posta - z podgladem i mozliwoscia dokladania oraz usuwania
- * pojedynczych plikow.
- *
- * <p><b>Problem, ktory to rozwiazuje.</b> Zwykly {@code <input type="file" multiple>}
- * przy kazdym otwarciu okna ZASTEPUJE poprzedni wybor. Zdjecia z dwoch roznych
- * folderow trzeba wiec bylo wybrac za jednym razem, a pomylka oznaczala
- * zaczynanie od poczatku. Tutaj pliki DOKLADAJA sie do listy, kazdy ma
- * podglad i wlasny krzyzyk do usuniecia.</p>
- *
- * <p>Lista plikow jest trzymana w komponencie nadrzednym (formularzu posta),
- * bo to on wysyla ja na serwer - tutaj tylko ja pokazujemy i modyfikujemy.</p>
+ * Wybor zdjec do posta - z podgladem i mozliwoscia dokladania oraz usuwania pojedynczych plikow.
  */
 export default function ImagePicker({ files, onChange, maks = 10, error }) {
   const { t } = useTranslation();
@@ -26,22 +16,14 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
   function add(e) {
     const nowe = Array.from(e.target.files ?? []);
 
-    /*
-     * Odsiewamy pliki, ktore juz sa na liscie. Bez tego dwukrotne wybranie
-     * tego samego zdjecia wgraloby je dwa razy. Porownujemy nazwe i rozmiar -
-     * obiekty File nie sa rowne nawet dla tego samego pliku.
-     */
+    /* Odsiewamy pliki, ktore juz sa na liscie. */
     const juzJest = (file) =>
       files.some((p) => p.name === file.name && p.size === file.size);
 
     const toAdd = nowe.filter((p) => !juzJest(p));
     onChange([...files, ...toAdd].slice(0, maks));
 
-    /*
-     * Czyscimy input. Bez tego wybranie tego samego pliku drugi raz (np. po
-     * usunieciu go z listy) nie wywolaloby zdarzenia onChange - przegladarka
-     * uznaje, ze wartosc sie nie zmienila.
-     */
+    /* Czyscimy input. */
     e.target.value = '';
   }
 
@@ -114,8 +96,8 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
               <div className="position-relative">
                 <img
                   /*
-                   * createObjectURL robi lokalny adres do pliku z dysku -
-                   * podglad dziala bez wysylania czegokolwiek na serwer.
+                   * createObjectURL robi lokalny adres do pliku z dysku - podglad dziala bez
+                   * wysylania czegokolwiek na serwer.
                    */
                   src={URL.createObjectURL(file)}
                   alt={file.name}

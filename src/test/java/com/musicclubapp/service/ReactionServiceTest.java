@@ -35,12 +35,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Testy jednostkowe reakcji - wymaganie nr 13.
- *
- * <p>Sprawdzamy przede wszystkim regule "jedna osoba = jedna reakcja":
- * zmiana zdania ma PODMIENIC istniejacy wiersz, a nie dodac drugi.</p>
- */
+/** Testy jednostkowe reakcji - wymaganie nr 13. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ReactionService - ogien, mid i meh")
 class ReactionServiceTest {

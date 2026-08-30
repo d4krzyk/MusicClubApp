@@ -1,13 +1,6 @@
 import client from './client';
 
-/**
- * Co aplikacja moze poprosic serwer w sprawie profili - cudzych i wlasnego.
- *
- * <p>Profil publiczny sklada sie z szesciu osobnych koncowek i to jest
- * SWIADOME: strona rysuje sie kawalkami, a nagłowek pojawia sie od razu,
- * nie czekajac na najwolniejszy element. Tutaj kazdy z tych kawalkow
- * ma nazwe.</p>
- */
+/** Co aplikacja moze poprosic serwer w sprawie profili - cudzych i wlasnego. */
 
 const profil = (login) => `/profiles/${encodeURIComponent(login)}`;
 
@@ -55,20 +48,26 @@ export async function coWasLaczy(login) {
 /*  Wlasny profil                                                    */
 /* ---------------------------------------------------------------- */
 
+/* Kazda z tych czterech operacji odsyla nowa, pelna liste ulubionych. */
+
 export async function dodajUlubionegoArtyste(externalId) {
-  await client.post('/profile/favorites/artists', { externalId });
+  const { data } = await client.post('/profile/favorites/artists', { externalId });
+  return data;
 }
 
 export async function usunUlubionegoArtyste(externalId) {
-  await client.delete(`/profile/favorites/artists/${externalId}`);
+  const { data } = await client.delete(`/profile/favorites/artists/${externalId}`);
+  return data;
 }
 
 export async function dodajUlubionyUtwor(externalId) {
-  await client.post('/profile/favorites/tracks', { externalId });
+  const { data } = await client.post('/profile/favorites/tracks', { externalId });
+  return data;
 }
 
 export async function usunUlubionyUtwor(externalId) {
-  await client.delete(`/profile/favorites/tracks/${externalId}`);
+  const { data } = await client.delete(`/profile/favorites/tracks/${externalId}`);
+  return data;
 }
 
 /** Czy import z Last.fm jest w ogole wlaczony na tym serwerze. */

@@ -5,19 +5,7 @@ import { topMuzyka } from '../api/profil';
 /** Ile pozycji pokazuje zestawienie - stad "top 5" w nazwie sekcji. */
 const TOP_LIMIT = 5;
 
-/**
- * "Najczesciej wrzucane" - top 5 nagran z postow uzytkownika.
- *
- * <p><b>Skad sie to bierze.</b> Nie prowadzimy osobnej tabeli statystyk -
- * serwer liczy to z postow, ktore i tak sa w bazie. Dzieki temu zestawienie
- * nie ma jak sklamac: gdyby licznik byl zapisywany osobno, wystarczyloby
- * zapomniec o zmniejszeniu go przy usuwaniu posta i cicho rozjechalby sie
- * z rzeczywistoscia.</p>
- *
- * <p>Tytul moze byc pusty, gdy przy dodawaniu posta serwis muzyczny nie
- * odpowiedzial - wtedy pokazujemy sama nazwe serwisu, zamiast zostawiac
- * puste miejsce.</p>
- */
+/** "Najczesciej wrzucane" - top 5 nagran z postow uzytkownika. */
 export default function TopMusic({ username, refresh }) {
   const { t } = useTranslation();
   const [items, setItems] = useState([]);
@@ -40,7 +28,7 @@ export default function TopMusic({ username, refresh }) {
   }
 
   return (
-    <div className="mb-4">
+    <div className="profil-panel mb-4">
       <h2 className="h5 mb-2">{t('posts.topTracks')}</h2>
 
       <ol className="top-list">

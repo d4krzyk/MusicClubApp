@@ -10,16 +10,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-/**
- * Dane nowego posta - czesc tekstowa.
- *
- * <p>Zdjecia przychodza osobno, jako pliki w tym samym zapytaniu
- * {@code multipart/form-data}, dlatego nie ma ich w tym rekordzie.</p>
- *
- * <p>{@link ValidMusicLink} pilnuje, zeby wklejony adres byl poprawny
- * i zgadzal sie z wybranym rodzajem - wczesniej nierozpoznany link byl
- * po prostu polykany bez slowa.</p>
- */
+/** Dane nowego posta - czesc tekstowa. */
 @ValidMusicLink
 public record CreatePostRequest(
 
@@ -33,23 +24,12 @@ public record CreatePostRequest(
     /** Co to jest: utwor, album czy artysta. Wymagane, gdy podano adres. */
     MusicKind musicKind,
 
-    /**
-     * Sekunda, od ktorej ma zagrac utwor - patrz {@link Post#MAX_SEKUNDA_STARTU}.
-     * Dozwolone WYLACZNIE przy {@link MusicKind#TRACK}.
-     */
+    /** Sekunda, od ktorej ma zagrac utwor - patrz Post#MAX_SEKUNDA_STARTU. */
     @Min(value = 0, message = "{validation.post.start.range}")
     @Max(value = Post.MAX_SEKUNDA_STARTU, message = "{validation.post.start.range}")
     Integer musicStartSeconds,
 
-    /**
-     * Kto ma zobaczyc ten post. {@code null} znaczy {@code PUBLIC}.
-     *
-     * <p><b>Domyslnie publiczny, a nie "tylko znajomi".</b> Aplikacja sluzy do
-     * poznawania NOWYCH ludzi o podobnym guscie - domyslne ukrywanie wpisow
-     * przed wszystkimi poza obecnymi znajomymi dzialaloby przeciwko temu,
-     * po co ona w ogole jest. Kto chce inaczej, wybiera to jednym klknieciem
-     * przy pisaniu.</p>
-     */
+    /** Kto ma zobaczyc ten post. null znaczy PUBLIC. */
     PostVisibility visibility
 
 ) implements MusicLinkToValidate {

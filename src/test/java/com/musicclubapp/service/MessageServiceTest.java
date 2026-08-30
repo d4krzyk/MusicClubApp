@@ -32,20 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 /**
- * Czat: kto z kim moze pisac, w jakiej kolejnosci wracaja wiadomosci
- * i co znaczy "nieprzeczytane".
- *
- * <p><b>Na prawdziwej bazie (H2), a nie na atrapach.</b> Polowa tego, co tu
- * sprawdzamy, siedzi w SQL-u: grupowanie po "drugiej stronie rozmowy",
- * masowe oznaczanie przeczytanych, liczniki. Atrapa repozytorium oddawalaby
- * to, co jej kazemy, i test przechodzilby takze wtedy, gdyby zapytanie bylo
- * bledne - czyli nie sprawdzalby niczego, co moze sie zepsuc.</p>
- *
- * <p><b>Jeden wyjatek: {@link MusicMetadataService} jest atrapa.</b> Ten
- * serwis wychodzi do internetu po tytul i miniaturke z oEmbed. W tescie
- * znaczyloby to kilka sekund czekania na kazda wiadomosc z linkiem i wynik
- * zalezny od tego, czy Spotify akurat odpowiada. Sam serwis ma wlasny test;
- * tutaj sprawdzamy, czy wiadomosc dobrze zapamietuje ROZPOZNANY link.</p>
+ * Czat: kto z kim moze pisac, w jakiej kolejnosci wracaja wiadomosci i co znaczy "nieprzeczytane".
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -109,9 +96,8 @@ class MessageServiceTest {
     @DisplayName("do OBCEGO pisac nie wolno - to jest glowna blokada czatu")
     void refusesToWriteToStranger() {
         /*
-         * Bez tego sprawdzenia kazdy moglby pisac do kazdego, a serwis
-         * o wspolnym guscie muzycznym zamienilby sie w skrzynke na zaczepki.
-         * Kolejnosc jest ustalona: najpierw zaproszenie, potem rozmowa.
+         * Bez tego sprawdzenia kazdy moglby pisac do kazdego, a serwis o wspolnym guscie muzycznym
+         * zamienilby sie w skrzynke na zaczepki.
          */
         assertThatThrownBy(() -> messages.send("ala", "obcy", text("czesc")))
             .isInstanceOf(OperationNotAllowedException.class)
@@ -123,12 +109,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("blokada obowiazuje takze przy CZYTANIU cudzej rozmowy")
     void refusesToReadStrangersConversation() {
-        /*
-         * To jest osobny test celowo. Gdyby sprawdzenie stalo wylacznie przy
-         * wysylaniu, wystarczyloby wywolac adres historii, zeby przeczytac
-         * korespondencje dwoch obcych osob - a wiec blokada nie chronilaby
-         * niczego. Ta sama mysl dotyczy odpytywania o nowosci.
-         */
+        /* To jest osobny test celowo. */
         messages.send("ala", "bartek", text("prywatnie"));
 
         assertThatThrownBy(() -> messages.conversation("obcy", "ala", PageRequest.of(0, 20)))
@@ -163,13 +144,7 @@ class MessageServiceTest {
 
         assertThatThrownBy(() -> messages.send("ala", "bartek", text("mimo wszystko")))
             .isInstanceOf(OperationNotAllowedException.class)
-            /*
-             * Sprawdzamy KLUCZ, a nie tresc wyjatku. To klucz decyduje, co
-             * zobaczy uzytkownik (i w ktorym jezyku); zdanie w wyjatku trafia
-             * wylacznie do logu. Wczesniej test pilnowal slowa "wiadomosci"
-             * w tekscie technicznym - i zaswiecil na czerwono przy zmianie
-             * nazwy, choc zachowanie bylo bez zmian.
-             */
+            /* Sprawdzamy KLUCZ, a nie tresc wyjatku. */
             .extracting(e -> ((OperationNotAllowedException) e).getMessageKey())
             .isEqualTo("error.ban.messaging");
     }
@@ -177,17 +152,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("zakaz PUBLIKOWANIA nie zamyka czatu - to dwie osobne kary")
     void postingBanDoesNotBlockChat() {
-        /*
-         * Zmiana wzgledem pierwszej wersji czatu, i to swiadoma. Wtedy zakaz
-         * publikowania wylaczal takze wiadomosci, bo kara zostawiajaca otwarta
-         * droge do pisania prywatnie nie jest kara.
-         *
-         * Odkad administrator ma DWA osobne przelaczniki, ten argument sie
-         * odwraca: przy dawnym zachowaniu nie dalo by sie w ogole ustawic
-         * "nie wolno pisac postow, ale wolno rozmawiac ze znajomymi" - czyli
-         * najczestszego przypadku przy kims, kto zasmieca tablice, a nikomu
-         * nie dokucza. Kto ma dostac obie kary, dostaje obie.
-         */
+        /* Zmiana wzgledem pierwszej wersji czatu, i to swiadoma. */
         ala.setBannedUntil(BanKind.POSTING, LocalDateTime.now().plusHours(3));
         userRepository.save(ala);
 
@@ -212,10 +177,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("wiadomosc moze byc SAMYM utworem, bez ani jednego slowa")
     void musicOnlyMessage() {
-        /*
-         * Po to ten czat powstal. Wymuszanie tekstu obok linku oznaczaloby
-         * zmuszanie do dopisywania czegokolwiek, byle nie bylo pusto.
-         */
+        /* Po to ten czat powstal. */
         MessageResponse sent = messages.send("ala", "bartek",
             new SendMessageRequest(null, SPOTIFY_TRACK, MusicKind.TRACK, null));
 
@@ -243,9 +205,8 @@ class MessageServiceTest {
     @DisplayName("sama spacja w tresci zapisuje sie jako BRAK tresci")
     void blankContentBecomesNull() {
         /*
-         * Bez tego wiadomosc "sam utwor" mialaby w bazie raz null, raz pusty
-         * napis, raz spacje - zaleznie od tego, co zostalo w polu. Frontend
-         * musialby wtedy sprawdzac wszystkie trzy przypadki.
+         * Bez tego wiadomosc "sam utwor" mialaby w bazie raz null, raz pusty napis, raz spacje -
+         * zaleznie od tego, co zostalo w polu.
          */
         MessageResponse sent = messages.send("ala", "bartek",
             new SendMessageRequest("   ", SPOTIFY_TRACK, MusicKind.TRACK, null));
@@ -364,9 +325,8 @@ class MessageServiceTest {
     @DisplayName("odebranie nowej wiadomosci od razu oznacza rozmowe jako przeczytana")
     void syncMarksIncomingAsRead() {
         /*
-         * Skoro okno rozmowy jest otwarte i wlasnie pokazalo wiadomosc,
-         * to znaczy, ze zostala przeczytana. Osobne zapytanie robiloby to samo
-         * pol sekundy pozniej, kosztem jeszcze jednego objazdu do serwera.
+         * Skoro okno rozmowy jest otwarte i wlasnie pokazalo wiadomosc, to znaczy, ze zostala
+         * przeczytana.
          */
         messages.send("bartek", "ala", text("czytasz to?"));
 
@@ -380,11 +340,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("odpytywanie NIE oznacza jako przeczytane wlasnych wiadomosci nadawcy")
     void syncDoesNotMarkOwnMessages() {
-        /*
-         * Ala pisze i sama odpytuje. Gdyby oznaczanie dzialalo na wszystkim,
-         * co wroci z zapytania, jej wlasna wiadomosc bylaby natychmiast
-         * "przeczytana przez Bartka" - mimo ze Bartek jej nie widzial.
-         */
+        /* Ala pisze i sama odpytuje. */
         messages.send("ala", "bartek", text("moja"));
         messages.sync("ala", "bartek", null);
 
@@ -394,13 +350,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("nadawca dowiaduje sie, ze jego wiadomosc zostala przeczytana")
     void senderLearnsThatMessageWasRead() {
-        /*
-         * Blad, ktory to wymusil, wyszedl dopiero w przegladarce. Przeczytanie
-         * NIE tworzy nowej wiadomosci - zmienia jedna kolumne w starej, ktora
-         * dawno zostala wyslana. Odpytywanie przynosi wylacznie wiadomosci
-         * NOWSZE, wiec sama ta zmiana nigdy by do nadawcy nie dotarla:
-         * ptaszek "przeczytane" nie pojawial sie bez odswiezenia calej strony.
-         */
+        /* Blad, ktory to wymusil, wyszedl dopiero w przegladarce. */
         MessageResponse mine = messages.send("ala", "bartek", text("czytasz?"));
 
         // Zanim Bartek przeczyta - nie ma czego potwierdzac
@@ -416,9 +366,8 @@ class MessageServiceTest {
     @DisplayName("potwierdzenie przeczytania dotyczy TYLKO wlasnych wiadomosci")
     void readReceiptCoversOwnMessagesOnly() {
         /*
-         * Gdyby zapytanie nie sprawdzalo nadawcy, przeczytanie CUDZEJ
-         * wiadomosci (czyli zwykle otwarcie rozmowy) zapalaloby ptaszek
-         * pod wlasnymi - czyli falszywe "on to widzial".
+         * Gdyby zapytanie nie sprawdzalo nadawcy, przeczytanie CUDZEJ wiadomosci (czyli zwykle
+         * otwarcie rozmowy) zapalaloby ptaszek pod wlasnymi - czyli falszywe "on to widzial".
          */
         messages.send("bartek", "ala", text("od bartka"));
         MessageResponse mine = messages.send("ala", "bartek", text("moja"));
@@ -441,9 +390,8 @@ class MessageServiceTest {
     @DisplayName("sygnal 'pisze' ma KIERUNEK - moje pisanie to nie jest pisanie rozmowcy")
     void typingHasDirection() {
         /*
-         * Bez kierunku w kluczu wlasne pisanie zapalaloby dymek u siebie
-         * samego: "Bartek pisze..." pokazywaloby sie Bartkowi w chwili,
-         * gdy to on stuka w klawiature.
+         * Bez kierunku w kluczu wlasne pisanie zapalaloby dymek u siebie samego: "Bartek pisze..."
+         * pokazywaloby sie Bartkowi w chwili, gdy to on stuka w klawiature.
          */
         messages.typing("ala", "bartek");
 
@@ -455,8 +403,8 @@ class MessageServiceTest {
     @DisplayName("wyslanie wiadomosci gasi wlasny dymek 'pisze'")
     void sendingStopsTyping() {
         /*
-         * Bez tego dymek z kropkami wisialby jeszcze kilka sekund POD wlasnie
-         * dostarczona wiadomoscia, co wyglada jak usterka.
+         * Bez tego dymek z kropkami wisialby jeszcze kilka sekund POD wlasnie dostarczona
+         * wiadomoscia, co wyglada jak usterka.
          */
         messages.typing("bartek", "ala");
         messages.send("bartek", "ala", text("juz napisalem"));
@@ -471,11 +419,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("lista rozmow zawiera znajomych, z ktorymi NIC jeszcze nie napisano")
     void conversationsIncludeSilentFriends() {
-        /*
-         * Lista sluzy do ZACZYNANIA rozmow, a nie tylko do wracania do juz
-         * zaczetych. Gdyby pokazywala wylacznie istniejace watki, nowy
-         * uzytkownik zobaczylby pustke i nie mialby jak nikogo zaczepic.
-         */
+        /* Lista sluzy do ZACZYNANIA rozmow, a nie tylko do wracania do juz zaczetych. */
         List<ConversationResponse> list = messages.conversations("ala");
 
         assertThat(list).extracting(ConversationResponse::username).containsExactly("bartek");
@@ -537,21 +481,7 @@ class MessageServiceTest {
         assertThat(rozmowa.lastMessage().mine()).isFalse();
     }
 
-    /**
-     * Zerwanie znajomosci: rozmowa <b>zostaje</b>, ale nie da sie w niej pisac.
-     *
-     * <p><b>Wczesniej bylo inaczej i to byla pomylka.</b> Rozmowa znikala
-     * z listy, a proba jej otwarcia konczyla sie odmowa - poprzednia wersja
-     * tego testu wlasnie tego pilnowala i przechodzila na zielono. Dla obu
-     * stron wygladalo to jednak jak awaria aplikacji: caly watek przepadal
-     * bez slowa i nie bylo wiadomo, czy ktos usunal konto, zerwal znajomosc,
-     * czy cos sie po prostu zepsulo.</p>
-     *
-     * <p>Teraz obowiazuje podzial: <b>czytac wolno, pisac nie</b>. Kazda ze
-     * stron dostala te wiadomosci i ma prawo do nich wrocic; nikt nie ma
-     * natomiast prawa napisac czegos nowego, bo inaczej "usun ze znajomych"
-     * nie zamykaloby drogi do zaczepiania.</p>
-     */
+    /** Zerwanie znajomosci: rozmowa zostaje, ale nie da sie w niej pisac. */
     @Test
     @DisplayName("po zerwaniu znajomosci rozmowe mozna CZYTAC, ale nie mozna w niej PISAC")
     void endingFriendshipStopsWritingButNotReading() {
@@ -587,10 +517,8 @@ class MessageServiceTest {
     @DisplayName("z OBCYM - bez wspolnej historii - nie da sie nawet otworzyc rozmowy")
     void strangerCannotEvenOpenTheConversation() {
         /*
-         * Lagodniejszy warunek na czytanie dotyczy wylacznie osob, z ktorymi
-         * rozmowa faktycznie sie odbyla. Gdyby wystarczylo samo istnienie
-         * konta, kazdy moglby zajrzec do dowolnego watku - i naprawa jednego
-         * bledu otwieralaby powazniejszy.
+         * Lagodniejszy warunek na czytanie dotyczy wylacznie osob, z ktorymi rozmowa faktycznie
+         * sie odbyla.
          */
         assertThatThrownBy(() ->
             messages.conversation("ala", "obcy", PageRequest.of(0, 20)))

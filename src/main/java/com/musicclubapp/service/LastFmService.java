@@ -16,54 +16,19 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-/**
- * Odczyt historii sluchania z <b>Last.fm</b>.
- *
- * <p><b>Dlaczego Last.fm, a nie Spotify.</b> Pelne API Spotify wymaga, zeby
- * kazdy uzytkownik byl RECZNIE wpisany na liste w panelu dewelopera - a lista
- * ma limit pieciu osob. Zdjecie tego limitu wymaga zarejestrowanej firmy.
- * W projekcie zaliczeniowym to sciana nie do przejscia. Last.fm potrzebuje
- * tylko <b>klucza aplikacji i nazwy uzytkownika</b>: bez logowania, bez OAuth
- * i bez limitu kont. Do tego zbiera historie z wielu zrodel naraz - takze ze
- * Spotify, jesli ktos ma tam wlaczony scrobbling.</p>
- *
- * <p><b>Ten serwis nie zwraca zdjec i to nie jest przeoczenie.</b> Last.fm
- * od 2019 roku oddaje w miejscu zdjecia artysty stala szara ikonke - te sama
- * dla wszystkich. Dlatego z Last.fm bierzemy WYLACZNIE nazwy, a kto to
- * naprawde jest (identyfikator, zdjecie) ustala potem {@link
- * DeezerCatalogService}. Podzial jest wiec taki:
- * <b>Last.fm mowi CZEGO sluchasz, Deezer mowi KTO to jest.</b></p>
- *
- * <p><b>Klucz jest opcjonalny.</b> Bez niego metody zwracaja puste listy,
- * a {@link #dostepne()} - {@code false}. Frontend chowa wtedy przycisk
- * importu, a reszta profilu (reczne dodawanie z Deezera) dziala normalnie.
- * Zaden uzytkownik nie zobaczy bledu tylko dlatego, ze ktos nie ustawil
- * zmiennej srodowiskowej.</p>
- */
+/** Odczyt historii sluchania z Last.fm. */
 @Service
 public class LastFmService {
 
     private static final Logger log = LoggerFactory.getLogger(LastFmService.class);
 
 
-    /**
-     * Etykiety, ktore w Last.fm sa najpopularniejsze, ale gatunkiem NIE sa.
-     *
-     * <p>Tagi na Last.fm wpisuja uzytkownicy, wiec obok "shoegaze" i "trip hop"
-     * trafiaja sie "seen live", "favorites" i "albums i own". Bez odsiania
-     * takich etykiet dopasowanie po gatunkach laczyloby ludzi na zasadzie
-     * "oboje byli na jakims koncercie".</p>
-     */
+    /** Etykiety, ktore w Last.fm sa najpopularniejsze, ale gatunkiem NIE sa. */
     private static final Set<String> NOT_GENRES = Set.of(
         "seen live", "favorites", "favourites", "albums i own", "my music",
         "awesome", "beautiful", "love", "favorite songs", "spotify", "under 2000 listeners");
 
-    /**
-     * Prog popularnosci tagu (Last.fm podaje 0-100).
-     *
-     * <p>Ponizej tej wartosci to zwykle etykiety wpisane przez jedna osobe.
-     * Wpuszczenie ich do bazy zamienialoby gatunki w losowy szum.</p>
-     */
+    /** Prog popularnosci tagu (Last.fm podaje 0-100). */
     private static final int TAG_THRESHOLD = 30;
 
     /** Ile gatunkow zapisujemy przy jednym artyscie. */
@@ -103,12 +68,7 @@ public class LastFmService {
     /** Nazwa utworu wraz z wykonawca - tyle, ile Last.fm o nim mowi. */
     public record ListenedTrack(String artistName, String title) { }
 
-    /**
-     * Najczesciej sluchani artysci danego uzytkownika Last.fm.
-     *
-     * @return same nazwy, w kolejnosci od najczesciej sluchanego
-     * @throws IllegalArgumentException gdy Last.fm nie zna takiego uzytkownika
-     */
+    /** Najczesciej sluchani artysci danego uzytkownika Last.fm. */
     public List<String> topArtists(String user, int limit) {
         JsonNode response = ask("user.gettopartists", user, limit);
 
@@ -139,17 +99,7 @@ public class LastFmService {
         return tracks;
     }
 
-    /**
-     * Gatunki artysty - z tagow Last.fm, odsianych z etykiet niebedacych gatunkiem.
-     *
-     * <p>Wynik jest <b>przyblizeniem</b>. Tagi wpisuja ludzie, wiec bywaja
-     * niescisle albo sporne ("czy to jeszcze indie, czy juz pop"). Do tego,
-     * do czego ich uzywamy - zblizenia do siebie osob, ktore nie maja
-     * wspolnego ani jednego wykonawcy - to w zupelnosci wystarczy.</p>
-     *
-     * <p>Blad przy pobieraniu konczy sie pustym zbiorem, a nie wyjatkiem:
-     * artysta bez gatunkow jest calkowicie poprawnym stanem.</p>
-     */
+    /** Gatunki artysty - z tagow Last.fm, odsianych z etykiet niebedacych gatunkiem. */
     public Set<String> artistGenres(String artistName) {
         if (!available() || artistName == null || artistName.isBlank()) {
             return Set.of();
@@ -194,14 +144,7 @@ public class LastFmService {
         }
     }
 
-    /**
-     * Wspolna czesc obu zapytan o historie sluchania.
-     *
-     * <p><b>Tu blad JEST rzucany dalej</b> - inaczej niz przy gatunkach.
-     * Roznica jest istotna: literowka w nazwie uzytkownika Last.fm to pomylka,
-     * o ktorej trzeba powiedziec. Cicho zwrocona pusta lista wygladalaby jak
-     * "nic nie sluchasz" i nikt by nie wiedzial, ze wpisal zla nazwe.</p>
-     */
+    /** Wspolna czesc obu zapytan o historie sluchania. */
     private JsonNode ask(String method, String user, int limit) {
         if (!available()) {
             throw new IllegalStateException("Brak klucza Last.fm");
@@ -225,11 +168,7 @@ public class LastFmService {
             throw new IllegalStateException("Last.fm nie odpowiada", e);
         }
 
-        /*
-         * Last.fm zwraca bledy POLEM "error" w tresci odpowiedzi. Kod 6
-         * oznacza "nie ma takiego uzytkownika" - i to jedyny przypadek,
-         * ktory uzytkownik naszej aplikacji moze sam naprawic.
-         */
+        /* Last.fm zwraca bledy POLEM "error" w tresci odpowiedzi. */
         if (response == null || response.has("error")) {
             log.warn("Last.fm odmowil ({}): {}", method,
                 response == null ? "pusta odpowiedz" : response.get("message"));
@@ -238,14 +177,7 @@ public class LastFmService {
         return response;
     }
 
-    /**
-     * Wchodzi w zagniezdzona tablice odpowiedzi.
-     *
-     * <p>Last.fm pakuje wyniki w dwa poziomy ({@code topartists.artist}),
-     * a przy jednym wyniku potrafi oddac obiekt zamiast tablicy. Petla
-     * {@code for} po pojedynczym obiekcie przeszlaby po jego POLACH, wiec
-     * takie przypadki odsiewamy tutaj, a nie w kazdym miejscu z osobna.</p>
-     */
+    /** Wchodzi w zagniezdzona tablice odpowiedzi. */
     private JsonNode enter(JsonNode root, String external, String internal) {
         JsonNode level = root.get(external);
         if (level == null) {

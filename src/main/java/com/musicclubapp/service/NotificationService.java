@@ -15,26 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Powiadomienia: powstawanie, czytanie i sprzatanie.
- *
- * <p><b>Jedno miejsce na wszystkie reguly.</b> Powiadomienia wywoluja trzy
- * rozne serwisy (reakcje, znajomi, moderacja) i gdyby kazdy z nich sam
- * decydowal, czy wpis ma powstac, regula "nie powiadamiam samego siebie"
- * musialaby byc powtorzona w kazdym z nich. Wystarczy pomylic sie raz.</p>
- *
- * <p><b>Metody tej klasy dzialaja w transakcji wywolujacego</b> - i wolno im
- * ja wywrocic. Wczesniej stalo tu zapewnienie, ze powiadomienie "nigdy nie
- * przerywa dzialania wywolujacego", i bylo ono nieprawdziwe: nieudany zapis
- * powiadomienia uniewaznia cala transakcje, a zlapanie wyjatku u wywolujacego
- * niczego nie ratuje - zamienia tylko czytelny blad w gorszy, pozniejszy
- * ({@code HHH000099: null id ... don't flush the Session after an exception}).
- * Tak wlasnie objawil sie blad 500 przy zgłaszaniu użytkownika.</p>
- *
- * <p>Skoro powiadomienie dzieli transakcje ze zdarzeniem, to albo zapisuja
- * sie oba, albo zadne - i tak ma byc. Powiadomienie o reakcji, ktorej
- * ostatecznie nie ma, myli bardziej niz jego brak.</p>
- */
+/** Powiadomienia: powstawanie, czytanie i sprzatanie. */
 @Service
 public class NotificationService {
 
@@ -51,18 +32,7 @@ public class NotificationService {
     /*  Powstawanie                                                        */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Ktos zareagowal na cudzy post.
-     *
-     * <p>Dwie reguly siedza tutaj i nigdzie indziej:</p>
-     * <ul>
-     *   <li><b>reakcja na wlasny post nie powiadamia</b> - wiadomo, co sie
-     *       samemu zrobilo;</li>
-     *   <li><b>zmiana zdania odswieza wpis zamiast dokladac drugi</b> - jedna
-     *       osoba klikajaca kolejno trzy emotki ma zostawic jedno
-     *       powiadomienie, a nie trzy.</li>
-     * </ul>
-     */
+    /** Ktos zareagowal na cudzy post. */
     @Transactional
     public void reactionAdded(Post post, User actor, ReactionType reactionType) {
         User recipient = post.getAuthor();
@@ -78,31 +48,14 @@ public class NotificationService {
                     Notification.reaction(recipient, actor, post, reactionType)));
     }
 
-    /**
-     * Reakcja zostala cofnieta - powiadomienie o niej przestaje byc prawdziwe.
-     *
-     * <p>Zostawienie go znaczyloby, ze klikniecie prowadzi do posta, pod
-     * ktorym nie ma juz sladu po tej reakcji.</p>
-     */
+    /** Reakcja zostala cofnieta - powiadomienie o niej przestaje byc prawdziwe. */
     @Transactional
     public void reactionRemoved(Post post, User actor) {
         notificationRepository.deleteMatching(
             post.getAuthor().getId(), actor.getId(), post.getId(), NotificationType.REACTION);
     }
 
-    /**
-     * Nowe zgloszenie - powiadamiamy KAZDEGO administratora.
-     *
-     * <p><b>Liste administratorow dostajemy z zewnatrz, zamiast jej tu
-     * szukac.</b> Ten serwis celowo nie zna repozytorium uzytkownikow: jego
-     * zadaniem jest pilnowac regul powstawania powiadomien, a nie tego, kto
-     * jest kim. Wstrzykniecie tu kolejnego repozytorium zaczeloby zamieniac
-     * go w drugi UserService.</p>
-     *
-     * <p><b>Administrator, ktory sam zglosil, nie dostaje powiadomienia
-     * o wlasnym zgloszeniu</b> - to ta sama regula co wszedzie indziej tutaj
-     * ("nie powiadamiam samego siebie"), tylko zastosowana do listy.</p>
-     */
+    /** Nowe zgloszenie - powiadamiamy KAZDEGO administratora. */
     @Transactional
     public void reportFiled(List<User> admins, User reporter) {
         for (User admin : admins) {
@@ -110,6 +63,15 @@ public class NotificationService {
                 notificationRepository.save(Notification.report(admin, reporter));
             }
         }
+    }
+
+    /** Zgloszenie rozpatrzone - powiadomienie dla zglaszajacego. */
+    @Transactional
+    public void reportResolved(User reporter, User admin) {
+        if (reporter.getId().equals(admin.getId())) {
+            return;
+        }
+        notificationRepository.save(Notification.reportResolved(reporter, admin));
     }
 
     /** Ktos wyslal zaproszenie do znajomych. */
@@ -121,24 +83,14 @@ public class NotificationService {
         notificationRepository.save(Notification.friendRequest(recipient, actor));
     }
 
-    /**
-     * Zaproszenie przestalo istniec (odrzucone albo anulowane).
-     *
-     * <p>Powiadomienie o zaproszeniu, ktorego juz nie ma, prowadzi na strone
-     * znajomych, gdzie nic nie czeka - a to wyglada jak usterka.</p>
-     */
+    /** Zaproszenie przestalo istniec (odrzucone albo anulowane). */
     @Transactional
     public void friendRequestGone(User recipient, User actor) {
         notificationRepository.deleteByType(
             recipient.getId(), actor.getId(), NotificationType.FRIEND_REQUEST);
     }
 
-    /**
-     * Znajomosc doszla do skutku - powiadamiamy te osobe, ktora czekala.
-     *
-     * <p>Przy okazji kasujemy powiadomienie o samym zaproszeniu: skoro
-     * zostalo przyjete, nie ma juz czego przyjmowac.</p>
-     */
+    /** Znajomosc doszla do skutku - powiadamiamy te osobe, ktora czekala. */
     @Transactional
     public void friendshipFormed(User recipient, User actor) {
         if (recipient.getId().equals(actor.getId())) {
@@ -164,13 +116,7 @@ public class NotificationService {
         return notificationRepository.countUnread(username);
     }
 
-    /**
-     * Oznacza JEDNO powiadomienie jako przeczytane.
-     *
-     * <p>Cudzego powiadomienia nie da sie tknac - sprawdzamy odbiorce, a nie
-     * tylko identyfikator. Bez tego wystarczyloby zgadnac numer, zeby
-     * czyscic komus dzwonek.</p>
-     */
+    /** Oznacza JEDNO powiadomienie jako przeczytane. */
     @Transactional
     public void markRead(String username, Long id) {
         notificationRepository.findById(id)
@@ -183,24 +129,7 @@ public class NotificationService {
         return notificationRepository.markAllRead(username);
     }
 
-    /**
-     * Kasuje JEDNO powiadomienie - na zyczenie odbiorcy.
-     *
-     * <p><b>Po co, skoro jest juz „przeczytane".</b> Przeczytane gasi kropke,
-     * ale wpis zostaje na liscie i przy kilkudziesieciu powiadomieniach nowe
-     * gina wsrod starych. „Przeczytane" mowi <i>widzialem</i>, a usuniecie -
-     * <i>zalatwione, nie chce tego wiecej ogladac</i>. To dwie rozne rzeczy
-     * i dlatego sa dwa osobne przyciski.</p>
-     *
-     * <p><b>Kasuje tylko wlasciciel.</b> Sprawdzamy odbiorce, a nie sam
-     * identyfikator - inaczej wystarczyloby zgadnac numer, zeby usuwac cudze
-     * powiadomienia. Ta sama zasada co przy {@link #markRead}.</p>
-     *
-     * <p>Ciche przejscie, gdy powiadomienia nie ma: usuwanie czegos, czego juz
-     * nie ma, daje ten sam stan swiata, o ktory prosil uzytkownik. Blad
-     * mialby sens tylko wtedy, gdyby mial go z czym porownac - a przy dwoch
-     * klknieciach pod rzad drugie jest zwykla powtorka.</p>
-     */
+    /** Kasuje JEDNO powiadomienie - na zyczenie odbiorcy. */
     @Transactional
     public void delete(String username, Long id) {
         notificationRepository.findById(id)
@@ -218,13 +147,7 @@ public class NotificationService {
         notificationRepository.deleteByPostId(postId);
     }
 
-    /**
-     * Kasuje powiadomienia konta - przy usuwaniu uzytkownika.
-     *
-     * <p>W OBIE strony: te, ktore dostal, i te, ktore wywolal u innych.
-     * Musi pojsc jako pierwsze w calym sprzataniu, bo powiadomienie wskazuje
-     * kluczami obcymi i na konto, i na posty - a te znikaja chwile pozniej.</p>
-     */
+    /** Kasuje powiadomienia konta - przy usuwaniu uzytkownika. */
     @Transactional
     public void deleteAllOf(Long userId) {
         notificationRepository.deleteByUserId(userId);

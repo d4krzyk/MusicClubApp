@@ -12,29 +12,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
-/**
- * Pobiera tytul i miniaturke nagrania przez <b>oEmbed</b>.
- *
- * <p><b>Dlaczego oEmbed, a nie zwykle API serwisu?</b> Bo jest publiczny -
- * nie wymaga klucza, tokenu ani rejestracji aplikacji. Dziala wiec dla
- * KAZDEGO uzytkownika, a nie tylko dla pieciu kont, do ktorych Spotify
- * ogranicza aplikacje w trybie deweloperskim.</p>
- *
- * <p><b>Pobieramy RAZ, przy dodawaniu posta.</b> Wynik ladzie w bazie razem
- * z postem. Gdybysmy pytali serwis przy kazdym wyswietleniu tablicy,
- * dwadziescia postow na stronie oznaczaloby dwadziescia zapytan do obcego
- * serwera - a tablica ladowalaby sie tak wolno, jak najwolniejsze z nich.</p>
- *
- * <p><b>Awaria serwisu NIE MOZE blokowac dodania posta.</b> Tytul i miniaturka
- * to ozdoba: odtwarzacz i tak pobiera sobie wszystko sam, bo {@code <iframe>}
- * laduje sie po stronie przegladarki. Dlatego kazdy blad konczy sie
- * zwroceniem pustych danych i wpisem w logu - nigdy wyjatkiem lecacym
- * do uzytkownika.</p>
- *
- * <p>Zapytanie idzie <b>z serwera</b>, nie z przegladarki - oEmbed Spotify
- * nie wysyla naglowkow CORS, wiec wywolanie z JavaScriptu i tak by sie
- * nie udalo.</p>
- */
+/** Pobiera tytul i miniaturke nagrania przez oEmbed. */
 @Service
 public class MusicMetadataService {
 
@@ -53,12 +31,7 @@ public class MusicMetadataService {
     public MusicMetadataService(
             @Value("${app.music.oembed.timeout-ms:3000}") int timeoutMs) {
 
-        /*
-         * Krotki limit czasu jest tu kluczowy. Bez niego zawieszony serwer
-         * Spotify blokowalby watek dodajacy post az do domyslnego limitu
-         * systemowego - uzytkownik patrzylby w krecace sie kolko przez
-         * kilkadziesiat sekund, po czym i tak dostalby blad.
-         */
+        /* Krotki limit czasu jest tu kluczowy. */
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofMillis(timeoutMs));
         factory.setReadTimeout(Duration.ofMillis(timeoutMs));
@@ -68,20 +41,11 @@ public class MusicMetadataService {
             .build();
     }
 
-    /**
-     * @return tytul i miniaturka albo {@link Metadata#pusty()}, gdy serwis
-     *         nie odpowiedzial lub odpowiedzial czyms nieoczekiwanym
-     */
     public Metadata fetch(ParsedMusicLink link) {
         String url = MusicEmbed.oEmbedUrl(link.provider(), link.kind(), link.externalId());
 
         if (url == null) {
-            /*
-             * Serwis nie wystawia oEmbed (Apple Music) - to nie jest blad.
-             * Zostaje jedno zrodlo, ktore mamy pod reka: sam adres. Apple
-             * wpisuje w niego nazwe nagrania, wiec da sie ja stamtad odczytac.
-             * Miniaturki w adresie nie ma i niczego nie udajemy.
-             */
+            /* Serwis nie wystawia oEmbed (Apple Music) - to nie jest blad. */
             return new Metadata(MusicEmbed.titleFromUrl(link.provider(), link.externalId()), null);
         }
 
@@ -101,10 +65,8 @@ public class MusicMetadataService {
 
         } catch (Exception e) {
             /*
-             * Lapiemy WSZYSTKO celowo: brak sieci, blad 404 dla usunietego
-             * utworu, przekroczony czas, niespodziewany format odpowiedzi.
-             * Zaden z tych przypadkow nie jest powodem, zeby uzytkownik nie
-             * mogl dodac posta.
+             * Lapiemy WSZYSTKO celowo: brak sieci, blad 404 dla usunietego utworu, przekroczony
+             * czas, niespodziewany format odpowiedzi.
              */
             log.warn("Nie udalo sie pobrac opisu nagrania ({}): {}", url, e.getMessage());
             return Metadata.empty();

@@ -17,23 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * Gablotka playlist na profilu: do pieciu skladanek "posluchaj tego, co ja".
- *
- * <p><b>Dlaczego to nie jest czesc {@code FavoritesService}.</b> Tamten serwis
- * pilnuje jednej twardej zasady: do ulubionych trafia wylacznie to, co istnieje
- * w katalogu Deezera - bo na tych danych opiera sie dopasowywanie ludzi.
- * Playlista nie moze przejsc przez katalog Deezera (skladanka z YouTube Music
- * nie ma tam odpowiednika) i <b>celowo nie liczy sie do zadnego dopasowania</b>.
- * Wciskanie tego do tamtej klasy oznaczaloby wyjatek od jej jedynej zasady,
- * a wyjatek od zasady to najkrotsza droga do tego, zeby przestala obowiazywac.</p>
- *
- * <p><b>Skad biora sie dane.</b> Z adresu - dokladnie tak samo jak przy postach:
- * {@code MusicLinkParser} rozklada go na serwis i identyfikator,
- * {@code MusicMetadataService} pobiera tytul i okladke (raz, przy dodawaniu),
- * a {@code MusicEmbed} sklada adres odtwarzacza. Zadnej z tych rzeczy nie
- * przyjmujemy od uzytkownika.</p>
- */
+/** Gablotka playlist na profilu: do pieciu skladanek "posluchaj tego, co ja". */
 @Service
 public class PlaylistService {
 
@@ -49,12 +33,7 @@ public class PlaylistService {
         this.musicMetadata = musicMetadata;
     }
 
-    /**
-     * Gablotka danej osoby.
-     *
-     * @param owner  czyj profil ogladamy
-     * @param viewer kto oglada - od tego zalezy, czy widac przyciski edycji
-     */
+    /** Gablotka danej osoby. */
     @Transactional(readOnly = true)
     public PlaylistsResponse playlists(String owner, String viewer) {
         // Nieistniejacy uzytkownik ma dac 404, a nie pusta gablotke -
@@ -70,13 +49,7 @@ public class PlaylistService {
             FavoritePlaylist.MAX_PER_USER);
     }
 
-    /**
-     * Dodaje playliste na koniec gablotki.
-     *
-     * <p>Kolejnosc sprawdzen jest celowa: <b>najpierw limit, potem adres</b>.
-     * Przy pelnej gablotce nie ma sensu isc do serwisu po tytul nagrania,
-     * ktorego i tak nie zapiszemy.</p>
-     */
+    /** Dodaje playliste na koniec gablotki. */
     @Transactional
     public PlaylistsResponse add(String username, String url) {
         User user = find(username);
@@ -88,11 +61,7 @@ public class PlaylistService {
         ParsedMusicLink link = MusicLinkParser.parse(url)
             .orElseThrow(OperationNotAllowedException::notAPlaylist);
 
-        /*
-         * Rodzaj MUSI sie zgadzac. Link do pojedynczego utworu wyglada bardzo
-         * podobnie i to najczestsza pomylka - a wpuszczony tutaj zrobilby
-         * z gablotki playlist gablotke czegokolwiek.
-         */
+        /* Rodzaj MUSI sie zgadzac. */
         if (link.kind() != MusicKind.PLAYLIST) {
             throw OperationNotAllowedException.notAPlaylist();
         }
@@ -117,13 +86,7 @@ public class PlaylistService {
         return playlists(username, username);
     }
 
-    /**
-     * Usuwa playliste z wlasnej gablotki.
-     *
-     * <p><b>Sprawdzamy wlasciciela</b>, mimo ze login bierzemy z sesji.
-     * Identyfikatory sa kolejnymi liczbami, wiec bez tego wystarczyloby zgadnac
-     * numer, zeby usunac komus pozycje z profilu.</p>
-     */
+    /** Usuwa playliste z wlasnej gablotki. */
     @Transactional
     public PlaylistsResponse remove(String username, Long id) {
         FavoritePlaylist playlist = playlistRepository.findById(id)
@@ -135,11 +98,7 @@ public class PlaylistService {
 
         playlistRepository.delete(playlist);
 
-        /*
-         * flush() wypycha skasowanie do bazy PRZED przenumerowaniem. Bez tego
-         * zapytanie nizej moglo by jeszcze zobaczyc usuwany wiersz i nadac mu
-         * numer - a on i tak zaraz znika.
-         */
+        /* flush() wypycha skasowanie do bazy PRZED przenumerowaniem. */
         playlistRepository.flush();
         renumber(username);
 
@@ -148,14 +107,7 @@ public class PlaylistService {
 
     // ----------------------------------------------------------------------
 
-    /**
-     * Porzadkuje numery miejsc po usunieciu.
-     *
-     * <p>Bez tego po skasowaniu srodkowej pozycji zostalyby numery 0, 1, 3, 4 -
-     * gablotka wygladalaby tak samo, ale kolejna dodana playlista dostalaby
-     * numer 5 przy czterech pozycjach na ekranie. Dziury same z siebie nie
-     * szkodza; szkodzi to, ze przestaja sie zgadzac z tym, co widac.</p>
-     */
+    /** Porzadkuje numery miejsc po usunieciu. */
     private void renumber(String username) {
         int position = 0;
         for (FavoritePlaylist playlist
@@ -168,13 +120,7 @@ public class PlaylistService {
     /*  Sprzatanie                                                         */
     /* ------------------------------------------------------------------ */
 
-    /**
-     * Kasuje gablotke playlist konta - przy usuwaniu uzytkownika.
-     *
-     * <p>Wprost, a nie kaskada: wiersze wskazuja na konto kluczem obcym,
-     * ale encja {@code User} nic o nich nie wie, wiec Hibernate sam ich nie
-     * ruszy - a baza bez tego odmowilaby skasowania konta.</p>
-     */
+    /** Kasuje gablotke playlist konta - przy usuwaniu uzytkownika. */
     @Transactional
     public void deleteAllOf(Long ownerId) {
         playlistRepository.deleteByOwnerId(ownerId);

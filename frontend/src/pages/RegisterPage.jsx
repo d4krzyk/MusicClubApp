@@ -38,20 +38,10 @@ export default function RegisterPage() {
     try {
       await register(data);
 
-      /*
-       * Rejestracja nie loguje automatycznie - backend tylko zaklada konto.
-       * Przenosimy wiec na ekran logowania i przekazujemy informacje,
-       * zeby pokazal komunikat o sukcesie zamiast pustego formularza
-       * bez wyjasnienia, co sie stalo.
-       */
+      /* Rejestracja nie loguje automatycznie - backend tylko zaklada konto. */
       navigate('/login', { replace: true, state: { registered: true } });
     } catch (error) {
-      /*
-       * Backend zwraca bledy per pole (422) - podswietlamy konkretne inputy.
-       * Zajety login lub e-mail (409) trafia do komunikatu ogolnego.
-       * Oba teksty przychodza juz w wybranym jezyku, bo wysylamy
-       * naglowek Accept-Language.
-       */
+      /* Backend zwraca bledy per pole (422) - podswietlamy konkretne inputy. */
       const details = describeError(error);
       setFieldErrors(details.fieldErrors);
       setGeneralError(details.message);

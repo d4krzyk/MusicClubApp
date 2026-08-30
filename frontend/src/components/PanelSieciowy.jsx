@@ -9,31 +9,7 @@ import { describeError } from '../api/client';
 import * as moderacja from '../api/moderacja';
 import { formatDate } from '../utils/dates';
 
-/**
- * Powiazania sieciowe kont: <b>multikonta i blokada adresu</b>.
- *
- * <p><b>Dlaczego to wyjechalo z {@code UsersPage}.</b> Tamta strona miala
- * 722 linie i trzymala trzy niezalezne rzeczy naraz: tabele kont
- * (stronicowanie, sortowanie, role, kary), okno usuwania konta oraz to -
- * czyli podglad adresow, wykrywanie multikont i liste blokad. Trzynascie
- * {@code useState} w jednym komponencie to nie jest kwestia stylu: zeby
- * poprawic cokolwiek w karach, trzeba bylo przewijac przez kod o adresach IP
- * i odwrotnie.</p>
- *
- * <p>Ten komponent ma <b>wlasny stan i wlasne zapytania</b>. Strona kont nie
- * musi juz o nich nic wiedziec - podaje tylko konto, ktorego powiazania ma
- * pokazac.</p>
- *
- * <p><b>Blokada adresu to poszlaka, nie dowod</b> - i dlatego ostrzezenie
- * stoi NAD danymi, a nie pod nimi. Pod jednym adresem siedzi cala rodzina,
- * akademik albo tysiace klientow operatora komorkowego; zdanie przeczytane
- * po obejrzeniu listy juz na nic sie nie zda.</p>
- *
- * @param target      konto, ktorego powiazania ogladamy ({@code null} = okno zamkniete)
- * @param onClose     zamkniecie okna
- * @param onMessage   komunikat o powodzeniu do pokazania na stronie kont
- * @param onError     komunikat o bledzie
- */
+/** Powiazania sieciowe kont: multikonta i blokada adresu. */
 export default function PanelSieciowy({ target, onClose, onMessage, onError }) {
   const { t, i18n } = useTranslation();
 
@@ -58,12 +34,7 @@ export default function PanelSieciowy({ target, onClose, onMessage, onError }) {
   }, [loadBlocked]);
 
   /*
-   * Pobieramy DWIE listy: adresy tego konta (do skopiowania w blokade)
-   * i konta, ktore ich uzywaja. Osobne zapytania, bo to dwie rozne rzeczy -
-   * konto moze miec adresy, z ktorych nikt wiecej sie nie logowal.
-   *
-   * Ida rownolegle: nie zaleza od siebie, a szeregowo okno czekaloby
-   * na sume obu czasow zamiast na dluzszy z nich.
+   * Pobieramy DWIE listy: adresy tego konta (do skopiowania w blokade) i konta, ktore ich uzywaja.
    */
   useEffect(() => {
     if (!target) {

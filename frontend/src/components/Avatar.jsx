@@ -1,14 +1,4 @@
-/**
- * Zdjecie profilowe uzytkownika.
- *
- * <p>Gdy ktos nie wgral zdjecia, pokazujemy kolowy zastepnik z pierwsza litera
- * loginu. Dzieki temu lista postow wyglada rowno, zamiast miec dziury tam,
- * gdzie brakuje obrazka.</p>
- *
- * @param avatarUrl adres zdjecia albo {@code null}
- * @param username  login - z niego bierzemy litere do zastepnika
- * @param rozmiar   bok kola w pikselach
- */
+/** Zdjecie profilowe uzytkownika. */
 export default function Avatar({ avatarUrl, username, size = 40 }) {
   const styl = { width: size, height: size };
 
@@ -19,10 +9,7 @@ export default function Avatar({ avatarUrl, username, size = 40 }) {
         alt={username}
         className="avatar"
         style={styl}
-        /*
-         * Gdy plik zniknie z serwera, przegladarka pokazalaby ikonke
-         * "zepsuty obrazek". Chowamy go wtedy - lepiej pusto niz brzydko.
-         */
+        /* Gdy plik zniknie z serwera, przegladarka pokazalaby ikonke "zepsuty obrazek". */
         onError={(e) => {
           e.currentTarget.style.visibility = 'hidden';
         }}

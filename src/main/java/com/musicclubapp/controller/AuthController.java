@@ -32,23 +32,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 
-/**
- * Rejestracja, logowanie i sprawdzenie kto jest zalogowany.
- *
- * <p><b>Konwencje z wykladow:</b></p>
- * <ul>
- *   <li>kontroler nie dotyka repozytorium, tylko serwisu (wyklad 4, slajd 13),</li>
- *   <li>kazda metoda zwraca {@link ResponseEntity} - wymaganie nr 22
- *       (wyklad 4, slajd 27),</li>
- *   <li>statusy HTTP wedlug wykladu 4, slajd 32: 201 przy utworzeniu zasobu,
- *       204 gdy nie ma czego zwracac,</li>
- *   <li>reczny przebieg logowania - wyklad 7, slajd 33.</li>
- * </ul>
- *
- * <p>Adnotacje {@code @Operation} i {@code @ApiResponses} opisuja endpointy
- * w Swaggerze (wymaganie nr 24) - dokumentacja pod
- * {@code http://localhost:8080/swagger-ui.html}.</p>
- */
+/** Rejestracja, logowanie i sprawdzenie kto jest zalogowany. */
 @RestController
 @RequestMapping("/api/auth")
 @Tag(name = "Uwierzytelnianie", description = "Rejestracja, logowanie i wylogowanie")
@@ -75,17 +59,7 @@ public class AuthController {
         this.userRepository = userRepository;
     }
 
-    /**
-     * Zakladanie konta.
-     *
-     * <p>{@code @Valid} uruchamia walidacje DTO (wyklad 3, slajd 62). Jesli
-     * cokolwiek jest nie tak, metoda w ogole sie nie wykona - wyjatek zlapie
-     * {@code GlobalExceptionHandler} i odesle 422 z lista blednych pol.</p>
-     *
-     * <p>Zwracamy 201 CREATED razem z naglowkiem {@code Location} wskazujacym
-     * utworzony zasob - wyklad 4 (slajd 32) mowi, ze odpowiedz na POST
-     * "powinna zawierac link/sciezke do utworzonego zasobu".</p>
-     */
+    /** Zakladanie konta. @Valid uruchamia walidacje DTO (wyklad 3, slajd 62). */
     @PostMapping("/register")
     @Operation(summary = "Zaklada nowe konto uzytkownika")
     @ApiResponses({
@@ -95,12 +69,7 @@ public class AuthController {
     })
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request,
                                                  HttpServletRequest http) {
-        /*
-         * Blokada adresu dziala WLASNIE tutaj - przy zakladaniu konta.
-         * To jest jedyny moment, w ktorym da sie zatrzymac osobe wracajaca
-         * po banie pod nowym loginem; po zalozeniu konta jest juz tylko
-         * kolejnym uzytkownikiem, nie do odroznienia od reszty.
-         */
+        /* Blokada adresu dziala WLASNIE tutaj - przy zakladaniu konta. */
         network.requireNotBlocked(network.clientIp(http));
 
         UserResponse created = userService.register(request);
@@ -112,26 +81,7 @@ public class AuthController {
         return ResponseEntity.created(location).body(created);
     }
 
-    /**
-     * Logowanie - reczny przebieg z wykladu 7, slajd 33.
-     *
-     * <p>Krok po kroku:</p>
-     * <ol>
-     *   <li>pakujemy login i haslo w {@link UsernamePasswordAuthenticationToken}
-     *       (to jeszcze NIE jest dowod tozsamosci, tylko "prosba o sprawdzenie"),</li>
-     *   <li>{@code authenticationManager.authenticate(...)} sprawdza haslo -
-     *       przy blednym rzuca {@code BadCredentialsException}, ktory zamieniamy
-     *       na 401 w {@code GlobalExceptionHandler},</li>
-     *   <li>wynik wkladamy do {@code SecurityContext} i zapisujemy w sesji.</li>
-     * </ol>
-     *
-     * <p><b>Uzupelnienie wzgledem slajdu 33:</b> tam jest tylko
-     * {@code SecurityContextHolder.getContext().setAuthentication(...)}.
-     * To ustawia uzytkownika na czas biezacego zapytania, ale od Spring
-     * Security 6 <b>nie zapisuje go w sesji</b> - przy nastepnym zapytaniu
-     * uzytkownik znowu bylby niezalogowany. Dlatego dochodzi jawne
-     * {@code securityContextRepository.saveContext(...)}.</p>
-     */
+    /** Logowanie - reczny przebieg z wykladu 7, slajd 33. */
     @PostMapping("/login")
     @Operation(summary = "Loguje uzytkownika i zaklada sesje")
     @ApiResponses({
@@ -143,11 +93,7 @@ public class AuthController {
                                               HttpServletResponse response) {
 
         String address = network.clientIp(request);
-        /*
-         * Sprawdzamy PRZED sprawdzeniem hasla. Odwrotna kolejnosc oznaczalaby,
-         * ze zablokowany adres nadal moze sprawdzac hasla - czyli ze blokada
-         * nie przeszkadza w zgadywaniu ich metoda prob i bledow.
-         */
+        /* Sprawdzamy PRZED sprawdzeniem hasla. */
         network.requireNotBlocked(address);
 
         Authentication payload = new UsernamePasswordAuthenticationToken(
@@ -161,39 +107,19 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
-        /*
-         * "Zapamietaj mnie" (wymaganie nr 17). Przy formularzu logowania Springa
-         * dzieje sie to samo z siebie, ale my logujemy recznie, wiec sami
-         * prosimy o wystawienie dlugotrwalego ciasteczka.
-         */
+        /* "Zapamietaj mnie" (wymaganie nr 17). */
         if (loginPayload.rememberMe()) {
             rememberMeServices.rememberUser(request, response, authenticated);
         }
 
-        /*
-         * Zapisujemy adres dopiero po UDANYM zalogowaniu. Zapis przy kazdej
-         * probie zamienialby te tabele w dziennik nieudanych logowan - a to
-         * zupelnie inna funkcja, ktorej tu nie ma.
-         *
-         * Blad zapisu nie moze przerwac logowania: to notatka pomocnicza dla
-         * administratora, a nie warunek wejscia (patrz NetworkService).
-         */
+        /* Zapisujemy adres dopiero po UDANYM zalogowaniu. */
         userRepository.findByUsername(authenticated.getName())
             .ifPresent(user -> network.recordLogin(user, address));
 
         return ResponseEntity.ok(userService.getByUsername(authenticated.getName()));
     }
 
-    /**
-     * Kto jest aktualnie zalogowany.
-     *
-     * <p>Frontend wola to przy starcie, zeby wiedziec, czy pokazac ekran
-     * logowania czy strone glowna. Przy okazji ustawia sie ciasteczko
-     * CSRF, potrzebne do pozniejszych zapytan POST.</p>
-     *
-     * <p>{@code authentication.getName()} zwraca login zalogowanego -
-     * wyklad 7, slajd 30.</p>
-     */
+    /** Kto jest aktualnie zalogowany. */
     @GetMapping("/me")
     @Operation(summary = "Zwraca dane zalogowanego uzytkownika")
     @ApiResponses({
@@ -205,19 +131,8 @@ public class AuthController {
     }
 
     /**
-     * Endpoint istnieje wylacznie po to, zeby wymusic ustawienie ciasteczka
-     * XSRF-TOKEN, zanim frontend wysle pierwsze zapytanie POST.
-     *
-     * <p><b>Dlaczego {@link CsrfToken} jest w argumentach, skoro go nie
-     * zwracamy?</b> Spring Security 6 generuje token CSRF <i>leniwie</i> -
-     * dopiero wtedy, gdy cos faktycznie o niego poprosi. Sam pusty endpoint
-     * nie wystarczy: odpowiedz przychodzi bez naglowka {@code Set-Cookie},
-     * frontend nie ma czym podpisac zapytania POST i dostaje odmowe.
-     * Samo wywolanie {@code getToken()} nizej wymusza wygenerowanie tokenu
-     * i zapisanie go w ciasteczku.</p>
-     *
-     * <p>204 NO CONTENT - "sukces, ale nie ma czego zwracac"
-     * (wyklad 4, slajd 32).</p>
+     * Endpoint istnieje wylacznie po to, zeby wymusic ustawienie ciasteczka XSRF-TOKEN, zanim
+     * frontend wysle pierwsze zapytanie POST.
      */
     @GetMapping("/csrf")
     @Operation(summary = "Ustawia ciasteczko CSRF przed pierwszym zapytaniem POST")

@@ -33,21 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Testy kontrolera - wymaganie nr 25 ({@code @WebMvcTest}).
- *
- * <p>Wyklad 5 (slajdy 21-22): {@code @WebMvcTest} podnosi tylko warstwe MVC.
- * Nie startuje serwer ani baza, nie ma prawdziwych zapytan HTTP - zamiast tego
- * wstrzykujemy {@link MockMvc} i przez niego "udajemy" zapytania. Serwis
- * zastepujemy atrapa ({@code @MockBean}, slajd 29).</p>
- *
- * <p>{@code @Import(SecurityConfig.class)} dociaga nasza konfiguracje
- * bezpieczenstwa - bez tego test chodzilby na domyslnej konfiguracji Springa
- * i nie sprawdzalby tego, co naprawde mamy w projekcie.</p>
- *
- * <p>{@code .with(csrf())} dokleja poprawny token CSRF. Bez niego kazdy POST
- * dostalby 403 - i to jest dowod, ze ochrona CSRF faktycznie dziala.</p>
- */
+/** Testy kontrolera - wymaganie nr 25 (@WebMvcTest). */
 @WebMvcTest(AuthController.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, I18nConfig.class, GlobalExceptionHandler.class})
@@ -69,15 +55,7 @@ class AuthControllerTest {
     @MockBean
     private AuthenticationManager authenticationManager;
 
-    /**
-     * Potrzebny konfiguracji Security do zbudowania obslugi "zapamietaj mnie".
-     *
-     * <p>Uwaga na pulapke: {@code SecurityContextRepository} celowo NIE jest
-     * tu atrapa. Gdyby byl, jego {@code loadDeferredContext()} zwracalby
-     * {@code null}, a filtr Springa wymaga niepustej wartosci - wszystkie
-     * testy leca wtedy na "Only non-null Supplier instances are permitted".
-     * Prawdziwy bean pochodzi z zaimportowanego {@link SecurityConfig}.</p>
-     */
+    /** Potrzebny konfiguracji Security do zbudowania obslugi "zapamietaj mnie". */
     @MockBean
     private UserDetailsService userDetailsService;
 

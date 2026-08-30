@@ -21,20 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * Reakcje na posty.
- *
- * <p><b>Dlaczego {@code PUT}, a nie {@code POST}?</b> {@code PUT} oznacza
- * "ustaw stan na taki", a nie "dolóz kolejny". Uzytkownik ma na dany post
- * dokladnie jedna reakcje, wiec wyslanie tego samego zadania dwa razy powinno
- * dac ten sam wynik - i daje. {@code POST} sugerowalby, ze za kazdym razem
- * powstaje nowy zasob.</p>
- *
- * <p>Obie metody zwracaja <b>caly zaktualizowany post</b>, a nie same liczniki.
- * Dzieki temu po kliknieciu przegladarka podmienia jeden wpis w tablicy
- * i ma pewnosc, ze widzi dokladnie to, co jest w bazie - zamiast dodawac
- * sobie {@code +1} na wlasna reke i rozjezdzac sie z serwerem.</p>
- */
+/** Reakcje na posty. */
 @RestController
 @RequestMapping("/api/posts/{postId}")
 @Tag(name = "Reakcje", description = "Ogien, mid i meh pod postami")
@@ -75,13 +62,7 @@ public class ReactionController {
         return ResponseEntity.ok(reactionService.revert(postId, authentication.getName()));
     }
 
-    /**
-     * Kto zareagowal na ten post i jak.
-     *
-     * <p>Adres jest w liczbie mnogiej ({@code /reactions}), bo zwraca liste -
-     * w odroznieniu od {@code /reaction}, ktore dotyczy JEDNEJ, wlasnej
-     * reakcji zalogowanego uzytkownika.</p>
-     */
+    /** Kto zareagowal na ten post i jak. */
     @GetMapping("/reactions")
     @Operation(summary = "Lista osob, ktore zareagowaly na post")
     @ApiResponses({

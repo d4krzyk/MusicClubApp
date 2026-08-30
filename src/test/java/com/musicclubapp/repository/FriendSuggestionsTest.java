@@ -16,29 +16,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Testy zapytania o proponowanych znajomych.
- *
- * <p>To najbardziej zakrecone zapytanie w projekcie: liczy naraz wspolnych
- * znajomych, wspolnych artystow i wspolne gatunki, a potem sortuje po wyniku,
- * ktorego nie ma w zadnej tabeli. Testy na atrapach nie sprawdzilyby tu
- * niczego - liczy caly czas baza, wiec i test musi isc na prawdziwa baze.</p>
- *
- * <p><b>Uklad danych</b> (patrz {@link #setUp()}):</p>
- * <pre>
- *   znajomosci:  ala — bob — cezary          (dawid nikogo nie zna)
- *   ulubieni:    ala  -> Radiohead           (gatunki: rock, alternative)
- *                dawid-> Radiohead
- *                cezary-> Daft Punk          (gatunek: electronic)
- * </pre>
- *
- * <p>Dla <b>ali</b> daje to:</p>
- * <table><caption>Spodziewany wynik</caption>
- *   <tr><td>dawid </td><td>1 artysta ×5 + 2 gatunki ×1</td><td>= 7</td></tr>
- *   <tr><td>cezary</td><td>1 wspolny znajomy (bob) ×3</td><td>= 3</td></tr>
- *   <tr><td>bob   </td><td>nic wspolnego</td><td>= 0</td></tr>
- * </table>
- */
+/** Testy zapytania o proponowanych znajomych. */
 @DataJpaTest
 @ActiveProfiles("test")
 @DisplayName("Proponowani znajomi - sortowanie po dopasowaniu")
@@ -107,11 +85,9 @@ class FriendSuggestionsTest {
     @DisplayName("lista zawiera WSZYSTKICH, nie tylko dopasowanych")
     void everyoneIsListed() {
         /*
-         * To jest zalozenie calej funkcji: aplikacja dla kilkunastu osob,
-         * ktora po odfiltrowaniu "za malo podobnych" pokazuje pusta strone,
-         * jest bezuzyteczna dokladnie wtedy, kiedy najbardziej potrzeba
-         * w niej ludzi - na starcie. Bob nie ma z ala nic wspolnego,
-         * a mimo to jest na liscie.
+         * To jest zalozenie calej funkcji: aplikacja dla kilkunastu osob, ktora po odfiltrowaniu
+         * "za malo podobnych" pokazuje pusta strone, jest bezuzyteczna dokladnie wtedy, kiedy
+         * najbardziej potrzeba w niej ludzi - na starcie.
          */
         assertThat(forAla()).hasSize(3);
         assertThat(forAla()).extracting(SuggestionRow::getUsername).contains("bob");
@@ -149,10 +125,9 @@ class FriendSuggestionsTest {
     @DisplayName("znajomi zostaja na liscie, ale sa oznaczeni")
     void friendsAreMarked() {
         /*
-         * Gdyby znajomi znikali, osoba z najlepszym dopasowaniem przepadalaby
-         * w chwili dodania jej do znajomych - czyli dokladnie ta, ktora
-         * najlepiej tlumaczy, po co ta lista w ogole jest. Zostaje wiec
-         * na liscie, tylko z innym przyciskiem.
+         * Gdyby znajomi znikali, osoba z najlepszym dopasowaniem przepadalaby w chwili dodania jej
+         * do znajomych - czyli dokladnie ta, ktora najlepiej tlumaczy, po co ta lista w ogole
+         * jest.
          */
         List<SuggestionRow> score = forAla();
 
@@ -181,11 +156,7 @@ class FriendSuggestionsTest {
     @Test
     @DisplayName("bez ulubionych wynik opiera sie na samych znajomych")
     void withoutFavorites() {
-        /*
-         * Wazny przypadek brzegowy: nowy uzytkownik nie ma jeszcze zadnych
-         * ulubionych. Lista ma dzialac takze wtedy - inaczej pierwsze wejscie
-         * do aplikacji wygladaloby na zepsute.
-         */
+        /* Wazny przypadek brzegowy: nowy uzytkownik nie ma jeszcze zadnych ulubionych. */
         List<SuggestionRow> dlaDawida =
             userRepository.friendSuggestions("bob", PageRequest.of(0, 20));
 

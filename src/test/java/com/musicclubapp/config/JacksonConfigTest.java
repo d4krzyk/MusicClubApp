@@ -11,27 +11,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Pilnuje, ze daty wychodza z API z <b>jawna strefa czasowa</b>.
- *
- * <p><b>Blad, ktory to wymusil.</b> Osoba aktywna przed chwila byla
- * pokazywana jako <i>„aktywny 2 godziny temu"</i>, a wiadomosc wyslana przed
- * sekunda dostawala godzine sprzed dwoch godzin. Przesuniecie bylo rowne
- * roznicy miedzy czasem polskim a UTC.</p>
- *
- * <p><b>Dlaczego zaden inny test tego nie widzial.</b> Wszystkie porownuja
- * daty po stronie Javy, gdzie po obu stronach jest ten sam
- * {@link LocalDateTime}. Przesuniecie powstaje dopiero przy przejsciu przez
- * JSON do przegladarki: date-czas <b>bez</b> przesuniecia strefy norma
- * JavaScriptu kaze czytac jako czas <i>lokalny</i>, a nie UTC. Zeby blad
- * zobaczyc, trzeba patrzec dokladnie na to, co idzie po drucie - i tym
- * zajmuje sie ten test.</p>
- *
- * <p><b>Ten test nie jest ozdoba.</b> Wystarczy, ze ktos kiedys ustawi
- * globalny format dat w {@code application.properties} albo doda wlasny
- * {@code ObjectMapper}, a koncowka {@code Z} zniknie - i blad wroci w tej
- * samej postaci, znowu nie ruszajac zadnego innego testu.</p>
- */
+/** Pilnuje, ze daty wychodza z API z jawna strefa czasowa. */
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Daty w API maja jawna strefe (UTC)")
@@ -56,10 +36,8 @@ class JacksonConfigTest {
     @DisplayName("godzina NIE jest przy okazji przeliczana")
     void theHourItselfIsUnchanged() throws Exception {
         /*
-         * Dopisanie "Z" ma tylko NAZWAC strefe, ktora i tak juz obowiazuje
-         * (zegar serwera jest przypiety do UTC przy starcie aplikacji).
-         * Gdyby ktos dodal tu jeszcze przeliczanie, daty przesunelyby sie
-         * drugi raz - i blad wrocilby, tylko w druga strone.
+         * Dopisanie "Z" ma tylko NAZWAC strefe, ktora i tak juz obowiazuje (zegar serwera jest
+         * przypiety do UTC przy starcie aplikacji).
          */
         String json = objectMapper.writeValueAsString(
             LocalDateTime.of(2026, 1, 5, 23, 45, 30));

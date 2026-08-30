@@ -33,18 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Kierowanie zapytan w {@link PostController}.
- *
- * <p><b>Po co osobny test na adresy.</b> Do kontrolera doszlo
- * {@code GET /api/posts/reactions}, a obok stoi juz {@code GET /api/posts/{id}}.
- * Oba wzorce maja dwa czlony i oba pasuja do tego samego adresu. Spring wybiera
- * ten z doslownym czlonem - ale gdyby kiedys ta zasada sie zmienila albo ktos
- * przestawil adresy, objawiloby sie to bledem 400 ("nie umiem zamienic
- * 'reactions' na liczbe") przy odswiezaniu reakcji, czyli w miejscu, ktorego
- * nikt by z tym nie polaczyl. Zaden test logiki tego nie zlapie, bo problem
- * siedzi wylacznie w mapowaniu adresow.</p>
- */
+/** Kierowanie zapytan w PostController. */
 @WebMvcTest(PostController.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, I18nConfig.class, GlobalExceptionHandler.class})

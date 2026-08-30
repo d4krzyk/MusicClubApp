@@ -23,18 +23,7 @@ const FILTERS = ['OPEN', 'RESOLVED', 'DISMISSED', 'ALL'];
 /** Ile zgloszen pobieramy naraz. */
 const ROZMIAR_STRONY = 30;
 
-/**
- * Panel zgloszen - <b>tylko dla administratora</b>.
- *
- * <p>Strona otwiera sie na zgloszeniach OTWARTYCH, bo to jedyne, z ktorymi
- * jest cos do zrobienia. Zamkniete sa dostepne pod filtrem: potrzebne przy
- * sprawdzaniu historii konta, ale nie przy codziennej pracy.</p>
- *
- * <p><b>Dowody sa doczytywane na zadanie.</b> Lista pokazuje naglowki,
- * a migawke rozmowy pobieramy dopiero po rozwinieciu jednego zgloszenia -
- * dwadziescia rozmow po dwadziescia wiadomosci to kilkaset linijek tekstu
- * na jedno wejscie na strone.</p>
- */
+/** Panel zgloszen - tylko dla administratora. */
 export default function ReportsPage() {
   const { t, i18n } = useTranslation();
   const { user: loggedIn } = useAuth();
@@ -66,12 +55,7 @@ export default function ReportsPage() {
 
   return (
     <div className="reports-page">
-      {/*
-        Tytul w osobnym wierszu. Klasa .page-title jest inline-block (podkreslenie
-        ma miec szerokosc tekstu, a nie calej strony) - bez tego opakowania
-        grupa przyciskow ustawia sie OBOK niego i przy dluzszym tytule oba
-        elementy na siebie wchodza. Widac to bylo dopiero na zrzucie.
-      */}
+      {/* Tytul w osobnym wierszu. */}
       <div>
         <h1 className="page-title">{t('reports.panelTitle')}</h1>
       </div>
@@ -108,10 +92,9 @@ export default function ReportsPage() {
           language={i18n.language}
           t={t}
           /*
-            Zgloszenie moze dotyczyc samego administratora, ktory je oglada -
-            wtedy nie wolno mu przy okazji ukarac wlasnego konta. Kto jest
-            zalogowany, wiemy tutaj, wiec przekazujemy to nizej.
-          */
+           * Zgloszenie moze dotyczyc samego administratora, ktory je oglada - wtedy nie wolno mu
+           * przy okazji ukarac wlasnego konta.
+           */
           me={loggedIn?.username}
           onResolved={load}
         />
@@ -128,11 +111,7 @@ function ReportCard({ report, language, t, me, onResolved }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
 
-  /*
-   * Domyslnie NIC nie robimy z kontem. To najlagodniejsza z mozliwosci
-   * i dlatego jest domyslna: kara ma byc swiadomym wyborem, a nie skutkiem
-   * nieprzestawienia listy.
-   */
+  /* Domyslnie NIC nie robimy z kontem. */
   const [action, setAction] = useState('NONE');
   const [duration, setDuration] = useState('24');
 
@@ -141,28 +120,15 @@ function ReportCard({ report, language, t, me, onResolved }) {
   /* Czas trwania dotyczy tylko zakazow - usuniecie konta trwa zawsze */
   const needsDuration = action === 'BAN_POSTING' || action === 'BAN_MESSAGING';
 
-  /*
-   * Zgloszenie NA SAMEGO SIEBIE. Administrator moze je zamknac - ktos musi -
-   * ale nie moze przy tej okazji ukarac wlasnego konta. To z jednej strony
-   * ocena we wlasnej sprawie, a z drugiej jedno klikniecie od odebrania
-   * sobie dostepu do panelu. Zgloszenie na INNEGO administratora jest
-   * zwyklym zgloszeniem i ma pelna liste dzialan.
-   *
-   * Serwer pilnuje tego niezaleznie - tutaj chodzi o to, zeby w ogole nie
-   * pokazywac wyboru, ktory skonczy sie odmowa.
-   */
+  /* Zgloszenie NA SAMEGO SIEBIE. */
   const aboutMe = !!me && report.reportedUsername === me;
 
-  /*
-   * Kasowanie posta pokazujemy WYLACZNIE przy zgloszeniu posta. Przy
-   * zgloszeniu profilu albo rozmowy nie ma czego kasowac, a pozycja
-   * prowadzaca do komunikatu o bledzie jest zaproszeniem do pomylki.
-   */
+  /* Kasowanie posta pokazujemy WYLACZNIE przy zgloszeniu posta. */
   const actions = ['NONE',
     ...(report.postId ? ['DELETE_POST'] : []),
     ...(aboutMe ? [] : ['BAN_POSTING', 'BAN_MESSAGING', 'DELETE_ACCOUNT'])];
 
-  /** Dowody pobieramy dopiero przy rozwinieciu - patrz komentarz przy stronie. */
+  /** Dowody pobieramy dopiero przy rozwinieciu karty. */
   async function toggle() {
     const next = !expanded;
     setExpanded(next);
@@ -178,10 +144,8 @@ function ReportCard({ report, language, t, me, onResolved }) {
 
   async function decide(decision) {
     /*
-     * Usuniecie konta jest nieodwracalne, wiec pytamy jeszcze raz - i to
-     * PRZED wyslaniem, a nie po. Pozostale dzialania da sie cofnac
-     * (zakaz mozna zdjac, posta i tak juz nie ma), wiec tam dodatkowe
-     * klikniecie tylko przeszkadzaloby w codziennej pracy.
+     * Usuniecie konta jest nieodwracalne, wiec pytamy jeszcze raz - i to PRZED wyslaniem, a nie
+     * po.
      */
     if (action === 'DELETE_ACCOUNT'
       && !window.confirm(t('reports.confirmDeleteAccount', { username: report.reportedUsername }))) {
@@ -251,11 +215,7 @@ function ReportCard({ report, language, t, me, onResolved }) {
                 {t(`reports.contexts.${report.context}`)}
               </Badge>
 
-              {/*
-                Historia konta. Jedno zgloszenie moze byc nieporozumieniem,
-                piate zasadne to juz wzorzec - i zupelnie inna decyzja.
-                Dlatego liczba stoi przy naglowku, a nie w szczegolach.
-              */}
+              {/* Historia konta. */}
               {report.priorResolved > 0 && (
                 <Badge bg="warning-subtle" text="warning-emphasis">
                   {t('reports.priorResolved', { count: report.priorResolved })}
@@ -332,15 +292,7 @@ function ReportCard({ report, language, t, me, onResolved }) {
                 </div>
                 <div className="text-body-secondary">{report.resolutionNote}</div>
 
-                {/*
-                  Decyzje da sie zmienic. Bywa pochopna albo podjeta przy
-                  niepelnym obrazie sprawy, a bez tego jedynym wyjsciem byloby
-                  poprawianie wiersza wprost w bazie.
-
-                  Mowimy WPROST, ze nie cofa to wykonanych dzialan - inaczej
-                  "zmien decyzje" brzmi jak "cofnij wszystko", a skasowanego
-                  posta nie ma i nie bedzie.
-                */}
+                {/* Decyzje da sie zmienic. */}
                 <div className="mt-2">
                   <Button variant="outline-secondary" size="sm" onClick={reopen}>
                     {t('reports.reopen')}
@@ -370,13 +322,7 @@ function ReportCard({ report, language, t, me, onResolved }) {
             />
             <p className="text-body-secondary small">{t('reports.noteHint')}</p>
 
-            {/*
-              Dzialanie wybieramy TUTAJ, razem z decyzja - a nie osobno
-              w panelu kont. Wczesniej zamkniecie sprawy bylo sama notatka
-              i trzeba bylo zapamietac nazwe konta, przejsc na inna strone,
-              odszukac je i dopiero tam ukarac. Dowody sa tutaj, wiec
-              decyzja tez powinna zapadac tutaj.
-            */}
+            {/* Dzialanie wybieramy TUTAJ, razem z decyzja - a nie osobno w panelu kont. */}
             <div className="d-flex gap-2 flex-wrap align-items-end mb-3">
               <div style={{ minWidth: '15rem' }}>
                 <Form.Label htmlFor={`action-${report.id}`} className="small fw-semibold">
@@ -445,12 +391,7 @@ function ReportCard({ report, language, t, me, onResolved }) {
                 <IconFlag className="me-1" /> {t('reports.dismiss')}
               </Button>
 
-              {/*
-                Skrot do panelu kont. Zostaje mimo listy dzialan obok, bo
-                panel potrafi rzeczy, ktorych tu nie ma i miec nie powinno -
-                przede wszystkim podejrzenie multikont i blokade adresu.
-                To sa decyzje wykraczajace poza jedno zgloszenie.
-              */}
+              {/* Skrot do panelu kont. */}
               <Link to="/users" className="btn btn-outline-danger btn-sm">
                 {t('reports.goToPanel')}
               </Link>

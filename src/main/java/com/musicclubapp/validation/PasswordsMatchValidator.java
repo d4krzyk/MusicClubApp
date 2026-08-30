@@ -5,13 +5,7 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.util.Objects;
 
-/**
- * Walidator dla {@link PasswordsMatch} - wyklad 3, slajd 65.
- *
- * <p>Dziala na dowolnym DTO, ktore implementuje {@link PasswordsToCompare},
- * czyli zarowno na formularzu rejestracji, jak i na zmianie hasla
- * w ustawieniach.</p>
- */
+/** Walidator dla PasswordsMatch - wyklad 3, slajd 65. */
 public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, PasswordsToCompare> {
 
     @Override
@@ -24,10 +18,8 @@ public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMat
 
         if (!matches) {
             /*
-             * Domyslnie blad walidacji na poziomie klasy nie jest przypisany do
-             * zadnego pola - w odpowiedzi JSON pole "field" byloby puste i
-             * frontend nie wiedzialby, co podswietlic. Ponizsze linijki
-             * przypinaja komunikat do pola confirmPassword.
+             * Domyslnie blad walidacji na poziomie klasy nie jest przypisany do zadnego pola - w
+             * odpowiedzi JSON pole "field" byloby puste i frontend nie wiedzialby, co podswietlic.
              */
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(context.getDefaultConstraintMessageTemplate())

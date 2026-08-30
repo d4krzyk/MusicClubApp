@@ -10,18 +10,7 @@ import { timeAgo } from '../utils/dates';
 /** Ta sama kolejnosc co pod postem - od najbardziej pozytywnej. */
 const ORDER = ['FIRE', 'MID', 'MEH'];
 
-/**
- * Okienko "kto zareagowal na ten post".
- *
- * <p><b>Liste pobieramy dopiero po otwarciu.</b> Gdyby kazdy post na tablicy
- * ciagnal ja od razu, dwadziescia postow oznaczaloby dwadziescia dodatkowych
- * zapytan - po to, zeby pokazac cos, w co prawie nikt nie kliknie.</p>
- *
- * <p><b>Widzi to kazdy, nie tylko autor posta.</b> Reakcja jest w serwisie
- * spolecznosciowym gestem publicznym; ukrywanie jej przed pozostalymi
- * czytelnikami byloby zaskakujace, a i tak dalo by sie ja policzyc
- * z licznika obok emotki.</p>
- */
+/** Okienko "kto zareagowal na ten post". */
 export default function ReactionAuthors({ postId, show, onHide }) {
   const { t, i18n } = useTranslation();
 
@@ -55,11 +44,7 @@ export default function ReactionAuthors({ postId, show, onHide }) {
     };
   }, [show, postId]);
 
-  /*
-   * Grupujemy po rodzaju reakcji. Jedna dluga lista wymagalaby czytania
-   * emotki przy kazdym wierszu z osobna, zeby zobaczyc, ilu ludzi dalo
-   * co - a to jest tu glowne pytanie.
-   */
+  /* Grupujemy po rodzaju reakcji. */
   const groups = ORDER
     .map((code) => [code, people.filter((p) => p.type === code)])
     .filter(([, list]) => list.length > 0);

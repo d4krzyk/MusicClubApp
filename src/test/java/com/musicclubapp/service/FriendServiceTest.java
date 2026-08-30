@@ -23,12 +23,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-/**
- * Testy jednostkowe znajomych - wymaganie nr 13.
- *
- * <p>Najwazniejsze sprawdzenia to te pilnujace, ZE ZNAJOMOSC JEST OBUSTRONNA
- * i ze nikt nie moze przyjac cudzego zaproszenia.</p>
- */
+/** Testy jednostkowe znajomych - wymaganie nr 13. */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("FriendService - zapraszanie i lista znajomych")
 class FriendServiceTest {

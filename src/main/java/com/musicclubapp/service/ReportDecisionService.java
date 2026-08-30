@@ -14,28 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Decyzja administratora w zgloszeniu - <b>razem z jej wykonaniem</b>.
- *
- * <p><b>Dlaczego to jest osobna klasa.</b> Mieszkalo wczesniej
- * w {@code UserModerationService}, ktory urosl przez to do trzynastu
- * wstrzykiwanych zaleznosci i piecu niepowiazanych ze soba zadan: kasowanie
- * kont, kary, decyzje w zgloszeniach, ponowne otwieranie spraw i powiazania
- * sieciowe. Konstruktor z trzynastoma parametrami to nie kwestia stylu -
- * to informacja, ze klasa robi za duzo.</p>
- *
- * <p>Co gorsza, zgloszenia trafily tam z <b>powodu technicznego</b>, a nie
- * dlatego, ze tam pasuja: {@code ReportService} nie mogl siegnac po kary,
- * bo moderacja juz od niego zalezy (kasujac konto, kasuje tez jego
- * zgloszenia), a zaleznosc w druga strone zamknelaby kolo. Ta klasa rozcina
- * je uczciwie: <b>zalezy od obu i zadna nie zalezy od niej</b>, wiec granica
- * wynika teraz z rol, a nie z obejscia.</p>
- *
- * <p><b>Podzial obowiazkow.</b> {@code ReportService} wie, czym jest
- * zgloszenie (limity, dowody, zamykanie). {@code UserModerationService} wie,
- * jak ukarac konto. Ta klasa wie tylko <b>jedno</b>: ze decyzja i kara maja
- * sie wydarzyc razem albo wcale.</p>
- */
+/** Decyzja administratora w zgloszeniu - razem z jej wykonaniem. */
 @Service
 public class ReportDecisionService {
 
@@ -56,20 +35,7 @@ public class ReportDecisionService {
         this.posts = posts;
     }
 
-    /**
-     * Zamyka zgloszenie i <b>od razu</b> wykonuje decyzje administratora.
-     *
-     * <p><b>Jedna transakcja na decyzje i kare.</b> Gdyby to byly dwa osobne
-     * wywolania z przegladarki, awaria miedzy nimi zostawialaby stan, ktorego
-     * nie da sie sensownie opisac: zgloszenie zamkniete z notatka "konto
-     * usuniete", a konto na miejscu. Tutaj albo dzieje sie jedno i drugie,
-     * albo nic.</p>
-     *
-     * <p><b>Kolejnosc: najpierw zamkniecie, potem kara.</b> Zamkniecie
-     * sprawdza, czy ktos inny nie zdazyl juz podjac decyzji - i jesli zdazyl,
-     * przerywa. Przy odwrotnej kolejnosci kara zdazylaby sie wykonac
-     * <i>drugi raz</i>, zanim wyszloby na jaw, ze sprawa jest juz zamknieta.</p>
-     */
+    /** Zamyka zgloszenie i od razu wykonuje decyzje administratora. */
     @Transactional
     public ReportResponse resolve(String adminUsername, Long id, ResolveReportRequest request) {
         Report report = reportRepository.findById(id)
@@ -77,27 +43,12 @@ public class ReportDecisionService {
 
         ModerationAction action = request.actionOrNone();
 
-        /*
-         * Kasowanie posta ma sens tylko przy zgloszeniu, ktore posta dotyczy.
-         * Sprawdzamy to PRZED zamknieciem sprawy: inaczej zgloszenie bylo by
-         * juz zamkniete, gdy okaze sie, ze zadanej kary nie da sie wykonac,
-         * a zamkniecia nie da sie cofnac.
-         */
+        /* Kasowanie posta ma sens tylko przy zgloszeniu, ktore posta dotyczy. */
         if (action == ModerationAction.DELETE_POST && report.getPost() == null) {
             throw OperationNotAllowedException.reportHasNoPost();
         }
 
-        /*
-         * Administrator nie karze SAM SIEBIE.
-         *
-         * Zgloszenie moze dotyczyc administratora - i wtedy nadal wolno mu je
-         * zamknac, bo ktos musi. Nie wolno mu natomiast przy tej okazji
-         * zablokowac ani skasowac wlasnego konta: "sam sobie sedzia" to
-         * z jednej strony ocena we wlasnej sprawie, a z drugiej - jedno
-         * klikniecie od odebrania sobie (i moze wszystkim) dostepu do panelu.
-         * Zgloszenie na INNEGO administratora jest zwyklym zgloszeniem
-         * i dziala bez ograniczen.
-         */
+        /* Administrator nie karze SAM SIEBIE. */
         boolean aboutSelf = report.getReported().getUsername().equals(adminUsername);
         if (aboutSelf && isPunishment(action)) {
             throw OperationNotAllowedException.ownAccount();
@@ -110,13 +61,7 @@ public class ReportDecisionService {
             case DELETE_POST -> {
                 Long postId = report.getPost().getId();
 
-                /*
-                 * Najpierw odpinamy post od zgloszen, dopiero potem kasujemy.
-                 * Odwrotna kolejnosc konczy sie odmowa bazy (klucz obcy
-                 * z tabeli zgloszen) - i konczyla sie, zanim to powstalo.
-                 * Odpiac trzeba WSZYSTKIE zgloszenia, nie tylko to rozpatrywane:
-                 * ten sam post mogl zglosic ktos jeszcze.
-                 */
+                /* Najpierw odpinamy post od zgloszen, dopiero potem kasujemy. */
                 reportRepository.detachPost(postId);
 
                 posts.delete(postId, adminUsername);
@@ -133,13 +78,7 @@ public class ReportDecisionService {
         return closed;
     }
 
-    /**
-     * Otwiera zamknieta sprawe z powrotem, zeby dalo sie zdecydowac inaczej.
-     *
-     * <p><b>Nie cofa wykonanych dzialan</b> - skasowanego posta nie ma,
-     * a zakaz zdejmuje sie osobno w panelu kont. Cofa sie decyzja, nie jej
-     * skutki; szczegoly przy {@code Report.reopen}.</p>
-     */
+    /** Otwiera zamknieta sprawe z powrotem, zeby dalo sie zdecydowac inaczej. */
     @Transactional
     public ReportResponse reopen(String adminUsername, Long id) {
         Report report = reportRepository.findById(id)
@@ -154,13 +93,7 @@ public class ReportDecisionService {
         return reports.get(id);
     }
 
-    /**
-     * Czy to dzialanie jest kara wymierzona w KONTO.
-     *
-     * <p>Usuniecie posta swiadomie nie jest tu wymienione: post to pojedyncza
-     * tresc i skasowanie wlasnego wpisu nie odbiera nikomu dostepu do niczego.
-     * Zakazy i usuniecie konta - owszem.</p>
-     */
+    /** Czy to dzialanie jest kara wymierzona w KONTO. */
     private boolean isPunishment(ModerationAction action) {
         return action.banKind() != null || action == ModerationAction.DELETE_ACCOUNT;
     }
