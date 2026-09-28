@@ -42,6 +42,37 @@ export function ChatProvider({ children }) {
 
   useOdswiezanie(refreshUnread, IDLE_REFRESH_MS, Boolean(user) && !open);
 
+  /**
+   * Sprzetowy "wstecz" na Androidzie ma zamykac czat, a nie wychodzic z aplikacji.
+   * Otwarcie czatu dokłada wpis do historii przegladarki; "wstecz" go zdejmuje,
+   * a my na to reagujemy zamknieciem panelu.
+   */
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    window.history.pushState({ czat: true }, '');
+
+    function naWstecz() {
+      setOpen(false);
+    }
+    window.addEventListener('popstate', naWstecz);
+
+    return () => {
+      window.removeEventListener('popstate', naWstecz);
+      /*
+       * Zamkniecie z interfejsu musi zdjac wpis, ktory sami dolozylismy - inaczej
+       * pierwsze "wstecz" po wyjsciu z czatu nic by nie robilo. Warunek pilnuje,
+       * zeby nie cofnac cudzego wpisu: gdy czat zamknal sie przez "wstecz" albo
+       * przez przejscie na profil rozmowcy, na wierzchu nie ma juz naszego stanu.
+       */
+      if (window.history.state?.czat) {
+        window.history.back();
+      }
+    };
+  }, [open]);
+
   /** Otwiera czat - z konkretna osoba albo na liscie rozmow. */
   const openChat = useCallback((username = null) => {
     setActiveUsername(username);

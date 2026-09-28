@@ -15,6 +15,8 @@ import {
 } from '../api/konto';
 import Field from '../components/Field';
 import Avatar from '../components/Avatar';
+import LanguageSwitch from '../components/LanguageSwitch';
+import ThemeToggle from '../components/ThemeToggle';
 
 /** Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla. */
 export default function SettingsPage() {
@@ -32,9 +34,47 @@ export default function SettingsPage() {
         {/* key = login. */}
         <ProfileForm key={user.username} />
         <PasswordForm />
+        <WygladIJezyk />
         <StrefaNieodwracalna />
       </Col>
     </Row>
+  );
+}
+
+/**
+ * Jezyk i motyw. Oba stały wczesniej w gornym pasku i zabierały mu jedna trzecia
+ * szerokosci; ustawia sie je raz i wraca do nich rzadko, wiec ich miejsce jest tutaj.
+ * Niezalogowani maja przelacznik jezyka w stopce - do ustawien by nie doszli.
+ */
+function WygladIJezyk() {
+  const { t } = useTranslation();
+
+  return (
+    <Card className="mb-4">
+      <Card.Body>
+        <Card.Title as="h2" className="h6 text-uppercase text-body-secondary">
+          {t('settings.appearance')}
+        </Card.Title>
+
+        <div className="ustawienie-wiersz">
+          <div>
+            <div className="fw-semibold">{t('settings.language')}</div>
+            <div className="text-body-secondary small">{t('settings.languageHint')}</div>
+          </div>
+          <LanguageSwitch />
+        </div>
+
+        <hr className="my-3" />
+
+        <div className="ustawienie-wiersz">
+          <div>
+            <div className="fw-semibold">{t('settings.theme')}</div>
+            <div className="text-body-secondary small">{t('settings.themeHint')}</div>
+          </div>
+          <ThemeToggle />
+        </div>
+      </Card.Body>
+    </Card>
   );
 }
 

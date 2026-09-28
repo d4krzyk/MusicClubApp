@@ -714,6 +714,61 @@
   .chat-drawer {
     width: 100vw;
     border-left: 0;
+    box-shadow: none;
+
+    /*
+       "dvh" zamiast "vh": na telefonie pasek adresu chowa sie przy przewijaniu
+       i wysokosc okna zmienia sie w trakcie. Przy 100vh dolna krawedz panelu
+       - czyli pole pisania - chowa sie wtedy pod paskiem przegladarki.
+    */
+    bottom: auto;
+    height: 100dvh;
+  }
+
+  /* Pelny ekran nie ma czego przyciemniac - za panelem nie widac juz strony. */
+  .chat-backdrop {
+    display: none;
+  }
+
+  /* Palec potrzebuje wiekszego celu niz kursor - 2rem to za malo. */
+  .chat-head {
+    min-height: 3.5rem;
+    padding: .5rem .6rem;
+  }
+
+  .chat-head-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .chat-music-toggle,
+  .chat-send {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .chat-row {
+    padding: .7rem .6rem;
+  }
+
+  /*
+     Ponizej 16px Android i iOS SAME przybliżaja strone przy wejsciu w pole.
+     Ekran wtedy podskakuje i trzeba go odsuwac palcami - stad dokladnie 16px,
+     a nie 0.875rem jak na szerokim ekranie.
+  */
+  /*
+     "textarea." z przodu jest konieczne: Bootstrap ustawia wysokosc regula
+     "textarea.form-control", ktora ma nazwe elementu w selektorze i przez to
+     bije samo ".chat-input". Bez tego pole zostaje przy 38px.
+  */
+  textarea.chat-input {
+    font-size: 16px;
+    min-height: 2.75rem;
+  }
+
+  /* Zapas na pasek gestow u dolu ekranu - inaczej przycisk wysylania pod nim ginie. */
+  .chat-composer {
+    padding-bottom: calc(.6rem + env(safe-area-inset-bottom, 0px));
   }
 
   .bubble {

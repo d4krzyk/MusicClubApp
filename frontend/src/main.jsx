@@ -26,3 +26,21 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ThemeProvider>
   </React.StrictMode>
 );
+
+/*
+ * Service worker - to on sprawia, ze aplikacje da sie zainstalowac na telefonie.
+ *
+ * Rejestrujemy go WYLACZNIE w wersji zbudowanej. W trybie deweloperskim Vite
+ * podaje pliki inaczej przy kazdej zmianie, a service worker trzymalby ich stare
+ * kopie - poprawki przestawalyby byc widoczne bez czyszczenia pamieci przegladarki.
+ *
+ * Czekamy na "load", zeby pobieranie pliku nie konkurowalo o lacze z pierwszym
+ * wyswietleniem strony.
+ */
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      /* Brak service workera to mniej wygody, a nie blad - aplikacja dziala dalej */
+    });
+  });
+}

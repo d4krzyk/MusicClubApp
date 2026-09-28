@@ -160,7 +160,12 @@
     "passwordLabel": "Confirm with your password",
     "passwordHint": "The same password you sign in with.",
     "confirm": "Confirm",
-    "working": "Deleting…"
+    "working": "Deleting…",
+    "appearance": "Appearance and language",
+    "language": "Interface language",
+    "languageHint": "Also applies to messages sent by the server.",
+    "theme": "Theme",
+    "themeHint": "Light or dark — the choice is remembered in this browser."
   },
   "avatar": {
     "title": "Profile picture",
