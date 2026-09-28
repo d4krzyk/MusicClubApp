@@ -163,6 +163,48 @@ openssl rand -base64 48
 
 ---
 
+## Gdy backend nie wstaje
+
+### `password authentication failed for user ...`
+
+Baza zgłasza się jako zdrowa, a backend po kilkudziesięciu sekundach pada
+na uwierzytelnianiu.
+
+Obraz Postgresa zakłada użytkownika i bazę **wyłącznie przy pierwszym
+starcie na pustym katalogu danych**. Przy istniejącym po prostu ignoruje
+`POSTGRES_USER` i `POSTGRES_PASSWORD`. Jeśli więc wolumen powstał wcześniej
+z innymi danymi logowania, nowy użytkownik z `.env` nigdy nie powstaje.
+
+Uruchomienie produkcyjne ma własną nazwę projektu (`name: musicclub-prod`),
+więc nie dzieli wolumenu z deweloperskim. Gdyby mimo to trafić na ten błąd:
+
+```bash
+docker volume ls | grep musicclub          # zobacz, co istnieje
+docker compose -f docker-compose.prod.yml down -v   # skasuj I ZACZNIJ OD ZERA
+```
+
+`down -v` kasuje **także wgrane zdjęcia** — to osobny wolumen, ale flaga
+usuwa oba. Jeśli w bazie jest coś, czego nie chcesz stracić, zamiast kasować
+dopasuj `POSTGRES_USER` i `POSTGRES_PASSWORD` w `.env` do tego, czym baza
+została założona.
+
+### Co jeszcze warto sprawdzić
+
+```bash
+docker compose -f docker-compose.prod.yml ps -a       # wyszedl czy zyje?
+docker compose -f docker-compose.prod.yml logs backend | tail -60
+```
+
+Na WSL z repozytorium na dysku Windows (`/mnt/c/...`) warto sprawdzić końce
+linii w `.env` — przy CRLF wartości dostają na końcu znak `\r`:
+
+```bash
+cat -A .env | grep POSTGRES_PASSWORD      # ^M$ na koncu = CRLF
+sed -i 's/\r$//' .env                     # naprawa
+```
+
+---
+
 ## Co zostało sprawdzone, a co nie
 
 Sprawdzone naprawdę:

@@ -36,10 +36,24 @@
 #  ---------------------------------------------------------------------------
 # =============================================================================
 
+# Osobna nazwa projektu, i to nie jest kosmetyka.
+#
+# Bez niej Docker bierze nazwe z katalogu - taka sama dla obu plikow compose -
+# wiec produkcja siegala po TEN SAM wolumen z baza, co uruchomienie
+# deweloperskie. Obraz Postgresa zaklada uzytkownika i baze WYLACZNIE przy
+# pierwszym starcie na pustym katalogu danych; przy istniejacym po prostu
+# ignoruje POSTGRES_USER i POSTGRES_PASSWORD. Efekt: ustawiasz w .env nowego
+# uzytkownika, baza zglasza sie jako zdrowa, a backend dostaje
+# "password authentication failed" - bo takiej roli tam nigdy nie zalozono.
+#
+# Z wlasna nazwa projektu wolumeny nazywaja sie musicclub-prod_*, wiec jedno
+# uruchomienie nie moze podebrac bazy drugiemu.
+name: musicclub-prod
+
 services:
   db:
     image: postgres:16-alpine
-    container_name: musicclub-db
+    container_name: musicclub-prod-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-musicclub}
@@ -51,14 +65,19 @@ services:
     # baza wisi na 5432 dla wygody. Na serwerze z publicznym adresem oznaczaloby
     # to wystawiony PostgreSQL - dostaje sie do niego z calego internetu.
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-musicclub} -d ${POSTGRES_DB:-musicclub}"]
+      # pg_isready sprawdza tylko, czy serwer przyjmuje polaczenia - NIE sprawdza,
+      # czy dany uzytkownik istnieje. Przez to baza zalozona z innymi danymi
+      # zglaszala sie jako zdrowa, a blad wychodzil dopiero na backendzie
+      # trzydziesci sekund pozniej. psql laczy sie jako ten uzytkownik, wiec
+      # brak roli widac od razu i we wlasciwym miejscu.
+      test: ["CMD-SHELL", "psql -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\" -c 'select 1' > /dev/null || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   backend:
     build: .
-    container_name: musicclub-backend
+    container_name: musicclub-prod-backend
     restart: unless-stopped
     depends_on:
       db:
@@ -97,7 +116,7 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: musicclub-frontend
+    container_name: musicclub-prod-frontend
     restart: unless-stopped
     depends_on:
       backend:
@@ -113,7 +132,7 @@ services:
   # frontendu. Nie trzeba otwierac zadnego portu na serwerze ani zakladac konta.
   tunel:
     image: cloudflare/cloudflared:latest
-    container_name: musicclub-tunel
+    container_name: musicclub-prod-tunel
     restart: unless-stopped
     profiles: ["tunel"]
     depends_on:
@@ -126,7 +145,7 @@ services:
   # miesci sie w pliku Caddyfile obok.
   caddy:
     image: caddy:2-alpine
-    container_name: musicclub-caddy
+    container_name: musicclub-prod-caddy
     restart: unless-stopped
     profiles: ["domena"]
     depends_on:
