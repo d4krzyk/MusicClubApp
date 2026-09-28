@@ -66,18 +66,23 @@ export function czyDaSieZmniejszyc(plik) {
 /**
  * Wczytuje plik do postaci, ktora da sie narysowac na plotnie.
  *
- * imageOrientation: 'from-image' jest tu wazne. Zdjecia robione telefonem
- * trzymanym bokiem sa zapisane poziomo, a informacja o obrocie siedzi
- * w danych EXIF. Przy rysowaniu na plotnie EXIF przepada - bez tej opcji
- * kazde takie zdjecie wyszloby obrocone o 90 stopni.
+ * Zdjecie z telefonu trzymanego bokiem jest zapisane POZIOMO, a informacja
+ * "obroc o 90 stopni" siedzi osobno, w danych EXIF. Gdyby przepadla przy
+ * przerabianiu, kazde takie zdjecie wisialoby na tablicy przewrocone.
+ *
+ * imageOrientation: 'from-image' mowi wprost: zastosuj ten obrot.
+ * Dzisiejsze przegladarki robia to same, nawet bez tej opcji (zmierzone
+ * w Chromium 141: plik 600x400 ze znacznikiem obrotu wychodzi 400x600
+ * tak samo z opcja, jak i bez niej). Starsze potrafily go zignorowac,
+ * a napisanie tego wprost nic nie kosztuje.
  */
 async function wczytaj(plik) {
   if (typeof createImageBitmap === 'function') {
     return createImageBitmap(plik, { imageOrientation: 'from-image' });
   }
 
-  /* Starsze przegladarki: zwykly <img>. Obrotu z EXIF nie naprawi, ale
-     lepsze to niz brak zmniejszania. */
+  /* Starsze przegladarki: zwykly <img>. Obrot z EXIF przezywa tez ta droge -
+     przegladarka oddaje obrocony obraz i taki trafia na plotno (sprawdzone). */
   const adres = URL.createObjectURL(plik);
   try {
     return await new Promise((gotowe, blad) => {
