@@ -124,47 +124,60 @@ export default function Layout({ children }) {
             </span>
           </Navbar.Brand>
 
-          <Nav className="nav-icons">
-            {user ? (
-              <>
-                <NavIcon to="/" end label={t('menu.feed')} onClick={goToFeed}>
-                  <IconBoard size={20} />
+          {/*
+            Srodkowa kolumna nalezy do ikon nawigacji, a te ma tylko zalogowany.
+            Gdy ich nie ma, zostaje tu pusty element - siatka ma trzy kolumny
+            i musi je dostac, inaczej prawa kolumna przesuwa sie na srodek.
+          */}
+          {user ? (
+            <Nav className="nav-icons">
+              <NavIcon to="/" end label={t('menu.feed')} onClick={goToFeed}>
+                <IconBoard size={20} />
+              </NavIcon>
+
+              <NavIcon to="/znajomi" label={t('menu.friends')} badge={pending}>
+                <IconFriends size={20} />
+              </NavIcon>
+
+              {/* Panel administratora. */}
+              {user.admin && (
+                <NavIcon to="/users" label={t('menu.users')}>
+                  <IconShield size={20} />
                 </NavIcon>
+              )}
 
-                <NavIcon to="/znajomi" label={t('menu.friends')} badge={pending}>
-                  <IconFriends size={20} />
+              {user.admin && (
+                <NavIcon
+                  to="/zgloszenia"
+                  label={t('menu.reports')}
+                  badge={openReports}
+                >
+                  <IconShieldAlert size={20} />
                 </NavIcon>
+              )}
+            </Nav>
+          ) : (
+            <span aria-hidden="true" />
+          )}
 
-                {/* Panel administratora. */}
-                {user.admin && (
-                  <NavIcon to="/users" label={t('menu.users')}>
-                    <IconShield size={20} />
-                  </NavIcon>
-                )}
-
-                {user.admin && (
-                  <NavIcon
-                    to="/zgloszenia"
-                    label={t('menu.reports')}
-                    badge={openReports}
-                  >
-                    <IconShieldAlert size={20} />
-                  </NavIcon>
-                )}
-              </>
-            ) : (
-              <>
+          <div className="nav-right">
+            {/*
+              Bez konta pasek ma tylko logo i te dwa odnosniki. Stoja po prawej,
+              czyli tam, gdzie u zalogowanego jest menu konta - inaczej wisialy
+              w srodkowej kolumnie i wygladaly na przekrzywione, bo po ich
+              prawej stronie nie bylo juz nic, co by je wyrownalo.
+            */}
+            {!user && (
+              <Nav className="nav-goscie">
                 <Nav.Link as={NavLink} to="/login" className="nav-text-link">
                   {t('menu.login')}
                 </Nav.Link>
                 <Nav.Link as={NavLink} to="/register" className="nav-text-link">
                   {t('menu.register')}
                 </Nav.Link>
-              </>
+              </Nav>
             )}
-          </Nav>
 
-          <div className="nav-right">
             {/*
               Dzwonek stoi przy awatarze, bo jedno i drugie dotyczy MNIE - w odroznieniu od jezyka
               i motywu, ktore dotycza calej strony

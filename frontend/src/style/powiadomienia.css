@@ -236,3 +236,34 @@
   background: var(--bs-secondary-bg);
   color: inherit;
 }
+
+/* =========================================================================
+   PANEL POWIADOMIEN NA TELEFONIE
+
+   Szerokosc panelu liczyla sie jak dla okna: min(23rem, 100vw - 2rem).
+   Tyle ze panel nie wisi przy krawedzi ekranu, tylko pod dzwonkiem - a ten
+   jest cofniety o menu konta. Przez to lewa krawedz panelu wychodzila poza
+   ekran: o 31px przy szerokosci 390px i o 19px przy 360px (zmierzone).
+
+   Na telefonie odpinamy go wiec od dzwonka. ".bell-wrapper" przestaje byc
+   punktem odniesienia, a zostaje nim sam pasek gorny - jest "sticky", czyli
+   pozycjonowany, wiec przejmuje te role. Pasek ciagnie sie przez cala
+   szerokosc okna, wiec "left" i "right" odmierzaja sie juz od krawedzi
+   ekranu i panel po prostu nie ma jak z niego wyjsc.
+
+   Swiadomie NIE uzywamy tu position: fixed. Pasek ma backdrop-filter,
+   a ten tworzy blok zawierajacy dla elementow "fixed" - wiec "fixed"
+   i tak odmierzaloby sie od paska, tylko mniej przewidywalnie.
+   ========================================================================= */
+
+@media (max-width: 575.98px) {
+  .bell-wrapper {
+    position: static;
+  }
+
+  .bell-panel {
+    left: .5rem;
+    right: .5rem;
+    width: auto;
+  }
+}
