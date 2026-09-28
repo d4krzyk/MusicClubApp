@@ -13,10 +13,12 @@ import Avatar from './Avatar';
 import ChatDrawer from './ChatDrawer';
 import ChatLauncher from './ChatLauncher';
 import {
-  IconBoard, IconFlag, IconFriends, IconGear, IconLogout, IconNote, IconPerson,
+  IconBoard, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
   IconShield, IconShieldAlert,
 } from './Icons';
 import LanguageSwitch from './LanguageSwitch';
+import LogoMC from './LogoMC';
+import NapisMC from './NapisMC';
 import NotificationsBell from './NotificationsBell';
 import ThemeToggle from './ThemeToggle';
 import { scrollToTop } from '../utils/scroll';
@@ -102,11 +104,24 @@ export default function Layout({ children }) {
             aria-label={t('app.name')}
             onClick={goToFeed}
           >
-            {/* Znak marki ma NUTKE, a nie tę samą ikonę co pozycja "Tablica" w menu obok. */}
-            <span className="brand-mark" aria-hidden="true">
-              <IconNote size={18} />
+            {/*
+              Nazwa siedzi w samym znaku: jego M i C sa pierwszymi literami slowa.
+              Dlatego nie ma tu juz osobnego napisu obok sygnetu - te dwie litery
+              staly wczesniej dwa razy.
+
+              Trzy wersje czekaja obok siebie, a o tym, ktora widac, decyduje w CSS
+              miejsce zostawione przez ikony: caly napis w jednej linii, napis
+              dwuliniowy, a na telefonie sam znak - tam na cokolwiek szerszego
+              po prostu nie ma miejsca obok ikon administratora.
+
+              Nazwa dla czytnikow ekranu zostaje na samym odnosniku, wiec rysunki
+              sa przed nimi ukryte.
+            */}
+            <NapisMC uklad="poziomy" className="brand-napis brand-napis-szeroki" aria-hidden="true" />
+            <NapisMC uklad="pionowy" className="brand-napis brand-napis-waski" aria-hidden="true" />
+            <span className="brand-napis brand-znak-sam" aria-hidden="true">
+              <LogoMC size={36} />
             </span>
-            <span className="brand-text">{t('app.name')}</span>
           </Navbar.Brand>
 
           <Nav className="nav-icons">
@@ -156,9 +171,6 @@ export default function Layout({ children }) {
             */}
             {user && <ChatLauncher />}
             {user && <NotificationsBell />}
-
-            <LanguageSwitch />
-            <ThemeToggle />
 
             {user && (
               /*
@@ -216,7 +228,18 @@ export default function Layout({ children }) {
       {user && <ChatDrawer />}
 
       <footer className="border-top py-3 text-center text-body-secondary small">
-        {t('app.tagline')}
+        <div>{t('app.tagline')}</div>
+
+        {/*
+          Zalogowany zmienia jezyk i motyw w Ustawieniach. Kto nie ma konta, tam nie dojdzie,
+          a to wlasnie on najczesciej trafia tu na angielski interfejs i szuka polskiego.
+        */}
+        {!user && (
+          <div className="d-flex justify-content-center gap-2 mt-2">
+            <LanguageSwitch />
+            <ThemeToggle />
+          </div>
+        )}
       </footer>
     </>
   );

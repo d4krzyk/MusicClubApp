@@ -3,12 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Ikonka wpisana wprost w HTML - bez tego przegladarka szuka
-         /favicon.ico i zasmieca konsole bledem 404 -->
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🎧</text></svg>"
-    />
+    <link rel="icon" href="/icon-192.png" />
+
+    <!--
+      Od tych trzech rzeczy zalezy, czy Android potraktuje strone jak aplikacje:
+      manifest (nazwa, ikony, tryb pelnoekranowy), ikona dla iOS, i kolor paska
+      stanu. Czwarta - service worker - rejestruje sie w src/main.jsx.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Pasek stanu telefonu dostaje kolor tla strony, osobny dla kazdego motywu -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f2fa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131019" />
+
     <title>MusicClub</title>
 
     <!--

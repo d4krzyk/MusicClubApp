@@ -166,7 +166,12 @@
     "passwordLabel": "Potwierdź swoim hasłem",
     "passwordHint": "To samo hasło, którym się logujesz.",
     "confirm": "Potwierdzam",
-    "working": "Usuwam…"
+    "working": "Usuwam…",
+    "appearance": "Wygląd i język",
+    "language": "Język interfejsu",
+    "languageHint": "Dotyczy też komunikatów przysyłanych przez serwer.",
+    "theme": "Motyw",
+    "themeHint": "Jasny albo ciemny — wybór zapamiętuje się w tej przeglądarce."
   },
   "avatar": {
     "title": "Zdjęcie profilowe",

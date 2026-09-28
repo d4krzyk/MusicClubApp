@@ -142,47 +142,91 @@ body {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: .5rem;
   padding: 0;
   justify-self: start;
 }
 
-/* Znaczek: kwadracik z gradientem i nuta w srodku */
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: .625rem;
-  background: var(--mc-gradient);
-  color: #fff;
-  box-shadow: var(--mc-glow);
-  transition: transform var(--mc-slow), box-shadow var(--mc-slow);
+/*
+   Napis niesie gradient w samym rysunku, wiec nie stoi na kolorowym kafelku -
+   gradient na gradiencie zjadalby ksztalt liter.
+*/
+/*
+   Bez max-width i bez min-width: 0 na .brand - razem sprawialy, ze siatka
+   sciskala rysunek zamiast zostawic mu jego szerokosc. Zamiast tego kazdy
+   prog jest tak dobrany, zeby sie zmiescil; wtedy nie ma czego sciskac.
+*/
+.brand-napis {
+  display: block;
+  width: auto;
+  transition: transform var(--mc-slow);
+  transform-origin: left center;
 }
 
 /*
-   Napis wypelniony gradientem. background-clip: text przycina tlo do
-   ksztaltu liter; kolor tekstu musi byc przezroczysty, zeby tlo bylo widac.
+   Trzy wersje na trzy ilosci miejsca. Szerokosci sa zmierzone przy
+   wysokosciach ponizej: napis w jednej linii ma 148px, dwuliniowy 70px,
+   a sam znak 30px. Progi wynikaja z tego, ile zostaje obok ikon - przy
+   koncie administratora ikon jest najwiecej.
 */
-.brand-text {
-  font-weight: 800;
-  letter-spacing: -.02em;
-  font-size: 1.25rem;
-  background: var(--mc-gradient);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  transition: background-position var(--mc-slow);
+.brand-napis-szeroki {
+  height: 1.75rem;
 }
 
-.brand:hover .brand-mark {
-  transform: rotate(-8deg) scale(1.06);
+.brand-napis-waski {
+  display: none;
+  height: 2.25rem;
 }
 
-.brand:hover .brand-text {
-  background-position: 100% 50%;
+/*
+   Na telefonie o wielkosci znaku decyduje nie estetyka, tylko arytmetyka:
+   przy 360px po odjeciu marginesow kontenera, przerw siatki, ikon (170px)
+   i prawej strony (130px) zostaje 32px. Znak musi sie w tym zmiescic,
+   inaczej siatka go sciska.
+*/
+.brand-znak-sam {
+  display: none;
+  height: 1.75rem;
+}
+
+/*
+   LogoMC rysuje sie w kwadracie, a znak jest wyzszy niz szerszy - po bokach
+   zostawaloby puste pole. Tutaj liczy sie kazdy piksel, wiec szerokosc idzie
+   z proporcji rysunku: przy 2rem wysokosci znak zajmuje 27px zamiast 32px.
+*/
+.brand-znak-sam svg {
+  height: 100%;
+  width: auto;
+}
+
+.brand:hover .brand-napis {
+  transform: scale(1.04);
+}
+
+/* Ponizej 768px napis w jednej linii zjadlby polowe paska. */
+@media (max-width: 767.98px) {
+  .brand-napis-szeroki {
+    display: none;
+  }
+
+  .brand-napis-waski {
+    display: block;
+  }
+}
+
+/*
+   Na telefonie nawet napis dwuliniowy nie ma gdzie stanac: przy 360px
+   po ikonach i awatarze zostaje okolo 30px. Zostaje sam znak - tak samo
+   jak przed dodaniem napisu.
+*/
+@media (max-width: 575.98px) {
+  .brand-napis-waski {
+    display: none;
+  }
+
+  .brand-znak-sam {
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 /* --- Ikony nawigacji ------------------------------------------------------ */
@@ -699,4 +743,36 @@ a:hover > .avatar-placeholder,
 
 .suggestion-card:hover {
   transform: translateY(-.125rem);
+}
+
+/* --- Telefon: gorny pasek --------------------------------------------------
+   Bez tych regul pasek nie miesci sie na waskim ekranie i rozpycha CALY
+   dokument do ~650px. Wszystko inne dziedziczy wtedy poziome przewijanie,
+   a elementy "position: fixed" (szuflada czatu) czepiaja sie zlej krawedzi.
+*/
+@media (max-width: 575.98px) {
+  .nav-grid {
+    /* Logo i prawa strona biora tyle, ile trzeba; ikony dostaja reszte. */
+    grid-template-columns: auto 1fr auto;
+    /* Kazde 2px sa tu policzone - patrz uwaga przy .brand-znak-sam. */
+    gap: .125rem;
+  }
+
+  .nav-icons {
+    gap: .1rem;
+    padding: .15rem;
+  }
+
+  .nav-right {
+    gap: .15rem;
+  }
+}
+
+/* Wiersz ustawienia: opis po lewej, przelacznik po prawej. */
+.ustawienie-wiersz {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
