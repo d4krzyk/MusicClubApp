@@ -1,0 +1,150 @@
+# =============================================================================
+#  URUCHOMIENIE NA SERWERZE
+#
+#  Roznica wzgledem docker-compose.yml nie polega na innych obrazach, tylko na
+#  tym, co jest WYSTAWIONE na zewnatrz. Tutaj na swiat wychodzi jedna rzecz -
+#  frontend. Baza, backend i Adminer zostaja w wewnetrznej sieci Dockera.
+#
+#  Profil "prod" w Springu przestawia schemat bazy na migracje, wlacza flage
+#  Secure na ciasteczku i wycisza logi (patrz application-prod.properties).
+#
+#  ---------------------------------------------------------------------------
+#  DWIE DROGI DO HTTPS. Wybierasz profilem.
+#
+#  1) NA TESTY, BEZ DOMENY I ZA DARMO - tunel Cloudflare:
+#
+#         cp .env.example .env     # i uzupelnij wartosci
+#         docker compose -f docker-compose.prod.yml --profile tunel up -d --build
+#         docker compose -f docker-compose.prod.yml logs -f tunel
+#
+#     W logach pojawi sie adres https://cos-tam.trycloudflare.com - dziala
+#     od razu, z prawdziwym certyfikatem, i wystarczy do zainstalowania
+#     aplikacji na telefonie.
+#
+#     UWAGA: ten adres jest LOSOWY i zmienia sie przy kazdym restarcie tunelu.
+#     Do testow w sam raz, do wypuszczenia na Google Play nie - tam adres musi
+#     byc staly, bo wchodzi do manifestu i do pliku assetlinks.json.
+#
+#  2) GDY MASZ JUZ DOMENE - Caddy:
+#
+#         DOMENA=twoja-domena.pl docker compose -f docker-compose.prod.yml \
+#             --profile domena up -d --build
+#
+#     Caddy sam wystapi o certyfikat Let's Encrypt i sam go odnowi. Wymaga
+#     tylko tego, zeby domena wskazywala na adres IP serwera, a porty 80 i 443
+#     byly otwarte.
+#  ---------------------------------------------------------------------------
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: musicclub-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-musicclub}
+      POSTGRES_USER: ${POSTGRES_USER:-musicclub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}
+    volumes:
+      - musicclub-db-data:/var/lib/postgresql/data
+    # Brak sekcji "ports" i to jest tu najwazniejsze: w pliku deweloperskim
+    # baza wisi na 5432 dla wygody. Na serwerze z publicznym adresem oznaczaloby
+    # to wystawiony PostgreSQL - dostaje sie do niego z calego internetu.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-musicclub} -d ${POSTGRES_DB:-musicclub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: musicclub-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-musicclub}
+      DB_USER: ${POSTGRES_USER:-musicclub}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?ustaw POSTGRES_PASSWORD w .env}
+
+      UPLOADS_DIR: /app/uploads
+
+      # Znak zapytania w ${ZMIENNA:?...} to zabezpieczenie Dockera: przy braku
+      # wartosci compose w ogole nie wystartuje i pokaze ten komunikat.
+      # Bez tego aplikacja ruszylaby z kluczem, ktory lezy w repozytorium.
+      REMEMBER_ME_KEY: ${REMEMBER_ME_KEY:?wygeneruj wlasny klucz, patrz .env.example}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@musicclub.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ustaw wlasne haslo administratora}
+
+      LASTFM_API_KEY: ${LASTFM_API_KEY:-}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+    volumes:
+      - musicclub-uploads:/app/uploads
+    # Tez bez "ports". Backend jest osiagalny wylacznie przez nginx, ktory
+    # przekazuje do niego /api i /uploads.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    container_name: musicclub-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    # Port 80 widoczny tylko wewnatrz sieci Dockera - siega po niego Caddy
+    # albo tunel. Gdybys chcial wejsc na serwer bez zadnego z nich, odkomentuj:
+    # ports:
+    #   - "127.0.0.1:3000:80"
+
+  # --- DROGA 1: tunel Cloudflare (darmowy, bez domeny) -----------------------
+  #
+  # Cloudflare wystawia publiczny adres HTTPS i przekazuje ruch do kontenera
+  # frontendu. Nie trzeba otwierac zadnego portu na serwerze ani zakladac konta.
+  tunel:
+    image: cloudflare/cloudflared:latest
+    container_name: musicclub-tunel
+    restart: unless-stopped
+    profiles: ["tunel"]
+    depends_on:
+      - frontend
+    command: tunnel --no-autoupdate --url http://frontend:80
+
+  # --- DROGA 2: Caddy (gdy masz domene) --------------------------------------
+  #
+  # Caddy sam pobiera i odnawia certyfikat Let's Encrypt. Cala konfiguracja
+  # miesci sie w pliku Caddyfile obok.
+  caddy:
+    image: caddy:2-alpine
+    container_name: musicclub-caddy
+    restart: unless-stopped
+    profiles: ["domena"]
+    depends_on:
+      - frontend
+    environment:
+      DOMENA: ${DOMENA:?podaj domene, np. DOMENA=musicclub.pl}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certyfikaty musza przezyc restart - inaczej przy kazdym starcie Caddy
+      # prosi o nowy, a Let's Encrypt ma na to tygodniowe limity.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  musicclub-db-data:
+  musicclub-uploads:
+  caddy-data:
+  caddy-config:

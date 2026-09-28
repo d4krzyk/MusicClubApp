@@ -109,6 +109,27 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!--
+            Flyway: migracje bazy. Wchodzi do gry TYLKO w profilu produkcyjnym
+            (spring.flyway.enabled=false w application.properties).
+
+            W pracy nad kodem zostaje ddl-auto=update, bo przy ciaglych zmianach
+            encji pisanie migracji do kazdej proby byloby udreka. Na serwerze
+            jest odwrotnie: tam schemat ma byc przewidywalny i powtarzalny,
+            a Hibernate ma go tylko sprawdzac, nie zmieniac.
+
+            Od Flyway 10 sterownik do PostgreSQL jest osobnym artefaktem -
+            bez niego migracje nie ruszaja z bledem o nieznanej bazie.
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

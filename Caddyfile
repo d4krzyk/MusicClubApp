@@ -1,0 +1,55 @@
+# =============================================================================
+#  Caddy - HTTPS dla MusicClub.
+#
+#  Uzywany tylko wtedy, gdy masz wlasna domene (profil "domena"
+#  w docker-compose.prod.yml). Na testy bez domeny sluzy tunel Cloudflare
+#  i ten plik w ogole nie wchodzi do gry.
+#
+#  Caddy sam wystepuje o certyfikat Let's Encrypt i sam go odnawia - nie ma tu
+#  zadnej sciezki do pliku z certyfikatem, bo nie trzeba jej podawac. Wymaga
+#  tylko tego, zeby domena wskazywala na adres IP serwera, a porty 80 i 443
+#  byly otwarte: po porcie 80 przychodzi sprawdzenie wlasnosci domeny.
+# =============================================================================
+
+{$DOMENA} {
+	# Wszystko idzie do kontenera z nginx, ktory oddaje aplikacje i przekazuje
+	# /api oraz /uploads do backendu. Caddy sam dokłada X-Forwarded-Proto
+	# i X-Forwarded-For, a nginx przepuszcza je dalej bez zmian (patrz
+	# nginx.conf i zmienna $protokol_zrodlowy).
+	reverse_proxy frontend:80
+
+	encode gzip zstd
+
+	header {
+		# Przegladarka ma pamietac, zeby wchodzic tu wylacznie po HTTPS.
+		# max-age rok; dopisz "preload", dopiero gdy bedziesz pewny domeny -
+		# wpisu z listy preload nie da sie szybko cofnac.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+		# Strona nie ma prawa zostac wyswietlona w ramce na cudzej witrynie.
+		# To blokuje podmiane interfejsu (uzytkownik klika w co innego,
+		# niz widzi).
+		X-Frame-Options "DENY"
+
+		# Przegladarka nie zgaduje typu pliku po zawartosci. Bez tego wgrane
+		# "zdjecie", ktore w srodku jest HTML-em, moze wykonac sie jak strona.
+		X-Content-Type-Options "nosniff"
+
+		# Przy wyjsciu na obca strone nie zdradzamy pelnego adresu, z ktorego
+		# uzytkownik klikal - np. adresu czyjegos profilu.
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Nie ogłaszamy sie z nazwy serwera.
+		-Server
+	}
+
+	# Wgrane zdjecia nie zmieniaja sie - ich nazwy sa unikalne - wiec moga
+	# lezec w pamieci przegladarki dlugo. Oszczedza to ruch na telefonie.
+	@wgrane path /uploads/*
+	header @wgrane Cache-Control "public, max-age=2592000, immutable"
+
+	log {
+		output stdout
+		format console
+	}
+}
