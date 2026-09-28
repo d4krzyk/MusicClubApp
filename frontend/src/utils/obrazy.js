@@ -5,12 +5,13 @@
  * czesc takich zdjec w ogole nie przechodzila, a te, ktore przechodzily,
  * pobieral potem w calosci KAZDY, kto przewinal obok nich tablice.
  *
- * Zmniejszamy dopiero po przekroczeniu limitu - mniejsze pliki ida w oryginale
- * i nie traca na jakosci bez powodu.
+ * Za duze zdjecie widac w formularzu i mozna je zmniejszyc jednym klikaniem.
+ * Kto tego nie zrobi, nie dostanie bledu: to samo dzieje sie automatycznie
+ * przy wysylaniu (patrz api/posty.js i api/konto.js).
  */
 
-/** Powyzej tego rozmiaru zdjecie jest przerabiane. Tyle samo przyjmuje serwer. */
-const LIMIT_BAJTOW = 5 * 1024 * 1024;
+/** Powyzej tego rozmiaru zdjecie trzeba zmniejszyc. Tyle samo przyjmuje serwer. */
+export const LIMIT_BAJTOW = 5 * 1024 * 1024;
 
 /** Od tego zaczynamy: dluzszy bok nie wiekszy niz tyle pikseli. */
 const MAKS_BOK = 2048;
@@ -25,20 +26,41 @@ const PROBY_WYMIAROW = 4;
  * GIF-y zostawiamy w spokoju. Plotno zapisuje jedna klatke, wiec animacja
  * zamienilaby sie w nieruchomy obrazek - a to juz nie jest to samo zdjecie.
  */
-const POMIJANE_TYPY = new Set(['image/gif']);
+const BEZ_ZMNIEJSZANIA = new Set(['image/gif']);
 
 /** Czy przegladarka umie zapisac WebP. Sprawdzamy raz. */
 let obslugujeWebp = null;
 
-function formatWyjsciowy() {
+function umieWebp() {
   if (obslugujeWebp === null) {
     const plotno = document.createElement('canvas');
     plotno.width = 1;
     plotno.height = 1;
     obslugujeWebp = plotno.toDataURL('image/webp').startsWith('data:image/webp');
   }
-  /* WebP trzyma przezroczystosc i wazy mniej niz JPEG przy tej samej jakosci. */
-  return obslugujeWebp ? 'image/webp' : 'image/jpeg';
+  return obslugujeWebp;
+}
+
+/**
+ * Czytelny rozmiar do pokazania obok zdjecia.
+ *
+ * Miedzy liczba a jednostka jest spacja nierozdzielajaca - w waskiej kolumnie
+ * z miniatura podpis lamal sie inaczej w srodku, na "1,8 / MB".
+ */
+export function formatujRozmiar(bajty) {
+  if (bajty >= 1024 * 1024) {
+    return `${(bajty / 1024 / 1024).toFixed(1).replace('.', ',')}\u00a0MB`;
+  }
+  return `${Math.round(bajty / 1024)}\u00a0kB`;
+}
+
+export function czyZaDuzy(plik) {
+  return plik instanceof Blob && plik.size > LIMIT_BAJTOW;
+}
+
+/** GIF-a nie ruszamy, wiec nie ma sensu proponowac przycisku. */
+export function czyDaSieZmniejszyc(plik) {
+  return plik instanceof Blob && !BEZ_ZMNIEJSZANIA.has(plik.type);
 }
 
 /**
@@ -69,9 +91,60 @@ async function wczytaj(plik) {
   }
 }
 
+const szerokoscObrazu = (obraz) => obraz.width || obraz.naturalWidth;
+const wysokoscObrazu = (obraz) => obraz.height || obraz.naturalHeight;
+
+/**
+ * Czy obraz ma gdziekolwiek przezroczystosc.
+ *
+ * Sprawdzamy na pomniejszonej kopii - pelne zdjecie z aparatu to kilkanascie
+ * milionow pikseli i skanowanie ich wszystkich byloby wolniejsze niz samo
+ * zmniejszanie. Do odpowiedzi "czy jest tu gdzies dziura" taka probka
+ * w zupelnosci wystarcza.
+ */
+function maPrzezroczystosc(obraz) {
+  const BOK = 128;
+  const skala = Math.min(1, BOK / Math.max(szerokoscObrazu(obraz), wysokoscObrazu(obraz)));
+  const szerokosc = Math.max(1, Math.round(szerokoscObrazu(obraz) * skala));
+  const wysokosc = Math.max(1, Math.round(wysokoscObrazu(obraz) * skala));
+
+  const plotno = document.createElement('canvas');
+  plotno.width = szerokosc;
+  plotno.height = wysokosc;
+  const kontekst = plotno.getContext('2d', { willReadFrequently: true });
+  kontekst.drawImage(obraz, 0, 0, szerokosc, wysokosc);
+
+  const piksele = kontekst.getImageData(0, 0, szerokosc, wysokosc).data;
+  for (let i = 3; i < piksele.length; i += 4) {
+    if (piksele[i] < 250) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Format, w ktorym zapisujemy wynik.
+ *
+ * Domyslnie JPEG: czyta go wszystko, a dla zdjec jest bezkonkurencyjny.
+ * PNG odpada jako format wyjsciowy - przy zdjeciu 2048x1536 wychodzil
+ * 6,69 MB wobec 0,66 MB w JPEG, czyli dziesiec razy wiecej (zmierzone).
+ * Zapisanie "skompresowanego" zdjecia jako PNG czesto dalo by plik WIEKSZY
+ * niz oryginal, czyli dokladnie odwrotnie, niz o to chodzi.
+ *
+ * WebP wchodzi tylko tam, gdzie JPEG nie umie: przy przezroczystosci.
+ * JPEG podlozylby pod nia biale tlo.
+ */
+function wybierzFormat(obraz) {
+  if (maPrzezroczystosc(obraz) && umieWebp()) {
+    return 'image/webp';
+  }
+  return 'image/jpeg';
+}
+
 function narysuj(obraz, skala, typ, jakosc) {
-  const szerokosc = Math.max(1, Math.round((obraz.width || obraz.naturalWidth) * skala));
-  const wysokosc = Math.max(1, Math.round((obraz.height || obraz.naturalHeight) * skala));
+  const szerokosc = Math.max(1, Math.round(szerokoscObrazu(obraz) * skala));
+  const wysokosc = Math.max(1, Math.round(wysokoscObrazu(obraz) * skala));
 
   const plotno = document.createElement('canvas');
   plotno.width = szerokosc;
@@ -95,32 +168,45 @@ function zbudujPlik(blob, oryginal, typ) {
 }
 
 /**
+ * Zmniejsza zdjecie tak, zeby zmiescilo sie w limicie.
+ *
+ * Rzuca wyjatkiem, gdy sie nie uda - wolajacy ma wtedy szanse cos powiedziec
+ * uzytkownikowi zamiast po cichu wyslac plik, ktory i tak zostanie odrzucony.
+ */
+export async function zmniejsz(plik) {
+  const obraz = await wczytaj(plik);
+  const typ = wybierzFormat(obraz);
+  const dluzszyBok = Math.max(szerokoscObrazu(obraz), wysokoscObrazu(obraz));
+  let skala = Math.min(1, MAKS_BOK / dluzszyBok);
+
+  for (let proba = 0; proba < PROBY_WYMIAROW; proba++) {
+    for (const jakosc of JAKOSCI) {
+      const blob = await narysuj(obraz, skala, typ, jakosc);
+      if (blob && blob.size <= LIMIT_BAJTOW) {
+        return zbudujPlik(blob, plik, typ);
+      }
+    }
+    /* Sama jakosc nie wystarczyla - schodzimy z wymiarami i probujemy od nowa. */
+    skala *= 0.8;
+  }
+
+  throw new Error('Nie udalo sie zmiescic zdjecia w limicie');
+}
+
+/**
  * Oddaje zdjecie zmieszczone w limicie albo oryginal, gdy nie trzeba
  * go ruszac lub gdy przerabianie sie nie uda.
+ *
+ * To siatka bezpieczenstwa przy wysylaniu - kto nie kliknal "zmniejsz"
+ * w formularzu, i tak nie zobaczy bledu.
  */
 export async function zmniejszJesliTrzeba(plik) {
-  if (!(plik instanceof Blob) || plik.size <= LIMIT_BAJTOW || POMIJANE_TYPY.has(plik.type)) {
+  if (!czyZaDuzy(plik) || !czyDaSieZmniejszyc(plik)) {
     return plik;
   }
 
   try {
-    const obraz = await wczytaj(plik);
-    const typ = formatWyjsciowy();
-    const dluzszyBok = Math.max(obraz.width || obraz.naturalWidth, obraz.height || obraz.naturalHeight);
-    let skala = Math.min(1, MAKS_BOK / dluzszyBok);
-
-    for (let proba = 0; proba < PROBY_WYMIAROW; proba++) {
-      for (const jakosc of JAKOSCI) {
-        const blob = await narysuj(obraz, skala, typ, jakosc);
-        if (blob && blob.size <= LIMIT_BAJTOW) {
-          return zbudujPlik(blob, plik, typ);
-        }
-      }
-      /* Sama jakosc nie wystarczyla - schodzimy z wymiarami i probujemy od nowa. */
-      skala *= 0.8;
-    }
-
-    return plik;
+    return await zmniejsz(plik);
   } catch {
     /*
      * Cokolwiek by sie nie udalo - wysylamy oryginal. Serwer odrzuci go

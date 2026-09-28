@@ -143,3 +143,61 @@
   justify-content: center;
   flex-wrap: wrap;
 }
+
+/* =========================================================================
+   ZA DUZE ZDJECIE W FORMULARZU
+
+   Zdjecie ponad limitem nie jest bledem, tylko czyms do zalatwienia jednym
+   klikanciem. Dlatego zamiast czerwonego komunikatu i konca tematu kafelek
+   sam mowi, co jest nie tak i co z tym zrobic.
+   ========================================================================= */
+
+.zdjecie-za-duze {
+  /* Przygaszone, zeby od razu bylo widac, ktore zdjecie wymaga uwagi */
+  filter: brightness(.45);
+}
+
+.zdjecie-kompresuj {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .15rem;
+  padding: .25rem;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+  color: #fff;
+  text-align: center;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.zdjecie-kompresuj:disabled {
+  cursor: progress;
+}
+
+.zdjecie-kompresuj-rozmiar {
+  font-weight: 700;
+  font-size: .8rem;
+}
+
+.zdjecie-kompresuj-napis {
+  font-size: .68rem;
+  /* Na najwezszych kafelkach dwa slowa nie mieszcza sie w jednej linii */
+  text-wrap: balance;
+}
+
+/* GIF: pokazujemy powod, ale nie ma w co klikac */
+.zdjecie-kompresuj-blokada {
+  cursor: default;
+  color: var(--bs-warning-text-emphasis, #ffda6a);
+}
+
+.zdjecie-rozmiar {
+  text-align: center;
+  /* Dlugie nazwy nie moga rozepchnac kolumny z miniatura */
+  overflow-wrap: anywhere;
+}
