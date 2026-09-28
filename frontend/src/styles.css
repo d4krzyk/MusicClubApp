@@ -16,6 +16,8 @@
  * nie zmienilo.
  */
 
+/* Krój idzie pierwszy: definiuje zmienna, z ktorej korzysta cala reszta. */
+@import './style/czcionka.css';
 @import './style/podstawy.css';
 @import './style/ludzie.css';
 @import './style/podstawy2.css';

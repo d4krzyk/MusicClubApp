@@ -1,0 +1,91 @@
+/* =============================================================================
+   KROJ PISMA
+
+   Poppins - ten sam krój, z ktorego powstal napis MusicClub. Napis w pasku
+   jest krzywymi i czcionki nie potrzebuje; ten plik jest po to, zeby RESZTA
+   interfejsu byla z nim z jednej rodziny.
+
+   Krój lezy u nas, nie w Google Fonts. Trzy powody:
+   - aplikacja ma dzialac po zainstalowaniu na telefonie takze bez zasiegu,
+     a plik z cudzego serwera nie trafi do naszej pamieci podrecznej;
+   - kazde wejscie na strone nie wysyla zapytania do obcego serwera, wiec
+     nie ma tematu zgody na to w polityce prywatnosci;
+   - nie ma skoku ukladu, gdy CDN odpowiada wolno albo wcale.
+
+   Bierzemy tylko podstawowy zakres znakow lacinskich (z polskimi ogonkami)
+   i tylko te wagi, ktore naprawde wystepuja w stylach: 400, 500, 600 i 700
+   oraz kursywa 400. Razem 48 kB.
+
+   font-display: swap - do czasu wczytania krój zastepczy rysuje tekst, wiec
+   nic nie miga na bialo. Stos zastepczy jest ten sam co w Bootstrapie.
+   ============================================================================= */
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonty/poppins-400.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonty/poppins-400-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonty/poppins-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonty/poppins-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonty/poppins-700.woff2') format('woff2');
+}
+
+/*
+   Podmieniamy zmienna Bootstrapa, a nie regule dla body - dzieki temu krój
+   lapia takze naglowki, przyciski i pola formularzy, ktore Bootstrap rysuje
+   z tej samej zmiennej.
+*/
+:root {
+  --bs-body-font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+
+/*
+   Poppins ma wyzsze male litery niz krój systemowy (0,79 wysokosci wersalika
+   wobec okolo 0,72 w Robocie), wiec przy tym samym rozmiarze wyglada wiekszy
+   i ciasniejszy. Odrobina luzu w interlinii wyrownuje to z powrotem.
+*/
+body {
+  line-height: 1.55;
+}
+
+/*
+   Pola formularzy na Androidzie nadal musza miec co najmniej 16px, inaczej
+   przegladarka przybliza widok przy klikanciu w pole - to samo zastrzezenie
+   co w czat.css.
+*/
+input,
+select,
+textarea {
+  font-family: inherit;
+}

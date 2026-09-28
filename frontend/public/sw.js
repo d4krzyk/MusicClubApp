@@ -14,14 +14,25 @@
 */
 
 /* Zmiana numeru unieważnia cala poprzednia kopie - stad wersja w nazwie. */
-const CACHE = 'musicclub-v1';
+const CACHE = 'musicclub-v2';
 
-/* Co ma byc pod reka od pierwszego uruchomienia. */
+/*
+   Co ma byc pod reka od pierwszego uruchomienia.
+
+   Krój pisma jest tu celowo: bez niego aplikacja otwarta bez zasiegu
+   rysowalaby sie czcionka systemowa, czyli inaczej niz zwykle. Wszystkie
+   piec plikow wazy razem 48 kB.
+*/
 const SZKIELET = [
   '/',
   '/icon-192.png',
   '/icon-512.png',
   '/manifest.webmanifest',
+  '/fonty/poppins-400.woff2',
+  '/fonty/poppins-400-italic.woff2',
+  '/fonty/poppins-500.woff2',
+  '/fonty/poppins-600.woff2',
+  '/fonty/poppins-700.woff2',
 ];
 
 self.addEventListener('install', (event) => {
