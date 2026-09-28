@@ -1,3 +1,4 @@
+import { zmniejszJesliTrzeba } from '../utils/obrazy';
 import client from './client';
 
 /** Co aplikacja moze poprosic serwer w sprawie wlasnego konta i sesji. */
@@ -37,7 +38,7 @@ export async function zmienHaslo(dane) {
 /** Wgrywa zdjecie profilowe. */
 export async function ustawAwatar(plik) {
   const formData = new FormData();
-  formData.append('file', plik);
+  formData.append('file', await zmniejszJesliTrzeba(plik));
 
   const { data } = await client.put('/profile/avatar', formData);
   return data;

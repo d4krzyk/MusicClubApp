@@ -1,3 +1,4 @@
+import { zmniejszWszystkie } from '../utils/obrazy';
 import client from './client';
 
 /** Co aplikacja moze poprosic serwer w sprawie postow i reakcji. */
@@ -23,9 +24,13 @@ export async function jeden(id) {
 
 /** Dodaje post razem ze zdjeciami. */
 export async function dodaj(tresc, pliki) {
+  /* Za duze zdjecia zmniejszamy tutaj, a nie w formularzu - dzieki temu
+     obejmuje to kazde miejsce, z ktorego powstaje post. */
+  const gotowe = await zmniejszWszystkie(pliki);
+
   const formData = new FormData();
   formData.append('post', new Blob([JSON.stringify(tresc)], { type: 'application/json' }));
-  pliki.forEach((plik) => formData.append('images', plik));
+  gotowe.forEach((plik) => formData.append('images', plik));
 
   const { data } = await client.post('/posts', formData);
   return data;

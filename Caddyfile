@@ -43,10 +43,9 @@
 		-Server
 	}
 
-	# Wgrane zdjecia nie zmieniaja sie - ich nazwy sa unikalne - wiec moga
-	# lezec w pamieci przegladarki dlugo. Oszczedza to ruch na telefonie.
-	@wgrane path /uploads/*
-	header @wgrane Cache-Control "public, max-age=2592000, immutable"
+	# Naglowka Cache-Control dla /uploads nie ustawiamy tutaj - robi to sama
+	# aplikacja (UploadsWebConfig). Dzieki temu dziala tak samo niezaleznie
+	# od tego, czy przed nia stoi Caddy, tunel, czy nic.
 
 	log {
 		output stdout
