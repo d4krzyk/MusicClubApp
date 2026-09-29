@@ -132,6 +132,12 @@ public class OperationNotAllowedException extends RuntimeException {
             "Brak zmiany adresu do potwierdzenia", "error.email.no.pending");
     }
 
+    /** Serwer nie wysyla poczty - nie ma jak dostarczyc linku. */
+    public static OperationNotAllowedException mailDisabled() {
+        return new OperationNotAllowedException(
+            "Poczta wylaczona na tym serwerze", "error.mail.disabled");
+    }
+
     /** Proba importu z Last.fm przy niewpisanym kluczu API. */
     public static OperationNotAllowedException lastFmDisabled() {
         return new OperationNotAllowedException(

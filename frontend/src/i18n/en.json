@@ -43,7 +43,9 @@
     "noAccount": "No account yet?",
     "goToRegister": "Create one",
     "registered": "Account created. You can sign in now.",
-    "verified": "Address confirmed. Sign in to get started."
+    "verified": "Address confirmed. Sign in to get started.",
+    "forgot": "Forgot your password?",
+    "passwordReset": "Password changed. Sign in with your new password."
   },
   "register": {
     "title": "Create an account",
@@ -173,7 +175,13 @@
     "pendingResend": "Send the link again",
     "pendingCancel": "Keep the old address",
     "pendingResent": "We've sent a new link.",
-    "pendingCancelled": "Address change cancelled."
+    "pendingCancelled": "Address change cancelled.",
+    "emailPasswordHint": "Changing the address needs your password — the address is how you recover the account.",
+    "pendingStepOld": "Approval from your current address ({{email}})",
+    "pendingStepNew": "Confirmation of the new address ({{email}})",
+    "sessionsHint": "Signed in on someone else's computer or lost your phone? Sign out every device except this one.",
+    "sessionsRevoke": "Sign out other devices",
+    "sessionsRevoked": "Done — other devices were signed out."
   },
   "avatar": {
     "title": "Profile picture",
@@ -653,6 +661,37 @@
     "changedTitle": "New address saved",
     "changedText": "From now on your account uses:",
     "signIn": "Sign in",
-    "goToApp": "Go to the app"
+    "goToApp": "Go to the app",
+    "waitingOldTitle": "New address confirmed",
+    "waitingOldText": "One more step: approve the change with the link we sent to your current address. Until then the account keeps the old address. New address:"
+  },
+  "reset": {
+    "title": "Forgot your password?",
+    "intro": "Enter your account's email address — we'll send a link to set a new password.",
+    "noMail": "This server doesn't send email, so it can't send the link. Contact the administrator.",
+    "submit": "Send link",
+    "sentTitle": "Check your inbox",
+    "sentText": "If an account with this address exists, we've sent a link to it:",
+    "sentHint": "The link works for an hour. Can't see the email? Check your Spam folder.",
+    "newTitle": "New password",
+    "newIntro": "Set a new password for {{username}}.",
+    "save": "Set password",
+    "logoutEverywhere": "Changing the password signs out every device — including those with \"Remember me\".",
+    "doneTitle": "Password changed",
+    "doneText": "Every device was signed out. Sign in with your new password.",
+    "linkFailedTitle": "The link doesn't work",
+    "askAgain": "Ask for a new link"
+  },
+  "approve": {
+    "title": "Email address change",
+    "question": "The account {{username}} wants to change its email to:",
+    "yes": "Yes, it's me — approve",
+    "no": "It wasn't me",
+    "noHint": "\"It wasn't me\" cancels the change and signs out every device. Then set a new password.",
+    "waitingTitle": "Approval received",
+    "waitingText": "The change takes effect once the new address is confirmed too — the link went to:",
+    "deniedTitle": "Change cancelled",
+    "deniedText": "The account address didn't change and every device was signed out. Someone may know your password — set a new one.",
+    "setNewPassword": "Set a new password"
   }
 }

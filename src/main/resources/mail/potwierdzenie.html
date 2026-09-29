@@ -8,8 +8,8 @@
   blokuje do czasu klikniecia "pokaz obrazy". Gradient ma pod spodem zwykly
   kolor - Outlook na Windowsie gradientow nie rysuje i pokaze wlasnie jego.
 
-  {{...}} wypelnia VerificationMails - kazda wartosc juz zamieniona na
-  bezpieczny HTML.
+  {{...}} wypelnia AccountMails - kazda wartosc juz zamieniona na
+  bezpieczny HTML. {{#pole}}...{{/pole}} znika, gdy pole jest puste.
 -->
 <html lang="{{lang}}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -78,8 +78,8 @@
               </tr>
             </table>
 
-            <p class="cichy" style="margin:22px 0 0;font-size:13px;line-height:1.6;color:#6b6780;">{{validity}}</p>
-            <p class="cichy" style="margin:6px 0 0;font-size:13px;line-height:1.6;color:#6b6780;">{{ignore}}</p>
+            {{#validity}}<p class="cichy" style="margin:22px 0 0;font-size:13px;line-height:1.6;color:#6b6780;">{{validity}}</p>{{/validity}}
+            <p class="cichy" style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#6b6780;">{{ignore}}</p>
           </td>
         </tr>
       </table>

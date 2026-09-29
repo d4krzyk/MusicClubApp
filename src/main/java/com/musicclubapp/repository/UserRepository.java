@@ -37,6 +37,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     boolean existsByEmailIgnoreCase(String email);
 
+    /** Konto po adresie bez wielkosci liter - do resetu hasla. */
+    Optional<User> findFirstByEmailIgnoreCase(String email);
+
+    /**
+     * Sam znacznik bezpieczenstwa - sprawdzany przy kazdym zapytaniu
+     * zalogowanego, wiec bez wczytywania calej encji. Pusty wynik = konta
+     * juz nie ma; pusty znacznik (konto sprzed tej funkcji) = "".
+     */
+    @Query("SELECT COALESCE(u.securityStamp, '') FROM User u WHERE u.username = :username")
+    Optional<String> securityStampOf(@Param("username") String username);
+
     /** Konta, ktore nie potwierdzily adresu od podanej chwili - do sprzatania. */
     @Query("SELECT u FROM User u WHERE u.emailVerifiedAt IS NULL AND u.createdAt < :before")
     List<User> unverifiedCreatedBefore(@Param("before") LocalDateTime before);

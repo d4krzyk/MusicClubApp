@@ -116,7 +116,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         errorResponse.addValidationError(
             InvalidCurrentPasswordException.POLE,
-            translate("error.password.current.invalid"));
+            translate(ex.getMessageKey()));
 
         return ResponseEntity.unprocessableEntity().body(errorResponse);
     }

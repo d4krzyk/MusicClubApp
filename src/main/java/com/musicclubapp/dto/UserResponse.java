@@ -14,6 +14,10 @@ public record UserResponse(
     /** Czy adres jest potwierdzony linkiem z wiadomosci. */
     boolean emailVerified,
     /** Nowy adres czekajacy na klikniecie w link - albo {@code null}. */
-    String pendingEmail
+    String pendingEmail,
+    /** Przy zmianie adresu: czy stara skrzynka juz sie zgodzila. */
+    boolean pendingEmailOldApproved,
+    /** Przy zmianie adresu: czy nowy adres juz potwierdzony. */
+    boolean pendingEmailNewVerified
 ) {
 }

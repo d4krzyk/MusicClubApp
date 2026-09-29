@@ -1,16 +1,23 @@
 package com.musicclubapp.controller;
 
+import com.musicclubapp.dto.EmailChangeInfoResponse;
 import com.musicclubapp.dto.EmailVerificationResponse;
 import com.musicclubapp.dto.LoginRequest;
+import com.musicclubapp.dto.NewPasswordRequest;
+import com.musicclubapp.dto.PasswordResetInfoResponse;
+import com.musicclubapp.dto.PasswordResetRequest;
 import com.musicclubapp.dto.RegisterRequest;
 import com.musicclubapp.dto.ResendVerificationRequest;
+import com.musicclubapp.dto.TokenRequest;
 import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.dto.VerifyEmailRequest;
+import com.musicclubapp.security.SecurityStampFilter;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.security.JsonRememberMeServices;
 import com.musicclubapp.service.EmailVerificationService;
 import com.musicclubapp.service.MailRateLimiter;
 import com.musicclubapp.service.NetworkService;
+import com.musicclubapp.service.PasswordResetService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -51,6 +58,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final EmailVerificationService emailVerification;
     private final MailRateLimiter mailLimiter;
+    private final PasswordResetService passwordReset;
 
     public AuthController(UserService userService,
                           AuthenticationManager authenticationManager,
@@ -59,7 +67,8 @@ public class AuthController {
                           NetworkService network,
                           UserRepository userRepository,
                           EmailVerificationService emailVerification,
-                          MailRateLimiter mailLimiter) {
+                          MailRateLimiter mailLimiter,
+                          PasswordResetService passwordReset) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
@@ -68,6 +77,7 @@ public class AuthController {
         this.userRepository = userRepository;
         this.emailVerification = emailVerification;
         this.mailLimiter = mailLimiter;
+        this.passwordReset = passwordReset;
     }
 
     /** Zakladanie konta. @Valid uruchamia walidacje DTO (wyklad 3, slajd 62). */
@@ -128,6 +138,10 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
 
+        /* Znacznik bezpieczenstwa z chwili logowania - po jego zmianie sesja wygasnie. */
+        request.getSession().setAttribute(SecurityStampFilter.ATTR,
+            userService.securityStampOf(authenticated.getName()));
+
         /* "Zapamietaj mnie" (wymaganie nr 17). */
         if (loginPayload.rememberMe()) {
             rememberMeServices.rememberUser(request, response, authenticated);
@@ -173,6 +187,58 @@ public class AuthController {
 
         mailLimiter.acquire(address);
         emailVerification.resendRegistration(authenticated.getName(), request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Strona zgody na zmiane adresu: czyje konto i na jaki (zamaskowany) adres. */
+    @PostMapping("/email-change/info")
+    @Operation(summary = "Sprawdza link zgody na zmiane adresu e-mail")
+    public ResponseEntity<EmailChangeInfoResponse> emailChangeInfo(@Valid @RequestBody TokenRequest request) {
+        return ResponseEntity.ok(emailVerification.changeInfo(request.token()));
+    }
+
+    /** Zgoda ze STAREGO adresu na zmiane. */
+    @PostMapping("/email-change/approve")
+    @Operation(summary = "Zgoda ze starego adresu na zmiane adresu e-mail")
+    public ResponseEntity<EmailVerificationResponse> approveEmailChange(@Valid @RequestBody TokenRequest request) {
+        return ResponseEntity.ok(emailVerification.approveChange(request.token()));
+    }
+
+    /** "To nie ja" - zmiana przepada, wszystkie urzadzenia wylogowane. */
+    @PostMapping("/email-change/deny")
+    @Operation(summary = "Odrzuca zmiane adresu e-mail i wylogowuje wszystkie urzadzenia")
+    public ResponseEntity<EmailVerificationResponse> denyEmailChange(@Valid @RequestBody TokenRequest request) {
+        return ResponseEntity.ok(emailVerification.denyChange(request.token()));
+    }
+
+    /**
+     * "Nie pamietam hasla". Zawsze 204 - takze gdy konta z tym adresem nie ma
+     * albo limit sie wyczerpal; inaczej dalo sie sprawdzac, kto ma konto.
+     * Limit na adres IP jest jawny (429) - nie zdradza niczego o kontach.
+     */
+    @PostMapping("/password-reset/request")
+    @Operation(summary = "Wysyla link do ustawienia nowego hasla (zawsze 204)")
+    public ResponseEntity<Void> requestPasswordReset(@Valid @RequestBody PasswordResetRequest request,
+                                                     HttpServletRequest http) {
+        String address = network.clientIp(http);
+        network.requireNotBlocked(address);
+        mailLimiter.acquire(address);
+        passwordReset.request(request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Czy link resetu jest wazny - przed pokazaniem formularza. */
+    @PostMapping("/password-reset/check")
+    @Operation(summary = "Sprawdza link resetu hasla")
+    public ResponseEntity<PasswordResetInfoResponse> checkPasswordReset(@Valid @RequestBody TokenRequest request) {
+        return ResponseEntity.ok(passwordReset.check(request.token()));
+    }
+
+    /** Nowe haslo z linku. Wszystkie inne urzadzenia zostaja wylogowane. */
+    @PostMapping("/password-reset/confirm")
+    @Operation(summary = "Ustawia nowe haslo z linku resetu")
+    public ResponseEntity<Void> confirmPasswordReset(@Valid @RequestBody NewPasswordRequest request) {
+        passwordReset.confirm(request.token(), request.password());
         return ResponseEntity.noContent().build();
     }
 

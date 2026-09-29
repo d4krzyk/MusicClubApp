@@ -2,6 +2,8 @@ package com.musicclubapp.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +12,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -46,6 +49,15 @@ public class EmailToken {
     @Column(nullable = false, length = 255)
     private String email;
 
+    /**
+     * Do czego jest ten link. Wartosc domyslna w bazie jest dla linkow
+     * wyslanych, zanim pojawily sie inne rodzaje niz potwierdzenie adresu.
+     */
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'VERIFY'")
+    @Column(nullable = false, length = 20)
+    private TokenPurpose purpose = TokenPurpose.VERIFY;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -55,8 +67,10 @@ public class EmailToken {
     protected EmailToken() {
     }
 
-    public EmailToken(User user, String tokenHash, String email, LocalDateTime createdAt, LocalDateTime expiresAt) {
+    public EmailToken(User user, TokenPurpose purpose, String tokenHash, String email,
+                      LocalDateTime createdAt, LocalDateTime expiresAt) {
         this.user = user;
+        this.purpose = purpose;
         this.tokenHash = tokenHash;
         this.email = email;
         this.createdAt = createdAt;
@@ -75,11 +89,20 @@ public class EmailToken {
         return email;
     }
 
+    public TokenPurpose getPurpose() {
+        return purpose;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
     public boolean isExpired(LocalDateTime now) {
         return !expiresAt.isAfter(now);
+    }
+
+    /** Link uzyty - dalej liczy sie do limitu wysylek, ale juz nic nie potwierdzi. */
+    public void expire(LocalDateTime now) {
+        this.expiresAt = now;
     }
 }

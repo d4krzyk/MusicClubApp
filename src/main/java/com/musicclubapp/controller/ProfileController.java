@@ -4,6 +4,8 @@ import com.musicclubapp.dto.ChangePasswordRequest;
 import com.musicclubapp.dto.ConfirmPasswordRequest;
 import com.musicclubapp.dto.UpdateProfileRequest;
 import com.musicclubapp.dto.UserResponse;
+import com.musicclubapp.security.JsonRememberMeServices;
+import com.musicclubapp.security.SecurityStampFilter;
 import com.musicclubapp.service.AccountDeletionService;
 import com.musicclubapp.service.EmailVerificationService;
 import com.musicclubapp.service.UserService;
@@ -47,17 +49,20 @@ public class ProfileController {
     private final UserDetailsService userDetailsService;
     private final SecurityContextRepository securityContextRepository;
     private final EmailVerificationService emailVerification;
+    private final JsonRememberMeServices rememberMeServices;
 
     public ProfileController(UserService userService,
                              AccountDeletionService deletion,
                              UserDetailsService userDetailsService,
                              SecurityContextRepository securityContextRepository,
-                             EmailVerificationService emailVerification) {
+                             EmailVerificationService emailVerification,
+                             JsonRememberMeServices rememberMeServices) {
         this.userService = userService;
         this.deletion = deletion;
         this.userDetailsService = userDetailsService;
         this.securityContextRepository = securityContextRepository;
         this.emailVerification = emailVerification;
+        this.rememberMeServices = rememberMeServices;
     }
 
     /** Zmiana loginu i adresu e-mail. */
@@ -113,11 +118,41 @@ public class ProfileController {
     })
     public ResponseEntity<Void> changePassword(
             @Valid @RequestBody ChangePasswordRequest payload,
-            Authentication authentication) {
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response) {
 
         userService.changePassword(authentication.getName(), payload);
+        zostanZalogowanyTutaj(authentication, request, response);
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
+    /** Wylogowuje wszystkie inne urzadzenia - to zostaje zalogowane. */
+    @PostMapping("/sessions/revoke-others")
+    @Operation(summary = "Wylogowuje wszystkie inne urzadzenia")
+    public ResponseEntity<Void> revokeOtherSessions(Authentication authentication,
+                                                    HttpServletRequest request,
+                                                    HttpServletResponse response) {
+        userService.revokeOtherSessions(authentication.getName());
+        zostanZalogowanyTutaj(authentication, request, response);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Po zmianie znacznika bezpieczenstwa: biezaca sesja dostaje nowy (inne
+     * odpadna), a jesli to urzadzenie mialo "zapamietaj mnie" - nowe ciasteczko,
+     * bo stare przestalo pasowac do podpisu.
+     */
+    private void zostanZalogowanyTutaj(Authentication authentication, HttpServletRequest request,
+                                       HttpServletResponse response) {
+        request.getSession().setAttribute(SecurityStampFilter.ATTR,
+            userService.securityStampOf(authentication.getName()));
+        boolean zapamietane = request.getCookies() != null
+            && java.util.Arrays.stream(request.getCookies()).anyMatch(c -> "remember-me".equals(c.getName()));
+        if (zapamietane) {
+            rememberMeServices.rememberUser(request, response, authentication);
+        }
     }
 
     /** Wgranie zdjecia profilowego. */

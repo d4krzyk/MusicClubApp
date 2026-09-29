@@ -16,6 +16,9 @@ import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
 import EventsPage from './pages/EventsPage';
 import EventPage from './pages/EventPage';
 import PotwierdzEmailPage from './pages/PotwierdzEmailPage';
+import ResetHaslaPage from './pages/ResetHaslaPage';
+import NoweHasloPage from './pages/NoweHasloPage';
+import ZmianaAdresuPage from './pages/ZmianaAdresuPage';
 
 /** Mapa adresow aplikacji. */
 export default function App() {
@@ -158,6 +161,11 @@ export default function App() {
                 (nowe konto), i zalogowany (zmiana adresu w ustawieniach).
               */}
               <Route path="/potwierdz-email" element={<PotwierdzEmailPage />} />
+              <Route path="/potwierdz-zmiane-adresu" element={<ZmianaAdresuPage />} />
+
+              {/* Reset hasla - takze dla zalogowanego (przycisk z powiadomienia "to nie ja") */}
+              <Route path="/reset-hasla" element={<ResetHaslaPage />} />
+              <Route path="/nowe-haslo" element={<NoweHasloPage />} />
 
               {/* Nieznany adres - zamiast pustej strony wracamy na glowna */}
               <Route path="*" element={<Navigate to="/" replace />} />

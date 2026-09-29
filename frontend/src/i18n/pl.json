@@ -43,7 +43,9 @@
     "noAccount": "Nie masz konta?",
     "goToRegister": "Załóż konto",
     "registered": "Konto założone. Możesz się teraz zalogować.",
-    "verified": "Adres potwierdzony. Zaloguj się, żeby zacząć."
+    "verified": "Adres potwierdzony. Zaloguj się, żeby zacząć.",
+    "forgot": "Nie pamiętasz hasła?",
+    "passwordReset": "Hasło zmienione. Zaloguj się nowym hasłem."
   },
   "register": {
     "title": "Zakładanie konta",
@@ -179,7 +181,13 @@
     "pendingResend": "Wyślij link ponownie",
     "pendingCancel": "Zostaw stary adres",
     "pendingResent": "Wysłaliśmy nowy link.",
-    "pendingCancelled": "Zmiana adresu anulowana."
+    "pendingCancelled": "Zmiana adresu anulowana.",
+    "emailPasswordHint": "Zmiana adresu wymaga hasła — adres służy do odzyskania konta.",
+    "pendingStepOld": "Zgoda z dotychczasowego adresu ({{email}})",
+    "pendingStepNew": "Potwierdzenie nowego adresu ({{email}})",
+    "sessionsHint": "Konto zostało otwarte na cudzym komputerze albo telefon zginął? Wyloguj wszystkie urządzenia poza tym.",
+    "sessionsRevoke": "Wyloguj z innych urządzeń",
+    "sessionsRevoked": "Gotowe — inne urządzenia zostały wylogowane."
   },
   "avatar": {
     "title": "Zdjęcie profilowe",
@@ -688,6 +696,37 @@
     "changedTitle": "Nowy adres zapisany",
     "changedText": "Od teraz konto używa adresu:",
     "signIn": "Zaloguj się",
-    "goToApp": "Przejdź do aplikacji"
+    "goToApp": "Przejdź do aplikacji",
+    "waitingOldTitle": "Nowy adres potwierdzony",
+    "waitingOldText": "Zostało jeszcze jedno: zatwierdź zmianę linkiem, który wysłaliśmy na dotychczasowy adres. Do tego czasu konto używa starego adresu. Nowy adres:"
+  },
+  "reset": {
+    "title": "Nie pamiętasz hasła?",
+    "intro": "Podaj adres e-mail konta — wyślemy link do ustawienia nowego hasła.",
+    "noMail": "Ten serwer nie wysyła poczty, więc nie może wysłać linku. Napisz do administratora.",
+    "submit": "Wyślij link",
+    "sentTitle": "Sprawdź skrzynkę",
+    "sentText": "Jeśli konto z tym adresem istnieje, wysłaliśmy na nie link:",
+    "sentHint": "Link działa godzinę. Nie widzisz wiadomości? Zajrzyj do folderu „Spam”.",
+    "newTitle": "Nowe hasło",
+    "newIntro": "Ustaw nowe hasło do konta {{username}}.",
+    "save": "Ustaw hasło",
+    "logoutEverywhere": "Po zmianie hasła wszystkie urządzenia zostaną wylogowane — także te z „Zapamiętaj mnie”.",
+    "doneTitle": "Hasło zmienione",
+    "doneText": "Wszystkie urządzenia zostały wylogowane. Zaloguj się nowym hasłem.",
+    "linkFailedTitle": "Link nie działa",
+    "askAgain": "Poproś o nowy link"
+  },
+  "approve": {
+    "title": "Zmiana adresu e-mail",
+    "question": "Konto {{username}} chce zmienić adres e-mail na:",
+    "yes": "Tak, to ja — zgadzam się",
+    "no": "To nie ja",
+    "noHint": "„To nie ja” anuluje zmianę i wyloguje wszystkie urządzenia. Potem ustaw nowe hasło.",
+    "waitingTitle": "Zgoda przyjęta",
+    "waitingText": "Zmiana wejdzie w życie, gdy nowy adres też zostanie potwierdzony — link przyszedł na:",
+    "deniedTitle": "Zmiana anulowana",
+    "deniedText": "Adres konta się nie zmienił, a wszystkie urządzenia zostały wylogowane. Ktoś mógł znać Twoje hasło — ustaw nowe.",
+    "setNewPassword": "Ustaw nowe hasło"
   }
 }

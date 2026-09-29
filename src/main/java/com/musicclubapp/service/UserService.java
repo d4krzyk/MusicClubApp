@@ -38,19 +38,22 @@ public class UserService {
     private final FileStorageService fileStorage;
     private final ReportRepository reportRepository;
     private final EmailVerificationService emailVerification;
+    private final AccountLinks accountLinks;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        UserMapper userMapper,
                        FileStorageService fileStorage,
                        ReportRepository reportRepository,
-                       EmailVerificationService emailVerification) {
+                       EmailVerificationService emailVerification,
+                       AccountLinks accountLinks) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.fileStorage = fileStorage;
         this.reportRepository = reportRepository;
         this.emailVerification = emailVerification;
+        this.accountLinks = accountLinks;
     }
 
     /** Ile zasadnych zgloszen ma to konto. */
@@ -129,6 +132,15 @@ public class UserService {
             throw DuplicateResourceException.email(email);
         }
 
+        if (nowyAdres) {
+            if (request.currentPassword() == null || request.currentPassword().isBlank()) {
+                throw InvalidCurrentPasswordException.missing();
+            }
+            if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+                throw new InvalidCurrentPasswordException();
+            }
+        }
+
         user.setUsername(request.username());
         if (nowyAdres) {
             // Z poczta nowy adres czeka na potwierdzenie; bez niej zmienia sie od razu
@@ -151,7 +163,26 @@ public class UserService {
         }
 
         user.setPasswordHash(passwordEncoder.encode(request.password()));
+        // Inne urzadzenia wylogowane; biezaca sesja dostaje nowy znacznik w kontrolerze
+        user.rotateSecurityStamp();
         userRepository.save(user);
+        if (accountLinks.enabled()) {
+            accountLinks.notify(user, AccountMails.Kind.PASSWORD_CHANGED, "/reset-hasla");
+        }
+    }
+
+    /** "Wyloguj z innych urzadzen" - nowy znacznik; biezaca sesja dostaje go w kontrolerze. */
+    @Transactional
+    public void revokeOtherSessions(String username) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
+        user.rotateSecurityStamp();
+    }
+
+    /** Obecny znacznik bezpieczenstwa - do zapisania w biezacej sesji. */
+    @Transactional(readOnly = true)
+    public String securityStampOf(String username) {
+        return userRepository.securityStampOf(username).orElse("");
     }
 
     /** Ustawia nowe zdjecie profilowe i kasuje poprzednie. */

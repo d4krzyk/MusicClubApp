@@ -9,12 +9,14 @@ import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
 import Field from '../components/Field';
 import SprawdzSkrzynke from '../components/SprawdzSkrzynke';
+import useInfoSerwera from '../hooks/useInfoSerwera';
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const info = useInfoSerwera();
 
   // Po kliknieciu w link potwierdzajacy strona potwierdzenia podaje tu login
   const [username, setUsername] = useState(location.state?.username ?? '');
@@ -84,6 +86,7 @@ export default function LoginPage() {
 
         {messageAfterRegister && <Alert variant="success">{t('login.registered')}</Alert>}
         {location.state?.verified && <Alert variant="success">{t('login.verified')}</Alert>}
+        {location.state?.passwordReset && <Alert variant="success">{t('login.passwordReset')}</Alert>}
         {generalError && <Alert variant="danger">{generalError}</Alert>}
 
         <Form onSubmit={submit} noValidate className="tiles-in-form">
@@ -105,6 +108,13 @@ export default function LoginPage() {
             error={fieldErrors.password}
             autoComplete="current-password"
           />
+
+          {/* Bez poczty link nie mialby jak dojsc - wtedy nie kusimy */}
+          {info?.mailEnabled && (
+            <div className="text-end small mb-2 mt-n2">
+              <Link to="/reset-hasla">{t('login.forgot')}</Link>
+            </div>
+          )}
 
           {/* Wymaganie nr 17 - "zapamietaj mnie" */}
           <Form.Check

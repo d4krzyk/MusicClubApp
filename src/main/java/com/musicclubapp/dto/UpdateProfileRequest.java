@@ -18,7 +18,12 @@ public record UpdateProfileRequest(
     @Email(message = "{validation.email.invalid}")
     @Size(max = 255, message = "{validation.email.size}")
     @NotDisposableEmail
-    String email
+    String email,
 
+    /**
+     * Obecne haslo - wymagane tylko przy zmianie adresu. Sesja mogla zostac
+     * otwarta na cudzym komputerze, a adres to klucz do odzyskania konta.
+     */
+    String currentPassword
 ) {
 }

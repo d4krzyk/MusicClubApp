@@ -59,7 +59,7 @@ export default function PotwierdzEmailPage() {
 
   /* Zmiana adresu przy otwartej sesji - pasek i ustawienia od razu z nowym adresem. */
   useEffect(() => {
-    if (wynik?.result === 'CHANGED' && user) {
+    if ((wynik?.result === 'CHANGED' || wynik?.result === 'WAITING_OLD') && user) {
       konto.ktoJestem().then(refreshUser).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,12 +90,19 @@ export default function PotwierdzEmailPage() {
       </>
     );
   } else {
-    const zmiana = wynik.result === 'CHANGED';
+    /*
+     * Przy zmianie adresu potwierdzenie nowego to polowa - druga to zgoda
+     * ze starej skrzynki. Mowimy wprost, czego jeszcze brakuje.
+     */
+    const [tytul, opis] = {
+      CHANGED: [t('verify.changedTitle'), t('verify.changedText')],
+      WAITING_OLD: [t('verify.waitingOldTitle'), t('verify.waitingOldText')],
+    }[wynik.result] ?? [t('verify.doneTitle'), t('verify.doneText')];
     tresc = (
       <>
         <span className="skrzynka-ikona" aria-hidden="true"><IconCheckCircle size={28} /></span>
-        <h1 className="h5 mb-2">{zmiana ? t('verify.changedTitle') : t('verify.doneTitle')}</h1>
-        <p className="mb-1">{zmiana ? t('verify.changedText') : t('verify.doneText')}</p>
+        <h1 className="h5 mb-2">{tytul}</h1>
+        <p className="mb-1">{opis}</p>
         <p className="skrzynka-adres">{wynik.email}</p>
         <div className="d-grid gap-2">
           {user ? (

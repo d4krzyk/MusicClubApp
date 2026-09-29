@@ -43,3 +43,28 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Dwie zgody przy zmianie adresu: stara skrzynka i nowa. */
+.email-czeka-kroki {
+  list-style: none;
+  padding: 0;
+  margin: .5rem 0 0;
+}
+
+.email-czeka-kroki li {
+  display: flex;
+  gap: .4rem;
+  align-items: baseline;
+  opacity: .8;
+}
+
+.email-czeka-kroki li svg {
+  flex-shrink: 0;
+  position: relative;
+  top: .1rem;
+}
+
+.email-czeka-kroki li.is-zrobione {
+  opacity: 1;
+  font-weight: 600;
+}

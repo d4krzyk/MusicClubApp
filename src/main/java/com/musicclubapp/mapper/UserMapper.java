@@ -22,7 +22,9 @@ public class UserMapper {
                 : PostMapper.UPLOADS_PATH + user.getAvatarFileName(),
             user.getCreatedAt(),
             user.isEmailVerified(),
-            user.getPendingEmail());
+            user.getPendingEmail(),
+            user.getPendingEmailOldApprovedAt() != null,
+            user.getPendingEmailNewVerifiedAt() != null);
     }
 
     /** Encja -&gt; DTO dla administratora. */

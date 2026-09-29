@@ -59,6 +59,16 @@ class UserControllerAccessTest {
     @MockBean
     private UserRepository userRepository;
 
+    /**
+     * Filtr znacznika bezpieczenstwa pyta o konto przy kazdym zapytaniu z sesja.
+     * Atrapa bez tej odpowiedzi zwraca "konta nie ma" - i filtr wylogowuje.
+     */
+    @org.junit.jupiter.api.BeforeEach
+    void kontoIstnieje() {
+        org.mockito.BDDMockito.given(userRepository.securityStampOf(org.mockito.ArgumentMatchers.any()))
+            .willReturn(java.util.Optional.of(""));
+    }
+
     @Test
     @DisplayName("niezalogowany dostaje 401")
     void anonymousGets401() throws Exception {

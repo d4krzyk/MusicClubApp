@@ -50,6 +50,10 @@ class UserProfileServiceTest {
     @Mock
     private EmailVerificationService emailVerification;
 
+    /** Linki i powiadomienia o koncie - poczta w tych testach wylaczona. */
+    @Mock
+    private AccountLinks accountLinks;
+
     @InjectMocks
     private UserService userService;
 
@@ -64,9 +68,10 @@ class UserProfileServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now(), true, null));
+            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now(), true, null, false, false));
 
-        userService.updateProfile("anna", new UpdateProfileRequest("anna", "nowy@example.com"));
+        given(passwordEncoder.matches("haslo", "$2a$10$stary")).willReturn(true);
+        userService.updateProfile("anna", new UpdateProfileRequest("anna", "nowy@example.com", "haslo"));
 
         /* Kluczowe: przy niezmienionym loginie w ogole nie pytamy bazy o jego zajetosc. */
         verify(userRepository, never()).existsByUsername("anna");
@@ -79,7 +84,7 @@ class UserProfileServiceTest {
         given(userRepository.existsByUsername("bartek")).willReturn(true);
 
         assertThatThrownBy(() -> userService.updateProfile(
-            "anna", new UpdateProfileRequest("bartek", "anna@example.com")))
+            "anna", new UpdateProfileRequest("bartek", "anna@example.com", null)))
             .isInstanceOf(DuplicateResourceException.class);
 
         verify(userRepository, never()).save(any(User.class));
@@ -92,7 +97,7 @@ class UserProfileServiceTest {
         given(userRepository.existsByEmailIgnoreCase("zajety@example.com")).willReturn(true);
 
         assertThatThrownBy(() -> userService.updateProfile(
-            "anna", new UpdateProfileRequest("anna", "zajety@example.com")))
+            "anna", new UpdateProfileRequest("anna", "zajety@example.com", "haslo")))
             .isInstanceOf(DuplicateResourceException.class);
 
         verify(userRepository, never()).save(any(User.class));
@@ -107,15 +112,33 @@ class UserProfileServiceTest {
         given(userRepository.existsByEmailIgnoreCase("ania@example.com")).willReturn(false);
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now(), true, null));
+            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now(), true, null, false, false));
 
-        userService.updateProfile("anna", new UpdateProfileRequest("ania", "ania@example.com"));
+        given(passwordEncoder.matches("haslo", "$2a$10$stary")).willReturn(true);
+        userService.updateProfile("anna", new UpdateProfileRequest("ania", "ania@example.com", "haslo"));
 
         ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(stored.capture());
         assertThat(stored.getValue().getUsername()).isEqualTo("ania");
         // Nowy adres idzie przez potwierdzanie: bez poczty zmienia sie od razu, z poczta czeka na link
         verify(emailVerification).requestChange(stored.getValue(), "ania@example.com");
+    }
+
+    @Test
+    @DisplayName("zmiana adresu bez hasla albo ze zlym haslem - odmowa, nic nie zapisane")
+    void emailChangeNeedsPassword() {
+        given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
+        given(passwordEncoder.matches("zle", "$2a$10$stary")).willReturn(false);
+
+        assertThatThrownBy(() -> userService.updateProfile(
+            "anna", new UpdateProfileRequest("anna", "nowy@example.com", null)))
+            .isInstanceOf(InvalidCurrentPasswordException.class);
+        assertThatThrownBy(() -> userService.updateProfile(
+            "anna", new UpdateProfileRequest("anna", "nowy@example.com", "zle")))
+            .isInstanceOf(InvalidCurrentPasswordException.class);
+
+        verify(emailVerification, never()).requestChange(any(), any());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

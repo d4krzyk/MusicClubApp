@@ -1,6 +1,8 @@
 package com.musicclubapp.config;
 
+import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.security.JsonRememberMeServices;
+import com.musicclubapp.security.SecurityStampFilter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.RememberMeServices;
+import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
@@ -48,7 +51,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             RememberMeServices rememberMeServices,
-            SecurityContextRepository securityContextRepository) throws Exception {
+            SecurityContextRepository securityContextRepository,
+            UserRepository userRepository) throws Exception {
 
         http
             /* CORS - przegladarka domyslnie blokuje zapytania z innego adresu niz serwer. */
@@ -73,7 +77,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // rejestracja, logowanie i pobranie tokenu CSRF - dla wszystkich
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
-                    "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
+                    "/api/auth/verify-email", "/api/auth/resend-verification",
+                    "/api/auth/email-change/**", "/api/auth/password-reset/**",
+                    "/api/public/**").permitAll()
                 /* Wgrane obrazki. */
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
 
@@ -132,7 +138,13 @@ public class SecurityConfig {
                 .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
 
             .securityContext(context -> context
-                .securityContextRepository(securityContextRepository));
+                .securityContextRepository(securityContextRepository))
+
+            /*
+             * Po zmianie i resecie hasla inne urzadzenia maja zostac wylogowane.
+             * Za filtrem "zapamietaj mnie" - zeby widziec takze logowanie ciasteczkiem.
+             */
+            .addFilterAfter(new SecurityStampFilter(userRepository), RememberMeAuthenticationFilter.class);
 
         return http.build();
     }
@@ -166,9 +178,10 @@ public class SecurityConfig {
 
     /** Obsluga "zapamietaj mnie" (wymaganie nr 17). */
     @Bean
-    public JsonRememberMeServices rememberMeServices(UserDetailsService userDetailsService) {
-        JsonRememberMeServices services =
-            new JsonRememberMeServices(rememberMeKey, userDetailsService);
+    public JsonRememberMeServices rememberMeServices(UserDetailsService userDetailsService,
+                                                    UserRepository userRepository) {
+        JsonRememberMeServices services = new JsonRememberMeServices(rememberMeKey, userDetailsService,
+            username -> userRepository.securityStampOf(username).orElse(""));
 
         services.setTokenValiditySeconds(rememberMeValiditySeconds);
         services.setParameter("rememberMe");

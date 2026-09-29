@@ -171,13 +171,25 @@ samo na produkcji).
   Ponowna wysyłka przed zalogowaniem wymaga loginu i hasła; można przy niej
   poprawić literówkę w adresie.
 - Niepotwierdzone konto znika po 7 dniach (`UnverifiedAccountCleanup`).
-- Zmiana adresu w ustawieniach: `pending_email`, stary obowiązuje do kliknięcia;
-  „wyślij ponownie” i „zostaw stary adres”.
+- Zmiana adresu w ustawieniach (V5): hasło + zgoda ze STAREJ skrzynki
+  (`/potwierdz-zmiane-adresu`, przyciski zgoda / „To nie ja”) + potwierdzenie
+  nowej, w dowolnej kolejności; stary obowiązuje do obu. „To nie ja” anuluje
+  i wylogowuje wszystko.
+- Reset hasła: `/reset-hasla` → link 1 h na obecny adres → `/nowe-haslo`.
+  Prośba zawsze 204 (także przy wyczerpanym limicie) — nie zdradza kont.
+- Znacznik bezpieczeństwa (`users.security_stamp`): sesja zapamiętuje go przy
+  logowaniu (`SecurityStampFilter`), podpis „zapamiętaj mnie” go zawiera.
+  Zmiana hasła, reset, „To nie ja”, „Wyloguj z innych urządzeń” → nowy
+  znacznik = inne urządzenia wylogowane. Filtr działa tylko przy sesji;
+  w testach kontrolerów atrapa `securityStampOf` musi zwracać konto.
+- Linki uzyte i porzucone są **wygaszane, nie kasowane** — limit wysyłek
+  liczy linki z doby, a kasowanie pozwalałoby go obejść („zmień → anuluj”).
 - Adresy zapisywane małymi literami, unikalność bez wielkości liter; skrzynki
   jednorazowe odrzucane (`mail/disposable-domains.txt`).
 - Szablon `mail/potwierdzenie.html` (tabele, style w elementach, logo jako
   `cid:napis` — biały napis z `NapisMC` wyrenderowany do PNG 630×119) plus
-  wersja tekstowa; teksty w `messages*.properties` (`mail.*`).
+  wersja tekstowa; teksty w `messages*.properties` (`mail.*`). Rodzaje
+  w `AccountMails.Kind`; `AccountMailsTest` renderuje każdy w PL i EN.
 
 ## Wybory, do których nie wracamy
 

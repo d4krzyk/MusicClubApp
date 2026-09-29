@@ -15,7 +15,7 @@ import {
   usunAwatar, usunKonto, usunWszystkiePosty, ustawAwatar,
 } from '../api/konto';
 import Field from '../components/Field';
-import { IconMail } from '../components/Icons';
+import { IconCheckCircle, IconClock, IconMail } from '../components/Icons';
 import Avatar from '../components/Avatar';
 import LanguageSwitch from '../components/LanguageSwitch';
 import ThemeToggle from '../components/ThemeToggle';
@@ -200,6 +200,18 @@ function EmailCzeka() {
           {t('settings.pendingEmail')} <strong>{user.pendingEmail}</strong>
         </div>
         <div className="small">{t('settings.pendingEmailHint', { email: user.email })}</div>
+        {/* Dwie zgody - widac, ktora juz jest, a na ktora czekamy */}
+        <ul className="email-czeka-kroki small">
+          {[
+            [user.pendingEmailOldApproved, t('settings.pendingStepOld', { email: user.email })],
+            [user.pendingEmailNewVerified, t('settings.pendingStepNew', { email: user.pendingEmail })],
+          ].map(([zrobione, opis]) => (
+            <li key={opis} className={zrobione ? 'is-zrobione' : ''}>
+              {zrobione ? <IconCheckCircle size={14} /> : <IconClock size={14} />}
+              <span>{opis}</span>
+            </li>
+          ))}
+        </ul>
         <div className="d-flex flex-wrap gap-2 mt-2">
           <Button
             size="sm"
@@ -230,11 +242,14 @@ function ProfileForm() {
   const { t } = useTranslation();
   const { user, updateProfile } = useAuth();
 
-  const [data, setData] = useState({ username: user.username, email: user.email });
+  const [data, setData] = useState({ username: user.username, email: user.email, currentPassword: '' });
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
   const [saved, setSaved] = useState(false);
   const [wysylanie, setWysylanie] = useState(false);
+
+  /* Nowy adres wymaga hasla - to klucz do odzyskania konta, a sesja mogla zostac na cudzym komputerze. */
+  const zmianaAdresu = data.email.trim().toLowerCase() !== user.email.toLowerCase();
 
   function ustaw(field, value) {
     setData((p) => ({ ...p, [field]: value }));
@@ -251,12 +266,16 @@ function ProfileForm() {
     setWysylanie(true);
 
     try {
-      const zmienione = await updateProfile(data);
+      const zmienione = await updateProfile({
+        username: data.username,
+        email: data.email,
+        ...(zmianaAdresu ? { currentPassword: data.currentPassword } : {}),
+      });
       /*
        * Przy potwierdzaniu adresu serwer oddaje STARY adres i nowy jako
        * czekajacy - pole wraca do obowiazujacego, a nowy widac w ramce wyzej.
        */
-      setData({ username: zmienione.username, email: zmienione.email });
+      setData({ username: zmienione.username, email: zmienione.email, currentPassword: '' });
       setSaved(true);
     } catch (error) {
       const details = describeError(error);
@@ -298,6 +317,19 @@ function ProfileForm() {
             error={fieldErrors.email}
             autoComplete="email"
           />
+
+          {zmianaAdresu && (
+            <Field
+              id="emailCurrentPassword"
+              label={t('settings.currentPassword')}
+              typ="password"
+              value={data.currentPassword}
+              onChange={(v) => ustaw('currentPassword', v)}
+              error={fieldErrors.currentPassword}
+              suggestion={t('settings.emailPasswordHint')}
+              autoComplete="current-password"
+            />
+          )}
 
           <Button type="submit" disabled={wysylanie}>
             {wysylanie ? t('settings.saving') : t('settings.save')}
@@ -392,8 +424,45 @@ function PasswordForm() {
             {wysylanie ? t('settings.saving') : t('settings.changePassword')}
           </Button>
         </Form>
+
+        <InneUrzadzenia />
       </Card.Body>
     </Card>
+  );
+}
+
+/**
+ * "Wyloguj z innych urzadzen" - np. po logowaniu na cudzym komputerze.
+ * To urzadzenie zostaje zalogowane; wszystkie inne, takze z "zapamietaj mnie", nie.
+ */
+function InneUrzadzenia() {
+  const { t } = useTranslation();
+  const [stan, setStan] = useState(null);
+  const [wysylanie, setWysylanie] = useState(false);
+
+  async function wyloguj() {
+    setWysylanie(true);
+    setStan(null);
+    try {
+      await konto.wylogujInneUrzadzenia();
+      setStan({ ok: true, tekst: t('settings.sessionsRevoked') });
+    } catch (problem) {
+      setStan({ ok: false, tekst: describeError(problem).message });
+    } finally {
+      setWysylanie(false);
+    }
+  }
+
+  return (
+    <div className="border-top mt-4 pt-3">
+      <p className="small text-body-secondary mb-2">{t('settings.sessionsHint')}</p>
+      <Button variant="outline-secondary" size="sm" disabled={wysylanie} onClick={wyloguj}>
+        {t('settings.sessionsRevoke')}
+      </Button>
+      {stan && (
+        <div className={`small mt-2 ${stan.ok ? 'text-success' : 'text-danger'}`} role="status">{stan.tekst}</div>
+      )}
+    </div>
   );
 }
 

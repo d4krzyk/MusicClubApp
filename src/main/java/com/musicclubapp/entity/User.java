@@ -70,9 +70,31 @@ public class User {
     @Column(name = "pending_email", length = 255)
     private String pendingEmail;
 
+    /**
+     * Zmiana adresu wymaga DWOCH klikniec: zgody ze starej skrzynki i
+     * potwierdzenia nowej. Bez zgody ze starej ktos, kto przejal sesje, mogl
+     * podmienic adres na swoj, a potem przez "nie pamietam hasla" zabrac konto.
+     */
+    @Column(name = "pending_email_old_approved_at")
+    private LocalDateTime pendingEmailOldApprovedAt;
+
+    @Column(name = "pending_email_new_verified_at")
+    private LocalDateTime pendingEmailNewVerifiedAt;
+
+    /**
+     * Znacznik bezpieczenstwa. Zmienia sie przy zmianie i resecie hasla oraz
+     * przy "wyloguj z innych urzadzen". Sesja zapamietuje go przy logowaniu,
+     * a podpis ciasteczka "zapamietaj mnie" go zawiera - po zmianie znacznika
+     * wszystkie inne urzadzenia sa wylogowane.
+     */
+    @Column(name = "security_stamp", length = 32)
+    private String securityStamp;
+
     /** Kraj, z ktorego pokazujemy wydarzenia. Pusty = Polska. */
     @Column(name = "events_country", length = 2)
     private String eventsCountry;
+
+    private static final java.security.SecureRandom LOSOWANIE = new java.security.SecureRandom();
 
     /** Termin oznaczajacy zakaz bezterminowy. */
     public static final LocalDateTime FOREVER = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
@@ -136,6 +158,9 @@ public class User {
     protected void onCreate() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (securityStamp == null) {
+            rotateSecurityStamp();
         }
     }
 
@@ -209,8 +234,48 @@ public class User {
         return pendingEmail;
     }
 
-    public void setPendingEmail(String pendingEmail) {
-        this.pendingEmail = pendingEmail;
+    public LocalDateTime getPendingEmailOldApprovedAt() {
+        return pendingEmailOldApprovedAt;
+    }
+
+    public LocalDateTime getPendingEmailNewVerifiedAt() {
+        return pendingEmailNewVerifiedAt;
+    }
+
+    /** Nowa zmiana adresu - obie zgody od zera. */
+    public void startEmailChange(String newEmail) {
+        this.pendingEmail = newEmail;
+        this.pendingEmailOldApprovedAt = null;
+        this.pendingEmailNewVerifiedAt = null;
+    }
+
+    public void approveEmailChangeFromOld(LocalDateTime when) {
+        this.pendingEmailOldApprovedAt = when;
+    }
+
+    public void verifyPendingEmail(LocalDateTime when) {
+        this.pendingEmailNewVerifiedAt = when;
+    }
+
+    /** Czy nowy adres ma juz obie zgody. */
+    public boolean emailChangeComplete() {
+        return pendingEmail != null && pendingEmailOldApprovedAt != null && pendingEmailNewVerifiedAt != null;
+    }
+
+    /** Zmiana anulowana albo dokonczona - bez sladu. */
+    public void clearEmailChange() {
+        startEmailChange(null);
+    }
+
+    public String getSecurityStamp() {
+        return securityStamp;
+    }
+
+    /** Nowy znacznik - wszystkie inne sesje i ciasteczka "zapamietaj mnie" przestaja dzialac. */
+    public void rotateSecurityStamp() {
+        byte[] bajty = new byte[24];
+        LOSOWANIE.nextBytes(bajty);
+        this.securityStamp = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bajty);
     }
 
     public String getEventsCountry() {

@@ -251,8 +251,20 @@ Zasady:
   cudzych skrzynek);
 - niepotwierdzone konto znika po 7 dniach — inaczej ktoś, kto zarejestrował
   cudzy adres, zablokowałby go właścicielowi na zawsze;
-- zmiana adresu w ustawieniach też idzie przez link, a do kliknięcia
-  obowiązuje stary adres;
+- zmiana adresu w ustawieniach wymaga **hasła, zgody ze starej skrzynki
+  i potwierdzenia nowej** (w dowolnej kolejności); do tego czasu obowiązuje
+  stary adres. Ze starej skrzynki można kliknąć „To nie ja” — zmiana
+  przepada, a wszystkie urządzenia są wylogowane. Bez zgody ze starej
+  skrzynki ktoś, kto przejął sesję, podmieniłby adres na swój, a potem
+  resetem hasła zabrał konto;
+- „Nie pamiętasz hasła?” wysyła link ważny godzinę, tylko na obecny adres
+  konta. Odpowiedź jest zawsze ta sama, więc formularz nie zdradza, kto ma
+  konto;
+- nowe hasło (z resetu albo w ustawieniach), „To nie ja” i przycisk
+  „Wyloguj z innych urządzeń” zmieniają znacznik bezpieczeństwa konta:
+  inne sesje i ciasteczka „zapamiętaj mnie” przestają działać. Po zmianie
+  hasła przychodzi powiadomienie z przyciskiem „To nie ja — ustaw nowe
+  hasło”;
 - skrzynki jednorazowe (mailinator, 10minutemail, yopmail…) są odrzucane
   (`src/main/resources/mail/disposable-domains.txt`);
 - **konta założone przed włączeniem poczty nie muszą niczego potwierdzać**
@@ -407,6 +419,22 @@ Przy krajach, potwierdzaniu adresów i uzupełnianiu gatunków (wrzesień 2026):
 - wybór kraju w Chromium: import w tle, lista odświeżana sama, 320–1280 px;
 - `mvnw clean test` → 474 testy; klasy wydarzeń, krajów, poczty i usuwania
   kont także na PostgreSQL 16.
+
+Przy resecie hasła i zmianie adresu (wrzesień 2026):
+
+- migracja V5 na pustej bazie i na bazie po V4; schemat zgodny z encjami;
+- testy przez całe API: reset (także ciasteczko „zapamiętaj mnie” i inna
+  sesja wylogowane), brak zdradzania kont, zmiana adresu z dwiema zgodami
+  w dowolnej kolejności, „To nie ja”, rezygnacja bez zerowania limitu;
+  także na PostgreSQL 16. Test z usuniętym filtrem znacznika czerwienieje;
+- Chromium: reset od linku na logowaniu do zalogowania nowym hasłem,
+  zmiana adresu z hasłem i obiema zgodami, „To nie ja” wylogowujące sesję,
+  „Wyloguj z innych urządzeń”;
+- `mvnw clean test` → 487 testów.
+
+Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
+(podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz
+jeszcze.
 
 **Nie sprawdzone stąd:** prawdziwy Ticketmaster. To środowisko nie miało
 klucza. Format odpowiedzi i liczbę koncertów (801 w Polsce) potwierdziło

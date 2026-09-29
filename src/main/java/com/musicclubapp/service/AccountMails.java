@@ -16,7 +16,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Tresc wiadomosci z linkiem potwierdzajacym - w wersji HTML i zwyklym tekstem.
+ * Wiadomosci o koncie - w wersji HTML i zwyklym tekstem: potwierdzenie
+ * adresu, zgoda na zmiane adresu, reset hasla i powiadomienie o zmianie hasla.
  *
  * <p>Teksty sa w plikach lang/messages*, jak reszta aplikacji; tu jest tylko
  * wstawianie ich w szablon mail/potwierdzenie.html. Wersja tekstowa idzie
@@ -24,10 +25,33 @@ import java.util.regex.Pattern;
  * na nia, a wiadomosc bez niej czesciej laduje w spamie.</p>
  */
 @Component
-public class VerificationMails {
+public class AccountMails {
 
-    /** Po co ten link: nowe konto czy nowy adres w istniejacym koncie. */
-    public enum Kind { REGISTRATION, CHANGE }
+    /**
+     * Rodzaj wiadomosci. Prefiks to poczatek kluczy w messages*.properties
+     * (mail.&lt;prefiks&gt;.subject itd.), a waznosc - klucz zdania o tym, jak
+     * dlugo dziala link (pusty = bez tego zdania).
+     */
+    public enum Kind {
+        /** Nowe konto - potwierdz adres. */
+        REGISTRATION("register", "mail.validity"),
+        /** Nowy adres przy zmianie - potwierdz, ze to twoja skrzynka. */
+        CHANGE_NEW("change", "mail.validity"),
+        /** Stary adres przy zmianie - zgoda albo "to nie ja". */
+        CHANGE_OLD("approve", "mail.validity"),
+        /** Nie pamietam hasla. */
+        PASSWORD_RESET("reset", "mail.validity.reset"),
+        /** Haslo zostalo zmienione - na wypadek, gdyby to nie byl wlasciciel. */
+        PASSWORD_CHANGED("pwchanged", "");
+
+        final String prefiks;
+        final String waznosc;
+
+        Kind(String prefiks, String waznosc) {
+            this.prefiks = prefiks;
+            this.waznosc = waznosc;
+        }
+    }
 
     /** Napis MusicClub na bialo - lezy na gradiencie w naglowku. */
     static final MailService.Inline NAPIS = new MailService.Inline("napis", "mail/napis-musicclub.png");
@@ -37,17 +61,25 @@ public class VerificationMails {
 
     private static final Pattern POLE = Pattern.compile("\\{\\{(\\w+)}}");
 
+    /** Fragment szablonu, ktory znika, gdy jego pole jest puste: {{#pole}}...{{/pole}}. */
+    private static final Pattern SEKCJA = Pattern.compile("(?s)\\{\\{#(\\w+)}}(.*?)\\{\\{/\\1}}");
+
     private final MessageSource messages;
     private final String szablon;
 
-    public VerificationMails(MessageSource messages) {
+    public AccountMails(MessageSource messages) {
         this.messages = messages;
         // Komentarze w szablonie sa dla nas, nie dla odbiorcy - nie wysylamy ich
         this.szablon = wczytaj("mail/potwierdzenie.html").replaceAll("(?s)<!--.*?-->\\s*", "");
     }
 
-    public MailService.Mail compose(Kind kind, String to, String username, String link, Locale locale) {
-        String rodzaj = kind == Kind.REGISTRATION ? "register" : "change";
+    /**
+     * @param dodatek drugi argument zdania wstepnego - np. zamaskowany nowy
+     *                adres w prosbie o zgode na zmiane; moze byc pusty
+     */
+    public MailService.Mail compose(Kind kind, String to, String username, String link, String dodatek,
+                                    Locale locale) {
+        String rodzaj = kind.prefiks;
         String temat = tekst("mail." + rodzaj + ".subject", locale);
 
         Map<String, String> pola = new LinkedHashMap<>();
@@ -56,11 +88,11 @@ public class VerificationMails {
         pola.put("preheader", tekst("mail." + rodzaj + ".preheader", locale));
         pola.put("heading", tekst("mail." + rodzaj + ".heading", locale));
         pola.put("greeting", tekst("mail.greeting", locale, username));
-        pola.put("intro", tekst("mail." + rodzaj + ".intro", locale, username));
+        pola.put("intro", tekst("mail." + rodzaj + ".intro", locale, username, dodatek == null ? "" : dodatek));
         pola.put("button", tekst("mail." + rodzaj + ".button", locale));
         pola.put("link", link);
         pola.put("fallback", tekst("mail.fallback", locale));
-        pola.put("validity", tekst("mail.validity", locale));
+        pola.put("validity", kind.waznosc.isEmpty() ? "" : tekst(kind.waznosc, locale));
         pola.put("ignore", tekst("mail." + rodzaj + ".ignore", locale));
         pola.put("tagline", tekst("mail.tagline", locale));
         pola.put("auto", tekst("mail.auto", locale));
@@ -76,8 +108,7 @@ public class VerificationMails {
             pola.get("button") + ":",
             link,
             "",
-            pola.get("validity"),
-            pola.get("ignore"),
+            pola.get("validity").isEmpty() ? pola.get("ignore") : pola.get("validity") + "\n" + pola.get("ignore"),
             "",
             "-- ",
             "MusicClub - " + pola.get("tagline"),
@@ -88,7 +119,16 @@ public class VerificationMails {
 
     /** Kazda wartosc zamieniona na bezpieczny HTML - login czy adres moga zawierac "<". */
     private static String wypelnij(String szablon, Map<String, String> pola) {
-        Matcher m = POLE.matcher(szablon);
+        Matcher sekcje = SEKCJA.matcher(szablon);
+        StringBuilder bezPustych = new StringBuilder();
+        while (sekcje.find()) {
+            String wartosc = pola.get(sekcje.group(1));
+            sekcje.appendReplacement(bezPustych,
+                Matcher.quoteReplacement(wartosc == null || wartosc.isEmpty() ? "" : sekcje.group(2)));
+        }
+        sekcje.appendTail(bezPustych);
+
+        Matcher m = POLE.matcher(bezPustych);
         StringBuilder wynik = new StringBuilder();
         while (m.find()) {
             String wartosc = pola.get(m.group(1));

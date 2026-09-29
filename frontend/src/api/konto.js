@@ -46,6 +46,44 @@ export async function anulujZmianeEmaila() {
   return data;
 }
 
+/** Strona zgody na zmiane adresu: { username, newEmail (zamaskowany) }. */
+export async function infoZmianyAdresu(token) {
+  const { data } = await client.post('/auth/email-change/info', { token });
+  return data;
+}
+
+/** Zgoda ze starego adresu. Oddaje { result: CHANGED | WAITING_NEW, ... }. */
+export async function zgodaNaZmianeAdresu(token) {
+  const { data } = await client.post('/auth/email-change/approve', { token });
+  return data;
+}
+
+/** "To nie ja" - zmiana przepada, wszystkie urzadzenia wylogowane. */
+export async function odrzucZmianeAdresu(token) {
+  const { data } = await client.post('/auth/email-change/deny', { token });
+  return data;
+}
+
+/** "Nie pamietam hasla" - serwer zawsze odpowiada tak samo, czy konto istnieje, czy nie. */
+export async function poprosONoweHaslo(email) {
+  await client.post('/auth/password-reset/request', { email });
+}
+
+/** Czy link resetu jest wazny. Oddaje { username }. */
+export async function sprawdzLinkHasla(token) {
+  const { data } = await client.post('/auth/password-reset/check', { token });
+  return data;
+}
+
+export async function ustawNoweHaslo(token, password, confirmPassword) {
+  await client.post('/auth/password-reset/confirm', { token, password, confirmPassword });
+}
+
+/** Wylogowuje wszystkie inne urzadzenia; to zostaje zalogowane. */
+export async function wylogujInneUrzadzenia() {
+  await client.post('/profile/sessions/revoke-others');
+}
+
 export async function wyloguj() {
   await client.post('/auth/logout');
 }

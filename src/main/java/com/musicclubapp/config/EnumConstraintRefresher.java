@@ -9,6 +9,7 @@ import com.musicclubapp.entity.ReportContext;
 import com.musicclubapp.entity.ReportReason;
 import com.musicclubapp.entity.ReportStatus;
 import com.musicclubapp.entity.Role;
+import com.musicclubapp.entity.TokenPurpose;
 import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 import jakarta.persistence.EntityManager;
@@ -71,7 +72,8 @@ public class EnumConstraintRefresher implements ApplicationRunner {
 
         /* Ticketmaster moze kiedys wprowadzic nowy stan wydarzenia - wtedy przybedzie stala. */
         new EnumColumn("music_events", "status", EventStatus.class),
-        new EnumColumn("event_participations", "status", ParticipationStatus.class)
+        new EnumColumn("event_participations", "status", ParticipationStatus.class),
+        new EnumColumn("email_tokens", "purpose", TokenPurpose.class)
     );
 
     /** Kolumny objete odswiezaniem, jako "tabela.kolumna". */
