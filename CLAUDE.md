@@ -88,7 +88,8 @@ Bandsintown wymaga pisemnej zgody, Eventbrite wyłączył wyszukiwanie w 2020,
 Going./eBilet nie mają API. Ticketmaster zwrócił 801 koncertów w Polsce,
 także klubowych (Progresja, Hydrozagadka, Drizzly Grizzly).
 
-Etap 1 (zrobiony): import co 6 h do `music_events` (migracja V2), lista
+Etap 1 (zrobiony): import co 6 h do `music_events` (migracja V2; po nieudanym
+imporcie ponowna próba co kwadrans), lista
 z grupowaniem serii („Koncert przy świecach" grany co wieczór to jedna karta
 z „+3 terminy"), filtr miasta, szukanie, strona wydarzenia z mapą i biletami.
 Import usuwa wydarzenia, których Ticketmaster już nie ma, tylko po przebiegu

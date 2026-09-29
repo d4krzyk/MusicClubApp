@@ -146,16 +146,16 @@ public class TicketmasterClient {
          * Oryginalnego wyjatku celowo NIE dolaczamy jako przyczyny. Spring
          * wpisuje do jego tresci pelny adres zapytania - razem z kluczem - wiec
          * pierwsze zerwane polaczenie wypisaloby klucz do logow serwera.
-         * Sam kod i komunikat wystarczaja: 401 to zly klucz, 429 to limit.
+         * Zamiast tego do komunikatu idzie opis przyczyny z zamaskowanym kluczem.
          */
         JsonNode response;
         try {
             response = restClient.get().uri(url).retrieve().body(JsonNode.class);
         } catch (RestClientResponseException e) {
-            throw new IllegalStateException("Ticketmaster odmowil: HTTP " + e.getStatusCode().value()
-                + " " + faultstring(e.getResponseBodyAsString()));
+            throw new IllegalStateException(bezKlucza("Ticketmaster odmowil: HTTP "
+                + e.getStatusCode().value() + " " + faultstring(e.getResponseBodyAsString()), key));
         } catch (Exception e) {
-            throw new IllegalStateException("Ticketmaster nie odpowiada: " + e.getClass().getSimpleName());
+            throw new IllegalStateException("Ticketmaster nie odpowiada: " + opisBledu(e, key));
         }
 
         if (response == null) {
@@ -376,6 +376,33 @@ public class TicketmasterClient {
     private static String text(JsonNode node, String field) {
         JsonNode value = node.get(field);
         return value == null || value.isNull() || value.isContainerNode() ? null : value.asText();
+    }
+
+    /**
+     * Co naprawde poszlo nie tak: najglebsza przyczyna, z nazwa i trescia.
+     *
+     * Wyjatek Springa to tylko opakowanie ("ResourceAccessException"), ktore
+     * samo nic nie mowi. Dopiero w srodku siedzi odpowiedz na pytanie "czemu":
+     * UnknownHostException to DNS, SSLHandshakeException - certyfikat,
+     * SocketTimeoutException - czas, ConnectException - nikt nie slucha.
+     * Pierwsza wersja pokazywala samo opakowanie i przy pierwszym bledzie na
+     * serwerze nie dalo sie z logu wyczytac, co jest nie tak.
+     *
+     * Klucz podmieniamy na gwiazdki wszedzie, gdzie by sie pojawil - takze
+     * wtedy, gdy przyczyny nie ma i zostaje tresc opakowania z calym adresem.
+     */
+    static String opisBledu(Throwable e, String key) {
+        Throwable przyczyna = e;
+        while (przyczyna.getCause() != null && przyczyna.getCause() != przyczyna) {
+            przyczyna = przyczyna.getCause();
+        }
+        String tresc = przyczyna.getMessage();
+        return bezKlucza(przyczyna.getClass().getSimpleName()
+            + (tresc == null || tresc.isBlank() ? "" : ": " + tresc), key);
+    }
+
+    private static String bezKlucza(String tekst, String key) {
+        return key == null || key.isEmpty() ? tekst : tekst.replace(key, "***");
     }
 
     /** Wyciaga sam komunikat bledu z odpowiedzi - bez reszty tresci. */

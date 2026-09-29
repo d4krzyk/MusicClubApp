@@ -52,7 +52,7 @@ class EventServiceTest {
         TicketmasterClient ticketmaster =
             new TicketmasterClient("klucz", server.url() + "/discovery/v2", 2000);
         importer = new EventImportService(ticketmaster, repository, transactionManager,
-            Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC), 0);
+            Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC), 0, EventImportServiceTest.SZESC_GODZIN);
         events = new EventService(repository, importer);
 
         importer.runImport();

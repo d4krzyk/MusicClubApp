@@ -66,6 +66,9 @@ public class EventImportService {
     /** Przerwa miedzy zapytaniami - Ticketmaster pozwala na 5 na sekunde. */
     private final long przerwaMs;
 
+    /** Co ile powtarzamy UDANY import. Po nieudanym probujemy przy najblizszym sprawdzeniu. */
+    private final Duration coIle;
+
     /** Wynik ostatniego przebiegu. W pamieci - po restarcie i tak zaraz bedzie nowy. */
     private volatile ImportStatus lastRun;
 
@@ -74,12 +77,14 @@ public class EventImportService {
                               MusicEventRepository repository,
                               PlatformTransactionManager transactionManager,
                               Clock clock,
-                              @Value("${app.events.import.pause-ms:250}") long przerwaMs) {
+                              @Value("${app.events.import.pause-ms:250}") long przerwaMs,
+                              @Value("${app.events.import.interval-ms:21600000}") long coIleMs) {
         this.ticketmaster = ticketmaster;
         this.repository = repository;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.przerwaMs = przerwaMs;
+        this.coIle = Duration.ofMillis(coIleMs);
     }
 
     /** Jak poszedl ostatni import. */
@@ -95,14 +100,27 @@ public class EventImportService {
     }
 
     /**
-     * Uruchamia sie sam: pierwszy raz chwile po starcie serwera, potem co
-     * kilka godzin. fixedDelay, a nie fixedRate - kolejny przebieg liczy sie
-     * od KONCA poprzedniego, wiec dwa nigdy nie nachodza na siebie.
+     * Uruchamia sie sam: pierwszy raz chwile po starcie serwera, potem
+     * sprawdza co kwadrans, czy pora na kolejny import.
+     *
+     * Po UDANYM imporcie nastepny idzie dopiero po 6 godzinach. Po NIEUDANYM -
+     * przy najblizszym sprawdzeniu. Pierwsza wersja miala po prostu "co
+     * 6 godzin", przez co jedno zerwane polaczenie zostawialo pusta zakladke
+     * na cale 6 godzin, nawet gdy siec wrocila po minucie.
+     *
+     * fixedDelay, a nie fixedRate - kolejne sprawdzenie liczy sie od KONCA
+     * poprzedniego, wiec dwa importy nigdy nie nachodza na siebie.
      */
     @Scheduled(initialDelayString = "${app.events.import.initial-delay-ms:30000}",
-               fixedDelayString = "${app.events.import.interval-ms:21600000}")
+               fixedDelayString = "${app.events.import.check-ms:900000}")
     public void scheduledImport() {
-        if (ticketmaster.available()) {
+        if (!ticketmaster.available()) {
+            return;
+        }
+        ImportStatus poprzedni = lastRun;
+        boolean niedawnoUdany = poprzedni != null && poprzedni.success()
+            && poprzedni.finishedAt().plus(coIle).isAfter(LocalDateTime.now(clock));
+        if (!niedawnoUdany) {
             runImport();
         }
     }

@@ -168,14 +168,49 @@ pusta i administrator widzi tam, czego brakuje.
 2. *My Apps* → aplikacja `<login>-App` → **Consumer Key**.
 3. Dopisz do `.env`: `TICKETMASTER_API_KEY=...` i uruchom backend ponownie.
 
-Serwer pobiera koncerty sam: pierwszy raz 30 sekund po starcie, potem co
-6 godzin. Przechodzi przez najbliższy rok miesiąc po miesiącu — to 13–20
-zapytań na przebieg, czyli poniżej 100 dziennie przy limicie 5000.
-Administrator widzi nad listą, kiedy było ostatnie pobranie i ile przyszło
-wydarzeń albo dlaczego się nie udało (np. `HTTP 401 Invalid ApiKey`).
+Serwer pobiera koncerty sam: pierwszy raz 30 sekund po starcie. Udany import
+powtarza się co 6 godzin, nieudany — przy najbliższym sprawdzeniu, co
+kwadrans. Jeden przebieg to 13–20 zapytań (rok naprzód, miesiąc po
+miesiącu), czyli poniżej 100 dziennie przy limicie 5000. Administrator widzi
+nad listą, kiedy było ostatnie pobranie i ile przyszło wydarzeń albo
+dlaczego się nie udało.
 
-Klucza nie ma w logach: przy błędzie serwer wypisuje tylko kod i komunikat
-Ticketmastera, bez adresu zapytania, w którym klucz siedzi.
+Klucza nie ma w logach: tam, gdzie mógłby się pojawić, stoją gwiazdki.
+
+#### Gdy import się nie udaje
+
+```bash
+docker compose -f docker-compose.prod.yml logs backend | grep "Import wydarzen"
+```
+
+Po słowie „odpowiada:" albo „odmowil:" stoi przyczyna:
+
+| W logu | Co to znaczy |
+|---|---|
+| `HTTP 401 Invalid ApiKey` | zły klucz — sprawdź `TICKETMASTER_API_KEY` w `.env` |
+| `HTTP 429` | przekroczony limit zapytań — minie sam |
+| `UnknownHostException` | kontener nie może rozwiązać nazwy — DNS w Dockerze |
+| `SunCertPathBuilderException`, `SSLHandshakeException` | coś po drodze podmienia certyfikat (np. antywirus skanujący HTTPS) |
+| `SocketTimeoutException`, `ConnectException` | brak połączenia z serwerem Ticketmastera |
+
+Sprawdzenie z wnętrza kontenera, niezależnie od Javy:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend getent hosts app.ticketmaster.com
+docker compose -f docker-compose.prod.yml exec backend \
+  curl -sS -o /dev/null -w "HTTP %{http_code}\n" https://app.ticketmaster.com/discovery/v2/events.json
+```
+
+`HTTP 401` znaczy, że sieć działa (brak klucza w tym zapytaniu jest celowy).
+Pusty wynik `getent` albo `Could not resolve host` to DNS — na WSL zdarza
+się, że kontenery dostają adres serwera DNS, do którego nie mają dostępu.
+Pomaga wtedy wpis w usłudze `backend` w `docker-compose.prod.yml`:
+
+```yaml
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+```
 
 ```bash
 openssl rand -base64 48
@@ -245,7 +280,7 @@ Przy zakładce Wydarzenia (wrzesień 2026):
 - cała droga w przeglądarce: import w tle → lista → filtr → strona
   wydarzenia, na udawanym serwerze Ticketmastera w ich formacie odpowiedzi
   i z koncertami z prawdziwego wyniku dla Polski;
-- `mvnw clean test` → 411 testów.
+- `mvnw clean test` → 414 testów.
 
 **Nie sprawdzone stąd:** prawdziwy Ticketmaster. To środowisko nie miało
 klucza. Format odpowiedzi i liczbę koncertów (801 w Polsce) potwierdziło

@@ -187,14 +187,48 @@ class TicketmasterClientTest {
     }
 
     @Test
-    @DisplayName("serwer nie odpowiada: blad bez adresu, czyli bez klucza")
+    @DisplayName("serwer nie odpowiada: widac prawdziwa przyczyne, ale nie klucz")
     void serverDown() {
         TicketmasterClient niedostepny = new TicketmasterClient(KLUCZ, "http://127.0.0.1:9", 500);
 
         assertThatThrownBy(() -> niedostepny.events("PL", Instant.EPOCH, Instant.EPOCH, 0))
             .isInstanceOf(IllegalStateException.class)
+            // Sama nazwa "ResourceAccessException" nic nie mowila: DNS? certyfikat? czas?
+            .hasMessageContaining("ConnectException")
             .hasMessageNotContaining(KLUCZ)
             .hasNoCause();
+    }
+
+    @Test
+    @DisplayName("przekroczony czas: komunikat mowi, ze chodzi o czas")
+    void readTimeout() {
+        server.odpowiadaj(SCIEZKA, query -> {
+            try {
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return TestHttpServer.Odpowiedz.ok("{}");
+        });
+        TicketmasterClient niecierpliwy = new TicketmasterClient(KLUCZ, server.url() + "/discovery/v2", 300);
+
+        assertThatThrownBy(() -> niecierpliwy.events("PL", Instant.EPOCH, Instant.EPOCH, 0))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("SocketTimeoutException")
+            .hasMessageNotContaining(KLUCZ);
+    }
+
+    @Test
+    @DisplayName("gdy w tresci bledu jest caly adres zapytania - klucz i tak znika")
+    void keyIsMaskedEvenInsideMessage() {
+        // Tak wyglada wyjatek Springa: w tresci pelny adres, razem z kluczem
+        Exception e = new org.springframework.web.client.ResourceAccessException(
+            "I/O error on GET request for \"https://app.ticketmaster.com/discovery/v2/events.json?apikey="
+                + KLUCZ + "&page=0\": zerwane");
+
+        String opis = TicketmasterClient.opisBledu(e, KLUCZ);
+
+        assertThat(opis).doesNotContain(KLUCZ).contains("apikey=***").contains("zerwane");
     }
 
     @Test

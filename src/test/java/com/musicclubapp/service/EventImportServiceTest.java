@@ -63,9 +63,72 @@ class EventImportServiceTest {
         server.close();
     }
 
+    /** Co ile powtarza sie udany import - jak w application.properties. */
+    static final long SZESC_GODZIN = Duration.ofHours(6).toMillis();
+
     private EventImportService importer(Instant now) {
         return new EventImportService(ticketmaster, repository, transactionManager,
-            Clock.fixed(now, ZoneOffset.UTC), 0);
+            Clock.fixed(now, ZoneOffset.UTC), 0, SZESC_GODZIN);
+    }
+
+    /** Zegar przestawiany recznie - do sprawdzenia, kiedy import rusza sam. */
+    static final class Zegar extends Clock {
+
+        private Instant teraz;
+
+        Zegar(Instant teraz) {
+            this.teraz = teraz;
+        }
+
+        void przesun(Duration ile) {
+            teraz = teraz.plus(ile);
+        }
+
+        @Override
+        public java.time.ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            return Clock.fixed(teraz, zone);
+        }
+
+        @Override
+        public Instant instant() {
+            return teraz;
+        }
+    }
+
+    @Test
+    @DisplayName("po nieudanym imporcie kolejna proba za kwadrans, a nie za 6 godzin")
+    void retriesSoonAfterFailure() throws IOException {
+        Zegar zegar = new Zegar(TERAZ);
+        EventImportService importer = new EventImportService(ticketmaster, repository,
+            transactionManager, zegar, 0, SZESC_GODZIN);
+
+        server.odpowiadaj(TicketmasterClientTest.SCIEZKA,
+            query -> new TestHttpServer.Odpowiedz(503, "{}"));
+        importer.scheduledImport();
+        assertThat(importer.lastRun().success()).isFalse();
+
+        // Kwadrans pozniej siec wraca - i import rusza przy najblizszym sprawdzeniu
+        ticketmasterOddaje(TicketmasterClientTest.odpowiedzZPolski());
+        zegar.przesun(Duration.ofMinutes(15));
+        importer.scheduledImport();
+        assertThat(importer.lastRun().success()).isTrue();
+        assertThat(repository.count()).isEqualTo(10);
+        int zapytan = server.requests().size();
+
+        // Po udanym nie ma po co pytac co kwadrans
+        zegar.przesun(Duration.ofMinutes(15));
+        importer.scheduledImport();
+        assertThat(server.requests()).hasSize(zapytan);
+
+        // ... ale po 6 godzinach juz tak
+        zegar.przesun(Duration.ofHours(6));
+        importer.scheduledImport();
+        assertThat(server.requests().size()).isGreaterThan(zapytan);
     }
 
     /** Pierwszy okres dostaje podana odpowiedz, wszystkie pozostale - pusta. */
