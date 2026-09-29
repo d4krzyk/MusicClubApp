@@ -89,7 +89,7 @@ class PostServiceTest {
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(1L, "anna", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), true, true, ReactionSummary.empty(), PostVisibility.PUBLIC, false));
+                LocalDateTime.now(), true, true, ReactionSummary.empty(), PostVisibility.PUBLIC, false, null));
     }
 
     /** Serwis oEmbed odpowiada tytulem i miniaturka. */

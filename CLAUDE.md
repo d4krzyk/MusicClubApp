@@ -149,6 +149,15 @@ Na telefonie (< 576 px) ikony administratora przechodzą do menu konta, a liczni
 zgłoszeń na awatar — z ikoną Wydarzeń pasek administratora wychodził poza
 ekran o 41 px przy 360 px. Teraz mieści się od 320 px w górę (zmierzone).
 
+Posty pod wydarzeniem (migracja V7) — „szukam ekipy”: `posts.event_id`
+z `ON DELETE SET NULL`. To zwykłe posty — są też na tablicy i na profilu,
+z plakietką prowadzącą do wydarzenia (na stronie wydarzenia plakietki nie ma).
+Lista `GET /api/posts?event={id}` ma te same zasady widoczności („tylko
+znajomi”) i blokad co tablica. Wydarzenie z postami, które zniknęło
+z Ticketmastera, jest wycofywane, a nie kasowane (jak przy zapisach); po 30
+dniach od daty znika, a posty zostają bez odnośnika. Komentarzy jeszcze nie
+ma — gdy dojdą, mają działać także pod tymi postami.
+
 Zostało:
 4. Przypomnienie w dzwonku kilka dni przed wydarzeniem (dla zainteresowanych
    i idących).

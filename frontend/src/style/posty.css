@@ -201,3 +201,52 @@
   /* Dlugie nazwy nie moga rozepchnac kolumny z miniatura */
   overflow-wrap: anywhere;
 }
+
+/* =========================================================================
+   POST POD WYDARZENIEM
+
+   Plakietka nad trescia prowadzi na strone wydarzenia. Nazwa bywa dluga
+   ("Nachtmahr | Special guests: ..."), wiec to ona sie skraca, a dzien
+   i miasto zostaja w calosci. Obcinany tekst siedzi we wlasnym spanie -
+   goly tekst w kontenerze flex ucinalby sie bez wielokropka.
+   ========================================================================= */
+
+.post-wydarzenie {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+  max-width: 100%;
+  margin-bottom: .75rem;
+  padding: .25rem .625rem;
+  border-radius: 999px;
+  font-size: .8125rem;
+  color: var(--bs-body-color);
+  text-decoration: none;
+  background: rgba(var(--bs-primary-rgb), .08);
+  border: 1px solid rgba(var(--bs-primary-rgb), .22);
+  transition: background var(--mc-fast), border-color var(--mc-fast);
+}
+
+.post-wydarzenie:hover,
+.post-wydarzenie:focus-visible {
+  background: rgba(var(--bs-primary-rgb), .14);
+  border-color: rgba(var(--bs-primary-rgb), .45);
+}
+
+.post-wydarzenie svg {
+  color: rgba(var(--bs-primary-rgb), .95);
+}
+
+.post-wydarzenie-nazwa {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.post-wydarzenie-kiedy {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--bs-secondary-color);
+}

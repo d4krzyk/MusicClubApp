@@ -23,6 +23,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query(value = """
            SELECT p FROM Post p
            JOIN FETCH p.author a
+           LEFT JOIN FETCH p.event
            WHERE (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR a.id IN :circle)
@@ -44,6 +45,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query(value = """
            SELECT p FROM Post p
            JOIN FETCH p.author a
+           LEFT JOIN FETCH p.event
            WHERE a.id IN :circle
            ORDER BY p.createdAt DESC
            """,
@@ -54,6 +56,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query(value = """
            SELECT p FROM Post p
            JOIN FETCH p.author a
+           LEFT JOIN FETCH p.event
            WHERE a.username = :username
              AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
@@ -70,11 +73,36 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                                     @Param("circle") Collection<Long> circle,
                                     Pageable pageable);
 
+    /** Posty pod jednym wydarzeniem - te same warunki widocznosci co na tablicy. */
+    @Query(value = """
+           SELECT p FROM Post p
+           JOIN FETCH p.author a
+           LEFT JOIN FETCH p.event e
+           WHERE e.id = :eventId
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR a.id IN :circle)
+             AND a.id NOT IN :hidden
+           ORDER BY p.createdAt DESC
+           """,
+           countQuery = """
+           SELECT COUNT(p) FROM Post p
+           WHERE p.event.id = :eventId
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR p.author.id IN :circle)
+             AND p.author.id NOT IN :hidden
+           """)
+    Page<Post> findByEvent(@Param("eventId") Long eventId,
+                           @Param("circle") Collection<Long> circle,
+                           @Param("hidden") Collection<Long> hidden,
+                           Pageable pageable);
+
     /**
      * Post razem z autorem - uzywane przy usuwaniu, zeby sprawdzic wlasciciela bez dodatkowego
      * zapytania do bazy.
      */
-    @Query("SELECT p FROM Post p JOIN FETCH p.author WHERE p.id = :id")
+    @Query("SELECT p FROM Post p JOIN FETCH p.author LEFT JOIN FETCH p.event WHERE p.id = :id")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
 
     /** Ile postow napisal dany uzytkownik - liczba na jego profilu. */

@@ -30,7 +30,16 @@ public record CreatePostRequest(
     Integer musicStartSeconds,
 
     /** Kto ma zobaczyc ten post. null znaczy PUBLIC. */
-    PostVisibility visibility
+    PostVisibility visibility,
+
+    /** Wydarzenie, pod ktorym piszemy post - albo null, gdy to zwykly wpis na tablicy. */
+    Long eventId
 
 ) implements MusicLinkToValidate {
+
+    /** Zwykly post na tablicy - bez wydarzenia. */
+    public CreatePostRequest(String content, String musicUrl, MusicKind musicKind,
+                             Integer musicStartSeconds, PostVisibility visibility) {
+        this(content, musicUrl, musicKind, musicStartSeconds, visibility, null);
+    }
 }

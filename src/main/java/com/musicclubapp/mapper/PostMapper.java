@@ -1,7 +1,9 @@
 package com.musicclubapp.mapper;
 
+import com.musicclubapp.dto.PostEventRef;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
+import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
@@ -48,7 +50,15 @@ public class PostMapper {
             canEdit(post, viewer),
             reactions,
             post.getVisibility(),
-            fromFriend);
+            fromFriend,
+            eventRef(post.getEvent()));
+    }
+
+    private PostEventRef eventRef(MusicEvent event) {
+        return event == null
+            ? null
+            : new PostEventRef(event.getId(), event.getName(), event.getStartDate(),
+                event.getCityKey(), event.getCity());
     }
 
     /** Czy autor posta to ogladajacy albo ktos z jego znajomych. */

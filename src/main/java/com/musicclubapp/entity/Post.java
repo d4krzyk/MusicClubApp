@@ -12,12 +12,15 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -29,7 +32,9 @@ import java.util.Objects;
  * YouTube).
  */
 @Entity
-@Table(name = "posts")
+@Table(name = "posts",
+    // Lista pod wydarzeniem szuka po event_id - bez indeksu to przeglad calej tabeli
+    indexes = @Index(name = "idx_posts_event", columnList = "event_id"))
 public class Post {
 
     /** Gorny limit dlugosci tresci - tyle samo pilnuje walidacja w DTO. */
@@ -46,6 +51,19 @@ public class Post {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
+
+    /**
+     * Wydarzenie, pod ktorym napisano post ("szukam ekipy na koncert"), albo null.
+     * Post pod wydarzeniem to zwykly post - jest tez na tablicy i na profilu.
+     *
+     * Wydarzenia znikaja z bazy (import sprzata minione), a post ma zostac:
+     * baza sama czysci odnosnik (ON DELETE SET NULL), bez ladowania postow
+     * do pamieci przy kazdym sprzataniu.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private MusicEvent event;
 
     /** Tresc posta. {@code TEXT} zamiast VARCHAR - dluzsze wpisy sie zmieszcza. */
     @Column(nullable = false, length = MAX_CONTENT_LENGTH, columnDefinition = "TEXT")
@@ -132,6 +150,15 @@ public class Post {
 
     public String getContent() {
         return content;
+    }
+
+    public MusicEvent getEvent() {
+        return event;
+    }
+
+    /** Ustawiane tylko przy dodawaniu - edycja nie przenosi posta pod inne wydarzenie. */
+    public void setEvent(MusicEvent event) {
+        this.event = event;
     }
 
     public void setContent(String content) {

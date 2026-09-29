@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import Collapse from 'react-bootstrap/Collapse';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
@@ -6,13 +7,20 @@ import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import Spinner from 'react-bootstrap/Spinner';
 import { describeError } from '../api/client';
+import * as posty from '../api/posty';
 import {
   jedno, uczestnicy, zapisz, zrezygnuj,
 } from '../api/wydarzenia';
 import Avatar from '../components/Avatar';
+import EmptyState from '../components/EmptyState';
 import EventReasons from '../components/EventReasons';
+import Post from '../components/Post';
+import PostForm from '../components/PostForm';
+import PostSkeleton from '../components/PostSkeleton';
+import useLiveReactions from '../hooks/useLiveReactions';
 import {
-  IconArrowLeft, IconCalendar, IconCheckCircle, IconClock, IconExternal, IconPin, IconStar, IconTicket,
+  IconArrowLeft, IconCalendar, IconCheckCircle, IconClock, IconCross, IconExternal, IconFriends, IconPin,
+  IconPlus, IconStar, IconTicket,
 } from '../components/Icons';
 import {
   adresMapy, godzina, nazwaMiasta, pelnaData, plakietka,
@@ -20,6 +28,9 @@ import {
 
 /** Opis dluzszy niz tyle znakow jest zwiniety - na telefonie to kilka ekranow tekstu. */
 const DLUGI_OPIS = 600;
+
+/** Ile postow pod wydarzeniem naraz - jak na tablicy. */
+const POSTOW_NA_STRONE = 10;
 
 /** Strona jednego wydarzenia: kiedy, gdzie, kto gra, opis i bilety. */
 export default function EventPage() {
@@ -101,14 +112,17 @@ export default function EventPage() {
       {blad && <Alert variant="warning">{blad}</Alert>}
 
       {!ladowanie && !blad && wydarzenie && (
-        <Szczegoly
-          w={wydarzenie}
-          rozwiniety={rozwiniety}
-          onRozwin={() => setRozwiniety((r) => !r)}
-          onZmianaUdzialu={poZmianieUdzialu}
-          t={t}
-          jezyk={i18n.language}
-        />
+        <>
+          <Szczegoly
+            w={wydarzenie}
+            rozwiniety={rozwiniety}
+            onRozwin={() => setRozwiniety((r) => !r)}
+            onZmianaUdzialu={poZmianieUdzialu}
+            t={t}
+            jezyk={i18n.language}
+          />
+          <PostyWydarzenia idWydarzenia={wydarzenie.id} />
+        </>
       )}
     </div>
   );
@@ -432,6 +446,148 @@ function Uczestnicy({ w, t }) {
           {ladowanie && <Spinner animation="border" size="sm" className="me-2" />}
           {t('events.attendeesAll', { count: widocznych })}
         </Button>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Posty pod wydarzeniem - "szukam ekipy", "kto jedzie z Lodzi?". To zwykle
+ * posty: te same reakcje, widocznosc i zglaszanie, sa tez na tablicy.
+ */
+function PostyWydarzenia({ idWydarzenia }) {
+  const { t } = useTranslation();
+  const [lista, setLista] = useState([]);
+  const [strona, setStrona] = useState(0);
+  const [ostatnia, setOstatnia] = useState(true);
+  const [wszystkich, setWszystkich] = useState(0);
+  const [ladowanie, setLadowanie] = useState(true);
+  const [pierwsze, setPierwsze] = useState(true);
+  const [blad, setBlad] = useState(null);
+  const [komunikat, setKomunikat] = useState(null);
+  const [formularz, setFormularz] = useState(false);
+
+  const pobierz = useCallback(async (numer, dolacz) => {
+    setLadowanie(true);
+    setBlad(null);
+    try {
+      const dane = await posty.tablica({ strona: numer, rozmiar: POSTOW_NA_STRONE, wydarzenie: idWydarzenia });
+      setLista((poprzednie) => (dolacz ? [...poprzednie, ...dane.content] : dane.content));
+      setOstatnia(dane.last);
+      setStrona(dane.number);
+      setWszystkich(dane.totalElements);
+    } catch (problem) {
+      setBlad(describeError(problem).message);
+    } finally {
+      setLadowanie(false);
+      setPierwsze(false);
+    }
+  }, [idWydarzenia]);
+
+  useEffect(() => {
+    // Inny termin tej samej serii to inne wydarzenie - i inne posty
+    setLista([]);
+    setPierwsze(true);
+    setFormularz(false);
+    setKomunikat(null);
+    pobierz(0, false);
+  }, [pobierz]);
+
+  const liczniki = useCallback((stan) => {
+    setLista((poprzednie) => poprzednie.map((p) => (stan[p.id] ? { ...p, reactions: stan[p.id] } : p)));
+  }, []);
+  useLiveReactions(lista, liczniki);
+
+  const podmien = (nowy) => setLista((poprzednie) => poprzednie.map((p) => (p.id === nowy.id ? nowy : p)));
+
+  function poDodaniu(nowy) {
+    setLista((poprzednie) => [nowy, ...poprzednie]);
+    setWszystkich((n) => n + 1);
+    setKomunikat(t('posts.published'));
+    setFormularz(false);
+  }
+
+  async function usun(id) {
+    if (!window.confirm(t('common.confirmDelete'))) {
+      return;
+    }
+    try {
+      await posty.usun(id);
+      setLista((poprzednie) => poprzednie.filter((p) => p.id !== id));
+      setWszystkich((n) => Math.max(0, n - 1));
+      setKomunikat(t('posts.deleted'));
+    } catch (problem) {
+      setBlad(describeError(problem).message);
+    }
+  }
+
+  return (
+    <section className="wydarzenie-posty mt-4" aria-labelledby="posty-wydarzenia">
+      <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap mb-3">
+        <h2 id="posty-wydarzenia" className="h5 mb-0">
+          {t('events.posts.title')}
+          {wszystkich > 0 && <span className="text-body-secondary fw-normal ms-2">{wszystkich}</span>}
+        </h2>
+        <Button
+          variant={formularz ? 'outline-secondary' : 'primary'}
+          onClick={() => setFormularz((f) => !f)}
+          aria-expanded={formularz}
+          aria-controls="formularz-posta-wydarzenia"
+        >
+          {formularz ? <><IconCross /> {t('common.cancel')}</> : <><IconPlus /> {t('events.posts.write')}</>}
+        </Button>
+      </div>
+
+      <Collapse in={formularz}>
+        <div id="formularz-posta-wydarzenia">
+          <PostForm
+            onAdded={poDodaniu}
+            eventId={idWydarzenia}
+            idPola="tresc-pod-wydarzeniem"
+            etykieta={t('events.posts.label')}
+            podpowiedz={t('events.posts.placeholder')}
+          />
+        </div>
+      </Collapse>
+
+      {komunikat && (
+        <Alert variant="success" dismissible onClose={() => setKomunikat(null)}>{komunikat}</Alert>
+      )}
+      {blad && <Alert variant="danger">{blad}</Alert>}
+
+      {pierwsze && ladowanie && <PostSkeleton count={2} />}
+
+      {lista.map((p, i) => (
+        <Post
+          key={p.id}
+          post={p}
+          index={i % POSTOW_NA_STRONE}
+          onDelete={usun}
+          onUpdate={(nowy) => { podmien(nowy); setKomunikat(t('posts.updated')); }}
+          onReaction={podmien}
+          bezWydarzenia
+        />
+      ))}
+
+      {!ladowanie && !blad && lista.length === 0 && !formularz && (
+        <EmptyState
+          icon={IconFriends}
+          title={t('events.posts.emptyTitle')}
+          text={t('events.posts.emptyText')}
+          action={(
+            <Button variant="primary" onClick={() => setFormularz(true)}>
+              <IconPlus /> {t('events.posts.write')}
+            </Button>
+          )}
+        />
+      )}
+
+      {!ladowanie && !ostatnia && (
+        <div className="text-center">
+          <Button variant="outline-secondary" onClick={() => pobierz(strona + 1, true)}>
+            {t('posts.loadMore')}
+          </Button>
+        </div>
       )}
     </section>
   );

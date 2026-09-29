@@ -132,6 +132,10 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
     /** Wydarzenia, ktore dawno sie odbyly. */
     List<MusicEvent> findByStartDateBefore(LocalDate date);
 
+    /** Ktore z tych wydarzen maja choc jeden post - tych import nie kasuje, tylko wycofuje. */
+    @Query("SELECT DISTINCT p.event.id FROM Post p WHERE p.event.id IN :ids")
+    List<Long> withPosts(@Param("ids") Collection<Long> ids);
+
 
     /** Wykonawcy nadchodzacych wydarzen - do uzupelnienia ich gatunkow z Last.fm. */
     @Query("""

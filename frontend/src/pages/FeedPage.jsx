@@ -1,8 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import Card from 'react-bootstrap/Card';
-import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
@@ -10,23 +8,15 @@ import Col from 'react-bootstrap/Col';
 import Collapse from 'react-bootstrap/Collapse';
 import { describeError } from '../api/client';
 import * as posty from '../api/posty';
-import Field from '../components/Field';
 import Post from '../components/Post';
+import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
 import EmptyState from '../components/EmptyState';
-import ImagePicker from '../components/ImagePicker';
-import MusicPicker from '../components/MusicPicker';
-import VisibilityPicker from '../components/VisibilityPicker';
 import useLiveReactions from '../hooks/useLiveReactions';
 import { IconCross, IconPlus, IconFriends, IconGlobe, IconInbox } from '../components/Icons';
-import { toSeconds } from '../utils/time';
-import { linkError } from '../utils/musicLinks';
 
 /** Ile postow pobieramy za jednym razem. */
 const PAGE_SIZE = 10;
-
-/** Limit zdjec w jednym poscie - taki sam jak po stronie backendu. */
-const MAX_IMAGES = 10;
 
 /** Tablica: przycisk dodawania posta i lista wpisow. */
 export default function FeedPage() {
@@ -263,104 +253,5 @@ export default function FeedPage() {
         )}
       </Col>
     </Row>
-  );
-}
-
-/** Formularz dodawania posta: tekst, zdjecia, utwor i wybor widocznosci. */
-function PostForm({ onAdded }) {
-  const { t } = useTranslation();
-
-  const [content, setContent] = useState('');
-  const [musicUrl, setMusicUrl] = useState('');
-  const [musicKind, setMusicKind] = useState('TRACK');
-  const [startAt, setStartAt] = useState('');
-  const [files, setFiles] = useState([]);
-  const [visibility, setVisibility] = useState('PUBLIC');
-
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [generalError, setGeneralError] = useState(null);
-  const [sending, setSending] = useState(false);
-
-  function clear() {
-    setContent('');
-    setMusicUrl('');
-    setMusicKind('TRACK');
-    setStartAt('');
-    setFiles([]);
-    /* Widocznosci NIE resetujemy. */
-  }
-
-  /* Zly link BLOKUJE wysylke. */
-  const blokada = linkError(musicUrl, musicKind);
-
-  async function submit(e) {
-    e.preventDefault();
-    setFieldErrors({});
-    setGeneralError(null);
-    setSending(true);
-
-    try {
-      const dodany = await posty.dodaj({
-        content,
-        musicUrl: musicUrl || null,
-        // Bez linku rodzaj nie ma do czego sie odnosic - serwer to odrzuci
-        musicKind: musicUrl ? musicKind : null,
-        musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
-        visibility,
-      }, files);
-
-      clear();
-      onAdded(dodany);
-    } catch (error) {
-      const details = describeError(error);
-      setFieldErrors(details.fieldErrors);
-      setGeneralError(details.message);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <Card className="mb-4">
-      <Card.Body>
-        {generalError && <Alert variant="danger">{generalError}</Alert>}
-
-        <Form onSubmit={submit} noValidate>
-          <Field
-            id="content"
-            label={t('posts.content')}
-            value={content}
-            onChange={setContent}
-            error={fieldErrors.content}
-            placeholder={t('posts.contentPlaceholder')}
-            asTextarea
-            rows={3}
-          />
-
-          <ImagePicker
-            files={files}
-            onChange={setFiles}
-            maks={MAX_IMAGES}
-            error={fieldErrors.images}
-          />
-
-          <MusicPicker
-            kind={musicKind}
-            onKind={setMusicKind}
-            link={musicUrl}
-            onLink={setMusicUrl}
-            startSeconds={startAt}
-            onStartSeconds={setStartAt}
-            serverErrors={fieldErrors}
-          />
-
-          <VisibilityPicker value={visibility} onChange={setVisibility} />
-
-          <Button type="submit" disabled={sending || Boolean(blokada)}>
-            {sending ? t('posts.publishing') : t('posts.publish')}
-          </Button>
-        </Form>
-      </Card.Body>
-    </Card>
   );
 }

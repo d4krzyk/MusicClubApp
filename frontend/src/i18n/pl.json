@@ -287,7 +287,8 @@
       "text": "Zawęziłeś tablicę do znajomych. Możesz ją rozszerzyć na całą społeczność albo poszukać osób o podobnym guście.",
       "showAll": "Pokaż wszystkie posty",
       "findFriends": "Znajdź ludzi"
-    }
+    },
+    "underEvent": "Post pod wydarzeniem: {{name}}"
   },
   "favorites": {
     "title": "Ulubieni",
@@ -672,7 +673,15 @@
     "friendBadge": "znajomy",
     "hiddenMe": "inni cię nie widzą",
     "withdrawnInfo": "Tego wydarzenia nie ma już w Ticketmasterze — mogło zostać odwołane albo przeniesione. Sprawdź u organizatora.",
-    "withdrawnBadge": "Wycofane"
+    "withdrawnBadge": "Wycofane",
+    "posts": {
+      "title": "Posty",
+      "write": "Napisz post",
+      "label": "Napisz pod wydarzeniem",
+      "placeholder": "Szukasz ekipy? Napisz, skąd jedziesz, gdzie się spotkać przed koncertem…",
+      "emptyTitle": "Nikt jeszcze nic nie napisał",
+      "emptyText": "Szukasz ekipy na ten koncert? Napisz post — zobaczy go każdy, kto zajrzy na to wydarzenie, a do tego trafi na tablicę."
+    }
   },
   "verify": {
     "checkTitle": "Sprawdź skrzynkę",

@@ -74,6 +74,9 @@ public class PostController {
             @Parameter(description = "ALL = znajomi i reszta, FRIENDS = tylko krag znajomych")
             @RequestParam(defaultValue = "ALL") FeedScope scope,
 
+            @Parameter(description = "Identyfikator wydarzenia - posty pod tym wydarzeniem")
+            @RequestParam(required = false) Long event,
+
             Authentication authentication) {
 
         Sort sort = "asc".equalsIgnoreCase(direction)
@@ -87,9 +90,14 @@ public class PostController {
 
         String username = authentication.getName();
 
-        Page<PostResponse> result = (author == null || author.isBlank())
-            ? postService.feed(username, scope, pageable)
-            : postService.byAuthor(author, username, pageable);
+        Page<PostResponse> result;
+        if (event != null) {
+            result = postService.byEvent(event, username, pageable);
+        } else if (author == null || author.isBlank()) {
+            result = postService.feed(username, scope, pageable);
+        } else {
+            result = postService.byAuthor(author, username, pageable);
+        }
 
         return ResponseEntity.ok(result);
     }

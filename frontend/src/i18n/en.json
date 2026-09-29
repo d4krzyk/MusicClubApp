@@ -278,7 +278,8 @@
       "text": "You narrowed the feed down to friends. You can widen it to the whole community or look for people with a similar taste.",
       "showAll": "Show every post",
       "findFriends": "Find people"
-    }
+    },
+    "underEvent": "Post about the event: {{name}}"
   },
   "favorites": {
     "title": "Favourites",
@@ -637,7 +638,15 @@
     "friendBadge": "friend",
     "hiddenMe": "others can't see you",
     "withdrawnInfo": "This event is no longer on Ticketmaster — it may have been cancelled or moved. Check with the organiser.",
-    "withdrawnBadge": "Withdrawn"
+    "withdrawnBadge": "Withdrawn",
+    "posts": {
+      "title": "Posts",
+      "write": "Write a post",
+      "label": "Write about this event",
+      "placeholder": "Looking for company? Say where you're coming from or where to meet before the show…",
+      "emptyTitle": "No posts yet",
+      "emptyText": "Looking for people to go with? Write a post — everyone who opens this event will see it, and it shows up in the feed too."
+    }
   },
   "verify": {
     "checkTitle": "Check your inbox",

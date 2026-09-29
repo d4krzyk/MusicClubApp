@@ -445,6 +445,18 @@ Przy blokadach i ustawieniach prywatności (wrzesień 2026):
   tylko dla znajomych;
 - `mvnw clean test` → 493 testy.
 
+Przy postach pod wydarzeniem (wrzesień 2026):
+
+- migracja V7 na pustej bazie i po V6; schemat zgodny z encjami;
+- na PostgreSQL: usunięcie wydarzenia zostawia post z pustym `event_id`
+  (`ON DELETE SET NULL`), import wycofuje zamiast kasować wydarzenie
+  z postami; testy wyłapują wyłączenie każdego z tych dwóch zabezpieczeń
+  i filtra blokad pod wydarzeniem;
+- Chromium: pusta sekcja, post publiczny i „tylko znajomi” (obcy widzi
+  tylko publiczny), plakietka na tablicy z obciętą nazwą i przejściem do
+  wydarzenia, usuwanie; 320 px w ciemnym motywie bez przelewu;
+- `mvnw clean test` → 498 testów.
+
 Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
 (podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz
 jeszcze.

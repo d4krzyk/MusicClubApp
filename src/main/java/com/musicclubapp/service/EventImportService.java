@@ -417,9 +417,10 @@ public class EventImportService {
      * niz zobaczylismy. Wtedy lepiej pokazac przez kilka godzin cos
      * nieaktualnego, niz wyczyscic cala zakladke.
      *
-     * Wydarzenia, na ktore ktos sie zapisal, nie sa kasowane, tylko
-     * oznaczane jako wycofane: znikaja z listy, ale zapisani widza w zakladce
-     * "Moje", co sie stalo. Inaczej zapis przepadalby bez slowa.
+     * Wydarzenia, na ktore ktos sie zapisal albo pod ktorymi sa posty, nie sa
+     * kasowane, tylko oznaczane jako wycofane: znikaja z listy, ale zapisani
+     * widza w zakladce "Moje", co sie stalo, a odnosnik z posta prowadzi na
+     * strone z wyjasnieniem. Inaczej zapis przepadalby bez slowa.
      */
     private int removeVanished(String kraj, LocalDate today, LocalDate until, LocalDateTime startedAt, int seen) {
         return transactions.execute(status -> {
@@ -437,8 +438,10 @@ public class EventImportService {
                     kraj, seen, vanished.size());
                 return 0;
             }
-            Set<Long> zapisane = new HashSet<>(participations.eventsWithParticipants(
-                vanished.stream().map(MusicEvent::getId).toList()));
+            List<Long> ids = vanished.stream().map(MusicEvent::getId).toList();
+            Set<Long> zapisane = new HashSet<>(participations.eventsWithParticipants(ids));
+            // Posty pod wydarzeniem tez: strona ma wyjasnic, co sie stalo, a nie zniknac
+            zapisane.addAll(repository.withPosts(ids));
 
             List<MusicEvent> doUsuniecia = new ArrayList<>();
             for (MusicEvent event : vanished) {
@@ -453,7 +456,10 @@ public class EventImportService {
         });
     }
 
-    /** Dawno minione - razem z zapisami, bo po miesiacu nikomu juz do niczego nie sluza. */
+    /**
+     * Dawno minione - razem z zapisami, bo po miesiacu nikomu juz do niczego nie sluza.
+     * Posty pod nimi zostaja jako zwykle wpisy: odnosnik czysci baza (ON DELETE SET NULL).
+     */
     private int removeOld(LocalDate before) {
         return transactions.execute(status -> {
             List<MusicEvent> old = repository.findByStartDateBefore(before);

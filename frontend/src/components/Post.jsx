@@ -12,16 +12,21 @@ import Reactions from './Reactions';
 import MusicPicker from './MusicPicker';
 import VisibilityPicker from './VisibilityPicker';
 import ReportButton from './ReportButton';
-import { IconTrash, IconPencil, IconLock } from './Icons';
+import {
+  IconTrash, IconPencil, IconLock, IconCalendar,
+} from './Icons';
 import { describeError } from '../api/client';
 import { zmien } from '../api/posty';
 import { formatDate } from '../utils/dates';
 import { playerHeight } from '../utils/player';
 import { toMinutes, toSeconds } from '../utils/time';
 import { linkError } from '../utils/musicLinks';
+import { nazwaMiasta, plakietka } from '../utils/wydarzenia';
 
 /** Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify. */
-export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }) {
+export default function Post({
+  post, onDelete, onUpdate, onReaction, index = 0, bezWydarzenia = false,
+}) {
   const { t, i18n } = useTranslation();
   const [edycja, setEdycja] = useState(false);
 
@@ -102,6 +107,9 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
           />
         ) : (
           <>
+            {/* Pod stroną wydarzenia odnośnik do niego samego byłby zbędny */}
+            {post.event && !bezWydarzenia && <PodWydarzeniem wydarzenie={post.event} />}
+
             {/* post-content zachowuje przejscia do nowej linii wpisane przez autora */}
             <Card.Text className="post-content">{post.content}</Card.Text>
 
@@ -119,6 +127,27 @@ export default function Post({ post, onDelete, onUpdate, onReaction, index = 0 }
         )}
       </Card.Body>
     </Card>
+  );
+}
+
+/** Plakietka "pod wydarzeniem": nazwa, dzien i miasto - prowadzi na strone wydarzenia. */
+function PodWydarzeniem({ wydarzenie }) {
+  const { t, i18n } = useTranslation();
+  const { dzien, miesiac } = plakietka(wydarzenie.date, i18n.language);
+  const miasto = nazwaMiasta(wydarzenie.cityKey, wydarzenie.city, i18n.language);
+
+  return (
+    <Link
+      to={`/wydarzenia/${wydarzenie.id}`}
+      className="post-wydarzenie"
+      title={t('posts.underEvent', { name: wydarzenie.name })}
+    >
+      <IconCalendar size={13} className="flex-shrink-0" />
+      <span className="post-wydarzenie-nazwa">{wydarzenie.name}</span>
+      <span className="post-wydarzenie-kiedy">
+        {[`${dzien} ${miesiac}`, miasto].filter(Boolean).join(' · ')}
+      </span>
+    </Link>
   );
 }
 

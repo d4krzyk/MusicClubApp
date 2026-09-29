@@ -38,6 +38,8 @@ public record PostResponse(
     /** Publiczny czy tylko dla znajomych - frontend rysuje przy nim plakietke. */
     PostVisibility visibility,
     /** Czy autor jest w kregu ogladajacego (jego znajomym albo nim samym). */
-    boolean fromFriend
+    boolean fromFriend,
+    /** Wydarzenie, pod ktorym napisano post, albo {@code null}. */
+    PostEventRef event
 ) {
 }

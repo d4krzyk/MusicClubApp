@@ -15,6 +15,7 @@ import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.music.MusicLinkParser;
 import com.musicclubapp.music.ParsedMusicLink;
+import com.musicclubapp.repository.MusicEventRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
@@ -47,6 +48,7 @@ public class PostService {
     private final ReactionRepository reactionRepository;
     private final BlockService blocks;
     private final PrivacyService privacy;
+    private final MusicEventRepository events;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
@@ -57,8 +59,10 @@ public class PostService {
                        NotificationService notifications,
                        ReactionRepository reactionRepository,
                        BlockService blocks,
-                       PrivacyService privacy) {
+                       PrivacyService privacy,
+                       MusicEventRepository events) {
         this.privacy = privacy;
+        this.events = events;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
@@ -82,6 +86,11 @@ public class PostService {
         }
 
         Post post = new Post(author, request.content().trim());
+
+        if (request.eventId() != null) {
+            post.setEvent(events.findById(request.eventId())
+                .orElseThrow(() -> new NoSuchElementFoundException("event", request.eventId())));
+        }
 
         // Pusta wartosc = publiczny; setter na encji sam pilnuje, zeby post
         // nigdy nie zostal bez widocznosci
@@ -202,6 +211,25 @@ public class PostService {
         List<Long> circle = userRepository.circleIds(viewerUsername);
         return withReactions(
             postRepository.findByAuthorUsername(author, circle, pageable),
+            viewerUsername,
+            circle);
+    }
+
+    /**
+     * Posty pod wydarzeniem - najnowsze na gorze. Te same zasady co na tablicy:
+     * "tylko dla znajomych" widzi krag autora, a osoby zablokowane
+     * (w ktoras strone) znikaja.
+     */
+    @Transactional(readOnly = true)
+    public Page<PostResponse> byEvent(Long eventId, String viewerUsername, Pageable pageable) {
+        if (!events.existsById(eventId)) {
+            throw new NoSuchElementFoundException("event", eventId);
+        }
+        List<Long> circle = userRepository.circleIds(viewerUsername);
+        Long viewerId = userRepository.findByUsername(viewerUsername).map(User::getId).orElse(null);
+        Pageable newestFirst = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return withReactions(
+            postRepository.findByEvent(eventId, circle, blocks.hiddenForQuery(viewerId), newestFirst),
             viewerUsername,
             circle);
     }

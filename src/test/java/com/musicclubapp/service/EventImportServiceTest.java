@@ -7,10 +7,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.musicclubapp.entity.EventParticipation;
 import com.musicclubapp.entity.EventPerformer;
 import com.musicclubapp.entity.MusicEvent;
+import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.ParticipationStatus;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
+import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +58,7 @@ class EventImportServiceTest {
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private EntityManager entityManager;
     @Autowired private UserRepository userRepository;
+    @Autowired private PostRepository postRepository;
 
     private TestHttpServer server;
     private TicketmasterClient ticketmaster;
@@ -370,6 +373,26 @@ class EventImportServiceTest {
     }
 
     @Test
+    @DisplayName("wycofane z postem pod spodem tez nie znika - odnosnik z posta ma prowadzic do wyjasnienia")
+    void vanishedWithPostIsWithdrawn() throws IOException {
+        String wszystko = TicketmasterClientTest.odpowiedzZPolski();
+        ticketmasterOddaje(wszystko);
+        importer(TERAZ).runImport();
+        User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));
+        Post post = new Post(ala, "kto idzie?");
+        post.setEvent(wBazie("vvG1zZ9KSNach"));
+        postRepository.save(post);
+        entityManager.flush();
+
+        ticketmasterOddaje(bez(wszystko, "vvG1zZ9KSNach", "vvG1zZ9KSGlob"));
+        EventImportService.ImportStatus wynik = importer(TERAZ.plus(Duration.ofHours(6))).runImport();
+
+        assertThat(wynik.removed()).isEqualTo(1);
+        assertThat(wBazie("vvG1zZ9KSGlob")).isNull();
+        assertThat(wBazie("vvG1zZ9KSNach").isWithdrawn()).isTrue();
+    }
+
+    @Test
     @DisplayName("wycofane wraca, gdy Ticketmaster znow je pokazuje")
     void withdrawnComesBack() throws IOException {
         String wszystko = TicketmasterClientTest.odpowiedzZPolski();
@@ -403,6 +426,27 @@ class EventImportServiceTest {
 
         assertThat(wBazie("dawno")).isNull();
         assertThat(participationRepository.count()).isZero();
+    }
+
+    @Test
+    @DisplayName("dawno minione znika, ale posty pod nim zostaja jako zwykle wpisy")
+    void oldEventLeavesPosts() throws IOException {
+        MusicEvent dawne = repository.save(stare("dawno", LocalDate.of(2026, 8, 1)));
+        User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));
+        Post post = new Post(ala, "bylo super");
+        post.setEvent(dawne);
+        Long id = postRepository.save(post).getId();
+        entityManager.flush();
+        ticketmasterOddaje(TicketmasterClientTest.odpowiedzZPolski());
+
+        importer(TERAZ).runImport();
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(wBazie("dawno")).isNull();
+        Post poImporcie = postRepository.findById(id).orElseThrow();
+        assertThat(poImporcie.getContent()).isEqualTo("bylo super");
+        assertThat(poImporcie.getEvent()).isNull();
     }
 
     @Test
