@@ -1,0 +1,1918 @@
+{
+  "_embedded": {
+    "events": [
+      {
+        "name": "The Amity Affliction | Support: Silent Planet, Varials, Orthodox",
+        "type": "event",
+        "id": "vvG1zZ9KSAmity",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSAmity",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSAmity_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-09-29",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-29T19:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Rock",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "s-Hard Rock",
+              "name": "Hard Rock"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSAmity?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Progresja",
+              "type": "venue",
+              "id": "KovZ9177Xt0",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ9177Xt0",
+              "postalCode": "01-258",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warsaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "Fort Wola 22"
+              },
+              "location": {
+                "longitude": "20.9361",
+                "latitude": "52.2321"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "The Amity Affliction",
+              "type": "attraction",
+              "id": "K8vZ9171o0f",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ9171o0f"
+            },
+            {
+              "name": "Silent Planet",
+              "type": "attraction",
+              "id": "K8vZ917bSx7",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917bSx7"
+            },
+            {
+              "name": "Varials",
+              "type": "attraction",
+              "id": "K8vZ9179Vr0",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ9179Vr0"
+            },
+            {
+              "name": "Orthodox",
+              "type": "attraction",
+              "id": "K8vZ917_O00",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917_O00"
+            }
+          ]
+        },
+        "info": "Australijczycy wracają do Polski z nowym albumem. Drzwi 18:00, start 19:00."
+      },
+      {
+        "name": "Vundabar and Yot Club",
+        "type": "event",
+        "id": "vvG1zZ9KSVunda",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSVunda",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSVunda_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-09-29",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "20:00:00",
+            "dateTime": "2026-09-29T20:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Rock",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "s-Indie Rock",
+              "name": "Indie Rock"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSVunda?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Klub Hybrydy",
+              "type": "venue",
+              "id": "KovZ917ACHz",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ917ACHz",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warszawa"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Złota 7/9"
+              },
+              "location": {
+                "longitude": "21.0131",
+                "latitude": "52.2319"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Vundabar",
+              "type": "attraction",
+              "id": "K8vZ917Kvund",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Kvund"
+            },
+            {
+              "name": "Yot Club",
+              "type": "attraction",
+              "id": "K8vZ917Kyotc",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Kyotc"
+            }
+          ]
+        },
+        "info": "Wieczór indie w Hybrydach."
+      },
+      {
+        "name": "Koncert przy świecach",
+        "type": "event",
+        "id": "Z698xZbpZ17Can1",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/Z698xZbpZ17Can1",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can1_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-09-29",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "18:00:00",
+            "dateTime": "2026-09-29T18:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Classical",
+              "name": "Classical"
+            },
+            "subGenre": {
+              "id": "s-Classical",
+              "name": "Classical"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/Z698xZbpZ17Can1?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Sala koncertowa Fryderyk",
+              "type": "venue",
+              "id": "Z598xZbpZ7e1k",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/Z598xZbpZ7e1k",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warsaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Kredytowa 1"
+              },
+              "location": {
+                "longitude": "21.0099",
+                "latitude": "52.2400"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Candlelight Concerts",
+              "type": "attraction",
+              "id": "K8vZ917CandL",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917CandL"
+            }
+          ]
+        },
+        "info": "Muzyka klasyczna w blasku setek świec."
+      },
+      {
+        "name": "Koncert przy świecach",
+        "type": "event",
+        "id": "Z698xZbpZ17Can2",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/Z698xZbpZ17Can2",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-classical_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-classical_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-09-30",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "20:30:00",
+            "dateTime": "2026-09-30T20:30:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Classical",
+              "name": "Classical"
+            },
+            "subGenre": {
+              "id": "s-Classical",
+              "name": "Classical"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/Z698xZbpZ17Can2?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Sala koncertowa Fryderyk",
+              "type": "venue",
+              "id": "Z598xZbpZ7e1k",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/Z598xZbpZ7e1k",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warsaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Kredytowa 1"
+              },
+              "location": {
+                "longitude": "21.0099",
+                "latitude": "52.2400"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Candlelight Concerts",
+              "type": "attraction",
+              "id": "K8vZ917CandL",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917CandL"
+            }
+          ]
+        },
+        "info": "Muzyka klasyczna w blasku setek świec."
+      },
+      {
+        "name": "Koncert przy świecach",
+        "type": "event",
+        "id": "Z698xZbpZ17Can3",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/Z698xZbpZ17Can3",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/Z698xZbpZ17Can3_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-01",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "18:00:00",
+            "dateTime": "2026-10-01T18:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Classical",
+              "name": "Classical"
+            },
+            "subGenre": {
+              "id": "s-Classical",
+              "name": "Classical"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/Z698xZbpZ17Can3?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Sala koncertowa Fryderyk",
+              "type": "venue",
+              "id": "Z598xZbpZ7e1k",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/Z598xZbpZ7e1k",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warsaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Kredytowa 1"
+              },
+              "location": {
+                "longitude": "21.0099",
+                "latitude": "52.2400"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Candlelight Concerts",
+              "type": "attraction",
+              "id": "K8vZ917CandL",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917CandL"
+            }
+          ]
+        },
+        "info": "Muzyka klasyczna w blasku setek świec."
+      },
+      {
+        "name": "Globus Jazz Live",
+        "type": "event",
+        "id": "vvG1zZ9KSGlob",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSGlob",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSGlob_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-01",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "20:00:00",
+            "dateTime": "2026-10-01T20:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Undefined",
+              "name": "Undefined"
+            },
+            "subGenre": {
+              "id": "s-Undefined",
+              "name": "Undefined"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSGlob?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Globus Music Club",
+              "type": "venue",
+              "id": "KovZ917Ag9V",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ917Ag9V",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Kraków"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Rynek Główny 17"
+              },
+              "location": {
+                "longitude": "19.9373",
+                "latitude": "50.0617"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Globus Jazz Band",
+              "type": "attraction",
+              "id": "K8vZ917Glob",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Glob"
+            }
+          ]
+        },
+        "info": "Jam session w samym sercu Krakowa."
+      },
+      {
+        "name": "Nachtmahr | Special guests: Cygnosic, Bagger 258",
+        "type": "event",
+        "id": "vvG1zZ9KSNach",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSNach",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSNach_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-01",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "19:30:00",
+            "dateTime": "2026-10-01T19:30:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Rock",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "s-Industrial",
+              "name": "Industrial"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSNach?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Klub Łącznik",
+              "type": "venue",
+              "id": "KovZ917AjQ0",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ917AjQ0",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Wroclaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Wybrzeże Wyspiańskiego 23"
+              },
+              "location": {
+                "longitude": "17.0620",
+                "latitude": "51.1079"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Nachtmahr",
+              "type": "attraction",
+              "id": "K8vZ917Nach",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Nach"
+            },
+            {
+              "name": "Cygnosic",
+              "type": "attraction",
+              "id": "K8vZ917Cygn",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Cygn"
+            },
+            {
+              "name": "Bagger 258",
+              "type": "attraction",
+              "id": "K8vZ917Bagg",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Bagg"
+            }
+          ]
+        },
+        "info": "Industrialny wieczór we Wrocławiu."
+      },
+      {
+        "name": "Strachy na Lachy",
+        "type": "event",
+        "id": "vvG1zZ9KSStra",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSStra",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSStra_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-02",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "20:00:00",
+            "dateTime": "2026-10-02T20:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Rock",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "s-Pop Rock",
+              "name": "Pop Rock"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSStra?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Klub Tama",
+              "type": "venue",
+              "id": "KovZ917Ah1H",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ917Ah1H",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Poznan"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Niezłomnych 2"
+              },
+              "location": {
+                "longitude": "16.9226",
+                "latitude": "52.4082"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Strachy na Lachy",
+              "type": "attraction",
+              "id": "K8vZ917Stra",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Stra"
+            }
+          ]
+        },
+        "description": "Grabaż i spółka w poznańskiej Tamie."
+      },
+      {
+        "name": "Jack Savoretti - WE WILL ALWAYS BE THE WAY WE WERE",
+        "type": "event",
+        "id": "vvG1zZ9KSJack",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSJack",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSJack_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-02",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "20:00:00",
+            "dateTime": "2026-10-02T20:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "cancelled"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Pop",
+              "name": "Pop"
+            },
+            "subGenre": {
+              "id": "s-Pop",
+              "name": "Pop"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSJack?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Klub Studio",
+              "type": "venue",
+              "id": "KovZ917ALn0",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ917ALn0",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Krakow"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "ul. Budryka 4"
+              },
+              "location": {
+                "longitude": "19.9054",
+                "latitude": "50.0681"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Jack Savoretti",
+              "type": "attraction",
+              "id": "K8vZ917Jack",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Jack"
+            }
+          ]
+        },
+        "info": "Koncert odwołany z przyczyn niezależnych od organizatora."
+      },
+      {
+        "name": "MROZU - Odpowiedni moment tour",
+        "type": "event",
+        "id": "vvG1zZ9KSMroz",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSMroz",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSMroz_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-02",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": true,
+            "noSpecificTime": true
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Pop",
+              "name": "Pop"
+            },
+            "subGenre": {
+              "id": "s-Pop",
+              "name": "Pop"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSMroz?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Atlas Arena",
+              "type": "venue",
+              "id": "KovZpZAEkJ7A",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZpZAEkJ7A",
+              "postalCode": "00-000",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Łódź "
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "al. Bandurskiego 7"
+              },
+              "location": {
+                "longitude": "19.4210",
+                "latitude": "51.7584"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Mrozu",
+              "type": "attraction",
+              "id": "K8vZ917Mroz",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Mroz"
+            }
+          ]
+        },
+        "info": "Największa trasa w karierze artysty."
+      },
+      {
+        "name": "TEST EVENT - DO NOT PURCHASE",
+        "type": "event",
+        "id": "vvG1zZ9TESTEVT",
+        "test": true,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9TESTEVT",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9TESTEVT_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "localDate": "2026-10-03",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false,
+            "localTime": "20:00:00",
+            "dateTime": "2026-10-03T20:00:00Z"
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Rock",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "s-Alternative Rock",
+              "name": "Alternative Rock"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9TESTEVT?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Progresja",
+              "type": "venue",
+              "id": "KovZ9177Xt0",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ9177Xt0",
+              "postalCode": "01-258",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warsaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "Fort Wola 22"
+              },
+              "location": {
+                "longitude": "20.9361",
+                "latitude": "52.2321"
+              }
+            }
+          ],
+          "attractions": []
+        }
+      },
+      {
+        "name": "Festiwal - termin wkrótce",
+        "type": "event",
+        "id": "vvG1zZ9KSTBA",
+        "test": false,
+        "url": "https://www.ticketmaster.pl/event/vvG1zZ9KSTBA",
+        "locale": "pl-pl",
+        "images": [
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_16_9_205x115.jpg",
+            "width": 205,
+            "height": 115,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_3_2_1024x683.jpg",
+            "width": 1024,
+            "height": 683,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_16_9_2048x1152.jpg",
+            "width": 2048,
+            "height": 1152,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_16_9_640x360.jpg",
+            "width": 640,
+            "height": 360,
+            "fallback": false
+          },
+          {
+            "ratio": "4_3",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_4_3_305x225.jpg",
+            "width": 305,
+            "height": 225,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_16_9_1024x576.jpg",
+            "width": 1024,
+            "height": 576,
+            "fallback": false
+          },
+          {
+            "ratio": "3_2",
+            "url": "https://s1.ticketm.net/dam/a/vvG1zZ9KSTBA_3_2_640x427.jpg",
+            "width": 640,
+            "height": 427,
+            "fallback": false
+          },
+          {
+            "ratio": "16_9",
+            "url": "https://s1.ticketm.net/dam/a/fallback-music_16_9_1136x639.jpg",
+            "width": 1136,
+            "height": 639,
+            "fallback": true
+          }
+        ],
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-01T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false
+          }
+        },
+        "dates": {
+          "start": {
+            "dateTBD": true,
+            "dateTBA": true,
+            "timeTBA": true,
+            "noSpecificTime": true
+          },
+          "timezone": "Europe/Warsaw",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "g-Rock",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "s-Alternative Rock",
+              "name": "Alternative Rock"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "_links": {
+          "self": {
+            "href": "/discovery/v2/events/vvG1zZ9KSTBA?locale=pl-pl"
+          }
+        },
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Progresja",
+              "type": "venue",
+              "id": "KovZ9177Xt0",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/venue/KovZ9177Xt0",
+              "postalCode": "01-258",
+              "timezone": "Europe/Warsaw",
+              "city": {
+                "name": "Warsaw"
+              },
+              "country": {
+                "name": "Poland",
+                "countryCode": "PL"
+              },
+              "address": {
+                "line1": "Fort Wola 22"
+              },
+              "location": {
+                "longitude": "20.9361",
+                "latitude": "52.2321"
+              }
+            }
+          ],
+          "attractions": [
+            {
+              "name": "Festiwal",
+              "type": "attraction",
+              "id": "K8vZ917Fest",
+              "test": false,
+              "locale": "pl-pl",
+              "url": "https://www.ticketmaster.pl/artist/K8vZ917Fest"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "_links": {
+    "first": {
+      "href": "/discovery/v2/events.json?countryCode=PL&page=0&size=200"
+    },
+    "self": {
+      "href": "/discovery/v2/events.json?countryCode=PL&size=200"
+    }
+  },
+  "page": {
+    "size": 200,
+    "totalElements": 12,
+    "totalPages": 1,
+    "number": 0
+  }
+}

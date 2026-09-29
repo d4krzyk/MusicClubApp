@@ -83,6 +83,10 @@ services:
       # historii sluchania. Wyszukiwarka katalogu (Deezer) klucza nie wymaga,
       # wiec bez tej zmiennej ulubione dzialaja normalnie.
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
+
+      # Klucz Ticketmastera - bez niego zakladka Wydarzenia jest pusta,
+      # a reszta aplikacji dziala normalnie.
+      TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
     volumes:
       # BEZ TEGO WGRANE ZDJECIA ZNIKAJA przy kazdym `docker compose down`.
       # Kontenery sa jednorazowe - wszystko, co ma przezyc restart, musi lezec

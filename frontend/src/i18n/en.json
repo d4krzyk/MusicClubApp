@@ -16,7 +16,8 @@
     "friends": "Friends",
     "myProfile": "My profile",
     "reports": "Reports",
-    "myReports": "My reports"
+    "myReports": "My reports",
+    "events": "Events"
   },
   "common": {
     "loading": "Loading…",
@@ -522,5 +523,48 @@
     "resolvedAt": "Reviewed",
     "noPunishmentInfo": "We do not show what penalty the reported person received - that is their business.",
     "loadFailed": "Could not load your reports"
+  },
+  "events": {
+    "title": "Events",
+    "subtitle": "Concerts in Poland",
+    "searchPlaceholder": "Artist, venue, event name…",
+    "searchLabel": "Search events",
+    "cityLabel": "City",
+    "allCities": "All cities",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "timeUnknown": "time TBA",
+    "moreDates": "+{{count}} more date",
+    "moreDates_other": "+{{count}} more dates",
+    "status": {
+      "SCHEDULED": "Scheduled",
+      "CANCELLED": "Cancelled",
+      "POSTPONED": "Postponed",
+      "RESCHEDULED": "Rescheduled"
+    },
+    "loadMore": "Show more",
+    "emptyTitle": "Nothing matches",
+    "emptyText": "Pick another city or try a different search.",
+    "waitingTitle": "Events are still loading",
+    "waitingText": "The first download takes about a minute after the server starts. Check back shortly.",
+    "notConfiguredTitle": "Events are not enabled yet",
+    "notConfiguredText": "This tab will work once an administrator sets it up.",
+    "notConfiguredAdmin": "The server has no Ticketmaster key. Add TICKETMASTER_API_KEY to the .env file and restart the backend.",
+    "adminImport": "Last download: {{date}}, events: {{count}}",
+    "adminImportFailed": "The last download failed: {{error}}",
+    "source": "Event data: Ticketmaster",
+    "back": "All events",
+    "tickets": "Tickets on Ticketmaster",
+    "map": "Show on map",
+    "lineup": "Line-up",
+    "about": "About the event",
+    "otherDates": "Other dates",
+    "showMore": "Show full description",
+    "showLess": "Collapse",
+    "past": "This event has already taken place.",
+    "cancelledInfo": "This event has been cancelled.",
+    "postponedInfo": "This event has been postponed. No new date yet.",
+    "rescheduledInfo": "This event has a new date — shown below.",
+    "notFound": "No such event. It may have been withdrawn from sale."
   }
 }

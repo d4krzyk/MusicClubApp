@@ -13,6 +13,8 @@ import SettingsPage from './pages/SettingsPage';
 import UsersPage from './pages/UsersPage';
 import ReportsPage from './pages/ReportsPage';
 import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
+import EventsPage from './pages/EventsPage';
+import EventPage from './pages/EventPage';
 
 /** Mapa adresow aplikacji. */
 export default function App() {
@@ -76,6 +78,23 @@ export default function App() {
                 element={
                   <RequireAuth>
                     <FriendsPage />
+                  </RequireAuth>
+                }
+              />
+              {/* Koncerty z Ticketmastera: lista i pojedyncze wydarzenie. */}
+              <Route
+                path="/wydarzenia"
+                element={
+                  <RequireAuth>
+                    <EventsPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/wydarzenia/:id"
+                element={
+                  <RequireAuth>
+                    <EventPage />
                   </RequireAuth>
                 }
               />

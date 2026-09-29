@@ -280,6 +280,16 @@ body {
               transform var(--mc-fast);
 }
 
+/*
+   Ikony, ktore na telefonie chowaja sie do menu konta. Regula stoi zaraz za
+   .nav-icon i ma te sama wage, wiec wygrywa kolejnoscia - bez !important.
+*/
+@media (max-width: 575.98px) {
+  .nav-icon-szeroki {
+    display: none;
+  }
+}
+
 .nav-icon:hover {
   color: var(--bs-body-color);
   background: var(--bs-body-bg);
@@ -503,10 +513,17 @@ body {
 /* --- Menu konta ----------------------------------------------------------- */
 
 .account-trigger {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: .5rem;
   font-weight: 600;
+}
+
+/* Licznik zgloszen na awatarze administratora - tylko na telefonie. */
+.konto-badge {
+  top: -.25rem;
+  right: -.35rem;
 }
 
 /*

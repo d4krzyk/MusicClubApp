@@ -88,9 +88,10 @@ zapisana jako „stan V1 już osiągnięty" i liczenie rusza od V2.
 `ddl-auto=update`, a Flyway jest wyłączony. Testy chodzą na H2
 z `create-drop` i też go nie widzą.
 
-Kolejna zmiana w encjach = nowy plik `V2__opis_zmiany.sql`. Migracji już
-wypuszczonej **nie edytuje się** — Flyway pilnuje sum kontrolnych
-i odmówi startu.
+Kolejna zmiana w encjach = nowy plik z kolejnym numerem. `V2__wydarzenia.sql`
+już jest (tabele zakładki Wydarzenia), więc następna to `V3__opis_zmiany.sql`.
+Migracji już wypuszczonej **nie edytuje się** — Flyway pilnuje sum
+kontrolnych i odmówi startu.
 
 ### Ciasteczka
 
@@ -157,6 +158,25 @@ To jest celowe. Domyślny klucz „zapamiętaj mnie" leży w repozytorium,
 a kto go zna, podpisze sobie ciasteczko na dowolną nazwę użytkownika
 i zaloguje się jako ktokolwiek — nie znając żadnego hasła.
 
+### Wydarzenia (Ticketmaster)
+
+Zakładka *Wydarzenia* bierze koncerty z Ticketmaster Discovery API. Klucz
+jest **opcjonalny** — bez niego aplikacja działa normalnie, a zakładka jest
+pusta i administrator widzi tam, czego brakuje.
+
+1. Załóż konto na developer.ticketmaster.com.
+2. *My Apps* → aplikacja `<login>-App` → **Consumer Key**.
+3. Dopisz do `.env`: `TICKETMASTER_API_KEY=...` i uruchom backend ponownie.
+
+Serwer pobiera koncerty sam: pierwszy raz 30 sekund po starcie, potem co
+6 godzin. Przechodzi przez najbliższy rok miesiąc po miesiącu — to 13–20
+zapytań na przebieg, czyli poniżej 100 dziennie przy limicie 5000.
+Administrator widzi nad listą, kiedy było ostatnie pobranie i ile przyszło
+wydarzeń albo dlaczego się nie udało (np. `HTTP 401 Invalid ApiKey`).
+
+Klucza nie ma w logach: przy błędzie serwer wypisuje tylko kod i komunikat
+Ticketmastera, bez adresu zapytania, w którym klucz siedzi.
+
 ```bash
 openssl rand -base64 48
 ```
@@ -215,6 +235,21 @@ Sprawdzone naprawdę:
   Flyway robi baseline, nie uruchamia migracji, aplikacja wstaje;
 - `mvnw clean test` → 369 testów, Flyway w testach w ogóle nie rusza;
 - składnia `nginx.conf` (parser crossplane) i obu plików compose.
+
+Przy zakładce Wydarzenia (wrzesień 2026):
+
+- migracja V2 na **pustej** bazie (V1 + V2) i na bazie **po V1** (samo V2)
+  → w obu przypadkach `validate` przechodzi i aplikacja wstaje;
+- testy wydarzeń także na prawdziwym PostgreSQL 16, nie tylko na H2 —
+  zapytanie z funkcjami okna, `ESCAPE` i `LOWER` na polskich literach;
+- cała droga w przeglądarce: import w tle → lista → filtr → strona
+  wydarzenia, na udawanym serwerze Ticketmastera w ich formacie odpowiedzi
+  i z koncertami z prawdziwego wyniku dla Polski;
+- `mvnw clean test` → 411 testów.
+
+**Nie sprawdzone stąd:** prawdziwy Ticketmaster. To środowisko nie miało
+klucza. Format odpowiedzi i liczbę koncertów (801 w Polsce) potwierdziło
+zapytanie z laptopa.
 
 **Nie sprawdzone**, bo w środowisku, w którym to powstawało, nie ma
 Dockera: pełne `docker compose -f docker-compose.prod.yml up`. Obrazy

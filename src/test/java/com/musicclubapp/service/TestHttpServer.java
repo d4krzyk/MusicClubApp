@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /** Maly serwer HTTP udajacy Deezera i Last.fm - na potrzeby testow. */
 class TestHttpServer implements AutoCloseable {
@@ -19,6 +20,21 @@ class TestHttpServer implements AutoCloseable {
 
     /** Sciezka (bez parametrow) -&gt; tresc odpowiedzi. */
     private final Map<String, String> responses = new LinkedHashMap<>();
+
+    /**
+     * Sciezka -&gt; odpowiedz zalezna od parametrow zapytania. Ticketmaster ma
+     * jeden adres na wszystkie strony i okresy - rozni je dopiero "page"
+     * i "startDateTime".
+     */
+    private final Map<String, Function<String, Odpowiedz>> handlers = new LinkedHashMap<>();
+
+    /** Kod HTTP i tresc - do odpowiedzi innych niz 200. */
+    record Odpowiedz(int status, String body) {
+
+        static Odpowiedz ok(String body) {
+            return new Odpowiedz(200, body);
+        }
+    }
 
     /** Wszystkie adresy, o ktore ktos zapytal - do sprawdzenia w tescie. */
     private final List<String> requests = new ArrayList<>();
@@ -33,7 +49,17 @@ class TestHttpServer implements AutoCloseable {
             requests.add(URLDecoder.decode(fullUrl, StandardCharsets.UTF_8));
 
             String path = wymiana.getRequestURI().getPath();
+            int status = 200;
             String tresc = responses.get(path);
+
+            Function<String, Odpowiedz> handler = handlers.get(path);
+            if (handler != null) {
+                String query = wymiana.getRequestURI().getRawQuery();
+                Odpowiedz odpowiedz = handler.apply(
+                    query == null ? "" : URLDecoder.decode(query, StandardCharsets.UTF_8));
+                status = odpowiedz.status();
+                tresc = odpowiedz.body();
+            }
 
             if (tresc == null) {
                 wymiana.sendResponseHeaders(404, -1);
@@ -43,7 +69,7 @@ class TestHttpServer implements AutoCloseable {
 
             byte[] bajty = tresc.getBytes(StandardCharsets.UTF_8);
             wymiana.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
-            wymiana.sendResponseHeaders(200, bajty.length);
+            wymiana.sendResponseHeaders(status, bajty.length);
             try (OutputStream out = wymiana.getResponseBody()) {
                 out.write(bajty);
             }
@@ -55,6 +81,11 @@ class TestHttpServer implements AutoCloseable {
     /** Ustawia odpowiedz dla danej sciezki (np. {@code /search/artist}). */
     void odpowiadaj(String path, String jsonOdpowiedzi) {
         responses.put(path, jsonOdpowiedzi);
+    }
+
+    /** Odpowiedz wyliczana z parametrow zapytania (np. inna dla kazdej strony). */
+    void odpowiadaj(String path, Function<String, Odpowiedz> handler) {
+        handlers.put(path, handler);
     }
 
     String url() {

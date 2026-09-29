@@ -16,7 +16,8 @@
     "friends": "Znajomi",
     "myProfile": "Mój profil",
     "reports": "Zgłoszenia",
-    "myReports": "Moje zgłoszenia"
+    "myReports": "Moje zgłoszenia",
+    "events": "Wydarzenia"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -545,5 +546,50 @@
     "resolvedAt": "Rozpatrzone",
     "noPunishmentInfo": "Nie pokazujemy, jaką karę dostała zgłoszona osoba - to jej sprawa.",
     "loadFailed": "Nie udało się pobrać zgłoszeń"
+  },
+  "events": {
+    "title": "Wydarzenia",
+    "subtitle": "Koncerty w Polsce",
+    "searchPlaceholder": "Wykonawca, klub, nazwa wydarzenia…",
+    "searchLabel": "Szukaj wydarzeń",
+    "cityLabel": "Miasto",
+    "allCities": "Wszystkie miasta",
+    "today": "Dziś",
+    "tomorrow": "Jutro",
+    "timeUnknown": "godzina wkrótce",
+    "moreDates": "+{{count}} termin",
+    "moreDates_few": "+{{count}} terminy",
+    "moreDates_many": "+{{count}} terminów",
+    "moreDates_other": "+{{count}} terminu",
+    "status": {
+      "SCHEDULED": "Odbędzie się",
+      "CANCELLED": "Odwołane",
+      "POSTPONED": "Przełożone",
+      "RESCHEDULED": "Nowy termin"
+    },
+    "loadMore": "Pokaż kolejne",
+    "emptyTitle": "Nic nie pasuje",
+    "emptyText": "Zmień miasto albo wpisz coś innego.",
+    "waitingTitle": "Wydarzenia jeszcze się pobierają",
+    "waitingText": "Pierwsze pobieranie trwa około minuty po starcie serwera. Zajrzyj tu za chwilę.",
+    "notConfiguredTitle": "Wydarzenia nie są jeszcze włączone",
+    "notConfiguredText": "Ta zakładka zacznie działać, gdy administrator ją skonfiguruje.",
+    "notConfiguredAdmin": "Serwer nie ma klucza Ticketmastera. Dopisz TICKETMASTER_API_KEY do pliku .env i uruchom backend ponownie.",
+    "adminImport": "Ostatnie pobranie: {{date}}, wydarzeń: {{count}}",
+    "adminImportFailed": "Ostatnie pobranie się nie udało: {{error}}",
+    "source": "Dane o wydarzeniach: Ticketmaster",
+    "back": "Wszystkie wydarzenia",
+    "tickets": "Bilety na Ticketmaster",
+    "map": "Pokaż na mapie",
+    "lineup": "Kto gra",
+    "about": "O wydarzeniu",
+    "otherDates": "Inne terminy",
+    "showMore": "Pokaż cały opis",
+    "showLess": "Zwiń opis",
+    "past": "To wydarzenie już się odbyło.",
+    "cancelledInfo": "Wydarzenie zostało odwołane.",
+    "postponedInfo": "Wydarzenie zostało przełożone. Nowego terminu jeszcze nie ma.",
+    "rescheduledInfo": "Wydarzenie ma nowy termin — ten poniżej.",
+    "notFound": "Nie ma takiego wydarzenia. Mogło zostać wycofane ze sprzedaży."
   }
 }

@@ -13,7 +13,7 @@ import Avatar from './Avatar';
 import ChatDrawer from './ChatDrawer';
 import ChatLauncher from './ChatLauncher';
 import {
-  IconBoard, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
+  IconBoard, IconCalendar, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
   IconShield, IconShieldAlert,
 } from './Icons';
 import LanguageSwitch from './LanguageSwitch';
@@ -139,9 +139,17 @@ export default function Layout({ children }) {
                 <IconFriends size={20} />
               </NavIcon>
 
-              {/* Panel administratora. */}
+              <NavIcon to="/wydarzenia" label={t('menu.events')}>
+                <IconCalendar size={20} />
+              </NavIcon>
+
+              {/*
+                Panel administratora. Na telefonie te dwie ikony przechodza do
+                menu konta (nizej) - z nimi pasek administratora mial piec ikon
+                i przy 360 px wychodzil poza ekran o 41 px (zmierzone).
+              */}
               {user.admin && (
-                <NavIcon to="/users" label={t('menu.users')}>
+                <NavIcon to="/users" label={t('menu.users')} className="nav-icon-szeroki">
                   <IconShield size={20} />
                 </NavIcon>
               )}
@@ -151,6 +159,7 @@ export default function Layout({ children }) {
                   to="/zgloszenia"
                   label={t('menu.reports')}
                   badge={openReports}
+                  className="nav-icon-szeroki"
                 >
                   <IconShieldAlert size={20} />
                 </NavIcon>
@@ -199,6 +208,11 @@ export default function Layout({ children }) {
                       <Avatar avatarUrl={user.avatarUrl} username={user.username} size={30} />
                     </span>
                     <span className="d-none d-lg-inline">{user.username}</span>
+
+                    {/* Na telefonie licznik zgloszen nie ma juz swojej ikony - siada na awatarze */}
+                    {user.admin && openReports > 0 && (
+                      <span className="nav-badge konto-badge d-sm-none">{openReports}</span>
+                    )}
                   </span>
                 }
                 id="account-menu"
@@ -217,6 +231,24 @@ export default function Layout({ children }) {
                   <IconGear className="me-2" />
                   {t('menu.settings')}
                 </NavDropdown.Item>
+
+                {/* Panel administratora - tu tylko na telefonie, na wiekszym ekranie jest w pasku */}
+                {user.admin && (
+                  <>
+                    <NavDropdown.Divider className="d-sm-none" />
+                    <NavDropdown.Item as={Link} to="/users" className="d-sm-none">
+                      <IconShield className="me-2" />
+                      {t('menu.users')}
+                    </NavDropdown.Item>
+                    <NavDropdown.Item as={Link} to="/zgloszenia" className="d-sm-none">
+                      <IconShieldAlert className="me-2" />
+                      {t('menu.reports')}
+                      {openReports > 0 && (
+                        <span className="badge rounded-pill text-bg-danger ms-2">{openReports}</span>
+                      )}
+                    </NavDropdown.Item>
+                  </>
+                )}
 
                 <NavDropdown.Divider />
 
@@ -259,13 +291,13 @@ export default function Layout({ children }) {
 }
 
 /** Jedna pozycja nawigacji: sama ikona z podpowiedzia i licznikiem. */
-function NavIcon({ to, end, label, badge = 0, onClick, children }) {
+function NavIcon({ to, end, label, badge = 0, onClick, className = '', children }) {
   return (
     <Nav.Link
       as={NavLink}
       to={to}
       end={end}
-      className="nav-icon"
+      className={`nav-icon ${className}`.trim()}
       title={label}
       aria-label={label}
       onClick={onClick}

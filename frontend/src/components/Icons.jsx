@@ -299,3 +299,59 @@ export function IconCheckCircle(props) {
     </Svg>
   );
 }
+
+/** Kalendarz - zakladka Wydarzenia. */
+export function IconCalendar(props) {
+  return (
+    <Svg {...props}>
+      <path d="M4 .5a.5.5 0 0 0-1 0V1H2a2 2 0 0 0-2 2v1h16V3a2 2 0 0 0-2-2h-1V.5a.5.5 0 0 0-1 0V1H4zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2m-3.5-7h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5" />
+    </Svg>
+  );
+}
+
+/** Pinezka - miejsce wydarzenia. */
+export function IconPin(props) {
+  return (
+    <Svg {...props}>
+      <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6" />
+    </Svg>
+  );
+}
+
+/** Zegar - godzina rozpoczecia. */
+export function IconClock(props) {
+  return (
+    <Svg {...props}>
+      <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z" />
+      <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0" />
+    </Svg>
+  );
+}
+
+/** Bilet - kupno biletow. */
+export function IconTicket(props) {
+  return (
+    <Svg {...props}>
+      <path d="M0 4.5A1.5 1.5 0 0 1 1.5 3h13A1.5 1.5 0 0 1 16 4.5V6a1.5 1.5 0 0 0 0 3v1.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 10.5V9a1.5 1.5 0 0 0 0-3z" />
+    </Svg>
+  );
+}
+
+/** Strzalka z ramki - odnosnik prowadzi poza aplikacje. */
+export function IconExternal(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5" />
+      <path fillRule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z" />
+    </Svg>
+  );
+}
+
+/** Lupa - wyszukiwanie. */
+export function IconSearch(props) {
+  return (
+    <Svg {...props}>
+      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" />
+    </Svg>
+  );
+}
