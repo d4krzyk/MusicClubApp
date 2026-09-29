@@ -37,6 +37,19 @@ class FriendServiceTest {
     @Mock
     private NotificationService notifications;
 
+    /** Prywatnosc i blokady maja wlasne testy - tutaj kazdy moze zaprosic kazdego. */
+    @Mock
+    private PrivacyService privacy;
+
+    @Mock
+    private BlockService blocks;
+
+    @org.junit.jupiter.api.BeforeEach
+    void kazdyMozeZaprosic() {
+        org.mockito.Mockito.lenient().when(privacy.canInvite(org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.any())).thenReturn(true);
+    }
+
     @InjectMocks
     private FriendService friendService;
 

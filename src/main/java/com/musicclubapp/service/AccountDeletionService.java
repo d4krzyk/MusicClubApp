@@ -39,6 +39,7 @@ public class AccountDeletionService {
     private final PlaylistService playlists;
     private final EventParticipationService eventParticipations;
     private final EmailVerificationService emailVerification;
+    private final BlockService blocks;
     private final UserService users;
 
     public AccountDeletionService(UserRepository userRepository,
@@ -53,7 +54,9 @@ public class AccountDeletionService {
                                   PlaylistService playlists,
                                   EventParticipationService eventParticipations,
                                   EmailVerificationService emailVerification,
+                                  BlockService blocks,
                                   UserService users) {
+        this.blocks = blocks;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.notifications = notifications;
@@ -166,7 +169,10 @@ public class AccountDeletionService {
         // 11. Linki potwierdzajace adres e-mail
         emailVerification.deleteAllOf(id);
 
-        // 12. Zdjecie profilowe z dysku
+        // 12. Blokady - zalozone przez to konto i na nie
+        blocks.deleteAllOf(id);
+
+        // 13. Zdjecie profilowe z dysku
         users.deleteAvatarOf(target);
 
         userRepository.delete(target);

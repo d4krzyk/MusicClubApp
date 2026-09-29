@@ -69,12 +69,21 @@ public class PresenceService {
 
     /** Obecnosc danej osoby - do wstawienia w DTO profilu, kafelka czy rozmowy. */
     public PresenceResponse of(User user) {
+        // Kto ukrywa aktywnosc, dla innych nie ma ani kropki, ani daty
+        if (user != null && !user.isShowOnline()) {
+            return hidden();
+        }
         return of(user == null ? null : user.getLastSeenAt());
+    }
+
+    /** Aktywnosc niewidoczna - ukryta w ustawieniach albo przez blokade. */
+    public PresenceResponse hidden() {
+        return new PresenceResponse(false, null, true);
     }
 
     /** Obecnosc wyliczona z samej daty. */
     public PresenceResponse of(LocalDateTime lastSeenAt) {
-        return new PresenceResponse(isOnline(lastSeenAt), lastSeenAt);
+        return new PresenceResponse(isOnline(lastSeenAt), lastSeenAt, false);
     }
 
     /** Czy data ostatniej aktywnosci miesci sie jeszcze w oknie "online". */

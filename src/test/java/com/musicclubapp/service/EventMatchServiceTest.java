@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("Dla ciebie - dopasowanie wydarzen do profilu")
 class EventMatchServiceTest {
 
+    @Autowired private BlockService blocks;
     @Autowired private MusicEventRepository eventRepository;
     @Autowired private EventParticipationRepository participationRepository;
     @Autowired private UserRepository userRepository;
@@ -68,7 +69,7 @@ class EventMatchServiceTest {
         EventImportService importer = WydarzeniaTestowe.importer(new TicketmasterClient("", "http://127.0.0.1:9", 500), eventRepository,
             participationRepository, performerTagService, userRepository, transactionManager, zegar);
         zapisy = new EventParticipationService(participationRepository, eventRepository, userRepository,
-            importer, zegar);
+            importer, zegar, blocks);
         events = new EventService(eventRepository, participationRepository, userRepository, importer,
             matchService, zapisy, performerTagService);
 

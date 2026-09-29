@@ -24,7 +24,8 @@ import TopMusic from '../components/TopMusic';
 import Favorites from '../components/Favorites';
 import Playlists from '../components/Playlists';
 import FriendshipButton from '../components/FriendshipButton';
-import { IconChat, IconInbox, IconPlus } from '../components/Icons';
+import BlockButton from '../components/BlockButton';
+import { IconBan, IconChat, IconInbox, IconLock, IconPlus } from '../components/Icons';
 import { formatDate } from '../utils/dates';
 
 /** Ile postow pobieramy za jednym razem. */
@@ -55,7 +56,9 @@ export default function ProfilePage() {
     setLoading(true);
     setError(null);
     try {
-      setProfile(await publiczny(whose));
+      const dane = await publiczny(whose);
+      setProfile(dane);
+      return dane;
     } catch (error) {
       /* Przy 404 pokazujemy WLASNY komunikat. */
       const details = describeError(error);
@@ -63,6 +66,7 @@ export default function ProfilePage() {
         ? t('profile.notFound')
         : details.message);
       setProfile(null);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -92,8 +96,17 @@ export default function ProfilePage() {
     }
     // Nowy profil = czyscimy poprzednie posts, inaczej mignelyby cudze wpisy
     setPosts([]);
-    loadProfile();
-    loadPosts(0, false);
+    /*
+     * Posty dopiero po profilu: przy profilu tylko dla znajomych albo po
+     * blokadzie serwer ich nie odda, wiec nie ma o co pytac.
+     */
+    loadProfile().then((dane) => {
+      if (dane && !dane.restricted && !dane.blockedByMe) {
+        loadPosts(0, false);
+      } else {
+        setPostsLoading(false);
+      }
+    });
   }, [whose, loadProfile, loadPosts]);
 
   function afterPostChange(updated) {
@@ -143,6 +156,9 @@ export default function ProfilePage() {
     );
   }
 
+  /* Szczegoly profilu tylko przy pelnym widoku - serwer i tak by ich nie oddal. */
+  const pelny = !profile.restricted && !profile.blockedByMe;
+
   return (
     <Row className="justify-content-center">
       {/* tiles-in sprawia, ze sekcje profilu wchodza PO KOLEI - tak samo jak karty na tablicy. */}
@@ -166,11 +182,13 @@ export default function ProfilePage() {
                   date: formatDate(profile.createdAt, i18n.language),
                 })}
               </div>
-              <div className="text-body-secondary small">
-                {t('profile.postCount', { count: profile.postCount })}
-                {' · '}
-                {t('friends.count', { count: profile.friendCount })}
-              </div>
+              {pelny && (
+                <div className="text-body-secondary small">
+                  {t('profile.postCount', { count: profile.postCount })}
+                  {' · '}
+                  {t('friends.count', { count: profile.friendCount })}
+                </div>
+              )}
             </div>
 
             {/*
@@ -212,10 +230,48 @@ export default function ProfilePage() {
                     : ['PROFILE']}
                 />
               )}
+
+              {!profile.self && !profile.blockedByMe && (
+                <BlockButton
+                  username={profile.username}
+                  blocked={false}
+                  onChange={() => { setPosts([]); loadProfile(); }}
+                />
+              )}
             </div>
           </Card.Body>
         </Card>
 
+        {profile.blockedByMe && (
+          <EmptyState
+            icon={IconBan}
+            title={t('block.blockedTitle')}
+            text={t('block.blockedText', { username: profile.username })}
+            action={(
+              <BlockButton
+                username={profile.username}
+                blocked
+                onChange={async () => {
+                  const dane = await loadProfile();
+                  if (dane && !dane.restricted) {
+                    loadPosts(0, false);
+                  }
+                }}
+              />
+            )}
+          />
+        )}
+
+        {profile.restricted && (
+          <EmptyState
+            icon={IconLock}
+            title={t('privacy.restrictedTitle')}
+            text={t('privacy.restrictedText', { username: profile.username })}
+          />
+        )}
+
+        {pelny && (
+        <>
         {/* "Co Was laczy" stoi NAD ulubionymi i to jest celowe. */}
         <CommonGround username={profile.username} />
 
@@ -278,6 +334,8 @@ export default function ProfilePage() {
               {t('posts.loadMore')}
             </Button>
           </div>
+        )}
+        </>
         )}
       </Col>
     </Row>

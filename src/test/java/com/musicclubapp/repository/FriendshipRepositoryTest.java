@@ -100,7 +100,7 @@ class FriendshipRepositoryTest {
         entityManager.clear();
 
         Page<FriendRow> page = userRepository.friendsRanked(
-            "ala", "ela", PageRequest.of(0, 10));
+            "ala", "ela", java.util.List.of(-1L), PageRequest.of(0, 10));
 
         assertThat(page.getTotalElements()).isEqualTo(2);
 
@@ -124,7 +124,7 @@ class FriendshipRepositoryTest {
         entityManager.clear();
 
         Page<FriendRow> pierwsza = userRepository.friendsRanked(
-            "ala", "ala", PageRequest.of(0, 3));
+            "ala", "ala", java.util.List.of(-1L), PageRequest.of(0, 3));
 
         assertThat(pierwsza.getContent()).hasSize(3);
         assertThat(pierwsza.getTotalElements()).isEqualTo(7);

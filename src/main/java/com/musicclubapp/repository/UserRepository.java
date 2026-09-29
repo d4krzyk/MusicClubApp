@@ -81,6 +81,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                 SELECT u.username            AS username,
                        u.avatar_file_name    AS avatarFileName,
                        u.last_seen_at        AS lastSeenAt,
+                       u.show_online         AS showOnline,
                        (SELECT COUNT(*)
                           FROM user_friends kandydat
                           JOIN user_friends widz
@@ -92,6 +93,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                   JOIN user_friends uf ON uf.friend_id = u.id
                   JOIN users wl ON wl.id = uf.user_id
                  WHERE wl.username = :wlasciciel
+                   AND u.id NOT IN (:ukryci)
                  ORDER BY sharedFriends DESC, u.username ASC
                 """,
         countQuery = """
@@ -99,10 +101,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
                   FROM user_friends uf
                   JOIN users wl ON wl.id = uf.user_id
                  WHERE wl.username = :wlasciciel
+                   AND uf.friend_id NOT IN (:ukryci)
                 """,
         nativeQuery = true)
     Page<FriendRow> friendsRanked(@Param("wlasciciel") String owner,
                                        @Param("ogladajacy") String viewer,
+                                       @Param("ukryci") java.util.Collection<Long> hidden,
                                        Pageable pageable);
 
     /** Proponowani znajomi: WSZYSCY uzytkownicy, posortowani od najlepiej dopasowanych. */
@@ -146,11 +150,28 @@ public interface UserRepository extends JpaRepository<User, Long> {
                      CROSS JOIN (SELECT id FROM users WHERE username = :ogladajacy) ja
                     WHERE u.id <> ja.id
                       AND u.enabled = true
+                      -- blokady w obie strony
+                      AND NOT EXISTS (SELECT 1 FROM user_blocks b
+                                       WHERE (b.blocker_id = ja.id AND b.blocked_id = u.id)
+                                          OR (b.blocker_id = u.id AND b.blocked_id = ja.id))
+                      -- kto nie chce byc proponowany, nie jest - chyba ze to juz znajomy
+                      AND (u.show_in_suggestions = true
+                           OR EXISTS (SELECT 1 FROM user_friends f2
+                                       WHERE f2.user_id = ja.id AND f2.friend_id = u.id))
                   ) t
             ORDER BY score DESC, t.sharedArtists DESC, t.username ASC
            """, nativeQuery = true)
     List<SuggestionRow> friendSuggestions(@Param("ogladajacy") String viewer,
                                             Pageable pageable);
+
+    /** Ilu wspolnych znajomych maja dwie osoby - do zasady "tylko znajomi znajomych". */
+    @Query(value = """
+           SELECT COUNT(*)
+             FROM user_friends a
+             JOIN user_friends b ON a.friend_id = b.friend_id
+            WHERE a.user_id = :pierwszy AND b.user_id = :drugi
+           """, nativeQuery = true)
+    long countSharedFriends(@Param("pierwszy") Long first, @Param("drugi") Long second);
 
     /** Ilu znajomych ma dana osoba - liczba na profilu. */
     @Query(value = """

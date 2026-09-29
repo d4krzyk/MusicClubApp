@@ -12,4 +12,7 @@ public interface FriendRow {
 
     /** Kiedy ta osoba byla ostatnio aktywna; null = nigdy. */
     java.time.LocalDateTime getLastSeenAt();
+
+    /** Czy ta osoba pokazuje innym swoja aktywnosc. */
+    boolean getShowOnline();
 }

@@ -191,6 +191,26 @@ samo na produkcji).
   wersja tekstowa; teksty w `messages*.properties` (`mail.*`). Rodzaje
   w `AccountMails.Kind`; `AccountMailsTest` renderuje każdy w PL i EN.
 
+## Blokady i prywatność (V6)
+
+- Blokada (`user_blocks`, `BlockService`) działa w obie strony: zrywa
+  znajomość i zaproszenia, czyści powiadomienia między tymi osobami, ukrywa
+  posty (tablica, pojedynczy post = 404, reakcje), profil, propozycje,
+  listę znajomych, uczestników wydarzeń i obecność. Czat jest tylko dla
+  znajomych, więc pisać się nie da; historia zostaje.
+- Zablokowany **nie wie** o blokadzie: profil blokującego = 404, zaproszenie
+  = ten sam komunikat co przy „nie przyjmuje zaproszeń”.
+- Ustawienia na koncie: profil dla wszystkich / znajomych
+  (`PrivacyService.view()` → FULL / RESTRICTED / BLOCKED_BY_ME), kto może
+  zaprosić (każdy / znajomi znajomych / nikt), pokazywanie aktywności
+  (`PresenceResponse.hidden`), obecność w propozycjach, domyślne ukrycie na
+  listach uczestników (zapis bez `hidden` = domyślne z ustawień).
+- Szczegóły profilu (ulubieni, znajomi, top, playlisty, „co nas łączy”,
+  posty autora) pilnuje `privacy.requireDetails()` w każdym endpoincie.
+  Administrator widzi wszystko.
+- Zbiór „ukrytych” do `NOT IN` bierze się z `blocks.hiddenForQuery()` —
+  pusta lista jest podmieniana na `-1`.
+
 ## Wybory, do których nie wracamy
 
 - **TWA, nie Capacitor.** Frontend i API stoją pod jednym adresem (nginx

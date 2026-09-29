@@ -45,6 +45,8 @@ public class PostService {
     private final MusicMetadataService musicMetadata;
     private final NotificationService notifications;
     private final ReactionRepository reactionRepository;
+    private final BlockService blocks;
+    private final PrivacyService privacy;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
@@ -53,7 +55,10 @@ public class PostService {
                        ReactionService reactionService,
                        MusicMetadataService musicMetadata,
                        NotificationService notifications,
-                       ReactionRepository reactionRepository) {
+                       ReactionRepository reactionRepository,
+                       BlockService blocks,
+                       PrivacyService privacy) {
+        this.privacy = privacy;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
@@ -62,6 +67,7 @@ public class PostService {
         this.musicMetadata = musicMetadata;
         this.notifications = notifications;
         this.reactionRepository = reactionRepository;
+        this.blocks = blocks;
     }
 
     /** Dodaje post razem ze zdjeciami. */
@@ -151,9 +157,12 @@ public class PostService {
         List<Long> circle = userRepository.circleIds(viewerUsername);
         Pageable byOurOrder = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
 
+        // Znajomi nie moga byc zablokowani (blokada zrywa znajomosc), wiec krag ich nie potrzebuje
         Page<Post> page = scope == FeedScope.FRIENDS
             ? postRepository.findCircleFeed(circle, byOurOrder)
-            : postRepository.findFeed(circle, byOurOrder);
+            : postRepository.findFeed(circle,
+                blocks.hiddenForQuery(userRepository.findByUsername(viewerUsername).map(User::getId).orElse(null)),
+                byOurOrder);
 
         return withReactions(page, viewerUsername, circle);
     }
@@ -173,6 +182,10 @@ public class PostService {
         if (!post.isVisibleTo(viewer)) {
             throw OperationNotAllowedException.friendsOnlyPost();
         }
+        // Post osoby zablokowanej albo blokujacej - jakby go nie bylo
+        if (viewer != null && blocks.eitherWay(viewer.getId(), post.getAuthor().getId())) {
+            throw new NoSuchElementFoundException("post", id);
+        }
 
         ReactionSummary summary = reactionService
             .summaries(List.of(id), viewerUsername)
@@ -184,6 +197,8 @@ public class PostService {
     /** Posty jednego uzytkownika - do jego profilu. */
     @Transactional(readOnly = true)
     public Page<PostResponse> byAuthor(String author, String viewerUsername, Pageable pageable) {
+        // Profil tylko dla znajomych, blokady - to samo co przy reszcie profilu
+        privacy.requireDetails(author, viewerUsername);
         List<Long> circle = userRepository.circleIds(viewerUsername);
         return withReactions(
             postRepository.findByAuthorUsername(author, circle, pageable),

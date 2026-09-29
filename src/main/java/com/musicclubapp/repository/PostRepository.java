@@ -16,22 +16,29 @@ import java.util.Optional;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    /** Tablica: najpierw znajomi, potem reszta swiata. */
+    /**
+     * Tablica: najpierw znajomi, potem reszta swiata. Bez osob zablokowanych
+     * przez ogladajacego i blokujacych go (:hidden).
+     */
     @Query(value = """
            SELECT p FROM Post p
            JOIN FETCH p.author a
-           WHERE p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
-              OR p.visibility IS NULL
-              OR a.id IN :circle
+           WHERE (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR a.id IN :circle)
+             AND a.id NOT IN :hidden
            ORDER BY CASE WHEN a.id IN :circle THEN 0 ELSE 1 END, p.createdAt DESC
            """,
            countQuery = """
            SELECT COUNT(p) FROM Post p
-           WHERE p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
-              OR p.visibility IS NULL
-              OR p.author.id IN :circle
+           WHERE (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+                  OR p.visibility IS NULL
+                  OR p.author.id IN :circle)
+             AND p.author.id NOT IN :hidden
            """)
-    Page<Post> findFeed(@Param("circle") Collection<Long> circle, Pageable pageable);
+    Page<Post> findFeed(@Param("circle") Collection<Long> circle,
+                        @Param("hidden") Collection<Long> hidden,
+                        Pageable pageable);
 
     /** Tablica zawezona do wlasnego kregu - wybor uzytkownika w przelaczniku nad tablica. */
     @Query(value = """

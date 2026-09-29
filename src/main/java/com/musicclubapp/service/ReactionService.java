@@ -32,12 +32,15 @@ public class ReactionService {
     private final UserRepository userRepository;
     private final PostMapper postMapper;
     private final NotificationService notifications;
+    private final BlockService blocks;
 
     public ReactionService(ReactionRepository reactionRepository,
                            PostRepository postRepository,
                            UserRepository userRepository,
                            PostMapper postMapper,
-                           NotificationService notifications) {
+                           NotificationService notifications,
+                           BlockService blocks) {
+        this.blocks = blocks;
         this.reactionRepository = reactionRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
@@ -86,7 +89,10 @@ public class ReactionService {
         // a nie pusta lista - to dwie rozne rzeczy
         checkVisible(post(postId), user(viewerUsername));
 
+        // Kto zablokowal ogladajacego (albo odwrotnie), nie pojawia sie na liscie reagujacych
+        java.util.Set<Long> ukryci = blocks.hiddenFor(user(viewerUsername).getId());
         return reactionRepository.findForPost(postId).stream()
+            .filter(r -> !ukryci.contains(r.getUser().getId()))
             .map(r -> new ReactionAuthorResponse(
                 r.getUser().getUsername(),
                 r.getUser().getAvatarFileName() == null
@@ -165,6 +171,9 @@ public class ReactionService {
     private void checkVisible(Post post, User viewer) {
         if (!post.isVisibleTo(viewer)) {
             throw OperationNotAllowedException.friendsOnlyPost();
+        }
+        if (blocks.eitherWay(viewer.getId(), post.getAuthor().getId())) {
+            throw new NoSuchElementFoundException("post", post.getId());
         }
     }
 

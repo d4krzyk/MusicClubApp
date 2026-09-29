@@ -90,6 +90,38 @@ public class User {
     @Column(name = "security_stamp", length = 32)
     private String securityStamp;
 
+    /* --- Prywatnosc ---------------------------------------------------
+     * Wartosci domyslne siedza takze w bazie (@ColumnDefault): kolumna
+     * NOT NULL dodawana do tabeli z kontami musi od razu miec wartosc.
+     */
+
+    /** Kto widzi szczegoly profilu. */
+    @Enumerated(EnumType.STRING)
+    @org.hibernate.annotations.ColumnDefault("'EVERYONE'")
+    @Column(name = "profile_visibility", nullable = false, length = 20)
+    private ProfileVisibility profileVisibility = ProfileVisibility.EVERYONE;
+
+    /** Kto moze wyslac zaproszenie do znajomych. */
+    @Enumerated(EnumType.STRING)
+    @org.hibernate.annotations.ColumnDefault("'EVERYONE'")
+    @Column(name = "friend_requests_from", nullable = false, length = 20)
+    private InvitePolicy friendRequestsFrom = InvitePolicy.EVERYONE;
+
+    /** Czy inni widza, ze jestem teraz aktywny i kiedy bylem ostatnio. */
+    @org.hibernate.annotations.ColumnDefault("true")
+    @Column(name = "show_online", nullable = false)
+    private boolean showOnline = true;
+
+    /** Czy pojawiam sie w propozycjach znajomych u innych. */
+    @org.hibernate.annotations.ColumnDefault("true")
+    @Column(name = "show_in_suggestions", nullable = false)
+    private boolean showInSuggestions = true;
+
+    /** Czy nowy zapis na wydarzenie ma od razu "nie pokazuj mnie na liscie uczestnikow". */
+    @org.hibernate.annotations.ColumnDefault("false")
+    @Column(name = "hide_on_attendee_lists", nullable = false)
+    private boolean hideOnAttendeeLists = false;
+
     /** Kraj, z ktorego pokazujemy wydarzenia. Pusty = Polska. */
     @Column(name = "events_country", length = 2)
     private String eventsCountry;
@@ -276,6 +308,36 @@ public class User {
         byte[] bajty = new byte[24];
         LOSOWANIE.nextBytes(bajty);
         this.securityStamp = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bajty);
+    }
+
+    public ProfileVisibility getProfileVisibility() {
+        return profileVisibility;
+    }
+
+    public InvitePolicy getFriendRequestsFrom() {
+        return friendRequestsFrom;
+    }
+
+    public boolean isShowOnline() {
+        return showOnline;
+    }
+
+    public boolean isShowInSuggestions() {
+        return showInSuggestions;
+    }
+
+    public boolean isHideOnAttendeeLists() {
+        return hideOnAttendeeLists;
+    }
+
+    /** Wszystkie ustawienia prywatnosci naraz - formularz zapisuje je razem. */
+    public void setPrivacy(ProfileVisibility profileVisibility, InvitePolicy friendRequestsFrom,
+                           boolean showOnline, boolean showInSuggestions, boolean hideOnAttendeeLists) {
+        this.profileVisibility = profileVisibility;
+        this.friendRequestsFrom = friendRequestsFrom;
+        this.showOnline = showOnline;
+        this.showInSuggestions = showInSuggestions;
+        this.hideOnAttendeeLists = hideOnAttendeeLists;
     }
 
     public String getEventsCountry() {

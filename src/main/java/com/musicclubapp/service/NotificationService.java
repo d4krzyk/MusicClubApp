@@ -90,6 +90,12 @@ public class NotificationService {
             recipient.getId(), actor.getId(), NotificationType.FRIEND_REQUEST);
     }
 
+    /** Blokada - znika wszystko, co jedna z tych osob zostawila w dzwonku drugiej. */
+    @Transactional
+    public void deleteBetween(Long a, Long b) {
+        notificationRepository.deleteBetween(a, b);
+    }
+
     /** Znajomosc doszla do skutku - powiadamiamy te osobe, ktora czekala. */
     @Transactional
     public void friendshipFormed(User recipient, User actor) {

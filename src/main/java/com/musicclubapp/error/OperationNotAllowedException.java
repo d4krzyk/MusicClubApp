@@ -132,6 +132,25 @@ public class OperationNotAllowedException extends RuntimeException {
             "Brak zmiany adresu do potwierdzenia", "error.email.no.pending");
     }
 
+    /** Proba zablokowania samego siebie. */
+    public static OperationNotAllowedException blockSelf() {
+        return new OperationNotAllowedException("Nie mozna zablokowac samego siebie", "error.block.self");
+    }
+
+    /** Profil tylko dla znajomych albo zablokowany - szczegolow nie pokazujemy. */
+    public static OperationNotAllowedException profilePrivate() {
+        return new OperationNotAllowedException("Profil niedostepny dla ogladajacego", "error.profile.private");
+    }
+
+    /**
+     * Tej osoby nie mozna zaprosic: nie przyjmuje zaproszen, nie macie
+     * wspolnych znajomych albo jest blokada. Jeden komunikat na wszystko -
+     * zeby zablokowany nie dowiedzial sie o blokadzie.
+     */
+    public static OperationNotAllowedException cannotInvite() {
+        return new OperationNotAllowedException("Nie mozna zaprosic tej osoby", "error.friend.cannot.invite");
+    }
+
     /** Serwer nie wysyla poczty - nie ma jak dostarczyc linku. */
     public static OperationNotAllowedException mailDisabled() {
         return new OperationNotAllowedException(

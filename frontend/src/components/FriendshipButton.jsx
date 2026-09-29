@@ -57,10 +57,14 @@ export default function FriendshipButton({ profile, onChange }) {
 
   return (
     <div className="text-end">
-      {profile.friendshipStatus === 'NONE' && (
+      {/* canInvite: ustawienia tej osoby ("nikt", "znajomi znajomych") i blokady - liczy serwer */}
+      {profile.friendshipStatus === 'NONE' && profile.canInvite !== false && (
         <Button size="sm" disabled={wysylanie} onClick={invite}>
           <IconPersonPlus /> {t('friends.invite')}
         </Button>
+      )}
+      {profile.friendshipStatus === 'NONE' && profile.canInvite === false && !profile.blockedByMe && (
+        <div className="small text-body-secondary">{t('friends.notAcceptingInvites')}</div>
       )}
 
       {profile.friendshipStatus === 'REQUEST_SENT' && (

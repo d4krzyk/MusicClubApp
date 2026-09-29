@@ -372,7 +372,8 @@
     "betterMatchesLink": "Go to your profile",
     "noneSelf": "You have no friends yet",
     "noneSelfHint": "Add favourite artists and tracks to your profile - then the suggestions stop being random and you will find someone who listens to what you do.",
-    "findPeople": "Find people"
+    "findPeople": "Find people",
+    "notAcceptingInvites": "This person isn't accepting invitations right now"
   },
   "notifications": {
     "title": "Notifications",
@@ -693,5 +694,37 @@
     "deniedTitle": "Change cancelled",
     "deniedText": "The account address didn't change and every device was signed out. Someone may know your password — set a new one.",
     "setNewPassword": "Set a new password"
+  },
+  "block": {
+    "block": "Block",
+    "unblock": "Unblock",
+    "confirm": "Block",
+    "confirmTitle": "Block {{username}}?",
+    "effectFriends": "Your friendship is removed and invitations are cancelled.",
+    "effectContent": "You won't see each other's posts or profiles.",
+    "effectInvite": "You won't be able to invite or message each other — the chat history stays.",
+    "effectSilent": "{{username}} won't be notified.",
+    "effectUndo": "You can unblock any time in Settings. The friendship won't come back by itself.",
+    "blockedTitle": "You blocked this person",
+    "blockedText": "You don't see {{username}}'s posts, and they don't see yours.",
+    "listTitle": "Blocked people",
+    "listEmpty": "You haven't blocked anyone.",
+    "listHint": "You can block someone from their profile."
+  },
+  "privacy": {
+    "title": "Privacy",
+    "profileVisibility": "Who can see my profile details",
+    "profileVisibilityHint": "Favourites, friends, playlists and posts on the profile. Public posts still show in the feed — you set visibility on each post.",
+    "everyone": "Everyone",
+    "friendsOnly": "Friends only",
+    "friendsOfFriends": "Friends of friends",
+    "nobody": "Nobody",
+    "friendRequestsFrom": "Who can send me friend requests",
+    "showOnline": "Show others when I'm active",
+    "showInSuggestions": "Show me in friend suggestions",
+    "hideOnAttendeeLists": "Hide me on event attendee lists by default",
+    "saved": "Saved.",
+    "restrictedTitle": "Friends-only profile",
+    "restrictedText": "Only {{username}}'s friends can see their profile details."
   }
 }

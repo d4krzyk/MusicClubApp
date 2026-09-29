@@ -55,6 +55,10 @@ class ReactionServiceTest {
     @Mock
     private NotificationService notifications;
 
+    /** Bez blokad - mock zwraca "nikt nikogo nie zablokowal". */
+    @Mock
+    private BlockService blocks;
+
     @InjectMocks
     private ReactionService reactionService;
 

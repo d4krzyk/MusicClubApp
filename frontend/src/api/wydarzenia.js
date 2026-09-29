@@ -38,9 +38,15 @@ export async function jedno(id) {
   return data;
 }
 
-/** Zainteresowany albo ide; ukryty = nie pokazuj mnie na liscie uczestnikow. */
-export async function zapisz(id, status, ukryty = false) {
-  const { data } = await client.put(`/events/${id}/participation`, { status, hidden: ukryty });
+/**
+ * Zainteresowany albo ide; ukryty = nie pokazuj mnie na liscie uczestnikow.
+ * Bez "ukryty" serwer bierze domyslne z ustawien prywatnosci (nowy zapis)
+ * albo zostawia jak bylo (zmiana).
+ */
+export async function zapisz(id, status, ukryty) {
+  const { data } = await client.put(`/events/${id}/participation`, {
+    status, ...(ukryty === undefined ? {} : { hidden: ukryty }),
+  });
   return data;
 }
 

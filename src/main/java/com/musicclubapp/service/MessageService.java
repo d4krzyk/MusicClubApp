@@ -46,13 +46,16 @@ public class MessageService {
     private final MusicMetadataService musicMetadata;
     private final PresenceService presence;
     private final TypingRegistry typing;
+    private final BlockService blocks;
 
     public MessageService(MessageRepository messageRepository,
                           UserRepository userRepository,
                           MessageMapper messageMapper,
                           MusicMetadataService musicMetadata,
                           PresenceService presence,
-                          TypingRegistry typing) {
+                          TypingRegistry typing,
+                          BlockService blocks) {
+        this.blocks = blocks;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.messageMapper = messageMapper;
@@ -151,7 +154,7 @@ public class MessageService {
         return new ConversationSyncResponse(
             messages,
             typing.isTyping(partner.getId(), viewer.getId()),
-            presence.of(partner),
+            blocks.eitherWay(viewer.getId(), partner.getId()) ? presence.hidden() : presence.of(partner),
             messageRepository.countUnread(viewer.getId()),
             messageRepository.lastReadOutgoingId(viewer.getId(), partner.getId()),
             canWriteTo(viewer, partner));
@@ -225,6 +228,9 @@ public class MessageService {
             userRepository.findAllById(formerIds).forEach(partners::add);
         }
 
+        // Przy blokadzie historia zostaje, ale obecnosci drugiej strony juz nie widac
+        Set<Long> ukryci = blocks.hiddenFor(viewer.getId());
+
         List<ConversationResponse> conversations = new ArrayList<>();
         for (User partner : partners) {
             // get(null) na mapie zwraca null - znajomy bez rozmowy przechodzi tedy bez warunku
@@ -235,7 +241,7 @@ public class MessageService {
                 partner.getAvatarFileName() == null
                     ? null
                     : PostMapper.UPLOADS_PATH + partner.getAvatarFileName(),
-                presence.of(partner),
+                ukryci.contains(partner.getId()) ? presence.hidden() : presence.of(partner),
                 last == null ? null : messageMapper.toResponse(last, viewer),
                 unreadBySender.getOrDefault(partner.getId(), 0L),
                 friendIds.contains(partner.getId())));

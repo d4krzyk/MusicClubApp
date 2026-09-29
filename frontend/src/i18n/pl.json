@@ -393,7 +393,8 @@
     "betterMatchesLink": "Przejdź do swojego profilu",
     "noneSelf": "Nie masz jeszcze znajomych",
     "noneSelfHint": "Dodaj do profilu ulubionych artystów i utwory — wtedy propozycje przestaną być przypadkowe i znajdziesz kogoś, kto słucha tego co Ty.",
-    "findPeople": "Znajdź ludzi"
+    "findPeople": "Znajdź ludzi",
+    "notAcceptingInvites": "Ta osoba nie przyjmuje teraz zaproszeń"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -728,5 +729,37 @@
     "deniedTitle": "Zmiana anulowana",
     "deniedText": "Adres konta się nie zmienił, a wszystkie urządzenia zostały wylogowane. Ktoś mógł znać Twoje hasło — ustaw nowe.",
     "setNewPassword": "Ustaw nowe hasło"
+  },
+  "block": {
+    "block": "Zablokuj",
+    "unblock": "Odblokuj",
+    "confirm": "Zablokuj",
+    "confirmTitle": "Zablokować {{username}}?",
+    "effectFriends": "Znajomość zostanie usunięta, a zaproszenia anulowane.",
+    "effectContent": "Nie zobaczycie nawzajem swoich postów ani profili.",
+    "effectInvite": "Nie będziecie mogli się zaprosić ani do siebie pisać — historia rozmowy zostaje.",
+    "effectSilent": "{{username}} nie dostanie o tym żadnej informacji.",
+    "effectUndo": "Możesz odblokować w każdej chwili w Ustawieniach. Znajomość nie wróci sama.",
+    "blockedTitle": "Ta osoba jest zablokowana",
+    "blockedText": "Nie widzisz postów {{username}}, a ta osoba nie widzi Twoich.",
+    "listTitle": "Zablokowane osoby",
+    "listEmpty": "Nikogo nie blokujesz.",
+    "listHint": "Zablokować możesz na profilu danej osoby."
+  },
+  "privacy": {
+    "title": "Prywatność",
+    "profileVisibility": "Kto widzi szczegóły mojego profilu",
+    "profileVisibilityHint": "Ulubieni, znajomi, playlisty i posty na profilu. Posty publiczne nadal widać na tablicy — widoczność ustawiasz przy każdym poście.",
+    "everyone": "Wszyscy",
+    "friendsOnly": "Tylko znajomi",
+    "friendsOfFriends": "Tylko znajomi znajomych",
+    "nobody": "Nikt",
+    "friendRequestsFrom": "Kto może zaprosić mnie do znajomych",
+    "showOnline": "Pokazuj innym moją aktywność („aktywny teraz”, „aktywny wczoraj”)",
+    "showInSuggestions": "Pokazuj mnie w propozycjach znajomych",
+    "hideOnAttendeeLists": "Domyślnie ukrywaj mnie na listach uczestników wydarzeń",
+    "saved": "Zapisano.",
+    "restrictedTitle": "Profil tylko dla znajomych",
+    "restrictedText": "Szczegóły profilu {{username}} widzą tylko znajomi tej osoby."
   }
 }

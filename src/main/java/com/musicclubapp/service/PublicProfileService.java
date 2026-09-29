@@ -1,5 +1,6 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.dto.FriendshipStatus;
 import com.musicclubapp.dto.PublicProfileResponse;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
@@ -17,11 +18,14 @@ public class PublicProfileService {
     private final PostRepository postRepository;
     private final FriendService friendService;
     private final PresenceService presence;
+    private final PrivacyService privacy;
 
     public PublicProfileService(UserRepository userRepository,
                                 PostRepository postRepository,
                                 FriendService friendService,
-                                PresenceService presence) {
+                                PresenceService presence,
+                                PrivacyService privacy) {
+        this.privacy = privacy;
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.friendService = friendService;
@@ -32,6 +36,12 @@ public class PublicProfileService {
     public PublicProfileResponse profile(String username, String viewerUsername) {
         User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new NoSuchElementFoundException("user", username));
+        User viewer = userRepository.findByUsername(viewerUsername).orElse(null);
+
+        // Kto zablokowal ogladajacego, tego dla niego nie ma - view() rzuca 404
+        PrivacyService.ProfileView widok = privacy.view(user, viewer);
+        boolean pelny = widok == PrivacyService.ProfileView.FULL;
+        FriendshipStatus relacja = friendService.status(viewerUsername, user.getUsername());
 
         return new PublicProfileResponse(
             user.getUsername(),
@@ -39,12 +49,14 @@ public class PublicProfileService {
             user.getCreatedAt(),
             // Liczba ma sie zgadzac z tym, co widac nizej na stronie - wiec
             // liczymy posty widoczne dla TEGO ogladajacego, a nie wszystkie
-            postRepository.countVisibleFor(
-                user.getUsername(), userRepository.circleIds(viewerUsername)),
+            pelny ? postRepository.countVisibleFor(user.getUsername(), userRepository.circleIds(viewerUsername)) : 0,
             user.getUsername().equals(viewerUsername),
-            userRepository.countFriends(user.getUsername()),
-            friendService.status(viewerUsername, user.getUsername()),
-            presence.of(user));
+            pelny ? userRepository.countFriends(user.getUsername()) : 0,
+            relacja,
+            pelny ? presence.of(user) : presence.hidden(),
+            widok == PrivacyService.ProfileView.BLOCKED_BY_ME,
+            widok == PrivacyService.ProfileView.RESTRICTED,
+            viewer != null && relacja == FriendshipStatus.NONE && privacy.canInvite(viewer, user));
     }
 
     /**

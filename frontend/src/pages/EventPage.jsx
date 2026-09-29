@@ -286,9 +286,10 @@ function Udzial({ w, onZmiana, t }) {
     }
   }
 
+  // Pierwszy zapis bez "ukryj" - serwer wezmie domyslne z ustawien prywatnosci
   const przelacz = (status) => wykonaj(() => (moj === status
     ? zrezygnuj(w.id)
-    : zapisz(w.id, status, stan.hidden)));
+    : zapisz(w.id, status, moj ? stan.hidden : undefined)));
 
   const liczniki = [
     stan.going > 0 && t('events.goingCount', { count: stan.going }),

@@ -34,12 +34,15 @@ public class EventParticipationService {
     private final UserRepository users;
     private final EventImportService importer;
     private final Clock clock;
+    private final BlockService blocks;
 
     public EventParticipationService(EventParticipationRepository participations,
                                      MusicEventRepository events,
                                      UserRepository users,
                                      EventImportService importer,
-                                     Clock clock) {
+                                     Clock clock,
+                                     BlockService blocks) {
+        this.blocks = blocks;
         this.participations = participations;
         this.events = events;
         this.users = users;
@@ -55,7 +58,7 @@ public class EventParticipationService {
      */
     @Transactional
     public ParticipationResponse participate(Long eventId, String username,
-                                             ParticipationStatus status, boolean hidden) {
+                                             ParticipationStatus status, Boolean hidden) {
         MusicEvent event = events.findById(eventId)
             .orElseThrow(() -> new NoSuchElementFoundException("event", eventId));
 
@@ -68,12 +71,17 @@ public class EventParticipationService {
 
         LocalDateTime now = LocalDateTime.now(clock);
         Optional<EventParticipation> mine = participations.findMine(eventId, username);
+        /*
+         * Bez podanego "ukryj mnie": przy zmianie zostaje jak bylo, przy nowym
+         * zapisie - domyslne z ustawien prywatnosci.
+         */
         if (mine.isPresent()) {
-            mine.get().change(status, hidden, now);
+            mine.get().change(status, hidden != null ? hidden : mine.get().isHidden(), now);
         } else {
             User user = users.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementFoundException("user", username));
-            participations.save(new EventParticipation(event, user, status, hidden, now));
+            boolean ukryty = hidden != null ? hidden : user.isHideOnAttendeeLists();
+            participations.save(new EventParticipation(event, user, status, ukryty, now));
         }
         return summary(eventId, username);
     }
@@ -121,11 +129,14 @@ public class EventParticipationService {
             throw new NoSuchElementFoundException("event", eventId);
         }
         Set<Long> friendIds = new HashSet<>(users.friendIdsOf(viewer));
+        // Zablokowani przez ogladajacego i blokujacy go - poza lista (licznik ich liczy)
+        Set<Long> ukryci = users.findByUsername(viewer).map(u -> blocks.hiddenFor(u.getId())).orElse(Set.of());
 
         /* Pusta lista w "IN (...)" to blad skladni w czesci baz - podstawiamy identyfikator, ktorego nie ma. */
         List<Long> doZapytania = friendIds.isEmpty() ? List.of(-1L) : List.copyOf(friendIds);
 
-        return participations.attendees(eventId, viewer, doZapytania, pageable)
+        return participations.attendees(eventId, viewer, doZapytania,
+                ukryci.isEmpty() ? List.of(-1L) : List.copyOf(ukryci), pageable)
             .map(p -> new AttendeeResponse(
                 p.getUser().getUsername(),
                 avatarUrl(p.getUser()),

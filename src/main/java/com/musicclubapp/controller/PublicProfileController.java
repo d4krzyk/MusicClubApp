@@ -11,6 +11,7 @@ import com.musicclubapp.service.CommonGroundService;
 import com.musicclubapp.service.FavoritesService;
 import com.musicclubapp.service.FriendService;
 import com.musicclubapp.service.PlaylistService;
+import com.musicclubapp.service.PrivacyService;
 import com.musicclubapp.service.PublicProfileService;
 import com.musicclubapp.service.TopMusicService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,13 +46,16 @@ public class PublicProfileController {
     private final FavoritesService favoritesService;
     private final PlaylistService playlistService;
     private final CommonGroundService commonGroundService;
+    private final PrivacyService privacy;
 
     public PublicProfileController(PublicProfileService publicProfileService,
                                    FriendService friendService,
                                    TopMusicService topMusicService,
                                    FavoritesService favoritesService,
                                    PlaylistService playlistService,
-                                   CommonGroundService commonGroundService) {
+                                   CommonGroundService commonGroundService,
+                                   PrivacyService privacy) {
+        this.privacy = privacy;
         this.favoritesService = favoritesService;
         this.publicProfileService = publicProfileService;
         this.friendService = friendService;
@@ -93,6 +97,7 @@ public class PublicProfileController {
 
             Authentication authentication) {
 
+        privacy.requireDetails(username, authentication.getName());
         Pageable pageable = PageRequest.of(
             Math.max(page, 0),
             Math.min(Math.max(size, 1), MAX_SIZE));
@@ -115,8 +120,11 @@ public class PublicProfileController {
             @RequestParam(defaultValue = "TRACK") MusicKind kind,
 
             @Parameter(description = "Ile pozycji (1-20)")
-            @RequestParam(defaultValue = "5") int limit) {
+            @RequestParam(defaultValue = "5") int limit,
 
+            Authentication authentication) {
+
+        privacy.requireDetails(username, authentication.getName());
         return ResponseEntity.ok(topMusicService.mostPosted(username, kind, limit));
     }
 
@@ -131,6 +139,7 @@ public class PublicProfileController {
             @PathVariable String username,
             Authentication authentication) {
 
+        privacy.requireDetails(username, authentication.getName());
         /* Login ogladajacego idzie do serwisu, bo to on wylicza pole canEdit. */
         return ResponseEntity.ok(
             favoritesService.favorites(username, authentication.getName()));
@@ -148,6 +157,7 @@ public class PublicProfileController {
             @PathVariable String username,
             Authentication authentication) {
 
+        privacy.requireDetails(username, authentication.getName());
         return ResponseEntity.ok(
             commonGroundService.between(authentication.getName(), username));
     }
@@ -163,6 +173,7 @@ public class PublicProfileController {
             @PathVariable String username,
             Authentication authentication) {
 
+        privacy.requireDetails(username, authentication.getName());
         return ResponseEntity.ok(
             playlistService.playlists(username, authentication.getName()));
     }

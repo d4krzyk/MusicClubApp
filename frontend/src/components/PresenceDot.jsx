@@ -5,7 +5,8 @@ import { timeAgo } from '../utils/dates';
 export default function PresenceDot({ presence, withLabel = false }) {
   const { t, i18n } = useTranslation();
 
-  if (!presence) {
+  // hidden: ta osoba ukrywa aktywnosc (albo jest blokada) - nic nie pokazujemy
+  if (!presence || presence.hidden) {
     return null;
   }
 

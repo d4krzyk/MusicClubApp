@@ -11,7 +11,8 @@ public record ParticipationRequest(
     @NotNull(message = "{validation.participation.status.required}")
     ParticipationStatus status,
 
-    @Schema(description = "Nie pokazuj mnie na liscie uczestnikow")
-    boolean hidden
+    @Schema(description = "Nie pokazuj mnie na liscie uczestnikow; brak = jak dotad "
+        + "(przy nowym zapisie - domyslne z ustawien prywatnosci)")
+    Boolean hidden
 ) {
 }

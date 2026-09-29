@@ -88,6 +88,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("DELETE FROM Notification n WHERE n.recipient.id = :userId OR n.actor.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
 
+    /** Po blokadzie: powiadomienia miedzy tymi dwiema osobami - w obie strony. */
+    @Modifying
+    @Query("""
+        DELETE FROM Notification n
+         WHERE (n.recipient.id = :a AND n.actor.id = :b) OR (n.recipient.id = :b AND n.actor.id = :a)
+        """)
+    void deleteBetween(@Param("a") Long a, @Param("b") Long b);
+
     /** Powiadomienia dotyczace postow jednego autora - przed skasowaniem tych postow. */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Notification n WHERE n.post.author.id = :authorId")

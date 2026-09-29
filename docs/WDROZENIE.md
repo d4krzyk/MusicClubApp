@@ -432,6 +432,19 @@ Przy resecie hasła i zmianie adresu (wrzesień 2026):
   „Wyloguj z innych urządzeń”;
 - `mvnw clean test` → 487 testów.
 
+Przy blokadach i ustawieniach prywatności (wrzesień 2026):
+
+- migracja V6 na pustej bazie i po V5; schemat zgodny z encjami;
+- test przez całe API: blokada w obie strony (profil, tablica, post,
+  reakcja, zaproszenia, czat, propozycje, uczestnicy), odblokowanie, profil
+  tylko dla znajomych (i wgląd administratora), zasady zaproszeń, ukryta
+  aktywność, domyślne ukrycie na wydarzeniach; także na PostgreSQL 16.
+  Test z wyłączonym filtrem blokad na tablicy czerwienieje;
+- Chromium: okno blokady, profil zablokowanej osoby, 404 u blokowanego,
+  lista zablokowanych z odblokowaniem, ustawienia prywatności, profil
+  tylko dla znajomych;
+- `mvnw clean test` → 493 testy.
+
 Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
 (podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz
 jeszcze.

@@ -77,6 +77,7 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
          WHERE p.event.id = :eventId
            AND p.status = com.musicclubapp.entity.ParticipationStatus.GOING
            AND (p.hidden = false OR u.username = :viewer)
+           AND u.id NOT IN :hiddenIds
          ORDER BY CASE WHEN u.username = :viewer THEN 0
                        WHEN u.id IN :friendIds THEN 1
                        ELSE 2 END,
@@ -87,10 +88,12 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
          WHERE p.event.id = :eventId
            AND p.status = com.musicclubapp.entity.ParticipationStatus.GOING
            AND (p.hidden = false OR p.user.username = :viewer)
+           AND p.user.id NOT IN :hiddenIds
         """)
     Page<EventParticipation> attendees(@Param("eventId") Long eventId,
                                        @Param("viewer") String viewer,
                                        @Param("friendIds") Collection<Long> friendIds,
+                                       @Param("hiddenIds") Collection<Long> hiddenIds,
                                        Pageable pageable);
 
     /** Ile osob idzie, ale nie chce byc na liscie - pokazujemy sama liczbe. */

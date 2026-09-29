@@ -3,11 +3,13 @@ package com.musicclubapp.controller;
 import com.musicclubapp.dto.ChangePasswordRequest;
 import com.musicclubapp.dto.ConfirmPasswordRequest;
 import com.musicclubapp.dto.UpdateProfileRequest;
+import com.musicclubapp.dto.PrivacySettings;
 import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.security.JsonRememberMeServices;
 import com.musicclubapp.security.SecurityStampFilter;
 import com.musicclubapp.service.AccountDeletionService;
 import com.musicclubapp.service.EmailVerificationService;
+import com.musicclubapp.service.PrivacyService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,6 +30,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -50,13 +53,16 @@ public class ProfileController {
     private final SecurityContextRepository securityContextRepository;
     private final EmailVerificationService emailVerification;
     private final JsonRememberMeServices rememberMeServices;
+    private final PrivacyService privacy;
 
     public ProfileController(UserService userService,
                              AccountDeletionService deletion,
                              UserDetailsService userDetailsService,
                              SecurityContextRepository securityContextRepository,
                              EmailVerificationService emailVerification,
-                             JsonRememberMeServices rememberMeServices) {
+                             JsonRememberMeServices rememberMeServices,
+                             PrivacyService privacy) {
+        this.privacy = privacy;
         this.userService = userService;
         this.deletion = deletion;
         this.userDetailsService = userDetailsService;
@@ -107,6 +113,19 @@ public class ProfileController {
     public ResponseEntity<UserResponse> cancelEmailChange(Authentication authentication) {
         emailVerification.cancelChange(authentication.getName());
         return ResponseEntity.ok(userService.getByUsername(authentication.getName()));
+    }
+
+    @GetMapping("/privacy")
+    @Operation(summary = "Moje ustawienia prywatnosci")
+    public ResponseEntity<PrivacySettings> privacy(Authentication authentication) {
+        return ResponseEntity.ok(privacy.settings(authentication.getName()));
+    }
+
+    @PutMapping("/privacy")
+    @Operation(summary = "Zapisuje ustawienia prywatnosci")
+    public ResponseEntity<PrivacySettings> updatePrivacy(@Valid @RequestBody PrivacySettings payload,
+                                                         Authentication authentication) {
+        return ResponseEntity.ok(privacy.update(authentication.getName(), payload));
     }
 
     /** Zmiana hasla. */

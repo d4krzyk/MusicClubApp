@@ -30,14 +30,20 @@ public class FriendService {
 
     private final NotificationService notifications;
     private final PresenceService presence;
+    private final PrivacyService privacy;
+    private final BlockService blocks;
 
     public FriendService(UserRepository userRepository,
                          FriendRequestRepository requestRepository,
                          NotificationService notifications,
-                         PresenceService presence) {
+                         PresenceService presence,
+                         PrivacyService privacy,
+                         BlockService blocks) {
         this.userRepository = userRepository;
         this.requestRepository = requestRepository;
         this.notifications = notifications;
+        this.privacy = privacy;
+        this.blocks = blocks;
         this.presence = presence;
     }
 
@@ -65,6 +71,11 @@ public class FriendService {
             return true;
         }
 
+        // Jego ustawienia ("nikt", "znajomi znajomych") i blokady - jeden komunikat na wszystko
+        if (!privacy.canInvite(ja, on)) {
+            throw OperationNotAllowedException.cannotInvite();
+        }
+
         requestRepository.save(new FriendRequest(ja, on));
         notifications.friendRequestSent(on, ja);
         return false;
@@ -78,6 +89,9 @@ public class FriendService {
         /* Kluczowe sprawdzenie: przyjac moze WYLACZNIE odbiorca. */
         if (!invitation.getRecipient().getUsername().equals(username)) {
             throw OperationNotAllowedException.someoneElsesInvitation();
+        }
+        if (blocks.eitherWay(invitation.getSender().getId(), invitation.getRecipient().getId())) {
+            throw OperationNotAllowedException.cannotInvite();
         }
 
         merge(invitation.getSender(), invitation.getRecipient(), invitation);
@@ -119,7 +133,9 @@ public class FriendService {
         // wygladalaby jak "ten uzytkownik nie ma znajomych"
         user(whose);
 
-        return userRepository.friendsRanked(whose, viewer, pageable)
+        // Osoby zablokowane przez ogladajacego i blokujace go - nie pokazujemy
+        List<Long> ukryci = blocks.hiddenForQuery(user(viewer).getId());
+        return userRepository.friendsRanked(whose, viewer, ukryci, pageable)
             .map(this::toCard);
     }
 
@@ -215,7 +231,8 @@ public class FriendService {
             row.getUsername(),
             avatarUrl(row.getAvatarFileName()),
             row.getSharedFriends(),
-            presence.of(row.getLastSeenAt()));
+            // Kto ukrywa swoja aktywnosc, jest dla innych po prostu "niedostepny"
+            row.getShowOnline() ? presence.of(row.getLastSeenAt()) : presence.hidden());
     }
 
     private FriendRequestResponse toResponse(FriendRequest invitation, User otherSide) {

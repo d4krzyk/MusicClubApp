@@ -14,6 +14,12 @@ public record PublicProfileResponse(
     /** W jakiej relacji jest z nim ogladajacy. */
     FriendshipStatus friendshipStatus,
     /** Czy jest teraz aktywny i kiedy byl ostatnio. */
-    PresenceResponse presence
+    PresenceResponse presence,
+    /** Ogladajacy zablokowal te osobe - profil pokazuje tylko "Odblokuj". */
+    boolean blockedByMe,
+    /** Profil tylko dla znajomych, a ogladajacy nim nie jest - bez szczegolow. */
+    boolean restricted,
+    /** Czy ogladajacy moze teraz wyslac zaproszenie (ustawienia tej osoby, blokady). */
+    boolean canInvite
 ) {
 }

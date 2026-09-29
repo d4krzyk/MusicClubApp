@@ -51,6 +51,7 @@ class EventCountryTest {
         }]},"page":{"size":200,"totalElements":1,"totalPages":1,"number":0}}
         """;
 
+    @Autowired private BlockService blocks;
     @Autowired private MusicEventRepository repository;
     @Autowired private EventParticipationRepository participationRepository;
     @Autowired private UserRepository userRepository;
@@ -96,7 +97,7 @@ class EventCountryTest {
 
     private EventService events(EventImportService importer) {
         EventParticipationService zapisy = new EventParticipationService(participationRepository, repository,
-            userRepository, importer, zegar);
+            userRepository, importer, zegar, blocks);
         return new EventService(repository, participationRepository, userRepository, importer,
             matchService, zapisy, performerTagService);
     }
