@@ -189,6 +189,41 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(odpowiedz);
     }
 
+    /**
+     * Haslo dobre, adres niepotwierdzony. 403, a nie 401: wiemy, kto to jest,
+     * tylko jeszcze go nie wpuszczamy. Kod pozwala frontendowi pokazac
+     * "wyslij link ponownie" zamiast zwyklego bledu.
+     */
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ResponseEntity<ErrorResponse> handleEmailNotVerified(
+            EmailNotVerifiedException ex, WebRequest request) {
+
+        logger.info("Logowanie przed potwierdzeniem adresu e-mail");
+
+        ErrorResponse odpowiedz = new ErrorResponse(
+            HttpStatus.FORBIDDEN.value(), translate("error.email.not.verified", ex.getMaskedEmail()));
+        odpowiedz.setCode(EmailNotVerifiedException.CODE);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(odpowiedz);
+    }
+
+    /** Za czesto - np. "wyslij link ponownie" klikniete kilka razy pod rzad. */
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public ResponseEntity<ErrorResponse> handleTooManyRequests(
+            TooManyRequestsException ex, WebRequest request) {
+
+        logger.warn(ex.getMessage());
+
+        long sekundy = Math.max(1, ex.getRetryAfterSeconds());
+        String komunikat = sekundy < 120
+            ? translate("error.too.many.seconds", sekundy)
+            : translate("error.too.many.minutes", (sekundy + 59) / 60);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header(HttpHeaders.RETRY_AFTER, String.valueOf(sekundy))
+            .body(new ErrorResponse(HttpStatus.TOO_MANY_REQUESTS.value(), komunikat));
+    }
+
     /** Siatka bezpieczenstwa na wszystko, czego nie przewidzielismy (wyklad 3, slajd 72). */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

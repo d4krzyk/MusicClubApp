@@ -72,7 +72,8 @@ public class SecurityConfig {
             /* Kto ma dostep do czego. Kolejnosc ma znaczenie - pierwsza pasujaca regula wygrywa. */
             .authorizeHttpRequests(auth -> auth
                 // rejestracja, logowanie i pobranie tokenu CSRF - dla wszystkich
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf").permitAll()
+                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/csrf",
+                    "/api/auth/verify-email", "/api/auth/resend-verification").permitAll()
                 /* Wgrane obrazki. */
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/uploads/**").permitAll()
 

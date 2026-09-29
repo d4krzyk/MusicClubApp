@@ -12,6 +12,15 @@ public record EventsInfoResponse(
     @Schema(description = "Czy serwer ma klucz Ticketmastera. Bez niego lista zawsze jest pusta")
     boolean configured,
 
+    @Schema(description = "Kraj wydarzen wybrany na koncie", example = "PL")
+    String country,
+
+    @Schema(description = "Kraje do wyboru - kody ISO; nazwy sklada frontend w jezyku uzytkownika")
+    List<String> countries,
+
+    @Schema(description = "Wydarzenia z wybranego kraju wlasnie sie pobieraja")
+    boolean importing,
+
     List<EventCityResponse> cities,
 
     @Schema(description = "Czy profil ma ulubionych artystow albo utwory - bez nich \"Dla ciebie\" jest puste")

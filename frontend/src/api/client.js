@@ -109,7 +109,7 @@ export function setRequestLanguage(language) {
 export function describeError(error, fallbackKey = 'errors.unknown') {
   // Serwer nie odpowiedzial w ogole - najczesciej backend jest wylaczony
   if (!error.response) {
-    return { message: i18n.t('errors.network'), fieldErrors: {} };
+    return { message: i18n.t('errors.network'), fieldErrors: {}, code: null };
   }
 
   const data = error.response.data;
@@ -127,7 +127,7 @@ export function describeError(error, fallbackKey = 'errors.unknown') {
 
   /* Termin konca kary DOKLADAMY TUTAJ, a nie bierzemy gotowego z serwera. */
   if (hasFieldErrors) {
-    return { message: null, fieldErrors };
+    return { message: null, fieldErrors, code: null };
   }
 
   // Komunikat z serwera jest juz przetlumaczony (wyslalismy Accept-Language);
@@ -140,7 +140,8 @@ export function describeError(error, fallbackKey = 'errors.unknown') {
     });
   }
 
-  return { message, fieldErrors };
+  /* Staly kod bledu (np. EMAIL_NOT_VERIFIED) - po nim, a nie po tresci, rozpoznajemy sytuacje. */
+  return { message, fieldErrors, code: data?.code ?? null };
 }
 
 export default client;

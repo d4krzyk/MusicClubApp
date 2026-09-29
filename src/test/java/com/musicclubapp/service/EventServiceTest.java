@@ -60,8 +60,8 @@ class EventServiceTest {
         TicketmasterClient ticketmaster =
             new TicketmasterClient("klucz", server.url() + "/discovery/v2", 2000);
         Clock zegar = Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC);
-        importer = new EventImportService(ticketmaster, repository, participationRepository,
-            performerTagService, transactionManager, zegar, 0, EventImportServiceTest.SZESC_GODZIN);
+        importer = WydarzeniaTestowe.importer(ticketmaster, repository, participationRepository,
+            performerTagService, userRepository, transactionManager, zegar);
         participations = new EventParticipationService(participationRepository, repository,
             userRepository, importer, zegar);
         events = new EventService(repository, participationRepository, userRepository, importer,

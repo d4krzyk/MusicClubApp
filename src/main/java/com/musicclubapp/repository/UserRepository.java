@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,25 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    /**
+     * "Jan@Example.com" i "jan@example.com" to w praktyce ta sama skrzynka -
+     * inaczej jeden adres dalby sie zarejestrowac kilka razy.
+     */
+    boolean existsByEmailIgnoreCase(String email);
+
+    /** Konta, ktore nie potwierdzily adresu od podanej chwili - do sprzatania. */
+    @Query("SELECT u FROM User u WHERE u.emailVerifiedAt IS NULL AND u.createdAt < :before")
+    List<User> unverifiedCreatedBefore(@Param("before") LocalDateTime before);
+
+    /**
+     * Gdy serwer nie wysyla poczty, nikt nie ma jak potwierdzic adresu - wiec
+     * wszyscy licza sie jako potwierdzeni od chwili zalozenia konta. Po
+     * wlaczeniu poczty potwierdzac musza tylko nowi.
+     */
+    @Modifying
+    @Query("UPDATE User u SET u.emailVerifiedAt = u.createdAt WHERE u.emailVerifiedAt IS NULL")
+    int verifyAllUnverified();
 
     /** Czy istnieje juz ktos z podana rola - uzywane przy zakladaniu konta administratora. */
     boolean existsByRole(Role role);
@@ -161,6 +181,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
            WHERE u.username = :username
            """)
     List<String> genreTagsOfFavorites(@Param("username") String username);
+
+    /** Kraje wydarzen wybrane na kontach - od najczesciej wybieranego. Do importu. */
+    @Query("""
+           SELECT u.eventsCountry FROM User u
+           WHERE u.eventsCountry IS NOT NULL
+           GROUP BY u.eventsCountry
+           ORDER BY COUNT(u) DESC
+           """)
+    List<String> eventCountriesInUse();
 
     /** Identyfikatory znajomych - do licznikow "ilu znajomych idzie". */
     @Query("SELECT f.id FROM User u JOIN u.friends f WHERE u.username = :username")

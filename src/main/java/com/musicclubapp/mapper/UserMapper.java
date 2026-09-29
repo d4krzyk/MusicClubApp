@@ -20,7 +20,9 @@ public class UserMapper {
             user.getAvatarFileName() == null
                 ? null
                 : PostMapper.UPLOADS_PATH + user.getAvatarFileName(),
-            user.getCreatedAt());
+            user.getCreatedAt(),
+            user.isEmailVerified(),
+            user.getPendingEmail());
     }
 
     /** Encja -&gt; DTO dla administratora. */

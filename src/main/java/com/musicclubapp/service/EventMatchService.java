@@ -135,10 +135,11 @@ public class EventMatchService {
      * @param friendCounts ilu znajomych zapisalo sie na kazde wydarzenie
      */
     @Transactional(readOnly = true)
-    public List<Ranked> rank(Taste taste, LocalDate today, String cityKey, String phrase,
+    public List<Ranked> rank(Taste taste, LocalDate today, String country, String cityKey, String phrase,
                              Map<Long, Long> friendCounts) {
-        List<EventFeatureRow> features = eventRepository.upcomingFeatures(today);
-        Map<Long, List<String>> performers = performersByEvent(eventRepository.upcomingPerformers(today));
+        List<EventFeatureRow> features = eventRepository.upcomingFeatures(today, country);
+        Map<Long, List<String>> performers =
+            performersByEvent(eventRepository.upcomingPerformers(today, country));
         Map<String, Set<String>> tags = performerTags.tagsOf(allKeys(performers.values()));
         String szukane = phrase == null ? "" : phrase.strip().toLowerCase(Locale.ROOT);
 

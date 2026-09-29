@@ -14,7 +14,8 @@ postawionym na serwerze, tak żeby każdy mógł ją pobrać i się połączyć.
 
 Zrobione: responsywność na telefonie, PWA, logo i napis MusicClub, krój Poppins,
 konfiguracja produkcyjna z HTTPS i migracjami (`docs/WDROZENIE.md`),
-zakładka Wydarzenia — etap 1 (niżej).
+zakładka Wydarzenia — etapy 1–2 i wybór kraju (niżej), potwierdzanie adresu
+e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów.
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -57,6 +58,20 @@ Dwie kolejne z zakładki Wydarzenia:
   staje się anonimowym elementem flex i jest ucinany w pół słowa bez
   wielokropka. Tekst trzeba włożyć we własny `span` z obcięciem (sprawdzać:
   `scrollWidth > clientWidth` i `textOverflow` na tym spanie).
+- **Nagłówki `X-Forwarded-*` od klienta.** Link w wiadomości buduje się
+  z adresu zapytania, a nginx domyślnie przepuszczał `X-Forwarded-Host`,
+  `Forwarded` i `X-Forwarded-Prefix` od klienta. Podrobione zapytanie przez
+  prawdziwy nginx dało link `http://zly2.example/zly/potwierdz-email?token=…`.
+  Teraz nginx je nadpisuje/czyści — sprawdzać tą samą próbą, nie na oko.
+- **Actuator sam dokłada sprawdzanie SMTP** do `/actuator/health`, gdy jest
+  starter poczty. Przy pustym `MAIL_HOST` zdrowie wychodziłoby DOWN i Docker
+  restartowałby zdrowy backend — stąd `management.health.mail.enabled=false`.
+- **Apostrof w komunikatach z argumentami.** Gdy do `messages*.properties`
+  idą argumenty (`{0}`), tekst przechodzi przez `MessageFormat` i pojedynczy
+  `'` znika („Weve”). Tam pisze się `''`.
+- **Wiadomość wychodzi po zatwierdzeniu transakcji.** Test z `@Transactional`
+  na klasie nigdy jej nie zobaczy — `EmailVerificationFlowTest` jest bez niego
+  i sprząta konta sam.
 - **Zegar testowy a północ w Polsce.** Testy importu stoją na 28.09 10:00 UTC;
   +12 h to już 29.09 w Warszawie, więc „dziś" się przesuwa i udawany
   Ticketmaster przestaje odpowiadać. Przesunięcia w testach — w obrębie dnia.
@@ -85,6 +100,10 @@ Opisana w `docs/WDROZENIE.md`. W skrócie:
   wdrożeniu — wtedy potrzebny będzie magazyn obiektowy.
 - Manifest PWA ma `background_color` i `theme_color` tylko jasne, więc ekran
   startowy jest biały także w ciemnym motywie.
+- Poczta (opcjonalna, ale bez niej nikt nie potwierdza adresu): `MAIL_HOST`,
+  `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` i przy własnej domenie
+  `APP_PUBLIC_URL`. Gmail z hasłem aplikacji albo Brevo — `docs/WDROZENIE.md`.
+  `MAIL_HOST` bez poprawnego nadawcy = backend nie wstaje (celowo).
 
 ## Wydarzenia
 
@@ -119,6 +138,13 @@ lista uczestników i trzy widoki listy — **Dla ciebie**, Najbliższe, Moje.
   strona to wyjaśnia. Wraca, gdy Ticketmaster znów je pokaże. Po 30 dniach od
   daty znika razem z zapisami.
 
+Wybór kraju (migracja V4): 19 krajów, zapisany na koncie
+(`users.events_country`, pusty = PL). Import obejmuje Polskę i każdy wybrany
+kraj; nowo wybrany pobiera się od razu w tle (`requestCountry`), a lista pokazuje
+„Pobieramy” i sama się odświeża. Najwyżej 60 zapytań na kraj w przebiegu;
+znikanie wydarzeń tylko w pokrytym zakresie dat. Co kwadrans odświeżają się
+tylko kraje starsze niż 6 h.
+
 Na telefonie (< 576 px) ikony administratora przechodzą do menu konta, a licznik
 zgłoszeń na awatar — z ikoną Wydarzeń pasek administratora wychodził poza
 ekran o 41 px przy 360 px. Teraz mieści się od 320 px w górę (zmierzone).
@@ -127,6 +153,31 @@ Zostało:
 4. Przypomnienie w dzwonku kilka dni przed wydarzeniem (dla zainteresowanych
    i idących).
 5. Opcjonalnie Web Push na telefon.
+
+## Poczta i potwierdzanie adresów
+
+Z `MAIL_HOST` nowe konto dostaje wiadomość z linkiem (`/potwierdz-email?token=`)
+i nie zaloguje się bez kliknięcia — odmowa dopiero **po** sprawdzeniu hasła
+(403, kod `EMAIL_NOT_VERIFIED`, zamaskowany adres). Bez `MAIL_HOST` poczta jest
+wyłączona i wszyscy są potwierdzeni (także przy starcie serwera — konta
+z czasów bez poczty nie są blokowane po jej włączeniu; migracja V4 robi to
+samo na produkcji).
+
+- Token: 32 losowe bajty, w bazie SHA-256 (`email_tokens`), 24 h, jednorazowy,
+  potwierdza konkretny adres (po zmianie adresu stary link nic nie robi).
+- Strona potwierdzenia wysyła POST — samo otwarcie linku przez skaner poczty
+  niczego nie potwierdza. Nie loguje (link bywa otwierany na innym urządzeniu).
+- Limity: minuta odstępu i 5 na dobę na konto, 20 na godzinę z IP.
+  Ponowna wysyłka przed zalogowaniem wymaga loginu i hasła; można przy niej
+  poprawić literówkę w adresie.
+- Niepotwierdzone konto znika po 7 dniach (`UnverifiedAccountCleanup`).
+- Zmiana adresu w ustawieniach: `pending_email`, stary obowiązuje do kliknięcia;
+  „wyślij ponownie” i „zostaw stary adres”.
+- Adresy zapisywane małymi literami, unikalność bez wielkości liter; skrzynki
+  jednorazowe odrzucane (`mail/disposable-domains.txt`).
+- Szablon `mail/potwierdzenie.html` (tabele, style w elementach, logo jako
+  `cid:napis` — biały napis z `NapisMC` wyrenderowany do PNG 630×119) plus
+  wersja tekstowa; teksty w `messages*.properties` (`mail.*`).
 
 ## Wybory, do których nie wracamy
 

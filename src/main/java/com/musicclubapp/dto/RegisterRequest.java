@@ -3,6 +3,7 @@ package com.musicclubapp.dto;
 import com.musicclubapp.validation.PasswordsToCompare;
 import com.musicclubapp.validation.PasswordsMatch;
 import com.musicclubapp.validation.UniqueUsername;
+import com.musicclubapp.validation.NotDisposableEmail;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -21,6 +22,7 @@ public record RegisterRequest(
     @NotBlank(message = "{validation.email.notblank}")
     @Email(message = "{validation.email.invalid}")
     @Size(max = 255, message = "{validation.email.size}")
+    @NotDisposableEmail
     String email,
 
     /* Minimum 8 znakow to rozsadne minimum. */

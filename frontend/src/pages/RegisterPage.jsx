@@ -8,6 +8,7 @@ import Alert from 'react-bootstrap/Alert';
 import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
 import Field from '../components/Field';
+import SprawdzSkrzynke from '../components/SprawdzSkrzynke';
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -25,6 +26,9 @@ export default function RegisterPage() {
   const [generalError, setGeneralError] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
 
+  /* Adres, na ktory poszedl link - gdy serwer wymaga potwierdzenia. */
+  const [wyslanoNa, setWyslanoNa] = useState(null);
+
   function ustaw(field, value) {
     setData((previous) => ({ ...previous, [field]: value }));
   }
@@ -36,9 +40,16 @@ export default function RegisterPage() {
     setWysylanie(true);
 
     try {
-      await register(data);
+      const konto = await register(data);
 
-      /* Rejestracja nie loguje automatycznie - backend tylko zaklada konto. */
+      /*
+       * Serwer z poczta czeka na klikniecie w link - zostajemy tu i mowimy,
+       * gdzie go szukac. Bez poczty konto jest od razu gotowe: na logowanie.
+       */
+      if (konto.emailVerified === false) {
+        setWyslanoNa(konto.email);
+        return;
+      }
       navigate('/login', { replace: true, state: { registered: true } });
     } catch (error) {
       /* Backend zwraca bledy per pole (422) - podswietlamy konkretne inputy. */
@@ -48,6 +59,21 @@ export default function RegisterPage() {
     } finally {
       setWysylanie(false);
     }
+  }
+
+  if (wyslanoNa) {
+    return (
+      <Card className="mx-auto" style={{ maxWidth: 420 }}>
+        <Card.Body className="p-4">
+          <SprawdzSkrzynke
+            username={data.username}
+            password={data.password}
+            email={wyslanoNa}
+            swiezo
+          />
+        </Card.Body>
+      </Card>
+    );
   }
 
   return (

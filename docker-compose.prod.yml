@@ -104,6 +104,17 @@ services:
       LASTFM_API_KEY: ${LASTFM_API_KEY:-}
       TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
       SWAGGER_ENABLED: ${SWAGGER_ENABLED:-false}
+
+      # Poczta i potwierdzanie adresow (docs/WDROZENIE.md, krok "Poczta").
+      # Bez MAIL_HOST nikt nie potwierdza adresu - konta dzialaja od razu.
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # Adres strony w linkach z wiadomosci, np. https://musicclub.twojadomena.pl.
+      # Pusty = adres, pod ktorym przyszlo zapytanie (dobre przy tunelu z losowym adresem).
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
     volumes:
       - musicclub-uploads:/app/uploads
     # Tez bez "ports". Backend jest osiagalny wylacznie przez nginx, ktory

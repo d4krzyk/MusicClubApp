@@ -1,4 +1,6 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Fragment, useCallback, useEffect, useMemo, useRef, useState,
+} from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
@@ -45,6 +47,9 @@ function zapamietajMiasto(klucz) {
     // jw.
   }
 }
+
+/** Co tyle milisekund pytamy, czy import nowo wybranego kraju juz sie skonczyl. */
+const SPRAWDZ_IMPORT_CO = 4000;
 
 /** Pod tym kluczem - ostatnio wybrany widok. */
 const PAMIEC_WIDOKU = 'wydarzenia.widok';
@@ -103,6 +108,13 @@ export default function EventsPage() {
   const [ladowanie, setLadowanie] = useState(true);
   const [doladowanie, setDoladowanie] = useState(false);
   const [blad, setBlad] = useState(null);
+  const [zmianaKraju, setZmianaKraju] = useState(false);
+
+  /*
+   * Zwiekszany, gdy lista trzeba wczytac od nowa, choc filtry sie nie zmienily:
+   * po zmianie kraju (miasto moglo juz byc puste) i po koncu importu.
+   */
+  const [odswiezenie, setOdswiezenie] = useState(0);
 
   /*
    * Numer ostatniego zapytania. Przy szybkim przelaczaniu miast odpowiedz
@@ -149,11 +161,35 @@ export default function EventsPage() {
         setDoladowanie(false);
       }
     }
-  }, [widok, miasto, fraza]);
+    // odswiezenie nie jest uzyte w srodku - jego zmiana ma tylko wczytac liste od nowa
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [widok, miasto, fraza, odswiezenie]);
 
   useEffect(() => {
     wczytaj(0);
   }, [wczytaj]);
+
+  /*
+   * Kraj wybrany przed chwila pobiera sie w tle. Co kilka sekund pytamy,
+   * czy juz jest - i wtedy wczytujemy liste od nowa, bez klikania.
+   */
+  const importuje = Boolean(info?.importing);
+  useEffect(() => {
+    if (!importuje) {
+      return undefined;
+    }
+    const zegar = setInterval(() => {
+      wydarzenia.info()
+        .then((nowe) => {
+          setInfo(nowe);
+          if (!nowe.importing) {
+            setOdswiezenie((n) => n + 1);
+          }
+        })
+        .catch(() => {});
+    }, SPRAWDZ_IMPORT_CO);
+    return () => clearInterval(zegar);
+  }, [importuje]);
 
   /*
    * Fraza zmieniona z zewnatrz (np. "wstecz" w przegladarce) wraca do pola.
@@ -207,6 +243,44 @@ export default function EventsPage() {
     nowe.set('miasto', klucz);
     setParametry(nowe, { replace: true });
   }
+
+  /*
+   * Kraj zapisuje sie na koncie, a nie w adresie strony: od niego zalezy tez,
+   * co serwer pobiera z Ticketmastera. Miasta sa z innego kraju, wiec wybor
+   * miasta wraca do "wszystkich".
+   */
+  async function wybierzKraj(kod) {
+    setZmianaKraju(true);
+    setBlad(null);
+    try {
+      const nowe = await wydarzenia.zmienKraj(kod);
+      setInfo(nowe);
+      zapamietajMiasto('');
+      const p = new URLSearchParams(parametry);
+      p.set('miasto', '');
+      setParametry(p, { replace: true });
+      setOdswiezenie((n) => n + 1);
+    } catch (problem) {
+      setBlad(describeError(problem).message);
+    } finally {
+      setZmianaKraju(false);
+    }
+  }
+
+  /* Nazwy krajow w jezyku aplikacji, alfabetycznie - "Niemcy" po polsku, "Germany" po angielsku. */
+  const kraje = useMemo(() => {
+    let nazwy = null;
+    try {
+      nazwy = new Intl.DisplayNames([i18n.language], { type: 'region' });
+    } catch {
+      // bardzo stara przegladarka - zostaja kody krajow
+    }
+    return (info?.countries ?? [])
+      .map((kod) => ({ kod, nazwa: nazwy?.of(kod) ?? kod }))
+      .sort((a, b) => a.nazwa.localeCompare(b.nazwa, i18n.language));
+  }, [info?.countries, i18n.language]);
+  const kraj = info?.country ?? '';
+  const nazwaKraju = kraje.find((k) => k.kod === kraj)?.nazwa ?? kraj;
 
   const miasta = info?.cities ?? [];
   const wlaczone = info?.configured !== false;
@@ -277,6 +351,20 @@ export default function EventsPage() {
           </div>
 
           <Form.Select
+            value={kraj}
+            onChange={(e) => wybierzKraj(e.target.value)}
+            aria-label={t('events.countryLabel')}
+            title={t('events.countryLabel')}
+            className="wydarzenia-kraj"
+            disabled={!info || kraje.length === 0 || zmianaKraju}
+          >
+            {kraje.length === 0 && <option value="">{t('events.countryLabel')}</option>}
+            {kraje.map((k) => (
+              <option key={k.kod} value={k.kod}>{k.nazwa}</option>
+            ))}
+          </Form.Select>
+
+          <Form.Select
             value={miasto}
             onChange={(e) => wybierzMiasto(e.target.value)}
             aria-label={t('events.cityLabel')}
@@ -324,6 +412,17 @@ export default function EventsPage() {
             title={t('events.mineEmptyTitle')}
             text={t('events.mineEmptyText')}
           />
+        ) : importuje ? (
+          <EmptyState
+            icon={IconCalendar}
+            title={t('events.importingTitle', { country: nazwaKraju })}
+            text={t('events.importingText')}
+            action={(
+              <Spinner animation="border" size="sm" role="status">
+                <span className="visually-hidden">{t('common.loading')}</span>
+              </Spinner>
+            )}
+          />
         ) : dlaCiebie && info && !info.hasTaste ? (
           <EmptyState
             icon={IconNote}
@@ -347,6 +446,12 @@ export default function EventsPage() {
             icon={IconSearch}
             title={t('events.emptyTitle')}
             text={t('events.emptyText')}
+          />
+        ) : kraj && kraj !== 'PL' ? (
+          <EmptyState
+            icon={IconCalendar}
+            title={t('events.countryEmptyTitle', { country: nazwaKraju })}
+            text={t('events.countryEmptyText')}
           />
         ) : (
           <EmptyState

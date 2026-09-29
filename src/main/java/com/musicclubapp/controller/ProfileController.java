@@ -5,6 +5,7 @@ import com.musicclubapp.dto.ConfirmPasswordRequest;
 import com.musicclubapp.dto.UpdateProfileRequest;
 import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.service.AccountDeletionService;
+import com.musicclubapp.service.EmailVerificationService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,15 +46,18 @@ public class ProfileController {
     private final AccountDeletionService deletion;
     private final UserDetailsService userDetailsService;
     private final SecurityContextRepository securityContextRepository;
+    private final EmailVerificationService emailVerification;
 
     public ProfileController(UserService userService,
                              AccountDeletionService deletion,
                              UserDetailsService userDetailsService,
-                             SecurityContextRepository securityContextRepository) {
+                             SecurityContextRepository securityContextRepository,
+                             EmailVerificationService emailVerification) {
         this.userService = userService;
         this.deletion = deletion;
         this.userDetailsService = userDetailsService;
         this.securityContextRepository = securityContextRepository;
+        this.emailVerification = emailVerification;
     }
 
     /** Zmiana loginu i adresu e-mail. */
@@ -76,6 +81,27 @@ public class ProfileController {
         }
 
         return ResponseEntity.ok(updated);
+    }
+
+    /** Link na nowy adres jeszcze raz - gdy pierwsza wiadomosc nie doszla. */
+    @PostMapping("/email/resend")
+    @Operation(summary = "Wysyla ponownie link potwierdzajacy nowy adres e-mail")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Wyslano"),
+        @ApiResponse(responseCode = "409", description = "Nie ma zmiany adresu do potwierdzenia"),
+        @ApiResponse(responseCode = "429", description = "Za czesto")
+    })
+    public ResponseEntity<UserResponse> resendEmailChange(Authentication authentication) {
+        emailVerification.resendChange(authentication.getName());
+        return ResponseEntity.ok(userService.getByUsername(authentication.getName()));
+    }
+
+    /** Rezygnacja ze zmiany adresu - zostaje dotychczasowy. */
+    @DeleteMapping("/email/pending")
+    @Operation(summary = "Anuluje zmiane adresu e-mail czekajaca na potwierdzenie")
+    public ResponseEntity<UserResponse> cancelEmailChange(Authentication authentication) {
+        emailVerification.cancelChange(authentication.getName());
+        return ResponseEntity.ok(userService.getByUsername(authentication.getName()));
     }
 
     /** Zmiana hasla. */

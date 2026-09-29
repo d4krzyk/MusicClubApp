@@ -20,6 +20,32 @@ export async function zarejestruj(dane) {
   return data;
 }
 
+/** Link z wiadomosci. Oddaje { result: VERIFIED | CHANGED, username, email }. */
+export async function potwierdzEmail(token) {
+  const { data } = await client.post('/auth/verify-email', { token });
+  return data;
+}
+
+/**
+ * Link jeszcze raz - przed pierwszym zalogowaniem, wiec z loginem i haslem.
+ * Z adresem, gdy trzeba poprawic literowke z rejestracji.
+ */
+export async function wyslijLinkPonownie(username, password, email) {
+  await client.post('/auth/resend-verification', { username, password, ...(email ? { email } : {}) });
+}
+
+/** Zmiana adresu w ustawieniach: link na nowy adres jeszcze raz. Oddaje konto. */
+export async function wyslijZmianeEmailaPonownie() {
+  const { data } = await client.post('/profile/email/resend');
+  return data;
+}
+
+/** Rezygnacja ze zmiany adresu. Oddaje konto - ze starym adresem. */
+export async function anulujZmianeEmaila() {
+  const { data } = await client.delete('/profile/email/pending');
+  return data;
+}
+
 export async function wyloguj() {
   await client.post('/auth/logout');
 }

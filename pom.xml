@@ -70,6 +70,16 @@
             reszta endpointow Actuatora pokazuje szczegoly konfiguracji
             i nie ma po co byc dostepna.
         -->
+        <!--
+            Wysylka poczty: potwierdzenie adresu e-mail przy zakladaniu konta.
+            Serwer SMTP podaje sie w zmiennych MAIL_* - bez nich potwierdzanie
+            jest wylaczone, a aplikacja dziala jak dotad.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>

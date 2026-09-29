@@ -223,6 +223,99 @@ Pomaga wtedy wpis w usłudze `backend` w `docker-compose.prod.yml`:
 openssl rand -base64 48
 ```
 
+#### Kraje
+
+Każdy może w zakładce wybrać kraj (19 krajów: Europa, USA, Kanada). Wybór
+jest zapisany na koncie. Serwer importuje Polskę i każdy kraj, który ktoś
+wybrał — kraj wybrany po raz pierwszy pobiera się od razu w tle, a lista
+przez ten czas pokazuje „Pobieramy wydarzenia”.
+
+Żeby duże kraje (USA, Niemcy) nie zjadły dziennego limitu 5000 zapytań,
+na jeden kraj w jednym przebiegu przypada najwyżej 60 zapytań
+(`app.events.import.max-requests-per-country`). Gdy limit się skończy,
+import kończy na tym, co zdążył pobrać — a z bazy znika tylko to, czego
+nie było w **pokrytym** zakresie dat; dalsze miesiące zostają bez zmian.
+
+### Poczta i potwierdzanie adresów e-mail
+
+Z pocztą każde nowe konto dostaje wiadomość z linkiem i **nie zaloguje
+się, dopóki go nie kliknie**. To chroni przed kontami na zmyślone adresy.
+Bez `MAIL_HOST` poczta jest wyłączona, a konta działają od razu —
+aplikacja jest w pełni używalna bez tego kroku.
+
+Zasady:
+
+- link działa 24 godziny i raz; w bazie leży tylko jego skrót SHA-256;
+- ponowna wysyłka najwcześniej po minucie, najwyżej 5 na dobę na konto
+  i 20 na godzinę z jednego adresu IP (żeby nie dało się nami zasypywać
+  cudzych skrzynek);
+- niepotwierdzone konto znika po 7 dniach — inaczej ktoś, kto zarejestrował
+  cudzy adres, zablokowałby go właścicielowi na zawsze;
+- zmiana adresu w ustawieniach też idzie przez link, a do kliknięcia
+  obowiązuje stary adres;
+- skrzynki jednorazowe (mailinator, 10minutemail, yopmail…) są odrzucane
+  (`src/main/resources/mail/disposable-domains.txt`);
+- **konta założone przed włączeniem poczty nie muszą niczego potwierdzać**
+  (migracja V4 i sam serwer przy starcie bez poczty uznają je za
+  potwierdzone).
+
+#### Skąd wysyłać
+
+**Gmail** — najprościej na start, do ok. 500 wiadomości dziennie:
+
+1. Na koncie Google włącz weryfikację dwuetapową.
+2. Konto Google → Bezpieczeństwo → *Hasła aplikacji* → utwórz hasło
+   (16 znaków). To nie jest hasło do Gmaila i tylko ono tu zadziała.
+3. W `.env`:
+   ```
+   MAIL_HOST=smtp.gmail.com
+   MAIL_PORT=587
+   MAIL_USERNAME=twoj.adres@gmail.com
+   MAIL_PASSWORD=<haslo aplikacji>
+   MAIL_FROM=MusicClub <twoj.adres@gmail.com>
+   ```
+
+**Brevo** (dawniej Sendinblue) — darmowo 300 wiadomości dziennie, lepiej
+wygląda przy własnej domenie. W panelu: *SMTP & API* → login i klucz SMTP
+(`MAIL_HOST=smtp-relay.brevo.com`, `MAIL_USERNAME` = login SMTP z panelu,
+`MAIL_PASSWORD` = klucz SMTP). Adres nadawcy w `MAIL_FROM` musi być
+zweryfikowany w Brevo. Z własną domeną dopisz w DNS rekordy SPF i DKIM
+z panelu — bez nich wiadomości częściej lądują w spamie.
+
+Gdy login SMTP nie jest adresem (np. SendGrid używa loginu `apikey`),
+`MAIL_FROM` jest obowiązkowe. Bez poprawnego nadawcy backend **nie
+wystartuje** i powie dlaczego — celowo: inaczej każda wiadomość ginęłaby
+po cichu, a ludzie czekaliby na nie w nieskończoność.
+
+#### Adres w linku
+
+```
+APP_PUBLIC_URL=https://musicclub.twojadomena.pl
+```
+
+Przy własnej domenie ustaw zawsze. Przy tunelu z losowym adresem zostaw
+puste — wtedy serwer bierze adres, pod którym przyszło zapytanie.
+
+Tu jest pułapka, którą zmierzyliśmy. Spring za pośrednikiem wierzy
+nagłówkom `X-Forwarded-Host`, `Forwarded` i `X-Forwarded-Prefix`, a nginx
+domyślnie przepuszcza je od klienta bez zmian. Zapytanie rejestracyjne
+z podrobionymi nagłówkami dawało w wiadomości link
+`http://zly2.example/zly/potwierdz-email?token=…` — właściciel skrzynki
+klikałby w prawdziwy token na obcej stronie. Dlatego `nginx.conf` teraz
+ustawia `X-Forwarded-Host` na `$host`, a pozostałe czyści; ta sama próba
+daje `https://musicclub.example.com/potwierdz-email`.
+
+#### Gdy wiadomości nie dochodzą
+
+```bash
+docker compose -f docker-compose.prod.yml logs backend | grep Poczta
+```
+
+`Poczta: wyslano ...` — serwer SMTP przyjął wiadomość; szukaj jej w spamie.
+`nie udalo sie wyslac ... Authentication failed` — złe `MAIL_USERNAME`
+albo `MAIL_PASSWORD` (przy Gmailu: zwykłe hasło zamiast hasła aplikacji).
+Adresy odbiorców w logu są zamaskowane (`j***i@gmail.com`).
+
 ---
 
 ## Gdy backend nie wstaje
@@ -299,9 +392,29 @@ Przy zapisach i widoku „Dla ciebie" (wrzesień 2026):
   pusty profil; 320–390 px, jasny i ciemny motyw;
 - `mvnw clean test` → 449 testów.
 
+Przy krajach, potwierdzaniu adresów i uzupełnianiu gatunków (wrzesień 2026):
+
+- migracja V4 na **pustej** bazie, na bazie **po V3 z danymi** (stare
+  wydarzenie dostało kraj `PL`, stare konto — potwierdzenie) i po V2;
+  schemat po migracjach zgadza się blok po bloku z tym, co buduje Hibernate;
+- cała droga poczty na udawanym serwerze SMTP: rejestracja → wiadomość
+  (HTML, wersja tekstowa, logo w środku) → logowanie odrzucone → ponowna
+  wysyłka z limitem → link → logowanie; drugi raz ten sam link; zmiana
+  adresu w ustawieniach; skrzynka jednorazowa;
+- podrobione nagłówki przez prawdziwy nginx (wyżej, „Adres w linku”);
+- `/actuator/health` = UP z pocztą i bez (Actuator sam dokładał sprawdzanie
+  SMTP — przy pustym `MAIL_HOST` zdrowie wychodziłoby DOWN);
+- wybór kraju w Chromium: import w tle, lista odświeżana sama, 320–1280 px;
+- `mvnw clean test` → 474 testy; klasy wydarzeń, krajów, poczty i usuwania
+  kont także na PostgreSQL 16.
+
 **Nie sprawdzone stąd:** prawdziwy Ticketmaster. To środowisko nie miało
 klucza. Format odpowiedzi i liczbę koncertów (801 w Polsce) potwierdziło
 zapytanie z laptopa.
+
+**Nie sprawdzone stąd:** prawdziwa skrzynka Gmail/Brevo i to, jak
+wiadomość wygląda w Gmailu i Outlooku — sprawdzony był wygląd
+w przeglądarce (jasny, ciemny, 375 px) i budowa wiadomości.
 
 **Nie sprawdzone**, bo w środowisku, w którym to powstawało, nie ma
 Dockera: pełne `docker compose -f docker-compose.prod.yml up`. Obrazy

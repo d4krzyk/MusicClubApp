@@ -27,6 +27,12 @@ export async function info() {
   return data;
 }
 
+/** Kraj, z ktorego chce widziec wydarzenia. Zwraca nowe info() - z miastami tego kraju. */
+export async function zmienKraj(kraj) {
+  const { data } = await client.put('/events/country', { country: kraj });
+  return data;
+}
+
 export async function jedno(id) {
   const { data } = await client.get(`/events/${id}`);
   return data;

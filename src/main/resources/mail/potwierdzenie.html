@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!--
+  Wiadomosc z linkiem potwierdzajacym adres e-mail.
+
+  Pisana tak, jak wymagaja programy pocztowe, a nie przegladarki: uklad na
+  tabelach, style wpisane w kazdy element (Gmail wycina czesc <style>),
+  obrazki dolaczone do wiadomosci (cid:), bo zewnetrzne wiele programow
+  blokuje do czasu klikniecia "pokaz obrazy". Gradient ma pod spodem zwykly
+  kolor - Outlook na Windowsie gradientow nie rysuje i pokaze wlasnie jego.
+
+  {{...}} wypelnia VerificationMails - kazda wartosc juz zamieniona na
+  bezpieczny HTML.
+-->
+<html lang="{{lang}}" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{{subject}}</title>
+<style>
+  body { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
+  a { color: #9333ea; }
+  @media (max-width: 600px) {
+    .karta, .stopka { width: 100% !important; }
+    .srodek { padding: 30px 22px 24px !important; }
+    .naglowek { padding: 28px 20px 24px !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    body, .tlo { background: #110e1a !important; }
+    .karta, .srodek { background: #1c1728 !important; }
+    .tekst { color: #eeeaf7 !important; }
+    .cichy { color: #a9a3bd !important; }
+    .ramka { background: #241d33 !important; border-color: #342b48 !important; }
+    .link { color: #d8b4fe !important; }
+  }
+</style>
+</head>
+<body style="margin:0;padding:0;background:#f5f3fb;">
+<!-- Podglad w skrzynce odbiorczej - linijka obok tematu. Znaki na koncu odsuwaja reszte tresci. -->
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">{{preheader}}&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;&#8199;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="tlo" style="background:#f5f3fb;">
+  <tr>
+    <td align="center" style="padding:32px 12px 36px;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" class="karta"
+             style="width:560px;max-width:560px;background:#ffffff;border-radius:22px;overflow:hidden;box-shadow:0 10px 34px rgba(76,29,149,0.14);">
+        <tr>
+          <td align="center" bgcolor="#a21caf" class="naglowek"
+              style="background-color:#a21caf;background-image:linear-gradient(135deg,#6d3bd6 0%,#c026d3 55%,#f43f8e 100%);padding:34px 24px 30px;">
+            <img src="cid:napis" width="210" height="{{napisWysokosc}}" alt="MusicClub"
+                 style="display:block;border:0;outline:none;text-decoration:none;width:210px;height:auto;color:#ffffff;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:28px;font-weight:700;">
+          </td>
+        </tr>
+        <tr>
+          <td class="srodek" style="padding:38px 44px 30px;background:#ffffff;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;">
+            <h1 class="tekst" style="margin:0 0 18px;font-size:24px;line-height:1.3;font-weight:700;color:#1f1b2e;">{{heading}}</h1>
+            <p class="tekst" style="margin:0 0 10px;font-size:16px;line-height:1.6;color:#1f1b2e;">{{greeting}}</p>
+            <p class="tekst" style="margin:0 0 30px;font-size:16px;line-height:1.6;color:#1f1b2e;">{{intro}}</p>
+
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto 30px;">
+              <tr>
+                <td align="center" bgcolor="#a21caf"
+                    style="border-radius:999px;background-color:#a21caf;background-image:linear-gradient(135deg,#6d3bd6 0%,#c026d3 55%,#f43f8e 100%);box-shadow:0 6px 18px rgba(192,38,211,0.35);">
+                  <a href="{{link}}" target="_blank"
+                     style="display:inline-block;padding:15px 36px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:20px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;">{{button}}</a>
+                </td>
+              </tr>
+            </table>
+
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="ramka"
+                   style="background:#f7f5fc;border:1px solid #ece8f6;border-radius:14px;">
+              <tr>
+                <td style="padding:14px 18px;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;">
+                  <p class="cichy" style="margin:0 0 6px;font-size:13px;line-height:1.5;color:#6b6780;">{{fallback}}</p>
+                  <p style="margin:0;font-size:13px;line-height:1.5;word-break:break-all;"><a href="{{link}}" target="_blank" class="link" style="color:#9333ea;text-decoration:underline;">{{link}}</a></p>
+                </td>
+              </tr>
+            </table>
+
+            <p class="cichy" style="margin:22px 0 0;font-size:13px;line-height:1.6;color:#6b6780;">{{validity}}</p>
+            <p class="cichy" style="margin:6px 0 0;font-size:13px;line-height:1.6;color:#6b6780;">{{ignore}}</p>
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" class="stopka" style="width:560px;max-width:560px;">
+        <tr>
+          <td align="center" class="cichy"
+              style="padding:22px 24px 0;font-family:Poppins,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.7;color:#8a86a0;">
+            <strong>MusicClub</strong> &middot; {{tagline}}<br>{{auto}}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

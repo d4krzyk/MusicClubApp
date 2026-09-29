@@ -102,6 +102,36 @@ public class OperationNotAllowedException extends RuntimeException {
             "Wydarzenia nie ma juz w Ticketmasterze", "error.event.withdrawn");
     }
 
+    /** Kraj, z ktorego wydarzen nie pobieramy. */
+    public static OperationNotAllowedException eventCountry() {
+        return new OperationNotAllowedException(
+            "Z tego kraju nie pobieramy wydarzen", "error.event.country");
+    }
+
+    /** Link z wiadomosci jest zly, zuzyty albo przeterminowany. */
+    public static OperationNotAllowedException emailTokenInvalid() {
+        return new OperationNotAllowedException(
+            "Link potwierdzajacy jest niewazny", "error.email.token.invalid");
+    }
+
+    /** Potwierdzany adres zajal w miedzyczasie ktos inny. */
+    public static OperationNotAllowedException emailTaken() {
+        return new OperationNotAllowedException(
+            "Adres zajety przez inne konto", "error.email.taken");
+    }
+
+    /** Adres jest juz potwierdzony - ponowna wysylka nie ma sensu. */
+    public static OperationNotAllowedException emailAlreadyVerified() {
+        return new OperationNotAllowedException(
+            "Adres jest juz potwierdzony", "error.email.already.verified");
+    }
+
+    /** Nie ma zmiany adresu, ktora mozna by potwierdzic albo anulowac. */
+    public static OperationNotAllowedException noPendingEmail() {
+        return new OperationNotAllowedException(
+            "Brak zmiany adresu do potwierdzenia", "error.email.no.pending");
+    }
+
     /** Proba importu z Last.fm przy niewpisanym kluczu API. */
     public static OperationNotAllowedException lastFmDisabled() {
         return new OperationNotAllowedException(

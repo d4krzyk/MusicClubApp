@@ -20,6 +20,12 @@ public class ErrorResponse {
     /** Termin, ktorego dotyczy blad - dzis wylacznie koniec zakazu. */
     private LocalDateTime deadline;
 
+    /**
+     * Staly kod bledu, po ktorym frontend rozpoznaje sytuacje niezaleznie od
+     * jezyka komunikatu - np. EMAIL_NOT_VERIFIED przy logowaniu.
+     */
+    private String code;
+
     public ErrorResponse(int status, String message) {
         this.status = status;
         this.message = message;
@@ -52,6 +58,14 @@ public class ErrorResponse {
 
     public void setDeadline(LocalDateTime deadline) {
         this.deadline = deadline;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
     }
 
     public List<ValidationError> getErrors() {

@@ -8,6 +8,7 @@ import Alert from 'react-bootstrap/Alert';
 import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
 import Field from '../components/Field';
+import SprawdzSkrzynke from '../components/SprawdzSkrzynke';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -15,13 +16,17 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [username, setUsername] = useState('');
+  // Po kliknieciu w link potwierdzajacy strona potwierdzenia podaje tu login
+  const [username, setUsername] = useState(location.state?.username ?? '');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
+
+  /* Haslo dobre, ale adres niepotwierdzony - tekst z serwera z zamaskowanym adresem. */
+  const [niepotwierdzony, setNiepotwierdzony] = useState(null);
 
   // Komunikat po udanej rejestracji - przekazany przez RegisterPage
   const messageAfterRegister = location.state?.registered;
@@ -43,12 +48,31 @@ export default function LoginPage() {
       navigate(location.state?.from ?? '/', { replace: true });
     } catch (error) {
       const details = describeError(error);
+      if (details.code === 'EMAIL_NOT_VERIFIED') {
+        setNiepotwierdzony(details.message);
+        return;
+      }
       setFieldErrors(details.fieldErrors);
       setGeneralError(details.message);
     } finally {
       // finally - zeby przycisk odblokowal sie takze po bledzie
       setWysylanie(false);
     }
+  }
+
+  if (niepotwierdzony) {
+    return (
+      <Card className="mx-auto" style={{ maxWidth: 420 }}>
+        <Card.Body className="p-4">
+          <SprawdzSkrzynke
+            username={username}
+            password={password}
+            opis={niepotwierdzony}
+            onBack={() => setNiepotwierdzony(null)}
+          />
+        </Card.Body>
+      </Card>
+    );
   }
 
   return (
@@ -59,6 +83,7 @@ export default function LoginPage() {
         </Card.Title>
 
         {messageAfterRegister && <Alert variant="success">{t('login.registered')}</Alert>}
+        {location.state?.verified && <Alert variant="success">{t('login.verified')}</Alert>}
         {generalError && <Alert variant="danger">{generalError}</Alert>}
 
         <Form onSubmit={submit} noValidate className="tiles-in-form">

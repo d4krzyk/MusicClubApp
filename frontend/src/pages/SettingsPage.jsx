@@ -10,10 +10,12 @@ import Col from 'react-bootstrap/Col';
 import Modal from 'react-bootstrap/Modal';
 import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
+import * as konto from '../api/konto';
 import {
   usunAwatar, usunKonto, usunWszystkiePosty, ustawAwatar,
 } from '../api/konto';
 import Field from '../components/Field';
+import { IconMail } from '../components/Icons';
 import Avatar from '../components/Avatar';
 import LanguageSwitch from '../components/LanguageSwitch';
 import ThemeToggle from '../components/ThemeToggle';
@@ -165,6 +167,64 @@ function AvatarForm() {
   );
 }
 
+/**
+ * Nowy adres czeka na klikniecie w link. Do tego czasu obowiazuje stary -
+ * inaczej wystarczyloby potwierdzic prawdziwy adres i podmienic go na zmyslony.
+ */
+function EmailCzeka() {
+  const { t } = useTranslation();
+  const { user, refreshUser } = useAuth();
+  const [info, setInfo] = useState(null);
+  const [blad, setBlad] = useState(null);
+  const [wysylanie, setWysylanie] = useState(false);
+
+  async function wykonaj(akcja, komunikat) {
+    setWysylanie(true);
+    setInfo(null);
+    setBlad(null);
+    try {
+      refreshUser(await akcja());
+      setInfo(komunikat);
+    } catch (problem) {
+      setBlad(describeError(problem).message);
+    } finally {
+      setWysylanie(false);
+    }
+  }
+
+  return (
+    <Alert variant="info" className="email-czeka">
+      <IconMail size={18} className="flex-shrink-0 mt-1" />
+      <div className="email-czeka-tresc">
+        <div>
+          {t('settings.pendingEmail')} <strong>{user.pendingEmail}</strong>
+        </div>
+        <div className="small">{t('settings.pendingEmailHint', { email: user.email })}</div>
+        <div className="d-flex flex-wrap gap-2 mt-2">
+          <Button
+            size="sm"
+            variant="outline-primary"
+            disabled={wysylanie}
+            onClick={() => wykonaj(konto.wyslijZmianeEmailaPonownie, t('settings.pendingResent'))}
+          >
+            {t('settings.pendingResend')}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline-secondary"
+            disabled={wysylanie}
+            onClick={() => wykonaj(konto.anulujZmianeEmaila, t('settings.pendingCancelled'))}
+          >
+            {t('settings.pendingCancel')}
+          </Button>
+        </div>
+        {info && <div className="small mt-2">{info}</div>}
+        {blad && <div className="small mt-2 text-danger">{blad}</div>}
+      </div>
+    </Alert>
+  );
+}
+
 /** Zmiana loginu i adresu e-mail. */
 function ProfileForm() {
   const { t } = useTranslation();
@@ -191,7 +251,12 @@ function ProfileForm() {
     setWysylanie(true);
 
     try {
-      await updateProfile(data);
+      const zmienione = await updateProfile(data);
+      /*
+       * Przy potwierdzaniu adresu serwer oddaje STARY adres i nowy jako
+       * czekajacy - pole wraca do obowiazujacego, a nowy widac w ramce wyzej.
+       */
+      setData({ username: zmienione.username, email: zmienione.email });
       setSaved(true);
     } catch (error) {
       const details = describeError(error);
@@ -209,7 +274,8 @@ function ProfileForm() {
           {t('settings.profile')}
         </Card.Title>
 
-        {saved && <Alert variant="success">{t('settings.profileSaved')}</Alert>}
+        {user.pendingEmail && <EmailCzeka />}
+        {saved && !user.pendingEmail && <Alert variant="success">{t('settings.profileSaved')}</Alert>}
         {generalError && <Alert variant="danger">{generalError}</Alert>}
 
         <Form onSubmit={submit} noValidate>

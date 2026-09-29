@@ -38,6 +38,7 @@ public class AccountDeletionService {
     private final NetworkService network;
     private final PlaylistService playlists;
     private final EventParticipationService eventParticipations;
+    private final EmailVerificationService emailVerification;
     private final UserService users;
 
     public AccountDeletionService(UserRepository userRepository,
@@ -51,6 +52,7 @@ public class AccountDeletionService {
                                   NetworkService network,
                                   PlaylistService playlists,
                                   EventParticipationService eventParticipations,
+                                  EmailVerificationService emailVerification,
                                   UserService users) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -63,6 +65,7 @@ public class AccountDeletionService {
         this.network = network;
         this.playlists = playlists;
         this.eventParticipations = eventParticipations;
+        this.emailVerification = emailVerification;
         this.users = users;
     }
 
@@ -160,7 +163,10 @@ public class AccountDeletionService {
         // 10. Zapisy na wydarzenia - inaczej zostalby "ktos" na liscie uczestnikow
         eventParticipations.deleteAllOf(id);
 
-        // 11. Zdjecie profilowe z dysku
+        // 11. Linki potwierdzajace adres e-mail
+        emailVerification.deleteAllOf(id);
+
+        // 12. Zdjecie profilowe z dysku
         users.deleteAvatarOf(target);
 
         userRepository.delete(target);

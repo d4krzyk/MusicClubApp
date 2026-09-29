@@ -58,6 +58,8 @@ public class AdminInitializer implements CommandLineRunner {
 
         User admin = new User(adminUsername, adminEmail, passwordEncoder.encode(adminPassword));
         admin.setRole(Role.ADMIN);
+        // Adres administratora pochodzi z konfiguracji serwera, a nie z formularza - nie ma czego potwierdzac
+        admin.markEmailVerified(java.time.LocalDateTime.now());
         userRepository.save(admin);
 
         log.info("Zalozono konto administratora o loginie '{}'.", adminUsername);

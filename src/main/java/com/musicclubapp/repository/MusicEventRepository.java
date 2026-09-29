@@ -40,6 +40,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
     String FILTR = """
         e.start_date >= :today
         AND e.withdrawn_at IS NULL
+        AND e.country_code = :country
         AND (:city = '' OR e.city_key = :city)
         AND (:pattern = ''
              OR LOWER(e.name) LIKE :pattern ESCAPE '\\'
@@ -75,6 +76,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
          LIMIT :limit OFFSET :offset
         """, nativeQuery = true)
     List<EventCardRow> firstOfEachSeries(@Param("today") LocalDate today,
+                                         @Param("country") String country,
                                          @Param("city") String city,
                                          @Param("pattern") String pattern,
                                          @Param("limit") int limit,
@@ -84,6 +86,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
     @Query(value = "SELECT COUNT(DISTINCT e.series_key) FROM music_events e WHERE " + FILTR,
         nativeQuery = true)
     long countSeries(@Param("today") LocalDate today,
+                     @Param("country") String country,
                      @Param("city") String city,
                      @Param("pattern") String pattern);
 
@@ -102,19 +105,33 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
         SELECT e.cityKey AS cityKey, MAX(e.city) AS cityName, COUNT(DISTINCT e.seriesKey) AS events
           FROM MusicEvent e
          WHERE e.startDate >= :today AND e.cityKey IS NOT NULL AND e.withdrawnAt IS NULL
+           AND e.countryCode = :country
          GROUP BY e.cityKey
          ORDER BY COUNT(DISTINCT e.seriesKey) DESC, e.cityKey
         """)
-    List<EventCityRow> cities(@Param("today") LocalDate today);
+    List<EventCityRow> cities(@Param("today") LocalDate today, @Param("country") String country);
 
-    /** Nadchodzace wydarzenia, ktorych ostatni pelny import juz nie widzial. */
-    List<MusicEvent> findByStartDateGreaterThanEqualAndLastSeenAtBefore(LocalDate today,
-                                                                         LocalDateTime seenBefore);
+    /** Czy z tego kraju mamy juz cokolwiek - inaczej lista pokazuje "pobieramy". */
+    boolean existsByCountryCode(String countryCode);
+
+    /**
+     * Wydarzenia jednego kraju z zakresu, ktory import przeszedl w calosci,
+     * a ktorych w tym imporcie nie bylo.
+     */
+    @Query("""
+        SELECT e FROM MusicEvent e
+         WHERE e.countryCode = :country
+           AND e.startDate >= :today AND e.startDate < :until
+           AND e.lastSeenAt < :seenBefore
+        """)
+    List<MusicEvent> vanished(@Param("country") String country,
+                              @Param("today") LocalDate today,
+                              @Param("until") LocalDate until,
+                              @Param("seenBefore") LocalDateTime seenBefore);
 
     /** Wydarzenia, ktore dawno sie odbyly. */
     List<MusicEvent> findByStartDateBefore(LocalDate date);
 
-    long countByStartDateGreaterThanEqual(LocalDate today);
 
     /** Wykonawcy nadchodzacych wydarzen - do uzupelnienia ich gatunkow z Last.fm. */
     @Query("""
@@ -130,16 +147,16 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
                e.venueName AS venueName, e.cityKey AS cityKey,
                e.genre AS genre, e.subGenre AS subGenre
           FROM MusicEvent e
-         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL
+         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL AND e.countryCode = :country
         """)
-    List<EventFeatureRow> upcomingFeatures(@Param("today") LocalDate today);
+    List<EventFeatureRow> upcomingFeatures(@Param("today") LocalDate today, @Param("country") String country);
 
     /** Sklad nadchodzacych wydarzen - jednym zapytaniem, a nie jednym na wydarzenie. */
     @Query("""
         SELECT e.id AS eventId, p.name AS name FROM MusicEvent e JOIN e.performers p
-         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL
+         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL AND e.countryCode = :country
         """)
-    List<EventPerformerRow> upcomingPerformers(@Param("today") LocalDate today);
+    List<EventPerformerRow> upcomingPerformers(@Param("today") LocalDate today, @Param("country") String country);
 
     /** To samo dla jednego wydarzenia - strona wydarzenia tez pokazuje, czemu pasuje. */
     @Query("""

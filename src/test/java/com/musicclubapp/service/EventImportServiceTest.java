@@ -75,8 +75,8 @@ class EventImportServiceTest {
     static final long SZESC_GODZIN = Duration.ofHours(6).toMillis();
 
     private EventImportService importer(Instant now) {
-        return new EventImportService(ticketmaster, repository, participationRepository, performerTagService, transactionManager,
-            Clock.fixed(now, ZoneOffset.UTC), 0, SZESC_GODZIN);
+        return WydarzeniaTestowe.importer(ticketmaster, repository, participationRepository, performerTagService,
+            userRepository, transactionManager, Clock.fixed(now, ZoneOffset.UTC));
     }
 
     /** Zegar przestawiany recznie - do sprawdzenia, kiedy import rusza sam. */
@@ -112,8 +112,8 @@ class EventImportServiceTest {
     @DisplayName("po nieudanym imporcie kolejna proba za kwadrans, a nie za 6 godzin")
     void retriesSoonAfterFailure() throws IOException {
         Zegar zegar = new Zegar(TERAZ);
-        EventImportService importer = new EventImportService(ticketmaster, repository, participationRepository, performerTagService,
-            transactionManager, zegar, 0, SZESC_GODZIN);
+        EventImportService importer = WydarzeniaTestowe.importer(ticketmaster, repository, participationRepository, performerTagService,
+            userRepository, transactionManager, zegar);
 
         server.odpowiadaj(TicketmasterClientTest.SCIEZKA,
             query -> new TestHttpServer.Odpowiedz(503, "{}"));
@@ -431,6 +431,7 @@ class EventImportServiceTest {
         event.describe("Minione " + id, null, null, null, null);
         event.schedule(date, null);
         event.place(null, "Gdzies", "Warsaw", "warsaw", null, null, null);
+        event.inCountry("PL");
         event.groupAs(EventImportService.seriesKey("Minione " + id, null, "Gdzies"));
         event.markSeen(LocalDateTime.of(2026, 7, 1, 0, 0));
         return event;

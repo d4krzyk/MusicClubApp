@@ -87,6 +87,15 @@ services:
       # Klucz Ticketmastera - bez niego zakladka Wydarzenia jest pusta,
       # a reszta aplikacji dziala normalnie.
       TICKETMASTER_API_KEY: ${TICKETMASTER_API_KEY:-}
+
+      # Poczta - bez MAIL_HOST nic nie jest wysylane i konta nie wymagaja
+      # potwierdzenia adresu. Lokalnie linki prowadza na frontend w Dockerze.
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
     volumes:
       # BEZ TEGO WGRANE ZDJECIA ZNIKAJA przy kazdym `docker compose down`.
       # Kontenery sa jednorazowe - wszystko, co ma przezyc restart, musi lezec

@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -47,6 +48,14 @@ public class Artist {
     @CollectionTable(name = "artist_genres", joinColumns = @JoinColumn(name = "artist_id"))
     @Column(name = "genre", length = 60)
     private Set<String> genres = new HashSet<>();
+
+    /**
+     * Kiedy ostatnio pytalismy Last.fm o gatunki. Pusty = jeszcze nigdy -
+     * np. artysta zostal dodany do ulubionych, zanim serwer dostal klucz
+     * Last.fm. Takich artystow uzupelnia w tle ArtistGenreBackfillService.
+     */
+    @Column(name = "genres_checked_at")
+    private LocalDateTime genresCheckedAt;
 
     protected Artist() {
         // wymagany przez JPA
@@ -87,6 +96,16 @@ public class Artist {
         if (created != null) {
             this.genres.addAll(created);
         }
+    }
+
+    /** Gatunki sprawdzone w Last.fm - nawet jesli wyszlo, ze artysta zadnych nie ma. */
+    public void genresChecked(Set<String> found, LocalDateTime when) {
+        applyGenres(found);
+        this.genresCheckedAt = when;
+    }
+
+    public LocalDateTime getGenresCheckedAt() {
+        return genresCheckedAt;
     }
 
     /** Rownosc po externalId, a nie po id. */

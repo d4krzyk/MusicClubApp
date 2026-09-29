@@ -2,6 +2,7 @@ package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.AttendeeResponse;
 import com.musicclubapp.dto.EventCardResponse;
+import com.musicclubapp.dto.EventCountryRequest;
 import com.musicclubapp.dto.EventDetailsResponse;
 import com.musicclubapp.dto.EventView;
 import com.musicclubapp.dto.EventsInfoResponse;
@@ -83,6 +84,16 @@ public class EventController {
         boolean admin = authentication.getAuthorities().stream()
             .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         return ResponseEntity.ok(eventService.info(admin, authentication.getName()));
+    }
+
+    @PutMapping("/country")
+    @Operation(summary = "Zmienia kraj, z ktorego pokazujemy wydarzenia",
+        description = "Kraj, ktorego jeszcze nie mamy, zaczyna sie pobierac od razu w tle.")
+    public ResponseEntity<EventsInfoResponse> changeCountry(@Valid @RequestBody EventCountryRequest request,
+                                                            Authentication authentication) {
+        boolean admin = authentication.getAuthorities().stream()
+            .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+        return ResponseEntity.ok(eventService.changeCountry(authentication.getName(), request.country(), admin));
     }
 
     @PutMapping("/{id}/participation")

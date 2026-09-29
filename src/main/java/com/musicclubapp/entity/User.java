@@ -54,6 +54,26 @@ public class User {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    /**
+     * Kiedy adres e-mail zostal potwierdzony linkiem z wiadomosci. Pusty =
+     * jeszcze nie. Gdy serwer ma skonfigurowana poczte, takie konto nie
+     * moze sie zalogowac - to cala ochrona przed kontami na zmyslone adresy.
+     */
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
+    /**
+     * Nowy adres, na ktory wyslalismy link przy zmianie e-maila w profilu.
+     * Do czasu klikniecia obowiazuje stary - inaczej wystarczyloby
+     * potwierdzic prawdziwy adres i od razu podmienic go na zmyslony.
+     */
+    @Column(name = "pending_email", length = 255)
+    private String pendingEmail;
+
+    /** Kraj, z ktorego pokazujemy wydarzenia. Pusty = Polska. */
+    @Column(name = "events_country", length = 2)
+    private String eventsCountry;
+
     /** Termin oznaczajacy zakaz bezterminowy. */
     public static final LocalDateTime FOREVER = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
 
@@ -171,6 +191,34 @@ public class User {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerifiedAt != null;
+    }
+
+    public LocalDateTime getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    public void markEmailVerified(LocalDateTime when) {
+        this.emailVerifiedAt = when;
+    }
+
+    public String getPendingEmail() {
+        return pendingEmail;
+    }
+
+    public void setPendingEmail(String pendingEmail) {
+        this.pendingEmail = pendingEmail;
+    }
+
+    public String getEventsCountry() {
+        return eventsCountry;
+    }
+
+    public void setEventsCountry(String eventsCountry) {
+        this.eventsCountry = eventsCountry;
     }
 
     public LocalDateTime getMessagingBannedUntil() {

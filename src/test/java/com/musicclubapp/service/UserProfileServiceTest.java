@@ -46,6 +46,10 @@ class UserProfileServiceTest {
     @Mock
     private FileStorageService fileStorage;
 
+    /** Potwierdzanie adresu - tu tylko sprawdzamy, ze serwis je wola. */
+    @Mock
+    private EmailVerificationService emailVerification;
+
     @InjectMocks
     private UserService userService;
 
@@ -60,7 +64,7 @@ class UserProfileServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now(), true, null));
 
         userService.updateProfile("anna", new UpdateProfileRequest("anna", "nowy@example.com"));
 
@@ -85,7 +89,7 @@ class UserProfileServiceTest {
     @DisplayName("zmiana e-maila na zajety przez kogos innego konczy sie wyjatkiem")
     void emailTakenByAnotherUserThrows() {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna()));
-        given(userRepository.existsByEmail("zajety@example.com")).willReturn(true);
+        given(userRepository.existsByEmailIgnoreCase("zajety@example.com")).willReturn(true);
 
         assertThatThrownBy(() -> userService.updateProfile(
             "anna", new UpdateProfileRequest("anna", "zajety@example.com")))
@@ -100,17 +104,18 @@ class UserProfileServiceTest {
         User anna = anna();
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.existsByUsername("ania")).willReturn(false);
-        given(userRepository.existsByEmail("ania@example.com")).willReturn(false);
+        given(userRepository.existsByEmailIgnoreCase("ania@example.com")).willReturn(false);
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now()));
+            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now(), true, null));
 
         userService.updateProfile("anna", new UpdateProfileRequest("ania", "ania@example.com"));
 
         ArgumentCaptor<User> stored = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(stored.capture());
         assertThat(stored.getValue().getUsername()).isEqualTo("ania");
-        assertThat(stored.getValue().getEmail()).isEqualTo("ania@example.com");
+        // Nowy adres idzie przez potwierdzanie: bez poczty zmienia sie od razu, z poczta czeka na link
+        verify(emailVerification).requestChange(stored.getValue(), "ania@example.com");
     }
 
     @Test

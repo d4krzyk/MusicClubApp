@@ -15,6 +15,7 @@ import ReportsPage from './pages/ReportsPage';
 import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
 import EventsPage from './pages/EventsPage';
 import EventPage from './pages/EventPage';
+import PotwierdzEmailPage from './pages/PotwierdzEmailPage';
 
 /** Mapa adresow aplikacji. */
 export default function App() {
@@ -151,6 +152,12 @@ export default function App() {
                   </RequireAnonymous>
                 }
               />
+
+              {/*
+                Link z wiadomosci. Bez zadnego straznika: otwiera go i ktos niezalogowany
+                (nowe konto), i zalogowany (zmiana adresu w ustawieniach).
+              */}
+              <Route path="/potwierdz-email" element={<PotwierdzEmailPage />} />
 
               {/* Nieznany adres - zamiast pustej strony wracamy na glowna */}
               <Route path="*" element={<Navigate to="/" replace />} />

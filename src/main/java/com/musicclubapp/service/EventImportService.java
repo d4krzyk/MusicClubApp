@@ -4,6 +4,8 @@ import com.musicclubapp.entity.EventPerformer;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
+import com.musicclubapp.repository.UserRepository;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,10 +47,12 @@ public class EventImportService {
 
     private static final Logger log = LoggerFactory.getLogger(EventImportService.class);
 
-    /** Wszystkie wydarzenia sa w Polsce, wiec "dzis" liczymy po polskiemu. */
+    /**
+     * "Dzis" liczymy po polskiemu - aplikacja jest polska, a przy innych
+     * krajach Europy roznica to godzina, dwie. Okresy importu sa w UTC,
+     * wiec nie gubia wydarzen niezaleznie od strefy.
+     */
     public static final ZoneId STREFA = ZoneId.of("Europe/Warsaw");
-
-    private static final String KRAJ = "PL";
 
     /** Jak daleko w przod patrzymy. Dalej i tak malo co jest juz w sprzedazy. */
     private static final int MIESIECY_NAPRZOD = 12;
@@ -66,8 +73,29 @@ public class EventImportService {
     private final MusicEventRepository repository;
     private final EventParticipationRepository participations;
     private final PerformerTagService performerTags;
+    private final UserRepository users;
     private final TransactionTemplate transactions;
     private final Clock clock;
+
+    /**
+     * Ile zapytan na jeden kraj w jednym przebiegu. Polska to kilkanascie,
+     * ale USA maja dziesiatki tysiecy koncertow rocznie - bez limitu jeden
+     * kraj zjadlby caly dzienny limit Ticketmastera (5000). Gdy limit sie
+     * skonczy, kraj jest pokryty od dzis do miejsca, w ktorym stanelismy.
+     */
+    private final int limitNaKraj;
+
+    /** Kiedy ostatnio udal sie import danego kraju - po tym poznajemy, co odswiezyc. */
+    private final Map<String, LocalDateTime> ostatnioUdany = new ConcurrentHashMap<>();
+
+    /** Kraje, ktorych import wlasnie idzie w tle, bo ktos je przed chwila wybral. */
+    private final Set<String> wKolejce = ConcurrentHashMap.newKeySet();
+
+    private final ExecutorService tlo = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "import-wydarzen-kraju");
+        t.setDaemon(true);
+        return t;
+    });
 
     /** Przerwa miedzy zapytaniami - Ticketmaster pozwala na 5 na sekunde. */
     private final long przerwaMs;
@@ -83,14 +111,18 @@ public class EventImportService {
                               MusicEventRepository repository,
                               EventParticipationRepository participations,
                               PerformerTagService performerTags,
+                              UserRepository users,
                               PlatformTransactionManager transactionManager,
                               Clock clock,
                               @Value("${app.events.import.pause-ms:250}") long przerwaMs,
-                              @Value("${app.events.import.interval-ms:21600000}") long coIleMs) {
+                              @Value("${app.events.import.interval-ms:21600000}") long coIleMs,
+                              @Value("${app.events.import.max-requests-per-country:60}") int limitNaKraj) {
         this.ticketmaster = ticketmaster;
         this.repository = repository;
         this.participations = participations;
         this.performerTags = performerTags;
+        this.users = users;
+        this.limitNaKraj = limitNaKraj;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.przerwaMs = przerwaMs;
@@ -111,10 +143,10 @@ public class EventImportService {
 
     /**
      * Uruchamia sie sam: pierwszy raz chwile po starcie serwera, potem
-     * sprawdza co kwadrans, czy pora na kolejny import.
+     * sprawdza co kwadrans, czy ktorys kraj trzeba odswiezyc.
      *
-     * Po UDANYM imporcie nastepny idzie dopiero po 6 godzinach. Po NIEUDANYM -
-     * przy najblizszym sprawdzeniu. Pierwsza wersja miala po prostu "co
+     * Kraj po UDANYM imporcie czeka 6 godzin. Po NIEUDANYM - idzie przy
+     * najblizszym sprawdzeniu. Pierwsza wersja miala po prostu "co
      * 6 godzin", przez co jedno zerwane polaczenie zostawialo pusta zakladke
      * na cale 6 godzin, nawet gdy siec wrocila po minucie.
      *
@@ -127,52 +159,157 @@ public class EventImportService {
         if (!ticketmaster.available()) {
             return;
         }
-        ImportStatus poprzedni = lastRun;
-        boolean niedawnoUdany = poprzedni != null && poprzedni.success()
-            && poprzedni.finishedAt().plus(coIle).isAfter(LocalDateTime.now(clock));
-        if (!niedawnoUdany) {
-            runImport();
+        List<String> doOdswiezenia = activeCountries().stream().filter(this::stale).toList();
+        if (!doOdswiezenia.isEmpty()) {
+            importCountries(doOdswiezenia);
         }
     }
 
-    /** Jeden pelny przebieg importu. */
-    public synchronized ImportStatus runImport() {
+    /** Jeden pelny przebieg: wszystkie kraje, ktore ktos wybral, plus Polska. */
+    public ImportStatus runImport() {
+        return importCountries(activeCountries());
+    }
+
+    /**
+     * Ktos wlasnie wybral kraj - jesli nie mamy go swiezego, pobieramy go
+     * od razu w tle, zamiast kazac czekac do nastepnego przebiegu.
+     *
+     * @return czy import tego kraju wlasnie trwa
+     */
+    public boolean requestCountry(String kraj) {
+        if (!ticketmaster.available() || !stale(kraj)) {
+            return wKolejce.contains(kraj);
+        }
+        if (wKolejce.add(kraj)) {
+            tlo.submit(() -> {
+                try {
+                    importCountries(List.of(kraj));
+                } finally {
+                    wKolejce.remove(kraj);
+                }
+            });
+        }
+        return true;
+    }
+
+    /** Czy import tego kraju wlasnie idzie w tle. */
+    public boolean importing(String kraj) {
+        return wKolejce.contains(kraj);
+    }
+
+    @PreDestroy
+    void zatrzymaj() {
+        tlo.shutdownNow();
+    }
+
+    /** Polska zawsze, potem kraje wybrane na kontach - od najczesciej wybieranego. */
+    List<String> activeCountries() {
+        List<String> kraje = new ArrayList<>(List.of(EventCountries.DOMYSLNY));
+        for (String wybrany : users.eventCountriesInUse()) {
+            String kraj = EventCountries.orDefault(wybrany);
+            if (!kraje.contains(kraj)) {
+                kraje.add(kraj);
+            }
+        }
+        return kraje;
+    }
+
+    private boolean stale(String kraj) {
+        LocalDateTime ostatni = ostatnioUdany.get(kraj);
+        return ostatni == null || !ostatni.plus(coIle).isAfter(LocalDateTime.now(clock));
+    }
+
+    /** Import podanych krajow. Jeden naraz - drugi czeka, az skonczy sie pierwszy. */
+    synchronized ImportStatus importCountries(List<String> kraje) {
         LocalDateTime startedAt = LocalDateTime.now(clock).truncatedTo(ChronoUnit.MICROS);
         LocalDate today = today();
-        long upcomingBefore = repository.countByStartDateGreaterThanEqual(today);
-
-        Instant from = today.atStartOfDay(STREFA).toInstant();
-        Instant end = today.plusMonths(MIESIECY_NAPRZOD).atStartOfDay(STREFA).toInstant();
 
         int seen = 0;
+        int removed = 0;
+        List<String> bledy = new ArrayList<>();
+        for (String kraj : kraje) {
+            WynikKraju wynik = importCountry(kraj, startedAt, today);
+            seen += wynik.widziane();
+            removed += wynik.usuniete();
+            if (wynik.blad() == null) {
+                ostatnioUdany.put(kraj, LocalDateTime.now(clock));
+            } else {
+                bledy.add(kraje.size() > 1 ? kraj + ": " + wynik.blad() : wynik.blad());
+            }
+        }
+        removed += removeOld(today.minusDays(DNI_PO_WYDARZENIU));
+
+        boolean ok = bledy.isEmpty();
+        if (ok) {
+            log.info("Import wydarzen {}: {} z Ticketmastera, usunietych {}", kraje, seen, removed);
+        }
+        lastRun = new ImportStatus(LocalDateTime.now(clock), ok, seen, removed,
+            ok ? null : String.join("; ", bledy));
+
+        refreshPerformerTags(today);
+        return lastRun;
+    }
+
+    private record WynikKraju(int widziane, int usuniete, String blad) { }
+
+    /** Postep importu jednego kraju: ile zapytan juz poszlo i ile wydarzen widzielismy. */
+    private static final class Postep {
+
+        final String kraj;
+        final int limit;
+        int zapytan;
+        int widziane;
+
+        Postep(String kraj, int limit) {
+            this.kraj = kraj;
+            this.limit = limit;
+        }
+    }
+
+    /** Limit zapytan na kraj sie skonczyl - to nie blad, tylko koniec pokrycia. */
+    private static final class LimitWyczerpany extends RuntimeException {
+
+        LimitWyczerpany() {
+            super(null, null, false, false);
+        }
+    }
+
+    private WynikKraju importCountry(String kraj, LocalDateTime startedAt, LocalDate today) {
+        Postep postep = new Postep(kraj, limitNaKraj);
+        LocalDate koniec = today.plusMonths(MIESIECY_NAPRZOD);
+        Instant end = koniec.atStartOfDay(STREFA).toInstant();
+
+        /* Do tego dnia (bez niego) wszystkie okresy przeszly w calosci. */
+        LocalDate pokryteDo = today;
         try {
             LocalDate month = today;
             while (month.atStartOfDay(STREFA).toInstant().isBefore(end)) {
                 LocalDate next = month.withDayOfMonth(1).plusMonths(1);
                 Instant a = month.atStartOfDay(STREFA).toInstant();
                 Instant b = next.atStartOfDay(STREFA).toInstant();
-                seen += importWindow(a, b.isAfter(end) ? end : b, startedAt);
+                importWindow(postep, a, b.isAfter(end) ? end : b, startedAt);
+                pokryteDo = next.isAfter(koniec) ? koniec : next;
                 month = next;
             }
+        } catch (LimitWyczerpany e) {
+            log.info("Import {}: wyczerpany limit {} zapytan - pokryte do {}", kraj, limitNaKraj, pokryteDo);
         } catch (IllegalStateException e) {
             /*
              * Przerwany import niczego nie usuwa. To, czego nie zdazyl
              * zobaczyc, nie zniknelo z Ticketmastera - po prostu nie doszlismy
              * do tego miesiaca.
              */
-            log.warn("Import wydarzen przerwany po {} wydarzeniach: {}", seen, e.getMessage());
-            lastRun = new ImportStatus(LocalDateTime.now(clock), false, seen, 0, e.getMessage());
-            return lastRun;
+            log.warn("Import wydarzen {} przerwany po {} wydarzeniach: {}", kraj, postep.widziane, e.getMessage());
+            return new WynikKraju(postep.widziane, 0, e.getMessage());
         }
 
-        int removed = removeVanished(today, startedAt, seen, upcomingBefore);
-        removed += removeOld(today.minusDays(DNI_PO_WYDARZENIU));
-
-        log.info("Import wydarzen: {} z Ticketmastera, usunietych {}", seen, removed);
-        lastRun = new ImportStatus(LocalDateTime.now(clock), true, seen, removed, null);
-
-        refreshPerformerTags(today);
-        return lastRun;
+        /*
+         * Dzien zapasu na granicy pokrycia: okresy sa liczone po polskiemu, a
+         * koncert o 23:30 w Londynie to juz nastepny dzien w Warszawie - moglby
+         * nie wpasc w ostatni pokryty okres, a wygladalby na znikniety.
+         */
+        int usuniete = removeVanished(kraj, today, pokryteDo.minusDays(1), startedAt, postep.widziane);
+        return new WynikKraju(postep.widziane, usuniete, null);
     }
 
     /**
@@ -195,27 +332,32 @@ public class EventImportService {
      * jest wiecej, dzielimy go na polowy i pytamy o kazda osobno - az
      * kazdy kawalek sie zmiesci.
      */
-    private int importWindow(Instant from, Instant to, LocalDateTime seenAt) {
-        TicketmasterClient.Page page = fetch(from, to, 0);
+    private void importWindow(Postep postep, Instant from, Instant to, LocalDateTime seenAt) {
+        TicketmasterClient.Page page = fetch(postep, from, to, 0);
 
         if (page.totalElements() > TicketmasterClient.MAX_WYNIKOW_ZAPYTANIA
                 && Duration.between(from, to).toHours() > 24) {
             Instant middle = from.plus(Duration.between(from, to).dividedBy(2))
                 .truncatedTo(ChronoUnit.SECONDS);
-            return importWindow(from, middle, seenAt) + importWindow(middle, to, seenAt);
+            importWindow(postep, from, middle, seenAt);
+            importWindow(postep, middle, to, seenAt);
+            return;
         }
 
-        int count = save(page.events(), seenAt);
+        postep.widziane += save(page.events(), postep.kraj, seenAt);
         for (int number = 1;
              !page.last() && number * TicketmasterClient.ROZMIAR_STRONY < TicketmasterClient.MAX_WYNIKOW_ZAPYTANIA;
              number++) {
-            page = fetch(from, to, number);
-            count += save(page.events(), seenAt);
+            page = fetch(postep, from, to, number);
+            postep.widziane += save(page.events(), postep.kraj, seenAt);
         }
-        return count;
     }
 
-    private TicketmasterClient.Page fetch(Instant from, Instant to, int page) {
+    private TicketmasterClient.Page fetch(Postep postep, Instant from, Instant to, int page) {
+        if (postep.zapytan >= postep.limit) {
+            throw new LimitWyczerpany();
+        }
+        postep.zapytan++;
         if (przerwaMs > 0) {
             try {
                 Thread.sleep(przerwaMs);
@@ -224,11 +366,11 @@ public class EventImportService {
                 throw new IllegalStateException("Import przerwany");
             }
         }
-        return ticketmaster.events(KRAJ, from, to, page);
+        return ticketmaster.events(postep.kraj, from, to, page);
     }
 
     /** Zapisuje jedna strone: nowe dopisuje, znane uaktualnia. Jedna transakcja na strone. */
-    private int save(List<TicketmasterClient.Event> events, LocalDateTime seenAt) {
+    private int save(List<TicketmasterClient.Event> events, String kraj, LocalDateTime seenAt) {
         if (events.isEmpty()) {
             return 0;
         }
@@ -241,6 +383,7 @@ public class EventImportService {
             for (TicketmasterClient.Event e : events) {
                 MusicEvent event = known.computeIfAbsent(e.externalId(), MusicEvent::new);
                 apply(event, e, seenAt);
+                event.inCountry(e.countryCode() != null ? e.countryCode() : kraj);
                 repository.save(event);
             }
             return events.size();
@@ -264,25 +407,34 @@ public class EventImportService {
      * Usuwa nadchodzace wydarzenia, ktorych pelny import juz nie zobaczyl -
      * Ticketmaster je wycofal.
      *
+     * Tylko w jednym kraju i tylko w zakresie dat, ktory import tego kraju
+     * przeszedl w calosci - za granica limitu zapytan niczego nie widzielismy,
+     * wiec niczego nie wolno tam uznac za znikniete.
+     *
      * Dwa bezpieczniki, bo usuniecie jest nieodwracalne, a Ticketmaster
      * potrafi chwilowo oddac pusta albo okrojona odpowiedz: przy zerze
-     * wynikow nie ruszamy niczego, i tak samo, gdy wynikow jest mniej niz
-     * polowa tego, co bylo. Wtedy lepiej pokazac przez kilka godzin cos
+     * wynikow nie ruszamy niczego, i tak samo, gdy zniknac mialoby wiecej,
+     * niz zobaczylismy. Wtedy lepiej pokazac przez kilka godzin cos
      * nieaktualnego, niz wyczyscic cala zakladke.
      *
      * Wydarzenia, na ktore ktos sie zapisal, nie sa kasowane, tylko
      * oznaczane jako wycofane: znikaja z listy, ale zapisani widza w zakladce
      * "Moje", co sie stalo. Inaczej zapis przepadalby bez slowa.
      */
-    private int removeVanished(LocalDate today, LocalDateTime startedAt, int seen, long upcomingBefore) {
-        if (seen == 0 || seen * 2L < upcomingBefore) {
-            log.warn("Import zobaczyl {} wydarzen przy {} wczesniej - niczego nie usuwam", seen, upcomingBefore);
-            return 0;
-        }
+    private int removeVanished(String kraj, LocalDate today, LocalDate until, LocalDateTime startedAt, int seen) {
         return transactions.execute(status -> {
-            List<MusicEvent> vanished =
-                repository.findByStartDateGreaterThanEqualAndLastSeenAtBefore(today, startedAt);
+            List<MusicEvent> vanished = repository.vanished(kraj, today, until, startedAt);
             if (vanished.isEmpty()) {
+                return 0;
+            }
+            /*
+             * Gdy zniknelo wiecej, niz zobaczylismy - czyli ponad polowa tego,
+             * co bylo - to raczej chwilowa awaria po stronie Ticketmastera niz
+             * masowe odwolania.
+             */
+            if (seen == 0 || vanished.size() > seen) {
+                log.warn("Import {} zobaczyl {} wydarzen, a zniknac mialoby {} - niczego nie usuwam",
+                    kraj, seen, vanished.size());
                 return 0;
             }
             Set<Long> zapisane = new HashSet<>(participations.eventsWithParticipants(

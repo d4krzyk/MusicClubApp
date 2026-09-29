@@ -108,7 +108,9 @@ public class TicketmasterClient {
         Double longitude,
         String genre,
         String subGenre,
-        List<Performer> performers
+        List<Performer> performers,
+        /* Kraj z adresu miejsca - moze byc pusty, wtedy import bierze kraj z zapytania. */
+        String countryCode
     ) { }
 
     /** Jedna strona wynikow. */
@@ -240,7 +242,12 @@ public class TicketmasterClient {
             coordinate(venue.path("location"), "longitude"),
             genreName(classification.path("genre")),
             genreName(classification.path("subGenre")),
-            performers);
+            performers,
+            countryCode(text(venue.path("country"), "countryCode")));
+    }
+
+    private static String countryCode(String code) {
+        return code == null || code.length() != 2 ? null : code.toUpperCase(Locale.ROOT);
     }
 
     /**

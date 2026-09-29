@@ -37,17 +37,20 @@ public class UserService {
     private final UserMapper userMapper;
     private final FileStorageService fileStorage;
     private final ReportRepository reportRepository;
+    private final EmailVerificationService emailVerification;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        UserMapper userMapper,
                        FileStorageService fileStorage,
-                       ReportRepository reportRepository) {
+                       ReportRepository reportRepository,
+                       EmailVerificationService emailVerification) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.fileStorage = fileStorage;
         this.reportRepository = reportRepository;
+        this.emailVerification = emailVerification;
     }
 
     /** Ile zasadnych zgloszen ma to konto. */
@@ -66,21 +69,25 @@ public class UserService {
             .collect(Collectors.toMap(CountByUser::userId, CountByUser::count));
     }
 
-    /** Zaklada nowe konto. */
+    /**
+     * Zaklada nowe konto. Gdy serwer wysyla poczte, na podany adres idzie
+     * link - i dopiero po jego kliknieciu da sie zalogowac.
+     */
     @Transactional
     public UserResponse register(RegisterRequest request) {
+        String email = EmailAddresses.normalize(request.email());
         if (userRepository.existsByUsername(request.username())) {
             throw DuplicateResourceException.username(request.username());
         }
-        if (userRepository.existsByEmail(request.email())) {
-            throw DuplicateResourceException.email(request.email());
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw DuplicateResourceException.email(email);
         }
 
         // Haslo NIGDY nie trafia do bazy jawnym tekstem - zapisujemy hash BCrypt.
         String hash = passwordEncoder.encode(request.password());
 
-        User stored = userRepository.save(
-            new User(request.username(), request.email(), hash));
+        User stored = userRepository.save(new User(request.username(), email, hash));
+        emailVerification.afterRegistration(stored);
 
         return userMapper.toResponse(stored);
     }
@@ -116,13 +123,17 @@ public class UserService {
             && userRepository.existsByUsername(request.username())) {
             throw DuplicateResourceException.username(request.username());
         }
-        if (!user.getEmail().equals(request.email())
-            && userRepository.existsByEmail(request.email())) {
-            throw DuplicateResourceException.email(request.email());
+        String email = EmailAddresses.normalize(request.email());
+        boolean nowyAdres = !user.getEmail().equalsIgnoreCase(email);
+        if (nowyAdres && userRepository.existsByEmailIgnoreCase(email)) {
+            throw DuplicateResourceException.email(email);
         }
 
         user.setUsername(request.username());
-        user.setEmail(request.email());
+        if (nowyAdres) {
+            // Z poczta nowy adres czeka na potwierdzenie; bez niej zmienia sie od razu
+            emailVerification.requestChange(user, email);
+        }
 
         // save() nie jest tu konieczne (encja jest zarzadzana w transakcji),
         // ale zapisane wprost latwiej sie czyta i testuje

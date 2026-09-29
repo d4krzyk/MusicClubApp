@@ -86,7 +86,7 @@ class EventControllerTest {
     @WithMockUser(username = "anna", roles = "USER")
     @DisplayName("zwykly uzytkownik nie dostaje szczegolow importu")
     void infoForUser() throws Exception {
-        given(eventService.info(false, "anna")).willReturn(new EventsInfoResponse(true, List.of(), false, 0, false, null));
+        given(eventService.info(false, "anna")).willReturn(new EventsInfoResponse(true, "PL", List.of("PL"), false, List.of(), false, 0, false, null));
 
         mockMvc.perform(get("/api/events/info")).andExpect(status().isOk());
 
@@ -146,10 +146,29 @@ class EventControllerTest {
     @WithMockUser(username = "szef", roles = "ADMIN")
     @DisplayName("administrator dostaje stan importu")
     void infoForAdmin() throws Exception {
-        given(eventService.info(true, "szef")).willReturn(new EventsInfoResponse(true, List.of(), false, 0, false, null));
+        given(eventService.info(true, "szef")).willReturn(new EventsInfoResponse(true, "PL", List.of("PL"), false, List.of(), false, 0, false, null));
 
         mockMvc.perform(get("/api/events/info")).andExpect(status().isOk());
 
         verify(eventService).info(true, "szef");
+    }
+
+    @Test
+    @WithMockUser(username = "anna", roles = "USER")
+    @DisplayName("zmiana kraju idzie do serwisu z zalogowanym; bez kraju - blad walidacji")
+    void changeCountry() throws Exception {
+        given(eventService.changeCountry("anna", "DE", false))
+            .willReturn(new EventsInfoResponse(true, "DE", List.of("PL", "DE"), true, List.of(), false, 0, false, null));
+
+        mockMvc.perform(put("/api/events/country").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"country\":\"DE\"}"))
+            .andExpect(status().isOk());
+        mockMvc.perform(put("/api/events/country").with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"country\":\"\"}"))
+            .andExpect(status().isUnprocessableEntity());
+
+        verify(eventService).changeCountry("anna", "DE", false);
     }
 }

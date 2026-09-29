@@ -12,7 +12,9 @@ import com.musicclubapp.entity.EventParticipation;
 import com.musicclubapp.entity.EventPerformer;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.ParticipationStatus;
+import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.repository.EventCardRow;
 import com.musicclubapp.repository.EventCountRow;
 import com.musicclubapp.repository.EventParticipationRepository;
@@ -95,16 +97,17 @@ public class EventService {
     /** Nadchodzace od najblizszego, jedna karta na serie. */
     private Page<EventCardResponse> upcoming(String city, String phrase, Pageable pageable, String viewer) {
         LocalDate today = importer.today();
+        String country = countryOf(viewer);
         String cityKey = cityKey(city);
         String pattern = likePattern(phrase);
 
-        long total = repository.countSeries(today, cityKey, pattern);
+        long total = repository.countSeries(today, country, cityKey, pattern);
         if (total == 0) {
             return Page.empty(pageable);
         }
 
         List<EventCardRow> rows = repository.firstOfEachSeries(
-            today, cityKey, pattern, pageable.getPageSize(), pageable.getOffset());
+            today, country, cityKey, pattern, pageable.getPageSize(), pageable.getOffset());
 
         Map<Long, Long> moreDates = rows.stream()
             .collect(Collectors.toMap(EventCardRow::getId, row -> row.getDatesCount() - 1, (a, b) -> a));
@@ -132,7 +135,7 @@ public class EventService {
             szukane = szukane.substring(0, MAX_FRAZA);
         }
         List<EventMatchService.Ranked> ranked =
-            matcher.rank(taste, today, cityKey(city), szukane, friendCounts);
+            matcher.rank(taste, today, countryOf(viewer), cityKey(city), szukane, friendCounts);
 
         int from = (int) Math.min(pageable.getOffset(), ranked.size());
         int to = Math.min(from + pageable.getPageSize(), ranked.size());
@@ -285,7 +288,8 @@ public class EventService {
     @Transactional(readOnly = true)
     public EventsInfoResponse info(boolean admin, String viewer) {
         LocalDate today = importer.today();
-        List<EventCityResponse> cities = repository.cities(today).stream()
+        String country = countryOf(viewer);
+        List<EventCityResponse> cities = repository.cities(today, country).stream()
             .map(row -> new EventCityResponse(row.getCityKey(), row.getCityName(), row.getEvents()))
             .toList();
 
@@ -299,8 +303,35 @@ public class EventService {
         EventMatchService.Taste taste = matcher.tasteOf(viewer);
         boolean hasTaste = !taste.artists().isEmpty() || !taste.trackArtists().isEmpty();
 
-        return new EventsInfoResponse(importer.available(), cities, hasTaste,
+        return new EventsInfoResponse(importer.available(), country, EventCountries.OBSLUGIWANE,
+            importer.importing(country), cities, hasTaste,
             participations.countMineUpcoming(viewer, today), performerTags.available(), lastImport);
+    }
+
+    /**
+     * Zmiana kraju wydarzen na koncie. Kraju, ktorego jeszcze nie mamy,
+     * nie kazemy czekac do nastepnego przebiegu importu - pobiera sie od razu
+     * w tle, a lista pokazuje w tym czasie "pobieramy".
+     */
+    @Transactional
+    public EventsInfoResponse changeCountry(String viewer, String country, boolean admin) {
+        if (!EventCountries.supported(country)) {
+            throw OperationNotAllowedException.eventCountry();
+        }
+        String kod = EventCountries.orDefault(country);
+        User user = users.findByUsername(viewer)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", viewer));
+        user.setEventsCountry(kod);
+        users.saveAndFlush(user);
+
+        importer.requestCountry(kod);
+        return info(admin, viewer);
+    }
+
+    /** Kraj z konta; nic nie wybrano - Polska. */
+    private String countryOf(String viewer) {
+        return EventCountries.orDefault(viewer == null ? null
+            : users.findByUsername(viewer).map(User::getEventsCountry).orElse(null));
     }
 
     private static Map<Long, Long> toMap(List<EventCountRow> rows) {

@@ -42,7 +42,8 @@
     "submitting": "Logowanie…",
     "noAccount": "Nie masz konta?",
     "goToRegister": "Załóż konto",
-    "registered": "Konto założone. Możesz się teraz zalogować."
+    "registered": "Konto założone. Możesz się teraz zalogować.",
+    "verified": "Adres potwierdzony. Zaloguj się, żeby zacząć."
   },
   "register": {
     "title": "Zakładanie konta",
@@ -172,7 +173,13 @@
     "language": "Język interfejsu",
     "languageHint": "Dotyczy też komunikatów przysyłanych przez serwer.",
     "theme": "Motyw",
-    "themeHint": "Jasny albo ciemny — wybór zapamiętuje się w tej przeglądarce."
+    "themeHint": "Jasny albo ciemny — wybór zapamiętuje się w tej przeglądarce.",
+    "pendingEmail": "Czeka na potwierdzenie:",
+    "pendingEmailHint": "Wysłaliśmy tam link. Do czasu kliknięcia obowiązuje dotychczasowy adres ({{email}}).",
+    "pendingResend": "Wyślij link ponownie",
+    "pendingCancel": "Zostaw stary adres",
+    "pendingResent": "Wysłaliśmy nowy link.",
+    "pendingCancelled": "Zmiana adresu anulowana."
   },
   "avatar": {
     "title": "Zdjęcie profilowe",
@@ -549,11 +556,16 @@
   },
   "events": {
     "title": "Wydarzenia",
-    "subtitle": "Koncerty w Polsce",
+    "subtitle": "Koncerty i imprezy muzyczne",
     "searchPlaceholder": "Wykonawca, klub, nazwa wydarzenia…",
     "searchLabel": "Szukaj wydarzeń",
     "cityLabel": "Miasto",
     "allCities": "Wszystkie miasta",
+    "countryLabel": "Kraj wydarzeń",
+    "importingTitle": "Pobieramy wydarzenia: {{country}}",
+    "importingText": "Pierwsze pobieranie z nowego kraju trwa zwykle kilkanaście sekund. Lista odświeży się sama.",
+    "countryEmptyTitle": "Nic tu się nie zapowiada: {{country}}",
+    "countryEmptyText": "Ticketmaster nie ma teraz koncertów z tego kraju albo pobieranie jeszcze się nie udało. Wybierz inny kraj albo zajrzyj później.",
     "today": "Dziś",
     "tomorrow": "Jutro",
     "timeUnknown": "godzina wkrótce",
@@ -652,5 +664,30 @@
     "hiddenMe": "inni cię nie widzą",
     "withdrawnInfo": "Tego wydarzenia nie ma już w Ticketmasterze — mogło zostać odwołane albo przeniesione. Sprawdź u organizatora.",
     "withdrawnBadge": "Wycofane"
+  },
+  "verify": {
+    "checkTitle": "Sprawdź skrzynkę",
+    "sentTo": "Wysłaliśmy link potwierdzający na adres",
+    "checkText": "Kliknij go, żeby dokończyć zakładanie konta. Link działa 24 godziny. Nie widzisz wiadomości? Zajrzyj do folderu „Spam” lub „Oferty”.",
+    "resend": "Wyślij link ponownie",
+    "resendIn": "Wyślij ponownie za {{count}} s",
+    "resent": "Wysłaliśmy nowy link na {{email}}.",
+    "wrongAddress": "Pomyłka w adresie? Popraw go",
+    "newAddress": "Poprawny adres e-mail",
+    "sendToNew": "Wyślij na ten adres",
+    "afterClick": "Po kliknięciu w link możesz się zalogować.",
+    "goToLogin": "Przejdź do logowania",
+    "backToLogin": "Wróć do logowania",
+    "checking": "Potwierdzamy adres…",
+    "noToken": "W adresie strony brakuje kodu z wiadomości. Otwórz link jeszcze raz, klikając przycisk w e-mailu.",
+    "failedTitle": "Nie udało się potwierdzić",
+    "failedHint": "Przy logowaniu możesz poprosić o nowy link.",
+    "goToSettings": "Przejdź do ustawień",
+    "doneTitle": "Adres potwierdzony!",
+    "doneText": "Gotowe — konto jest aktywne. Potwierdzony adres:",
+    "changedTitle": "Nowy adres zapisany",
+    "changedText": "Od teraz konto używa adresu:",
+    "signIn": "Zaloguj się",
+    "goToApp": "Przejdź do aplikacji"
   }
 }

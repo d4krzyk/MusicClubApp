@@ -47,6 +47,10 @@ class UserServiceTest {
     @Mock
     private FileStorageService fileStorage;
 
+    /** Potwierdzanie adresu - tu tylko sprawdzamy, ze serwis je wola. */
+    @Mock
+    private EmailVerificationService emailVerification;
+
     @InjectMocks
     private UserService userService;
 
@@ -58,11 +62,11 @@ class UserServiceTest {
     @DisplayName("rejestracja zapisuje uzytkownika z ZAHASHOWANYM haslem")
     void registrationHashesPassword() {
         given(userRepository.existsByUsername("anna")).willReturn(false);
-        given(userRepository.existsByEmail("anna@example.com")).willReturn(false);
+        given(userRepository.existsByEmailIgnoreCase("anna@example.com")).willReturn(false);
         given(passwordEncoder.encode("tajneHaslo1")).willReturn("$2a$10$zahashowane");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null));
 
         userService.register(reportViolation());
 
@@ -74,17 +78,19 @@ class UserServiceTest {
         assertThat(stored.getValue().getPasswordHash()).isEqualTo("$2a$10$zahashowane");
         // najwazniejsze: jawne haslo NIE trafia do bazy
         assertThat(stored.getValue().getPasswordHash()).isNotEqualTo("tajneHaslo1");
+        // ...i zapisane konto idzie do potwierdzenia adresu
+        verify(emailVerification).afterRegistration(stored.getValue());
     }
 
     @Test
     @DisplayName("nowy uzytkownik dostaje role USER")
     void newUserGetsUserRole() {
         given(userRepository.existsByUsername(anyString())).willReturn(false);
-        given(userRepository.existsByEmail(anyString())).willReturn(false);
+        given(userRepository.existsByEmailIgnoreCase(anyString())).willReturn(false);
         given(passwordEncoder.encode(anyString())).willReturn("hash");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null));
 
         userService.register(reportViolation());
 
@@ -109,7 +115,7 @@ class UserServiceTest {
     @DisplayName("zajety e-mail przerywa rejestracje i nic nie zapisuje")
     void takenEmailThrows() {
         given(userRepository.existsByUsername("anna")).willReturn(false);
-        given(userRepository.existsByEmail("anna@example.com")).willReturn(true);
+        given(userRepository.existsByEmailIgnoreCase("anna@example.com")).willReturn(true);
 
         assertThatThrownBy(() -> userService.register(reportViolation()))
             .isInstanceOf(DuplicateResourceException.class);
@@ -132,7 +138,7 @@ class UserServiceTest {
     void existingUserIsMappedToDto() {
         User user = new User("anna", "anna@example.com", "$2a$10$hash");
         UserResponse oczekiwany =
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now());
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null);
 
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(user));
         given(userMapper.toResponse(user)).willReturn(oczekiwany);

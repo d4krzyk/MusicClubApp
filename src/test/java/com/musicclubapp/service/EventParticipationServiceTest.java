@@ -55,8 +55,8 @@ class EventParticipationServiceTest {
     @BeforeEach
     void setUp() {
         Clock zegar = Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC);
-        EventImportService importer = new EventImportService(new TicketmasterClient("", "http://127.0.0.1:9", 500), eventRepository, participationRepository,
-            performerTagService, transactionManager, zegar, 0, EventImportServiceTest.SZESC_GODZIN);
+        EventImportService importer = WydarzeniaTestowe.importer(new TicketmasterClient("", "http://127.0.0.1:9", 500), eventRepository,
+            participationRepository, performerTagService, userRepository, transactionManager, zegar);
         zapisy = new EventParticipationService(participationRepository, eventRepository,
             userRepository, importer, zegar);
 

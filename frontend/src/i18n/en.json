@@ -42,7 +42,8 @@
     "submitting": "Signing in…",
     "noAccount": "No account yet?",
     "goToRegister": "Create one",
-    "registered": "Account created. You can sign in now."
+    "registered": "Account created. You can sign in now.",
+    "verified": "Address confirmed. Sign in to get started."
   },
   "register": {
     "title": "Create an account",
@@ -166,7 +167,13 @@
     "language": "Interface language",
     "languageHint": "Also applies to messages sent by the server.",
     "theme": "Theme",
-    "themeHint": "Light or dark — the choice is remembered in this browser."
+    "themeHint": "Light or dark — the choice is remembered in this browser.",
+    "pendingEmail": "Waiting for confirmation:",
+    "pendingEmailHint": "We've sent a link there. Until you click it, your current address ({{email}}) stays in use.",
+    "pendingResend": "Send the link again",
+    "pendingCancel": "Keep the old address",
+    "pendingResent": "We've sent a new link.",
+    "pendingCancelled": "Address change cancelled."
   },
   "avatar": {
     "title": "Profile picture",
@@ -526,11 +533,16 @@
   },
   "events": {
     "title": "Events",
-    "subtitle": "Concerts in Poland",
+    "subtitle": "Concerts and music nights",
     "searchPlaceholder": "Artist, venue, event name…",
     "searchLabel": "Search events",
     "cityLabel": "City",
     "allCities": "All cities",
+    "countryLabel": "Events country",
+    "importingTitle": "Fetching events: {{country}}",
+    "importingText": "The first download for a new country usually takes a few seconds. The list will refresh by itself.",
+    "countryEmptyTitle": "Nothing coming up: {{country}}",
+    "countryEmptyText": "Ticketmaster has no concerts in this country right now, or the download hasn't succeeded yet. Pick another country or check back later.",
     "today": "Today",
     "tomorrow": "Tomorrow",
     "timeUnknown": "time TBA",
@@ -617,5 +629,30 @@
     "hiddenMe": "others can't see you",
     "withdrawnInfo": "This event is no longer on Ticketmaster — it may have been cancelled or moved. Check with the organiser.",
     "withdrawnBadge": "Withdrawn"
+  },
+  "verify": {
+    "checkTitle": "Check your inbox",
+    "sentTo": "We've sent a confirmation link to",
+    "checkText": "Click it to finish creating your account. The link works for 24 hours. Can't see the email? Look in your Spam or Promotions folder.",
+    "resend": "Send the link again",
+    "resendIn": "Send again in {{count}} s",
+    "resent": "We've sent a new link to {{email}}.",
+    "wrongAddress": "Typo in the address? Fix it",
+    "newAddress": "Correct email address",
+    "sendToNew": "Send to this address",
+    "afterClick": "Once you click the link, you can sign in.",
+    "goToLogin": "Go to sign in",
+    "backToLogin": "Back to sign in",
+    "checking": "Confirming your address…",
+    "noToken": "The page address is missing the code from the email. Open the link again using the button in the email.",
+    "failedTitle": "Couldn't confirm",
+    "failedHint": "You can ask for a new link when signing in.",
+    "goToSettings": "Go to settings",
+    "doneTitle": "Address confirmed!",
+    "doneText": "All set — your account is active. Confirmed address:",
+    "changedTitle": "New address saved",
+    "changedText": "From now on your account uses:",
+    "signIn": "Sign in",
+    "goToApp": "Go to the app"
   }
 }

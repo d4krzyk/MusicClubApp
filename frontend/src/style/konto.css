@@ -1,0 +1,45 @@
+/* =========================================================================
+   POTWIERDZANIE ADRESU E-MAIL
+   ========================================================================= */
+
+/* "Sprawdz skrzynke" i strona po kliknieciu w link - ten sam uklad. */
+.skrzynka {
+  text-align: center;
+}
+
+.skrzynka-ikona {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  margin-bottom: .85rem;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--mc-gradient);
+  box-shadow: var(--mc-glow);
+}
+
+.skrzynka-ikona.is-blad {
+  background: var(--bs-danger);
+  box-shadow: none;
+}
+
+/* Adres w osobnej linii i dlugi adres lamie sie, zamiast wypychac karte. */
+.skrzynka-adres {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  margin-bottom: .75rem;
+}
+
+/* Zmiana adresu w ustawieniach czeka na klikniecie w link. */
+.email-czeka {
+  display: flex;
+  gap: .75rem;
+  align-items: flex-start;
+}
+
+.email-czeka-tresc {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

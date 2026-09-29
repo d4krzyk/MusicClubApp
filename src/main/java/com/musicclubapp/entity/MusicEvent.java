@@ -36,6 +36,8 @@ import java.util.List;
     indexes = {
         /* Lista zawsze zaczyna od "od dzis w gore". */
         @Index(name = "idx_music_events_start", columnList = "start_date"),
+        /* ...i zawsze w jednym kraju. */
+        @Index(name = "idx_music_events_country_start", columnList = "country_code, start_date"),
         /* Kolejne terminy tego samego wydarzenia - na liscie i na stronie wydarzenia. */
         @Index(name = "idx_music_events_series", columnList = "series_key, start_date")
     })
@@ -98,6 +100,13 @@ public class MusicEvent {
 
     @Column(name = "venue_name", length = 200)
     private String venueName;
+
+    /**
+     * Kraj wydarzenia (kod ISO, np. "PL", "DE"). Lista pokazuje wydarzenia
+     * z kraju wybranego na koncie.
+     */
+    @Column(name = "country_code", length = 2)
+    private String countryCode;
 
     /** Miasto tak, jak podal je Ticketmaster (zwykle po angielsku: "Warsaw", "Krakow"). */
     @Column(length = 100)
@@ -187,6 +196,14 @@ public class MusicEvent {
         this.ticketUrl = ticketUrl;
         this.imageUrl = imageUrl;
         this.thumbUrl = thumbUrl;
+    }
+
+    public void inCountry(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
     }
 
     public void groupAs(String seriesKey) {

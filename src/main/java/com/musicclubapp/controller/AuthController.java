@@ -1,10 +1,15 @@
 package com.musicclubapp.controller;
 
+import com.musicclubapp.dto.EmailVerificationResponse;
 import com.musicclubapp.dto.LoginRequest;
 import com.musicclubapp.dto.RegisterRequest;
+import com.musicclubapp.dto.ResendVerificationRequest;
 import com.musicclubapp.dto.UserResponse;
+import com.musicclubapp.dto.VerifyEmailRequest;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.security.JsonRememberMeServices;
+import com.musicclubapp.service.EmailVerificationService;
+import com.musicclubapp.service.MailRateLimiter;
 import com.musicclubapp.service.NetworkService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,19 +49,25 @@ public class AuthController {
     private final JsonRememberMeServices rememberMeServices;
     private final NetworkService network;
     private final UserRepository userRepository;
+    private final EmailVerificationService emailVerification;
+    private final MailRateLimiter mailLimiter;
 
     public AuthController(UserService userService,
                           AuthenticationManager authenticationManager,
                           SecurityContextRepository securityContextRepository,
                           JsonRememberMeServices rememberMeServices,
                           NetworkService network,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          EmailVerificationService emailVerification,
+                          MailRateLimiter mailLimiter) {
         this.userService = userService;
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.rememberMeServices = rememberMeServices;
         this.network = network;
         this.userRepository = userRepository;
+        this.emailVerification = emailVerification;
+        this.mailLimiter = mailLimiter;
     }
 
     /** Zakladanie konta. @Valid uruchamia walidacje DTO (wyklad 3, slajd 62). */
@@ -65,12 +76,19 @@ public class AuthController {
     @ApiResponses({
         @ApiResponse(responseCode = "201", description = "Konto zalozone"),
         @ApiResponse(responseCode = "409", description = "Login lub e-mail juz zajety"),
-        @ApiResponse(responseCode = "422", description = "Blad walidacji danych")
+        @ApiResponse(responseCode = "422", description = "Blad walidacji danych"),
+        @ApiResponse(responseCode = "429", description = "Za duzo rejestracji z tego adresu sieciowego")
     })
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request,
                                                  HttpServletRequest http) {
         /* Blokada adresu dziala WLASNIE tutaj - przy zakladaniu konta. */
-        network.requireNotBlocked(network.clientIp(http));
+        String address = network.clientIp(http);
+        network.requireNotBlocked(address);
+
+        /* Kazda rejestracja wysyla wiadomosc - limit, zeby nie dalo sie nami zasypywac cudzych skrzynek. */
+        if (emailVerification.enabled()) {
+            mailLimiter.acquire(address);
+        }
 
         UserResponse created = userService.register(request);
 
@@ -102,6 +120,9 @@ public class AuthController {
 
         Authentication authenticated = authenticationManager.authenticate(payload);
 
+        /* Dopiero po hasle - inaczej odpowiedz zdradzalaby, ktore konta nie sa potwierdzone. */
+        emailVerification.requireVerified(authenticated.getName());
+
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authenticated);
         SecurityContextHolder.setContext(context);
@@ -117,6 +138,42 @@ public class AuthController {
             .ifPresent(user -> network.recordLogin(user, address));
 
         return ResponseEntity.ok(userService.getByUsername(authenticated.getName()));
+    }
+
+    /** Klikniety link z wiadomosci. Nie loguje - link mogl zostac otwarty na innym urzadzeniu. */
+    @PostMapping("/verify-email")
+    @Operation(summary = "Potwierdza adres e-mail tokenem z wiadomosci")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Adres potwierdzony"),
+        @ApiResponse(responseCode = "409", description = "Link niewazny, zuzyty albo adres zajety")
+    })
+    public ResponseEntity<EmailVerificationResponse> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        return ResponseEntity.ok(emailVerification.verify(request.token()));
+    }
+
+    /**
+     * Ponowna wysylka linku przed pierwszym zalogowaniem - z haslem. Opcjonalnie
+     * na poprawiony adres, gdy przy rejestracji wkradla sie literowka.
+     */
+    @PostMapping("/resend-verification")
+    @Operation(summary = "Wysyla ponownie link potwierdzajacy (login i haslo wymagane)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "204", description = "Wyslano"),
+        @ApiResponse(responseCode = "401", description = "Bledny login lub haslo"),
+        @ApiResponse(responseCode = "409", description = "Adres juz potwierdzony albo zajety"),
+        @ApiResponse(responseCode = "429", description = "Za czesto - odpowiedz mowi, ile poczekac")
+    })
+    public ResponseEntity<Void> resendVerification(@Valid @RequestBody ResendVerificationRequest request,
+                                                   HttpServletRequest http) {
+        String address = network.clientIp(http);
+        network.requireNotBlocked(address);
+
+        Authentication authenticated = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.username(), request.password()));
+
+        mailLimiter.acquire(address);
+        emailVerification.resendRegistration(authenticated.getName(), request.email());
+        return ResponseEntity.noContent().build();
     }
 
     /** Kto jest aktualnie zalogowany. */

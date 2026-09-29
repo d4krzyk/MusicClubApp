@@ -13,15 +13,32 @@
    Szukajka i miasto obok siebie; na telefonie jedno pod drugim, bo obok
    siebie kazde dostaloby po pol ekranu - za malo na podpowiedz w polu.
 */
+/*
+ * Szukanie, kraj, miasto. minmax(0, ...) zamiast samego 1fr: najmniejsza
+ * szerokosc pola wyboru to jego najdluzsza opcja ("Stany Zjednoczone"),
+ * a tego nie chcemy jako dolnej granicy - pasek wychodzilby poza ekran.
+ */
 .wydarzenia-filtry {
   display: grid;
-  grid-template-columns: 1fr minmax(11rem, auto);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 11rem) minmax(0, 13rem);
   gap: .5rem;
 }
 
-@media (max-width: 575.98px) {
+/* Za dluga nazwa w polu wyboru konczy sie wielokropkiem, a nie w pol litery. */
+.wydarzenia-filtry .form-select {
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Wezszy ekran: szukanie w calym wierszu, kraj i miasto pod nim - po polowie. */
+@media (max-width: 767.98px) {
   .wydarzenia-filtry {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .wydarzenia-szukaj {
+    grid-column: 1 / -1;
   }
 }
 
@@ -31,6 +48,7 @@
 
 .wydarzenia-szukaj .form-control {
   padding-left: 2.1rem;
+  text-overflow: ellipsis;
 }
 
 .wydarzenia-szukaj-ikona {

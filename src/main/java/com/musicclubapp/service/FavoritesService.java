@@ -18,9 +18,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /** Ulubieni artysci i utwory na profilu. */
 @Service
@@ -228,9 +228,14 @@ public class FavoritesService {
             Artist created = new Artist(
                 fromCatalog.externalId(), fromCatalog.name(), fromCatalog.imageUrl());
 
-            // Gatunki tylko przy PIERWSZYM zapisie tego artysty
-            Set<String> genres = lastFm.artistGenres(fromCatalog.name());
-            created.applyGenres(genres);
+            /*
+             * Gatunki przy pierwszym zapisie artysty. Gdy Last.fm nie odpowie
+             * albo nie ma klucza, artysta zostaje "niesprawdzony" - gatunki
+             * dociagnie pozniej ArtistGenreBackfillService. Wczesniej zostawal
+             * bez gatunkow na zawsze.
+             */
+            lastFm.lookupArtistGenres(fromCatalog.name())
+                .ifPresent(genres -> created.genresChecked(genres, LocalDateTime.now()));
 
             return artistRepository.save(created);
         });

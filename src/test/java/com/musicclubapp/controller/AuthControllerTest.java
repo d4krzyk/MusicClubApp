@@ -63,6 +63,13 @@ class AuthControllerTest {
     @MockBean
     private UserRepository userRepository;
 
+    /** Potwierdzanie adresu - atrapa zachowuje sie jak serwer bez poczty (wylaczone). */
+    @MockBean
+    private com.musicclubapp.service.EmailVerificationService emailVerification;
+
+    @MockBean
+    private com.musicclubapp.service.MailRateLimiter mailLimiter;
+
     private String json(Object obiekt) throws Exception {
         return objectMapper.writeValueAsString(obiekt);
     }
@@ -72,7 +79,7 @@ class AuthControllerTest {
     void validRegistrationReturns201() throws Exception {
         given(userRepository.existsByUsername("anna")).willReturn(false);
         given(userService.register(any(RegisterRequest.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null));
 
         mockMvc.perform(post("/api/auth/register")
                 .with(csrf())
@@ -165,7 +172,7 @@ class AuthControllerTest {
     @DisplayName("/me zwraca dane zalogowanego, ale NIE ujawnia jego roli")
     void meReturnsDataForLoggedInUser() throws Exception {
         given(userService.getByUsername("anna")).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now()));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null));
 
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isOk())
@@ -181,7 +188,7 @@ class AuthControllerTest {
     @DisplayName("/me dla administratora ustawia flage admin na true")
     void meSetsAdminFlag() throws Exception {
         given(userService.getByUsername("admin")).willReturn(
-            new UserResponse(1L, "admin", "admin@musicclub.local", true, null, LocalDateTime.now()));
+            new UserResponse(1L, "admin", "admin@musicclub.local", true, null, LocalDateTime.now(), true, null));
 
         mockMvc.perform(get("/api/auth/me"))
             .andExpect(status().isOk())
