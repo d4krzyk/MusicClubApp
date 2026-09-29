@@ -52,6 +52,7 @@ class EventCountryTest {
         """;
 
     @Autowired private BlockService blocks;
+    @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository repository;
     @Autowired private EventParticipationRepository participationRepository;
     @Autowired private UserRepository userRepository;
@@ -97,7 +98,8 @@ class EventCountryTest {
 
     private EventService events(EventImportService importer) {
         EventParticipationService zapisy = new EventParticipationService(participationRepository, repository,
-            userRepository, importer, zegar, blocks);
+            userRepository, importer, zegar, blocks,
+            new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         return new EventService(repository, participationRepository, userRepository, importer,
             matchService, zapisy, performerTagService);
     }

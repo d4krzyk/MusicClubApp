@@ -19,5 +19,8 @@ public enum NotificationType {
     REPORT,
 
     /** Moje zgloszenie zostalo rozpatrzone - powiadomienie dla ZGLASZAJACEGO. */
-    REPORT_RESOLVED
+    REPORT_RESOLVED,
+
+    /** Wydarzenie, na ktore jestem zapisany, jest za kilka dni. Bez sprawcy - pisze aplikacja. */
+    EVENT_REMINDER
 }

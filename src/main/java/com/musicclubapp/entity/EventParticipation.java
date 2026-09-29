@@ -60,6 +60,15 @@ public class EventParticipation {
     @Column(nullable = false)
     private boolean hidden;
 
+    /**
+     * Ostatni prog przypomnienia, ktory ta osoba juz ma za soba (np. 3 = "za
+     * 3 dni" wyslane). null = jeszcze zadne. Przy zapisie ustawiany na biezacy
+     * prog - kto zapisuje sie dwa dni przed koncertem, wie, kiedy on jest,
+     * i dostanie dopiero "jutro".
+     */
+    @Column(name = "reminded_days")
+    private Integer remindedDays;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -108,5 +117,13 @@ public class EventParticipation {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public Integer getRemindedDays() {
+        return remindedDays;
+    }
+
+    public void markReminded(Integer threshold) {
+        this.remindedDays = threshold;
     }
 }

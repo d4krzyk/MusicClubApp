@@ -3,6 +3,8 @@ import {
   refreshCsrfToken, rememberShownUser, setAccountSwitchHandler,
 } from '../api/client';
 import * as konto from '../api/konto';
+import i18n from '../i18n';
+import * as push from '../utils/push';
 
 /** Przechowuje informacje o zalogowanym uzytkowniku i udostepnia je calej aplikacji. */
 const AuthContext = createContext(null);
@@ -32,6 +34,16 @@ export function AuthProvider({ children }) {
 
     return () => setAccountSwitchHandler(null);
   }, []);
+
+  /* Urzadzenie z wlaczonymi powiadomieniami zapisuje sie ponownie - patrz utils/push.js. */
+  const zalogowany = user?.username;
+  useEffect(() => {
+    if (zalogowany) {
+      push.synchronizuj(i18n.language).catch(() => {
+        // Bez powiadomien na telefon aplikacja dziala dalej
+      });
+    }
+  }, [zalogowany]);
 
   /* Sprawdzenie tozsamosci w chwili POWROTU do karty. */
   useEffect(() => {
@@ -107,6 +119,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    /*
+     * Po wylogowaniu ten telefon nie ma dostawac cudzych powiadomien - moze
+     * z niego korzystac ktos inny. Najwyzej 3 sekundy: wylogowanie jest
+     * wazniejsze niz porzadek w subskrypcjach.
+     */
+    await Promise.race([
+      push.wylacz().catch(() => {}),
+      new Promise((gotowe) => { setTimeout(gotowe, 3000); }),
+    ]);
     try {
       await konto.wyloguj();
     } finally {

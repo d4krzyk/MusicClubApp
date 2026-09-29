@@ -407,7 +407,13 @@
     "friendAccepted": "{{username}} jest teraz Twoim znajomym",
     "report": "Nowe zgłoszenie do sprawdzenia",
     "delete": "Usuń powiadomienie",
-    "reportResolved": "Twoje zgłoszenie zostało rozpatrzone"
+    "reportResolved": "Twoje zgłoszenie zostało rozpatrzone",
+    "reminderToday": "Dziś: {{name}}",
+    "reminderTomorrow": "Jutro: {{name}}",
+    "reminderDays_one": "Za {{count}} dzień: {{name}}",
+    "reminderDays_few": "Za {{count}} dni: {{name}}",
+    "reminderDays_many": "Za {{count}} dni: {{name}}",
+    "reminderDays_other": "Za {{count}} dni: {{name}}"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -770,5 +776,28 @@
     "saved": "Zapisano.",
     "restrictedTitle": "Profil tylko dla znajomych",
     "restrictedText": "Szczegóły profilu {{username}} widzą tylko znajomi tej osoby."
+  },
+  "push": {
+    "title": "Powiadomienia",
+    "reminders": "Przypominaj o wydarzeniach",
+    "remindersHint": "3 dni i dzień przed wydarzeniem, na które idziesz albo które cię interesuje — w dzwonku, a jeśli włączysz niżej, także na telefonie.",
+    "thisDevice": "Na tym urządzeniu",
+    "serverOff": "Powiadomienia na telefon nie są włączone na tym serwerze. Przypomnienia będą w dzwonku.",
+    "unsupported": "Ta przeglądarka nie obsługuje powiadomień push. Na iPhonie działają po dodaniu MusicClub do ekranu głównego (Udostępnij → Do ekranu początkowego).",
+    "blocked": "Powiadomienia są zablokowane w ustawieniach przeglądarki. Zezwól na nie dla tej strony (ikona kłódki obok adresu) i wróć tutaj.",
+    "offHint": "Przypomnienia o wydarzeniach i zaproszenia do znajomych jako powiadomienia na telefonie — także gdy aplikacja jest zamknięta.",
+    "enable": "Włącz powiadomienia",
+    "disable": "Wyłącz na tym urządzeniu",
+    "test": "Wyślij próbne",
+    "on": "Włączone",
+    "devices_one": "Masz je włączone na {{count}} urządzeniu.",
+    "devices_few": "Masz je włączone na {{count}} urządzeniach.",
+    "devices_many": "Masz je włączone na {{count}} urządzeniach.",
+    "devices_other": "Masz je włączone na {{count}} urządzeniach.",
+    "saved": "Zapisano.",
+    "enabled": "Gotowe — powiadomienia są włączone.",
+    "permissionRefused": "Przeglądarka nie dostała zgody na powiadomienia.",
+    "disabled": "Powiadomienia na tym urządzeniu są wyłączone.",
+    "testSent": "Wysłane — powiadomienie powinno pojawić się za chwilę."
   }
 }

@@ -267,3 +267,16 @@
     width: auto;
   }
 }
+
+/* Przypomnienie o wydarzeniu - w miejscu awatara kolko z kalendarzem */
+.bell-item-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--mc-gradient);
+}

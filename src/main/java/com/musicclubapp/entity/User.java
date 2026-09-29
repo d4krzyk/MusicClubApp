@@ -122,6 +122,11 @@ public class User {
     @Column(name = "hide_on_attendee_lists", nullable = false)
     private boolean hideOnAttendeeLists = false;
 
+    /** Czy przypominac o wydarzeniach, na ktore jestem zapisany (dzwonek i push). */
+    @org.hibernate.annotations.ColumnDefault("true")
+    @Column(name = "event_reminders", nullable = false)
+    private boolean eventReminders = true;
+
     /** Kraj, z ktorego pokazujemy wydarzenia. Pusty = Polska. */
     @Column(name = "events_country", length = 2)
     private String eventsCountry;
@@ -328,6 +333,14 @@ public class User {
 
     public boolean isHideOnAttendeeLists() {
         return hideOnAttendeeLists;
+    }
+
+    public boolean isEventReminders() {
+        return eventReminders;
+    }
+
+    public void setEventReminders(boolean eventReminders) {
+        this.eventReminders = eventReminders;
     }
 
     /** Wszystkie ustawienia prywatnosci naraz - formularz zapisuje je razem. */

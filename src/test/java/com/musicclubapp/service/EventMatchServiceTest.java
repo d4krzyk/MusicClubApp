@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class EventMatchServiceTest {
 
     @Autowired private BlockService blocks;
+    @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository eventRepository;
     @Autowired private EventParticipationRepository participationRepository;
     @Autowired private UserRepository userRepository;
@@ -69,7 +70,8 @@ class EventMatchServiceTest {
         EventImportService importer = WydarzeniaTestowe.importer(new TicketmasterClient("", "http://127.0.0.1:9", 500), eventRepository,
             participationRepository, performerTagService, userRepository, transactionManager, zegar);
         zapisy = new EventParticipationService(participationRepository, eventRepository, userRepository,
-            importer, zegar, blocks);
+            importer, zegar, blocks,
+            new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         events = new EventService(eventRepository, participationRepository, userRepository, importer,
             matchService, zapisy, performerTagService);
 

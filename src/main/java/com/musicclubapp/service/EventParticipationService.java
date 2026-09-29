@@ -35,13 +35,16 @@ public class EventParticipationService {
     private final EventImportService importer;
     private final Clock clock;
     private final BlockService blocks;
+    private final EventReminderService reminders;
 
     public EventParticipationService(EventParticipationRepository participations,
                                      MusicEventRepository events,
                                      UserRepository users,
                                      EventImportService importer,
                                      Clock clock,
-                                     BlockService blocks) {
+                                     BlockService blocks,
+                                     EventReminderService reminders) {
+        this.reminders = reminders;
         this.blocks = blocks;
         this.participations = participations;
         this.events = events;
@@ -81,7 +84,9 @@ public class EventParticipationService {
             User user = users.findByUsername(username)
                 .orElseThrow(() -> new NoSuchElementFoundException("user", username));
             boolean ukryty = hidden != null ? hidden : user.isHideOnAttendeeLists();
-            participations.save(new EventParticipation(event, user, status, ukryty, now));
+            EventParticipation nowy = new EventParticipation(event, user, status, ukryty, now);
+            nowy.markReminded(reminders.progPrzyZapisie(event.getStartDate()));
+            participations.save(nowy);
         }
         return summary(eventId, username);
     }
@@ -92,7 +97,10 @@ public class EventParticipationService {
         if (!events.existsById(eventId)) {
             throw new NoSuchElementFoundException("event", eventId);
         }
-        participations.findMine(eventId, username).ifPresent(participations::delete);
+        participations.findMine(eventId, username).ifPresent(p -> {
+            reminders.cancelled(p.getUser().getId(), eventId);
+            participations.delete(p);
+        });
         participations.flush();
         return summary(eventId, username);
     }

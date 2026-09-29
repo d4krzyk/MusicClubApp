@@ -1,6 +1,7 @@
 package com.musicclubapp.service;
 
 import com.musicclubapp.dto.NotificationResponse;
+import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
 import com.musicclubapp.entity.NotificationType;
 import com.musicclubapp.entity.Post;
@@ -21,11 +22,56 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
+    private final PushService push;
 
     public NotificationService(NotificationRepository notificationRepository,
-                               NotificationMapper notificationMapper) {
+                               NotificationMapper notificationMapper,
+                               PushService push) {
         this.notificationRepository = notificationRepository;
         this.notificationMapper = notificationMapper;
+        this.push = push;
+    }
+
+    /**
+     * Zapis w dzwonku i - dla wazniejszych rodzajow - powiadomienie na telefon.
+     * Reakcje zostaja tylko w dzwonku: przy popularnym poscie telefon
+     * brzeczalby co chwile.
+     */
+    private void zapisz(Notification n) {
+        notificationRepository.save(n);
+        PushService.Message wiadomosc = naTelefon(n);
+        if (wiadomosc != null) {
+            push.send(n.getRecipient().getId(), wiadomosc);
+        }
+    }
+
+    private PushService.Message naTelefon(Notification n) {
+        String link = notificationMapper.link(n);
+        String kto = n.getActor() != null ? n.getActor().getUsername() : null;
+        return switch (n.getType()) {
+            case FRIEND_REQUEST -> new PushService.Message("push.friendRequest.title", null,
+                "push.friendRequest.body", new Object[] {kto}, link, "friend-" + kto);
+            case FRIEND_ACCEPTED -> new PushService.Message("push.friendAccepted.title", null,
+                "push.friendAccepted.body", new Object[] {kto}, link, "friend-" + kto);
+            case REPORT -> new PushService.Message("push.report.title", null,
+                "push.report.body", new Object[] {kto}, link, "report");
+            case REPORT_RESOLVED -> new PushService.Message("push.reportResolved.title", null,
+                "push.reportResolved.body", null, link, "report-resolved");
+            case EVENT_REMINDER -> przypomnienie(n, link);
+            case REACTION -> null;
+        };
+    }
+
+    /** "Jutro: Nocny koncert" / "Progresja · 20:00". Jeden znacznik na wydarzenie - "jutro" zastepuje "za 3 dni". */
+    private static PushService.Message przypomnienie(Notification n, String link) {
+        MusicEvent e = n.getEvent();
+        int dni = n.getDaysLeft() == null ? 0 : n.getDaysLeft();
+        String tytul = dni == 0 ? "push.reminder.today" : dni == 1 ? "push.reminder.tomorrow" : "push.reminder.days";
+        String miejsce = e.getVenueName() == null ? "" : e.getVenueName();
+        String godzina = e.getStartTime() == null ? null : e.getStartTime().toString().substring(0, 5);
+        return new PushService.Message(tytul, new Object[] {e.getName(), dni},
+            godzina == null ? "push.reminder.place" : "push.reminder.placeTime",
+            new Object[] {miejsce, godzina}, link, "event-" + e.getId());
     }
 
     /* ------------------------------------------------------------------ */
@@ -60,7 +106,7 @@ public class NotificationService {
     public void reportFiled(List<User> admins, User reporter) {
         for (User admin : admins) {
             if (!admin.getId().equals(reporter.getId())) {
-                notificationRepository.save(Notification.report(admin, reporter));
+                zapisz(Notification.report(admin, reporter));
             }
         }
     }
@@ -71,7 +117,7 @@ public class NotificationService {
         if (reporter.getId().equals(admin.getId())) {
             return;
         }
-        notificationRepository.save(Notification.reportResolved(reporter, admin));
+        zapisz(Notification.reportResolved(reporter, admin));
     }
 
     /** Ktos wyslal zaproszenie do znajomych. */
@@ -80,7 +126,7 @@ public class NotificationService {
         if (recipient.getId().equals(actor.getId())) {
             return;
         }
-        notificationRepository.save(Notification.friendRequest(recipient, actor));
+        zapisz(Notification.friendRequest(recipient, actor));
     }
 
     /** Zaproszenie przestalo istniec (odrzucone albo anulowane). */
@@ -96,6 +142,23 @@ public class NotificationService {
         notificationRepository.deleteBetween(a, b);
     }
 
+    /**
+     * Przypomnienie o wydarzeniu. Poprzednie przypomnienie o tym samym
+     * wydarzeniu znika - w dzwonku ma byc aktualne "jutro", a nie jeszcze
+     * i "za 3 dni".
+     */
+    @Transactional
+    public void eventReminder(User recipient, MusicEvent event, int daysLeft) {
+        notificationRepository.deleteReminders(recipient.getId(), event.getId());
+        zapisz(Notification.eventReminder(recipient, event, daysLeft));
+    }
+
+    /** Rezygnacja z wydarzenia - przypomnienie o nim przestaje miec sens. */
+    @Transactional
+    public void eventRemindersGone(Long recipientId, Long eventId) {
+        notificationRepository.deleteReminders(recipientId, eventId);
+    }
+
     /** Znajomosc doszla do skutku - powiadamiamy te osobe, ktora czekala. */
     @Transactional
     public void friendshipFormed(User recipient, User actor) {
@@ -104,7 +167,7 @@ public class NotificationService {
         }
         notificationRepository.deleteByType(
             actor.getId(), recipient.getId(), NotificationType.FRIEND_REQUEST);
-        notificationRepository.save(Notification.friendAccepted(recipient, actor));
+        zapisz(Notification.friendAccepted(recipient, actor));
     }
 
     /* ------------------------------------------------------------------ */

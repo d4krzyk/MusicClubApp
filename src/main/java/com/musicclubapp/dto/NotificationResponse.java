@@ -21,6 +21,11 @@ public record NotificationResponse(
     String link,
 
     boolean read,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+
+    /** Przypomnienie: ktore wydarzenie i ile dni do niego zostalo (0 = dzis). */
+    Long eventId,
+    String eventName,
+    Integer daysLeft
 ) {
 }

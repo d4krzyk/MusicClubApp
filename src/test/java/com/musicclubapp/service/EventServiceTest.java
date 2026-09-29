@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class EventServiceTest {
 
     @Autowired private BlockService blocks;
+    @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository repository;
     @Autowired private EventParticipationRepository participationRepository;
     @Autowired private UserRepository userRepository;
@@ -64,7 +65,8 @@ class EventServiceTest {
         importer = WydarzeniaTestowe.importer(ticketmaster, repository, participationRepository,
             performerTagService, userRepository, transactionManager, zegar);
         participations = new EventParticipationService(participationRepository, repository,
-            userRepository, importer, zegar, blocks);
+            userRepository, importer, zegar, blocks,
+            new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         events = new EventService(repository, participationRepository, userRepository, importer,
             matchService, participations, performerTagService);
 

@@ -72,6 +72,11 @@ Dwie kolejne z zakładki Wydarzenia:
 - **Wiadomość wychodzi po zatwierdzeniu transakcji.** Test z `@Transactional`
   na klasie nigdy jej nie zobaczy — `EmailVerificationFlowTest` jest bez niego
   i sprząta konta sam.
+- **`ddl-auto=update` nie zdejmuje `NOT NULL`.** Kolumna, która przestała
+  być wymagana, zostaje wymagana w bazie z pracy lokalnej — stąd lista
+  `NULLABLE` w `EnumConstraintRefresher`. Na produkcji robi to migracja.
+- **Konta sprzed V5 mają `security_stamp = NULL`** (znacznik powstaje przy
+  pierwszej zmianie hasła). Porównania ze znacznikiem przez `COALESCE(…, '')`.
 - **Zegar testowy a północ w Polsce.** Testy importu stoją na 28.09 10:00 UTC;
   +12 h to już 29.09 w Warszawie, więc „dziś" się przesuwa i udawany
   Ticketmaster przestaje odpowiadać. Przesunięcia w testach — w obrębie dnia.
@@ -158,10 +163,7 @@ z Ticketmastera, jest wycofywane, a nie kasowane (jak przy zapisach); po 30
 dniach od daty znika, a posty zostają bez odnośnika. Komentarzy jeszcze nie
 ma — gdy dojdą, mają działać także pod tymi postami.
 
-Zostało:
-4. Przypomnienie w dzwonku kilka dni przed wydarzeniem (dla zainteresowanych
-   i idących).
-5. Opcjonalnie Web Push na telefon.
+Przypomnienia i push (migracja V8) — opis niżej, w „Powiadomienia push”.
 
 ## Poczta i potwierdzanie adresów
 
@@ -219,6 +221,37 @@ samo na produkcji).
   Administrator widzi wszystko.
 - Zbiór „ukrytych” do `NOT IN` bierze się z `blocks.hiddenForQuery()` —
   pusta lista jest podmieniana na `-1`.
+
+## Powiadomienia push i przypomnienia (V8)
+
+- Przypomnienia (`EventReminderService`): progi `app.events.reminders.days`
+  (3,1), co godzinę 9–21 czasu polskiego. `event_participations.reminded_days`
+  = ostatni zaliczony próg; przy zapisie ustawiany na bieżący (kto zapisuje się
+  dzień przed, wie, kiedy to jest). Nowe przypomnienie o tym samym wydarzeniu
+  zastępuje stare; rezygnacja je usuwa. `users.event_reminders` wyłącza.
+- `notifications.actor_id` może być NULL (przypomnienia pisze aplikacja) —
+  lista powiadomień musi łączyć sprawcę przez LEFT JOIN.
+- Web Push bez bibliotek: `push/WebPushEncryption` (RFC 8291, aes128gcm),
+  `push/Vapid` (RFC 8292, ES256 w formacie P1363), `push/P256`. Test na
+  wzorcu z biblioteki referencyjnej `http_ece`. Klucze `VAPID_*`; bez nich
+  push wyłączony, z połową/złym kluczem/bez kontaktu backend nie wstaje.
+- Wysyłka tylko do usług push z listy (`PushService.USLUGI`; test może
+  dopisać `app.push.extra-hosts`, http tylko dla localhost). 404/410 kasuje
+  subskrypcję.
+- Subskrypcja pamięta znacznik bezpieczeństwa konta (`stamp`, NULL → "").
+  Zmiana hasła/reset/„wyloguj wszędzie” = stare urządzenia milkną; bieżące
+  zapisuje się samo przy otwarciu aplikacji (`utils/push.js synchronizuj`).
+  Wylogowanie wypisuje urządzenie.
+- Push dla: przypomnień, zaproszeń, przyjętych zaproszeń, zgłoszeń (admin),
+  rozpatrzonych zgłoszeń. Reakcje tylko w dzwonku.
+- Service worker: `push` pokazuje powiadomienie (tag zastępuje poprzednie),
+  `notificationclick` przechodzi pod adres z tej samej domeny. W `npm run dev`
+  nie ma service workera, więc push jest niedostępny — sprawdza się na
+  `npm run build && npm run preview`.
+- Sprawdzanie w Chromium: udawana usługa push w skrypcie Playwrighta,
+  `PushManager.subscribe` podmieniony w init script, dostarczenie do
+  prawdziwego service workera przez CDP `ServiceWorker.deliverPushMessage`,
+  kliknięcie przez `NotificationEvent` w `serviceWorkers()[0].evaluate`.
 
 ## Wybory, do których nie wracamy
 

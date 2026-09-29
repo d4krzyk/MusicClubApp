@@ -93,11 +93,30 @@ public class EnumConstraintRefresher implements ApplicationRunner {
         this.entityManager = entityManager;
     }
 
+    /*
+     * Kolumny, ktore kiedys byly NOT NULL, a teraz moga byc puste. ddl-auto=update
+     * dodaje nowe kolumny, ale nigdy nie zmienia istniejacych - bez tego baza
+     * z pracy lokalnej odrzucalaby przypomnienia (nie maja sprawcy). Na
+     * produkcji robi to migracja; tam to polecenie niczego juz nie zmienia.
+     */
+    private static final List<String> NULLABLE = List.of("notifications.actor_id");
+
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         for (EnumColumn column : COLUMNS) {
             refresh(column);
+        }
+        for (String kolumna : NULLABLE) {
+            String[] czesci = kolumna.split("\\.");
+            try {
+                entityManager.createNativeQuery(
+                    "ALTER TABLE " + czesci[0] + " ALTER COLUMN " + czesci[1] + " DROP NOT NULL"
+                ).executeUpdate();
+            } catch (Exception e) {
+                log.warn("Nie udalo sie zdjac NOT NULL z {} ({}) - wykonaj recznie: "
+                    + "ALTER TABLE {} ALTER COLUMN {} DROP NOT NULL", kolumna, e.getMessage(), czesci[0], czesci[1]);
+            }
         }
     }
 

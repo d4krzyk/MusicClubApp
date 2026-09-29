@@ -13,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -37,9 +39,9 @@ public class Notification {
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
 
-    /** Kto to wywolal. */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "actor_id", nullable = false)
+    /** Kto to wywolal. null przy powiadomieniach od samej aplikacji (przypomnienia). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "actor_id")
     private User actor;
 
     @Enumerated(EnumType.STRING)
@@ -58,6 +60,19 @@ public class Notification {
     @Enumerated(EnumType.STRING)
     @Column(name = "reaction_type", length = 16)
     private ReactionType reactionType;
+
+    /**
+     * Wydarzenie - tylko przy NotificationType#EVENT_REMINDER. Znika razem
+     * z wydarzeniem (baza kasuje powiadomienie sama).
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "event_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private MusicEvent event;
+
+    /** Ile dni zostalo do wydarzenia w chwili przypomnienia: 0 = dzis, 1 = jutro. */
+    @Column(name = "days_left")
+    private Integer daysLeft;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -105,6 +120,14 @@ public class Notification {
         return new Notification(reporter, admin, NotificationType.REPORT_RESOLVED);
     }
 
+    /** Przypomnienie o wydarzeniu, na ktore odbiorca jest zapisany. */
+    public static Notification eventReminder(User recipient, MusicEvent event, int daysLeft) {
+        Notification n = new Notification(recipient, null, NotificationType.EVENT_REMINDER);
+        n.event = event;
+        n.daysLeft = daysLeft;
+        return n;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -147,6 +170,14 @@ public class Notification {
 
     public ReactionType getReactionType() {
         return reactionType;
+    }
+
+    public MusicEvent getEvent() {
+        return event;
+    }
+
+    public Integer getDaysLeft() {
+        return daysLeft;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -124,3 +124,57 @@ function pobierzIZapisz(request) {
     return odpowiedz;
   });
 }
+
+/*
+   POWIADOMIENIA PUSH
+
+   Serwer szyfruje tresc kluczem tej przegladarki, usluga push (Google,
+   Mozilla, Apple) ja przenosi, a tutaj przychodzi juz odszyfrowana: JSON
+   z tytulem, trescia, adresem w aplikacji i znacznikiem. Ten sam znacznik
+   zastepuje poprzednie powiadomienie - "jutro" wypiera "za 3 dni".
+*/
+self.addEventListener('push', (event) => {
+  let dane = {};
+  try {
+    dane = event.data ? event.data.json() : {};
+  } catch {
+    dane = { title: event.data ? event.data.text() : '' };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(dane.title || 'MusicClub', {
+      body: dane.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: dane.tag || undefined,
+      renotify: Boolean(dane.tag),
+      data: { url: dane.url || '/' },
+    }),
+  );
+});
+
+/*
+   Klikniecie: jesli aplikacja jest juz otwarta - przechodzi w niej pod adres
+   z powiadomienia, zamiast otwierac druga karte. Adres tylko z naszej
+   domeny: powiadomienie nie moze wyprowadzic nikogo na obca strone.
+*/
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const cel = new URL(event.notification.data?.url || '/', self.location.origin);
+  const adres = cel.origin === self.location.origin ? cel.href : self.location.origin + '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((okna) => {
+      const nasze = okna.find((okno) => new URL(okno.url).origin === self.location.origin);
+      if (!nasze) {
+        return self.clients.openWindow(adres);
+      }
+      // focus() bywa odrzucany (np. bez aktywacji uzytkownika) - przejscie i tak ma nastapic;
+      // okno, ktorego ten worker nie obsluguje, nie da sie przestawic - wtedy nowe
+      return nasze.focus()
+        .catch(() => nasze)
+        .then(() => nasze.navigate(adres))
+        .catch(() => self.clients.openWindow(adres));
+    }),
+  );
+});

@@ -41,6 +41,7 @@ public class AccountDeletionService {
     private final EmailVerificationService emailVerification;
     private final BlockService blocks;
     private final UserService users;
+    private final PushService push;
 
     public AccountDeletionService(UserRepository userRepository,
                                   PasswordEncoder passwordEncoder,
@@ -55,7 +56,9 @@ public class AccountDeletionService {
                                   EventParticipationService eventParticipations,
                                   EmailVerificationService emailVerification,
                                   BlockService blocks,
-                                  UserService users) {
+                                  UserService users,
+                                  PushService push) {
+        this.push = push;
         this.blocks = blocks;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -172,7 +175,10 @@ public class AccountDeletionService {
         // 12. Blokady - zalozone przez to konto i na nie
         blocks.deleteAllOf(id);
 
-        // 13. Zdjecie profilowe z dysku
+        // 13. Urzadzenia z powiadomieniami push
+        push.deleteAllOf(id);
+
+        // 14. Zdjecie profilowe z dysku
         users.deleteAvatarOf(target);
 
         userRepository.delete(target);

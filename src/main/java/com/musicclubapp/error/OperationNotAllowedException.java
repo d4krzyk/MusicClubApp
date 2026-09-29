@@ -151,6 +151,24 @@ public class OperationNotAllowedException extends RuntimeException {
         return new OperationNotAllowedException("Nie mozna zaprosic tej osoby", "error.friend.cannot.invite");
     }
 
+    /** Serwer nie ma kluczy VAPID - powiadomien push nie da sie wlaczyc. */
+    public static OperationNotAllowedException pushDisabled() {
+        return new OperationNotAllowedException(
+            "Powiadomienia push sa wylaczone na tym serwerze", "error.push.disabled");
+    }
+
+    /** Adres spoza uslug push przegladarek albo uszkodzone klucze subskrypcji. */
+    public static OperationNotAllowedException pushInvalid() {
+        return new OperationNotAllowedException(
+            "Niepoprawna subskrypcja push", "error.push.invalid");
+    }
+
+    /** Proba powiadomienia probnego bez zadnego zapisanego urzadzenia. */
+    public static OperationNotAllowedException pushNoDevices() {
+        return new OperationNotAllowedException(
+            "Brak urzadzen z wlaczonymi powiadomieniami", "error.push.noDevices");
+    }
+
     /** Serwer nie wysyla poczty - nie ma jak dostarczyc linku. */
     public static OperationNotAllowedException mailDisabled() {
         return new OperationNotAllowedException(

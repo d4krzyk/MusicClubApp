@@ -1,6 +1,7 @@
 package com.musicclubapp.mapper;
 
 import com.musicclubapp.dto.NotificationResponse;
+import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.User;
@@ -18,18 +19,23 @@ public class NotificationMapper {
 
     public NotificationResponse toResponse(Notification notification) {
         Post post = notification.getPost();
+        User actor = notification.getActor();
+        MusicEvent event = notification.getEvent();
 
         return new NotificationResponse(
             notification.getId(),
             notification.getType(),
-            notification.getActor().getUsername(),
-            avatarUrl(notification.getActor()),
+            actor != null ? actor.getUsername() : null,
+            actor != null ? avatarUrl(actor) : null,
             notification.getReactionType(),
             post != null ? post.getId() : null,
             excerpt(post),
             link(notification),
             notification.isRead(),
-            notification.getCreatedAt());
+            notification.getCreatedAt(),
+            event != null ? event.getId() : null,
+            event != null ? event.getName() : null,
+            notification.getDaysLeft());
     }
 
     private String avatarUrl(User user) {
@@ -39,7 +45,7 @@ public class NotificationMapper {
     }
 
     /** Dokad prowadzi klikniecie. */
-    private String link(Notification notification) {
+    public String link(Notification notification) {
         return switch (notification.getType()) {
             case REACTION -> notification.getPost() != null
                 ? "/post/" + notification.getPost().getId()
@@ -52,6 +58,9 @@ public class NotificationMapper {
             case REPORT -> "/zgloszenia";
             // Zglaszajacy trafia na wlasna liste zgloszen, a nie do panelu admina
             case REPORT_RESOLVED -> "/moje-zgloszenia";
+            case EVENT_REMINDER -> notification.getEvent() != null
+                ? "/wydarzenia/" + notification.getEvent().getId()
+                : "/wydarzenia?widok=moje";
         };
     }
 

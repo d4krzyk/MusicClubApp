@@ -5,7 +5,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import * as powiadomienia from '../api/powiadomienia';
 import Avatar from './Avatar';
 import DoladujWiecej from './DoladujWiecej';
-import { IconBell, IconCross } from './Icons';
+import { IconBell, IconCalendar, IconCross } from './Icons';
 import { timeAgo } from '../utils/dates';
 import useOdswiezanie from '../hooks/useOdswiezanie';
 
@@ -161,6 +161,14 @@ export default function NotificationsBell() {
         return t('notifications.report');
       case 'REPORT_RESOLVED':
         return t('notifications.reportResolved');
+      case 'EVENT_REMINDER':
+        if (notification.daysLeft === 0) {
+          return t('notifications.reminderToday', { name: notification.eventName });
+        }
+        if (notification.daysLeft === 1) {
+          return t('notifications.reminderTomorrow', { name: notification.eventName });
+        }
+        return t('notifications.reminderDays', { count: notification.daysLeft, name: notification.eventName });
       default:
         return notification.actorUsername;
     }
@@ -215,11 +223,18 @@ export default function NotificationsBell() {
                 className={`bell-item${notification.read ? '' : ' is-unread'}`}
                 onClick={() => openNotification(notification)}
               >
-                <Avatar
-                  avatarUrl={notification.actorAvatarUrl}
-                  username={notification.actorUsername}
-                  size={36}
-                />
+                {/* Przypomnienie nie ma sprawcy - pisze je aplikacja, wiec zamiast awatara kalendarz */}
+                {notification.actorUsername ? (
+                  <Avatar
+                    avatarUrl={notification.actorAvatarUrl}
+                    username={notification.actorUsername}
+                    size={36}
+                  />
+                ) : (
+                  <span className="bell-item-icon" aria-hidden="true">
+                    <IconCalendar size={16} />
+                  </span>
+                )}
 
                 <span className="bell-item-body">
                   <span className="bell-item-text">{text(notification)}</span>

@@ -386,7 +386,11 @@
     "friendAccepted": "{{username}} is now your friend",
     "report": "A new report to review",
     "delete": "Delete notification",
-    "reportResolved": "Your report has been reviewed"
+    "reportResolved": "Your report has been reviewed",
+    "reminderToday": "Today: {{name}}",
+    "reminderTomorrow": "Tomorrow: {{name}}",
+    "reminderDays_one": "In {{count}} day: {{name}}",
+    "reminderDays_other": "In {{count}} days: {{name}}"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -735,5 +739,26 @@
     "saved": "Saved.",
     "restrictedTitle": "Friends-only profile",
     "restrictedText": "Only {{username}}'s friends can see their profile details."
+  },
+  "push": {
+    "title": "Notifications",
+    "reminders": "Remind me about events",
+    "remindersHint": "3 days and 1 day before an event you're going to or interested in — in the bell, and on your phone if you turn it on below.",
+    "thisDevice": "On this device",
+    "serverOff": "Phone notifications aren't enabled on this server. Reminders will show up in the bell.",
+    "unsupported": "This browser doesn't support push notifications. On iPhone they work after adding MusicClub to the Home Screen (Share → Add to Home Screen).",
+    "blocked": "Notifications are blocked in your browser settings. Allow them for this site (the lock icon next to the address) and come back here.",
+    "offHint": "Event reminders and friend requests as phone notifications — even when the app is closed.",
+    "enable": "Turn on notifications",
+    "disable": "Turn off on this device",
+    "test": "Send a test",
+    "on": "On",
+    "devices_one": "They're on for {{count}} device.",
+    "devices_other": "They're on for {{count}} devices.",
+    "saved": "Saved.",
+    "enabled": "Done — notifications are on.",
+    "permissionRefused": "The browser didn't get permission to show notifications.",
+    "disabled": "Notifications are off on this device.",
+    "testSent": "Sent — the notification should appear in a moment."
   }
 }

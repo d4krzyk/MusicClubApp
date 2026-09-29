@@ -96,6 +96,10 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-}
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
+      # Push - bez kluczy wylaczony (docs/WDROZENIE.md)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     volumes:
       # BEZ TEGO WGRANE ZDJECIA ZNIKAJA przy kazdym `docker compose down`.
       # Kontenery sa jednorazowe - wszystko, co ma przezyc restart, musi lezec

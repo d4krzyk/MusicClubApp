@@ -328,6 +328,64 @@ docker compose -f docker-compose.prod.yml logs backend | grep Poczta
 albo `MAIL_PASSWORD` (przy Gmailu: zwykłe hasło zamiast hasła aplikacji).
 Adresy odbiorców w logu są zamaskowane (`j***i@gmail.com`).
 
+### Powiadomienia push i przypomnienia o wydarzeniach
+
+Przypomnienia („za 3 dni”, „jutro”) działają zawsze — w dzwonku. Żeby
+przychodziły też na telefon (także przy zamkniętej aplikacji), serwer
+potrzebuje pary kluczy VAPID. Generuje się ją **raz**; po zmianie kluczy
+każdy musi włączyć powiadomienia od nowa.
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Bez Node wystarczy `openssl` (sprawdzone: klucz publiczny zgadza się
+z prywatnym, a serwer z nimi wstaje):
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out vapid.pem
+openssl ec -in vapid.pem -pubout -outform DER | tail -c 65 | base64 | tr '/+' '_-' | tr -d '=\n'; echo
+openssl ec -in vapid.pem -outform DER | tail -c +8 | head -c 32 | base64 | tr '/+' '_-' | tr -d '=\n'; echo
+rm vapid.pem
+```
+
+Pierwsza linia wyniku to `VAPID_PUBLIC_KEY`, druga — `VAPID_PRIVATE_KEY`
+(tajny jak hasło, tylko w `.env`). Do tego kontakt dla usług push:
+
+```
+VAPID_SUBJECT=mailto:twoj@adres.pl
+```
+
+Pusty `VAPID_SUBJECT` = `APP_PUBLIC_URL`, o ile zaczyna się od `https://`.
+Jeden klucz bez drugiego, klucze z dwóch różnych generowań albo brak
+kontaktu — backend nie wstaje i mówi w logu, czego brakuje. Inaczej
+wszystko wyglądałoby na działające, a usługa push po cichu odrzucałaby
+każdą wiadomość.
+
+Jak to działa:
+
+- Przeglądarka dostaje adres od swojej usługi push (Google, Mozilla,
+  Apple, Microsoft) i dwa klucze. Serwer szyfruje treść tymi kluczami
+  (RFC 8291) i podpisuje wysyłkę kluczem VAPID (RFC 8292) — usługa push
+  przenosi wiadomość, ale jej nie przeczyta. Szyfrowanie jest napisane na
+  samej kryptografii JDK, bez dodatkowych bibliotek, i sprawdzone bajt
+  w bajt z biblioteką referencyjną `http_ece`.
+- Serwer wysyła **tylko** do usług push z listy (`fcm.googleapis.com`,
+  `updates.push.services.mozilla.com`, `*.push.apple.com`, `*.notify.windows.com`).
+  Adres podaje przeglądarka, więc bez listy każdy mógłby kazać serwerowi
+  wysyłać zapytania w dowolne miejsce, także do usług w sieci wewnętrznej.
+- Na telefon idą: przypomnienia o wydarzeniach, zaproszenia do znajomych,
+  przyjęte zaproszenia, a administratorom — nowe zgłoszenia. Reakcje nie
+  (przy popularnym poście telefon brzęczałby co chwilę).
+- Przypomnienia sprawdzane są co godzinę od 9 do 21 czasu polskiego —
+  telefon nie zadzwoni w nocy.
+- Wylogowanie wyłącza powiadomienia na tym urządzeniu (telefon może
+  przejść w inne ręce). Zmiana hasła, reset i „wyloguj z innych urządzeń”
+  wyłączają je na wszystkich innych — zgubiony telefon przestaje dostawać
+  powiadomienia.
+- iPhone: Web Push działa tylko po dodaniu strony do ekranu głównego
+  (iOS 16.4+). Android i TWA z Google Play — bez ograniczeń.
+
 ---
 
 ## Gdy backend nie wstaje
@@ -456,6 +514,36 @@ Przy postach pod wydarzeniem (wrzesień 2026):
   tylko publiczny), plakietka na tablicy z obciętą nazwą i przejściem do
   wydarzenia, usuwanie; 320 px w ciemnym motywie bez przelewu;
 - `mvnw clean test` → 498 testów.
+
+Przy przypomnieniach i powiadomieniach push (wrzesień 2026):
+
+- szyfrowanie treści porównane bajt w bajt z biblioteką referencyjną
+  `http_ece` (te same klucze i sól → te same bajty); podpis VAPID
+  weryfikowany niezależnie w Node;
+- migracja V8 na pustej bazie i po V7; schemat zgodny z encjami;
+- test przez całe API z udawaną usługą push: przypomnienia „za 3 dni”
+  i „jutro” raz na próg, bez wycofanych i dla osób z wyłączonymi
+  przypomnieniami, w dzwonku i na telefonie (odszyfrowane i sprawdzone),
+  410 usuwa martwy adres, po „wyloguj z innych urządzeń” stare urządzenie
+  nie dostaje nic, adresy spoza usług push odrzucone. Testy wyłapują
+  wyłączenie każdego z tych zabezpieczeń;
+- znalezione przy sprawdzaniu: konta sprzed V5 mają pusty znacznik
+  bezpieczeństwa (subskrypcja się nie zapisywała), a lista powiadomień
+  łączyła się ze sprawcą złączeniem wewnętrznym (przypomnienia bez sprawcy
+  znikałyby z dzwonka) — oba z testem, który najpierw czerwieniał;
+- Chromium: włączenie w ustawieniach, próbne powiadomienie przez udawaną
+  usługę push → odszyfrowanie biblioteką referencyjną → prawdziwy service
+  worker → powiadomienie systemowe; przypomnienie z bazy po przebiegu,
+  dzwonek, kliknięcie w powiadomienie otwiera stronę wydarzenia,
+  wyłączenie i wylogowanie usuwają subskrypcję;
+- start produkcyjny z kluczami z `openssl`, z jednym kluczem i bez
+  kontaktu (dwa ostatnie — backend nie wstaje, z podpowiedzią).
+
+**Nie sprawdzone stąd:** prawdziwe usługi push (Google, Apple) — to
+środowisko nie ma do nich dostępu. Format wiadomości i podpisu jest ten
+sam, który przyjmują (sprawdzony biblioteką, której używa pakiet
+`web-push`), ale pierwsze powiadomienie na prawdziwym telefonie trzeba
+zobaczyć po wdrożeniu.
 
 Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
 (podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz

@@ -115,6 +115,12 @@ services:
       # Adres strony w linkach z wiadomosci, np. https://musicclub.twojadomena.pl.
       # Pusty = adres, pod ktorym przyszlo zapytanie (dobre przy tunelu z losowym adresem).
       APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
+
+      # Powiadomienia push na telefon (docs/WDROZENIE.md, krok "Powiadomienia push").
+      # Bez kluczy przypomnienia sa tylko w dzwonku.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     volumes:
       - musicclub-uploads:/app/uploads
     # Tez bez "ports". Backend jest osiagalny wylacznie przez nginx, ktory

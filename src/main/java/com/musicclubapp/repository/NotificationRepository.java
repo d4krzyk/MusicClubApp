@@ -16,11 +16,15 @@ import java.util.Optional;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
-    /** Powiadomienia jednej osoby, od najnowszych. */
+    /**
+     * Powiadomienia jednej osoby, od najnowszych. LEFT przy sprawcy: przypomnienia
+     * nie maja sprawcy, a zwykly JOIN po cichu by je pomijal.
+     */
     @Query(value = """
            SELECT n FROM Notification n
-           JOIN FETCH n.actor
+           LEFT JOIN FETCH n.actor
            LEFT JOIN FETCH n.post
+           LEFT JOIN FETCH n.event
            WHERE n.recipient.username = :username
            ORDER BY n.createdAt DESC
            """,
@@ -100,4 +104,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Notification n WHERE n.post.author.id = :authorId")
     void deleteByPostAuthorId(@Param("authorId") Long authorId);
+
+    /** Przypomnienia o jednym wydarzeniu dla jednej osoby. */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.recipient.id = :recipientId AND n.event.id = :eventId
+             AND n.type = com.musicclubapp.entity.NotificationType.EVENT_REMINDER
+           """)
+    void deleteReminders(@Param("recipientId") Long recipientId, @Param("eventId") Long eventId);
 }

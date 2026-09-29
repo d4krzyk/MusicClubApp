@@ -124,4 +124,20 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
     @Modifying
     @Query("DELETE FROM EventParticipation p WHERE p.user.id = :userId")
     void deleteByUserId(@Param("userId") Long userId);
+
+    /**
+     * Kandydaci do przypomnienia: zapisy na wydarzenia z najblizszych dni,
+     * bez wycofanych i odwolanych, u osob, ktore chca przypomnien.
+     */
+    @Query("""
+           SELECT p FROM EventParticipation p
+           JOIN FETCH p.event e
+           JOIN FETCH p.user u
+           WHERE e.startDate BETWEEN :from AND :to
+             AND e.withdrawnAt IS NULL
+             AND e.status <> com.musicclubapp.entity.EventStatus.CANCELLED
+             AND u.eventReminders = true
+           """)
+    List<EventParticipation> dueForReminder(@Param("from") java.time.LocalDate from,
+                                            @Param("to") java.time.LocalDate to);
 }
