@@ -131,6 +131,17 @@ public class MusicEvent {
     @Column(name = "last_seen_at", nullable = false)
     private LocalDateTime lastSeenAt;
 
+    /**
+     * Kiedy wydarzenie zniknelo z Ticketmastera, choc ktos byl na nie zapisany.
+     *
+     * Takiego wydarzenia nie kasujemy - razem z nim zniknalby slad, ze ktos
+     * sie na nie wybieral, i nikt by sie nie dowiedzial, co sie stalo. Znika
+     * tylko z listy, a zapisani widza na jego stronie, ze Ticketmaster go juz
+     * nie ma. Wydarzenie bez zapisanych jest po prostu usuwane.
+     */
+    @Column(name = "withdrawn_at")
+    private LocalDateTime withdrawnAt;
+
     /** Sklad w kolejnosci z plakatu: najpierw gwiazda, potem support. */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "music_event_performers", joinColumns = @JoinColumn(name = "event_id"))
@@ -197,8 +208,24 @@ public class MusicEvent {
         }
     }
 
+    /** Import znow je widzi - jesli bylo wycofane, wraca na liste. */
     public void markSeen(LocalDateTime when) {
         this.lastSeenAt = when;
+        this.withdrawnAt = null;
+    }
+
+    public void withdraw(LocalDateTime when) {
+        if (withdrawnAt == null) {
+            withdrawnAt = when;
+        }
+    }
+
+    public boolean isWithdrawn() {
+        return withdrawnAt != null;
+    }
+
+    public LocalDateTime getWithdrawnAt() {
+        return withdrawnAt;
     }
 
     public Long getId() {

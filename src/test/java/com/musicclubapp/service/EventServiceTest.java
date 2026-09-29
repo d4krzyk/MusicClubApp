@@ -5,7 +5,10 @@ import com.musicclubapp.dto.EventDetailsResponse;
 import com.musicclubapp.dto.EventsInfoResponse;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.dto.EventView;
+import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
+import com.musicclubapp.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,10 +39,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class EventServiceTest {
 
     @Autowired private MusicEventRepository repository;
+    @Autowired private EventParticipationRepository participationRepository;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PerformerTagService performerTagService;
+    @Autowired private EventMatchService matchService;
     @Autowired private PlatformTransactionManager transactionManager;
 
     private TestHttpServer server;
     private EventImportService importer;
+    private EventParticipationService participations;
     private EventService events;
 
     @BeforeEach
@@ -51,9 +59,13 @@ class EventServiceTest {
 
         TicketmasterClient ticketmaster =
             new TicketmasterClient("klucz", server.url() + "/discovery/v2", 2000);
-        importer = new EventImportService(ticketmaster, repository, transactionManager,
-            Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC), 0, EventImportServiceTest.SZESC_GODZIN);
-        events = new EventService(repository, importer);
+        Clock zegar = Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC);
+        importer = new EventImportService(ticketmaster, repository, participationRepository,
+            performerTagService, transactionManager, zegar, 0, EventImportServiceTest.SZESC_GODZIN);
+        participations = new EventParticipationService(participationRepository, repository,
+            userRepository, importer, zegar);
+        events = new EventService(repository, participationRepository, userRepository, importer,
+            matchService, participations, performerTagService);
 
         importer.runImport();
     }
@@ -64,7 +76,7 @@ class EventServiceTest {
     }
 
     private Page<EventCardResponse> lista(String city, String q) {
-        return events.list(city, q, PageRequest.of(0, 20));
+        return events.list(EventView.UPCOMING, city, q, PageRequest.of(0, 20), "ogladajacy");
     }
 
     private List<String> nazwy(Page<EventCardResponse> page) {
@@ -144,8 +156,8 @@ class EventServiceTest {
     @Test
     @DisplayName("strony: licznik liczy karty, nie pojedyncze terminy")
     void paging() {
-        Page<EventCardResponse> pierwsza = events.list("", "", PageRequest.of(0, 3));
-        Page<EventCardResponse> ostatnia = events.list("", "", PageRequest.of(2, 3));
+        Page<EventCardResponse> pierwsza = events.list(EventView.UPCOMING, "", "", PageRequest.of(0, 3), "ogladajacy");
+        Page<EventCardResponse> ostatnia = events.list(EventView.UPCOMING, "", "", PageRequest.of(2, 3), "ogladajacy");
 
         assertThat(pierwsza.getContent()).hasSize(3);
         assertThat(pierwsza.getTotalElements()).isEqualTo(8);
@@ -161,14 +173,14 @@ class EventServiceTest {
 
         assertThat(nazwy(lista("", "minione"))).isEmpty();
 
-        EventDetailsResponse szczegoly = events.details(minione.getId());
+        EventDetailsResponse szczegoly = events.details(minione.getId(), "ogladajacy");
         assertThat(szczegoly.past()).isTrue();
     }
 
     @Test
     @DisplayName("strona wydarzenia: pelne dane i pozostale terminy - bez siebie samego")
     void details() {
-        EventDetailsResponse drugi = events.details(id("Z698xZbpZ17Can2"));
+        EventDetailsResponse drugi = events.details(id("Z698xZbpZ17Can2"), "ogladajacy");
 
         assertThat(drugi.date()).isEqualTo(LocalDate.of(2026, 9, 30));
         assertThat(drugi.time()).isEqualTo(LocalTime.of(20, 30));
@@ -176,7 +188,7 @@ class EventServiceTest {
             .containsExactly(LocalDate.of(2026, 9, 29), LocalDate.of(2026, 10, 1));
         assertThat(drugi.past()).isFalse();
 
-        EventDetailsResponse amity = events.details(id("vvG1zZ9KSAmity"));
+        EventDetailsResponse amity = events.details(id("vvG1zZ9KSAmity"), "ogladajacy");
         assertThat(amity.imageUrl()).endsWith("_16_9_1024x576.jpg");
         assertThat(amity.address()).isEqualTo("Fort Wola 22");
         assertThat(amity.latitude()).isEqualTo(52.2321);
@@ -188,14 +200,14 @@ class EventServiceTest {
     @Test
     @DisplayName("nieistniejace wydarzenie to 404, a nie pusta strona")
     void missingEvent() {
-        assertThatThrownBy(() -> events.details(987654L))
+        assertThatThrownBy(() -> events.details(987654L, "ogladajacy"))
             .isInstanceOf(NoSuchElementFoundException.class);
     }
 
     @Test
     @DisplayName("miasta: od najbardziej ruchliwego, liczone kartami")
     void cities() {
-        EventsInfoResponse info = events.info(false);
+        EventsInfoResponse info = events.info(false, "ogladajacy");
 
         assertThat(info.configured()).isTrue();
         assertThat(info.cities()).extracting(c -> c.key())
@@ -207,9 +219,9 @@ class EventServiceTest {
     @Test
     @DisplayName("stan importu widzi tylko administrator")
     void importStatusOnlyForAdmin() {
-        assertThat(events.info(false).lastImport()).isNull();
+        assertThat(events.info(false, "ogladajacy").lastImport()).isNull();
 
-        EventsInfoResponse.ImportInfo stan = events.info(true).lastImport();
+        EventsInfoResponse.ImportInfo stan = events.info(true, "ogladajacy").lastImport();
         assertThat(stan).isNotNull();
         assertThat(stan.success()).isTrue();
         assertThat(stan.events()).isEqualTo(10);

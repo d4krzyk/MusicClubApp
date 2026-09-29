@@ -14,6 +14,15 @@ public record EventsInfoResponse(
 
     List<EventCityResponse> cities,
 
+    @Schema(description = "Czy profil ma ulubionych artystow albo utwory - bez nich \"Dla ciebie\" jest puste")
+    boolean hasTaste,
+
+    @Schema(description = "Ile nadchodzacych wydarzen zaznaczylem")
+    long mine,
+
+    @Schema(description = "Czy serwer zna gatunki z Last.fm - bez tego pasuja tylko ogolne etykiety")
+    boolean genresFromLastFm,
+
     @Schema(description = "Ostatni import - TYLKO dla administratora, pozostali dostaja null")
     ImportInfo lastImport
 ) {

@@ -38,6 +38,20 @@ public record EventDetailsResponse(
     List<EventDateResponse> otherDates,
 
     @Schema(description = "Czy wydarzenie juz sie odbylo")
-    boolean past
+    boolean past,
+
+    @Schema(description = "Ticketmaster juz go nie ma, a ktos byl zapisany - moglo zostac odwolane")
+    boolean withdrawn,
+
+    ParticipationResponse participation,
+
+    @Schema(description = "Ilu moich znajomych sie zapisalo")
+    long friends,
+
+    @Schema(description = "Dlaczego pasuje do profilu; pusta lista, gdy nie pasuje")
+    List<EventReasonResponse> reasons,
+
+    @Schema(description = "Pierwsze osoby z listy uczestnikow; reszta pod /attendees")
+    List<AttendeeResponse> attendees
 ) {
 }

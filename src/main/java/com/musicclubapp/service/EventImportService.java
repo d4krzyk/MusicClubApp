@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.entity.EventPerformer;
 import com.musicclubapp.entity.MusicEvent;
+import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +21,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -60,6 +64,8 @@ public class EventImportService {
 
     private final TicketmasterClient ticketmaster;
     private final MusicEventRepository repository;
+    private final EventParticipationRepository participations;
+    private final PerformerTagService performerTags;
     private final TransactionTemplate transactions;
     private final Clock clock;
 
@@ -75,12 +81,16 @@ public class EventImportService {
     @Autowired
     public EventImportService(TicketmasterClient ticketmaster,
                               MusicEventRepository repository,
+                              EventParticipationRepository participations,
+                              PerformerTagService performerTags,
                               PlatformTransactionManager transactionManager,
                               Clock clock,
                               @Value("${app.events.import.pause-ms:250}") long przerwaMs,
                               @Value("${app.events.import.interval-ms:21600000}") long coIleMs) {
         this.ticketmaster = ticketmaster;
         this.repository = repository;
+        this.participations = participations;
+        this.performerTags = performerTags;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.przerwaMs = przerwaMs;
@@ -160,7 +170,22 @@ public class EventImportService {
 
         log.info("Import wydarzen: {} z Ticketmastera, usunietych {}", seen, removed);
         lastRun = new ImportStatus(LocalDateTime.now(clock), true, seen, removed, null);
+
+        refreshPerformerTags(today);
         return lastRun;
+    }
+
+    /**
+     * Gatunki nowych wykonawcow z Last.fm - po imporcie, bo dopiero wtedy
+     * wiadomo, kto gra. Blad tutaj nie psuje importu: wydarzenia juz sa,
+     * brakuje najwyzej dokladniejszych gatunkow do "Dla ciebie".
+     */
+    private void refreshPerformerTags(LocalDate today) {
+        try {
+            performerTags.refresh(repository.upcomingPerformerNames(today));
+        } catch (RuntimeException e) {
+            log.warn("Nie udalo sie uzupelnic gatunkow wykonawcow: {}", e.getMessage());
+        }
     }
 
     /**
@@ -244,6 +269,10 @@ public class EventImportService {
      * wynikow nie ruszamy niczego, i tak samo, gdy wynikow jest mniej niz
      * polowa tego, co bylo. Wtedy lepiej pokazac przez kilka godzin cos
      * nieaktualnego, niz wyczyscic cala zakladke.
+     *
+     * Wydarzenia, na ktore ktos sie zapisal, nie sa kasowane, tylko
+     * oznaczane jako wycofane: znikaja z listy, ale zapisani widza w zakladce
+     * "Moje", co sie stalo. Inaczej zapis przepadalby bez slowa.
      */
     private int removeVanished(LocalDate today, LocalDateTime startedAt, int seen, long upcomingBefore) {
         if (seen == 0 || seen * 2L < upcomingBefore) {
@@ -253,14 +282,33 @@ public class EventImportService {
         return transactions.execute(status -> {
             List<MusicEvent> vanished =
                 repository.findByStartDateGreaterThanEqualAndLastSeenAtBefore(today, startedAt);
-            repository.deleteAll(vanished);
-            return vanished.size();
+            if (vanished.isEmpty()) {
+                return 0;
+            }
+            Set<Long> zapisane = new HashSet<>(participations.eventsWithParticipants(
+                vanished.stream().map(MusicEvent::getId).toList()));
+
+            List<MusicEvent> doUsuniecia = new ArrayList<>();
+            for (MusicEvent event : vanished) {
+                if (zapisane.contains(event.getId())) {
+                    event.withdraw(startedAt);
+                } else {
+                    doUsuniecia.add(event);
+                }
+            }
+            repository.deleteAll(doUsuniecia);
+            return doUsuniecia.size();
         });
     }
 
+    /** Dawno minione - razem z zapisami, bo po miesiacu nikomu juz do niczego nie sluza. */
     private int removeOld(LocalDate before) {
         return transactions.execute(status -> {
             List<MusicEvent> old = repository.findByStartDateBefore(before);
+            if (old.isEmpty()) {
+                return 0;
+            }
+            participations.deleteByEventIds(old.stream().map(MusicEvent::getId).toList());
             repository.deleteAll(old);
             return old.size();
         });

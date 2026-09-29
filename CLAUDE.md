@@ -53,6 +53,13 @@ Dwie kolejne z zakładki Wydarzenia:
 - **Blok tekstowy w Javie (`"""`) obcina spacje na końcach linii.**
   `"WHERE " + warunek` w bloku dał `WHEREe.start_date`. Tam, gdzie spacja na
   końcu linii jest potrzebna, pisze się `\s`.
+- **`text-overflow: ellipsis` nie działa na kontenerze `flex`** — goły tekst
+  staje się anonimowym elementem flex i jest ucinany w pół słowa bez
+  wielokropka. Tekst trzeba włożyć we własny `span` z obcięciem (sprawdzać:
+  `scrollWidth > clientWidth` i `textOverflow` na tym spanie).
+- **Zegar testowy a północ w Polsce.** Testy importu stoją na 28.09 10:00 UTC;
+  +12 h to już 29.09 w Warszawie, więc „dziś" się przesuwa i udawany
+  Ticketmaster przestaje odpowiadać. Przesunięcia w testach — w obrębie dnia.
 
 ## Konfiguracja produkcyjna
 
@@ -89,25 +96,36 @@ Going./eBilet nie mają API. Ticketmaster zwrócił 801 koncertów w Polsce,
 także klubowych (Progresja, Hydrozagadka, Drizzly Grizzly).
 
 Etap 1 (zrobiony): import co 6 h do `music_events` (migracja V2; po nieudanym
-imporcie ponowna próba co kwadrans), lista
-z grupowaniem serii („Koncert przy świecach" grany co wieczór to jedna karta
-z „+3 terminy"), filtr miasta, szukanie, strona wydarzenia z mapą i biletami.
-Import usuwa wydarzenia, których Ticketmaster już nie ma, tylko po przebiegu
-bez błędu i gdy nie przyszło mniej niż połowa poprzedniej liczby.
+imporcie ponowna próba co kwadrans), lista z grupowaniem serii („Koncert przy
+świecach" grany co wieczór to jedna karta z „+3 terminy"), filtr miasta,
+szukanie, strona wydarzenia z mapą i biletami.
+
+Etap 2 (zrobiony, migracja V3): „Zainteresowany" / „Biorę udział" / rezygnacja,
+lista uczestników i trzy widoki listy — **Dla ciebie**, Najbliższe, Moje.
+- Lista uczestników: tylko „idę"; widzą ją wszyscy zalogowani, a kto zaznaczy
+  „nie pokazuj mnie", liczy się do licznika bez nazwy konta (wariant A —
+  przyjęty domyślnie, użytkownik nie wybrał innego). Siebie widzi się zawsze.
+- „Dla ciebie" (`EventMatchService`): ulubiony artysta w składzie albo w nazwie
+  wydarzenia 100 pkt, wykonawca ulubionego utworu 70, wspólny gatunek 15
+  (maks. 3), wspólna rodzina gatunków 8 (maks. 2), zapisany znajomy 20
+  (maks. 3). Przy każdej pozycji lista powodów. Nazwy porównywane po
+  `NameKeys` (bez wielkości liter, polskich znaków i „The").
+- Gatunki wykonawców koncertów z Last.fm w `performer_tags` — do 300 na przebieg
+  importu, ważne 60 dni; awaria Last.fm nie zapisuje pustych tagów. Bez
+  `LASTFM_API_KEY` zostają ogólne etykiety Ticketmastera (a gust użytkownika
+  i tak ma gatunki tylko z Last.fm).
+- Wydarzenie, które zniknęło z Ticketmastera, a ktoś był na nie zapisany, nie
+  jest kasowane: dostaje `withdrawn_at`, znika z list poza „Moje", a jego
+  strona to wyjaśnia. Wraca, gdy Ticketmaster znów je pokaże. Po 30 dniach od
+  daty znika razem z zapisami.
 
 Na telefonie (< 576 px) ikony administratora przechodzą do menu konta, a licznik
 zgłoszeń na awatar — z ikoną Wydarzeń pasek administratora wychodził poza
 ekran o 41 px przy 360 px. Teraz mieści się od 320 px w górę (zmierzone).
 
-Zostało, w tej kolejności:
-2. „Zainteresowany" / „Biorę udział" / rezygnacja + lista uczestników.
-   **Widoczność listy: wszyscy zalogowani, z opcją „nie pokazuj mnie"** (liczy
-   się wtedy tylko do licznika). Przyjęte domyślnie — użytkownik nie wybrał
-   innego wariantu. Przy usuwaniu wycofanych wydarzeń trzeba będzie wtedy
-   zdecydować, co z zapisanymi na nie osobami.
-3. Propozycje z uzasadnieniem: ulubiony wykonawca w składzie, wspólne gatunki
-   (Last.fm), znajomi, którzy idą.
-4. Przypomnienie w dzwonku kilka dni przed.
+Zostało:
+4. Przypomnienie w dzwonku kilka dni przed wydarzeniem (dla zainteresowanych
+   i idących).
 5. Opcjonalnie Web Push na telefon.
 
 ## Wybory, do których nie wracamy

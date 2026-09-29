@@ -149,6 +149,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
            """)
     List<String> genresOf(@Param("username") String username);
 
+    /**
+     * Gatunki ulubionych wykonawcow Z POWTORZENIAMI - tag, ktory ma pieciu
+     * moich artystow, pojawia sie piec razy. Z tego liczymy, jak mocno dany
+     * gatunek jest "moj", przy dopasowaniu wydarzen.
+     */
+    @Query("""
+           SELECT g FROM User u
+           JOIN u.favoriteArtists a
+           JOIN a.genres g
+           WHERE u.username = :username
+           """)
+    List<String> genreTagsOfFavorites(@Param("username") String username);
+
+    /** Identyfikatory znajomych - do licznikow "ilu znajomych idzie". */
+    @Query("SELECT f.id FROM User u JOIN u.friends f WHERE u.username = :username")
+    List<Long> friendIdsOf(@Param("username") String username);
+
     /** "Moj krag" - identyfikatory: moj wlasny i wszystkich moich znajomych. */
     @Query(value = """
            SELECT u.id FROM users u WHERE u.username = :username

@@ -89,7 +89,7 @@ zapisana jako „stan V1 już osiągnięty" i liczenie rusza od V2.
 z `create-drop` i też go nie widzą.
 
 Kolejna zmiana w encjach = nowy plik z kolejnym numerem. `V2__wydarzenia.sql`
-już jest (tabele zakładki Wydarzenia), więc następna to `V3__opis_zmiany.sql`.
+i `V3__zapisy_i_gatunki.sql` już są, więc następna to `V4__opis_zmiany.sql`.
 Migracji już wypuszczonej **nie edytuje się** — Flyway pilnuje sum
 kontrolnych i odmówi startu.
 
@@ -176,6 +176,13 @@ nad listą, kiedy było ostatnie pobranie i ile przyszło wydarzeń albo
 dlaczego się nie udało.
 
 Klucza nie ma w logach: tam, gdzie mógłby się pojawić, stoją gwiazdki.
+
+**`LASTFM_API_KEY` przydaje się tu drugi raz.** Widok „Dla ciebie" porównuje
+gatunki ulubionych artystów z gatunkami wykonawców koncertów — jedne i drugie
+bierze z Last.fm. Po imporcie serwer sprawdza w Last.fm do 300 nowych
+wykonawców (reszta w kolejnych przebiegach) i pamięta wynik przez 60 dni. Bez
+klucza „Dla ciebie" dalej działa, ale gatunki porównuje tylko z ogólnymi
+etykietami Ticketmastera („Rock", „Hip-Hop/Rap").
 
 #### Gdy import się nie udaje
 
@@ -281,6 +288,16 @@ Przy zakładce Wydarzenia (wrzesień 2026):
   wydarzenia, na udawanym serwerze Ticketmastera w ich formacie odpowiedzi
   i z koncertami z prawdziwego wyniku dla Polski;
 - `mvnw clean test` → 414 testów.
+
+Przy zapisach i widoku „Dla ciebie" (wrzesień 2026):
+
+- migracja V3 na **pustej** bazie (V1 + V2 + V3) i na bazie **po V2** (samo V3)
+  → `validate` przechodzi;
+- testy wydarzeń, zapisów, dopasowania i usuwania konta na PostgreSQL 16;
+- przeglądarka na trzech kontach: kolejność i powody „Dla ciebie", zapis,
+  ukrycie na liście (drugie konto widzi tylko licznik), rezygnacja, „Moje",
+  pusty profil; 320–390 px, jasny i ciemny motyw;
+- `mvnw clean test` → 449 testów.
 
 **Nie sprawdzone stąd:** prawdziwy Ticketmaster. To środowisko nie miało
 klucza. Format odpowiedzi i liczbę koncertów (801 w Polsce) potwierdziło

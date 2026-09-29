@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
@@ -11,7 +11,9 @@ import { useAuth } from '../auth/AuthContext';
 import DoladujWiecej from '../components/DoladujWiecej';
 import EmptyState from '../components/EmptyState';
 import EventCard from '../components/EventCard';
-import { IconCalendar, IconSearch } from '../components/Icons';
+import {
+  IconCalendar, IconCheckCircle, IconNote, IconSearch,
+} from '../components/Icons';
 import { formatDateTime } from '../utils/dates';
 import { naglowekDnia, nazwaMiasta } from '../utils/wydarzenia';
 
@@ -44,7 +46,30 @@ function zapamietajMiasto(klucz) {
   }
 }
 
-/** Zakladka Wydarzenia: nadchodzace koncerty, z filtrem miasta i wyszukiwarka. */
+/** Pod tym kluczem - ostatnio wybrany widok. */
+const PAMIEC_WIDOKU = 'wydarzenia.widok';
+
+function zapamietanyWidok() {
+  try {
+    const w = localStorage.getItem(PAMIEC_WIDOKU);
+    return wydarzenia.WIDOKI[w] ? w : null;
+  } catch {
+    return null;
+  }
+}
+
+function zapamietajWidok(widok) {
+  try {
+    localStorage.setItem(PAMIEC_WIDOKU, widok);
+  } catch {
+    // jw.
+  }
+}
+
+/**
+ * Zakladka Wydarzenia w trzech widokach: dopasowane do profilu, wszystkie
+ * od najblizszego i te, na ktore sie zapisalem.
+ */
 export default function EventsPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -58,10 +83,21 @@ export default function EventsPage() {
   const miasto = parametry.get('miasto') ?? zapamietaneMiasto();
   const fraza = parametry.get('q') ?? '';
 
+  const [info, setInfo] = useState(null);
+
+  /*
+   * Widok: z adresu, potem z pamieci przegladarki. Kto wchodzi pierwszy raz,
+   * dostaje "Dla ciebie", jesli ma na profilu ulubionych - bez nich ta lista
+   * bylaby pusta, wiec wtedy "Najblizsze". Do czasu odpowiedzi serwera
+   * widoku nie znamy i nic nie ladujemy, zeby nie ladowac listy dwa razy.
+   */
+  const zAdresu = wydarzenia.WIDOKI[parametry.get('widok')] ? parametry.get('widok') : null;
+  const widok = zAdresu ?? zapamietanyWidok()
+    ?? (info ? (info.hasTaste ? 'dla-ciebie' : 'najblizsze') : null);
+
   /* To, co wpisuje uzytkownik - trafia do adresu dopiero po chwili ciszy. */
   const [wpisane, setWpisane] = useState(fraza);
 
-  const [info, setInfo] = useState(null);
   const [lista, setLista] = useState([]);
   const [strona, setStrona] = useState(null);
   const [ladowanie, setLadowanie] = useState(true);
@@ -78,10 +114,14 @@ export default function EventsPage() {
   useEffect(() => {
     wydarzenia.info()
       .then(setInfo)
-      .catch(() => setInfo({ configured: true, cities: [] }));   // filtr to dodatek
+      // filtr i domyslny widok to dodatki - bez nich lista i tak dziala
+      .catch(() => setInfo({ configured: true, cities: [], hasTaste: false, mine: 0 }));
   }, []);
 
   const wczytaj = useCallback(async (numerStrony) => {
+    if (!widok) {
+      return;
+    }
     const numer = ++ostatnie.current;
     if (numerStrony === 0) {
       setLadowanie(true);
@@ -92,7 +132,7 @@ export default function EventsPage() {
 
     try {
       const dane = await wydarzenia.lista({
-        miasto, fraza, strona: numerStrony, rozmiar: ROZMIAR_STRONY,
+        widok, miasto, fraza, strona: numerStrony, rozmiar: ROZMIAR_STRONY,
       });
       if (numer !== ostatnie.current) {
         return;
@@ -109,7 +149,7 @@ export default function EventsPage() {
         setDoladowanie(false);
       }
     }
-  }, [miasto, fraza]);
+  }, [widok, miasto, fraza]);
 
   useEffect(() => {
     wczytaj(0);
@@ -150,6 +190,13 @@ export default function EventsPage() {
     setParametry(nowe, { replace: true });
   }
 
+  function wybierzWidok(nowy) {
+    zapamietajWidok(nowy);
+    const nowe = new URLSearchParams(parametry);
+    nowe.set('widok', nowy);
+    setParametry(nowe, { replace: true });
+  }
+
   function wybierzMiasto(klucz) {
     zapamietajMiasto(klucz);
     /*
@@ -163,6 +210,8 @@ export default function EventsPage() {
 
   const miasta = info?.cities ?? [];
   const wlaczone = info?.configured !== false;
+  const dlaCiebie = widok === 'dla-ciebie';
+  const moje = widok === 'moje';
 
   /* Wybrane miasto, ktorego nie ma juz na liscie (np. po imporcie) - i tak je pokazujemy. */
   const miastoPozaLista = miasto && !miasta.some((m) => m.key === miasto);
@@ -185,37 +234,66 @@ export default function EventsPage() {
         </div>
       )}
 
-      <div className="wydarzenia-filtry mb-3">
-        <div className="wydarzenia-szukaj">
-          <IconSearch size={14} className="wydarzenia-szukaj-ikona" />
-          <Form.Control
-            type="search"
-            value={wpisane}
-            onChange={(e) => setWpisane(e.target.value)}
-            placeholder={t('events.searchPlaceholder')}
-            aria-label={t('events.searchLabel')}
-            maxLength={100}
-            enterKeyHint="search"
-          />
-        </div>
-
-        <Form.Select
-          value={miasto}
-          onChange={(e) => wybierzMiasto(e.target.value)}
-          aria-label={t('events.cityLabel')}
-          className="wydarzenia-miasto"
-        >
-          <option value="">{t('events.allCities')}</option>
-          {miastoPozaLista && (
-            <option value={miasto}>{nazwaMiasta(miasto, miasto, i18n.language)}</option>
-          )}
-          {miasta.map((m) => (
-            <option key={m.key} value={m.key}>
-              {nazwaMiasta(m.key, m.name, i18n.language)} ({m.events})
-            </option>
-          ))}
-        </Form.Select>
+      {/* Trzy listy. Aktywna ma aria-pressed - czytnik ekranu powie, ktora jest wybrana. */}
+      <div className="wydarzenia-widoki mb-3" role="group" aria-label={t('events.viewsLabel')}>
+        {[
+          ['dla-ciebie', t('events.views.forYou')],
+          ['najblizsze', t('events.views.upcoming')],
+          ['moje', info?.mine ? `${t('events.views.mine')} (${info.mine})` : t('events.views.mine')],
+        ].map(([klucz, etykieta]) => (
+          <button
+            key={klucz}
+            type="button"
+            className={`wydarzenia-widok${widok === klucz ? ' is-aktywny' : ''}`}
+            aria-pressed={widok === klucz}
+            onClick={() => wybierzWidok(klucz)}
+          >
+            {etykieta}
+          </button>
+        ))}
       </div>
+
+      {dlaCiebie && info?.hasTaste && (
+        <p className="small text-body-secondary mb-3">
+          {t('events.forYouHint')}
+          {user?.admin && info && !info.genresFromLastFm && ` ${t('events.forYouLastFmHint')}`}
+        </p>
+      )}
+
+      {/* "Moje" nie ma filtrow - to kilka pozycji, ktore sam wybralem */}
+      {!moje && (
+        <div className="wydarzenia-filtry mb-3">
+          <div className="wydarzenia-szukaj">
+            <IconSearch size={14} className="wydarzenia-szukaj-ikona" />
+            <Form.Control
+              type="search"
+              value={wpisane}
+              onChange={(e) => setWpisane(e.target.value)}
+              placeholder={t('events.searchPlaceholder')}
+              aria-label={t('events.searchLabel')}
+              maxLength={100}
+              enterKeyHint="search"
+            />
+          </div>
+
+          <Form.Select
+            value={miasto}
+            onChange={(e) => wybierzMiasto(e.target.value)}
+            aria-label={t('events.cityLabel')}
+            className="wydarzenia-miasto"
+          >
+            <option value="">{t('events.allCities')}</option>
+            {miastoPozaLista && (
+              <option value={miasto}>{nazwaMiasta(miasto, miasto, i18n.language)}</option>
+            )}
+            {miasta.map((m) => (
+              <option key={m.key} value={m.key}>
+                {nazwaMiasta(m.key, m.name, i18n.language)} ({m.events})
+              </option>
+            ))}
+          </Form.Select>
+        </div>
+      )}
 
       {blad && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
@@ -226,19 +304,43 @@ export default function EventsPage() {
         </Alert>
       )}
 
-      {ladowanie && (
+      {(ladowanie || !widok) && (
         <div className="text-center py-5 text-body-secondary">
           <Spinner animation="border" size="sm" className="me-2" />
           {t('common.loading')}
         </div>
       )}
 
-      {!ladowanie && !blad && lista.length === 0 && (
+      {widok && !ladowanie && !blad && lista.length === 0 && (
         !wlaczone ? (
           <EmptyState
             icon={IconCalendar}
             title={t('events.notConfiguredTitle')}
             text={user?.admin ? t('events.notConfiguredAdmin') : t('events.notConfiguredText')}
+          />
+        ) : moje ? (
+          <EmptyState
+            icon={IconCheckCircle}
+            title={t('events.mineEmptyTitle')}
+            text={t('events.mineEmptyText')}
+          />
+        ) : dlaCiebie && info && !info.hasTaste ? (
+          <EmptyState
+            icon={IconNote}
+            title={t('events.noTasteTitle')}
+            text={t('events.noTasteText')}
+            action={<Link to="/profil" className="btn btn-primary btn-sm">{t('events.noTasteAction')}</Link>}
+          />
+        ) : dlaCiebie ? (
+          <EmptyState
+            icon={IconNote}
+            title={t('events.noMatchTitle')}
+            text={t('events.noMatchText')}
+            action={(
+              <Button size="sm" variant="outline-primary" onClick={() => wybierzWidok('najblizsze')}>
+                {t('events.noMatchAction')}
+              </Button>
+            )}
           />
         ) : miasto || fraza ? (
           <EmptyState
@@ -255,15 +357,19 @@ export default function EventsPage() {
         )
       )}
 
-      {!ladowanie && lista.length > 0 && (
+      {widok && !ladowanie && lista.length > 0 && (
         <div className="wydarzenia-lista">
           {lista.map((w, i) => (
             <Fragment key={w.id}>
-              {/* Naglowek za kazdym razem, gdy zaczyna sie nowy dzien */}
-              {(i === 0 || lista[i - 1].date !== w.date) && (
+              {/*
+                Naglowek za kazdym razem, gdy zaczyna sie nowy dzien. W "Dla ciebie"
+                ich nie ma: tam kolejnosc wyznacza dopasowanie, a nie data, wiec
+                ten sam dzien pojawialby sie w kilku miejscach listy.
+              */}
+              {!dlaCiebie && (i === 0 || lista[i - 1].date !== w.date) && (
                 <h2 className="wydarzenia-dzien">{naglowekDnia(w.date, i18n.language, t)}</h2>
               )}
-              <EventCard wydarzenie={w} />
+              <EventCard wydarzenie={w} pokazPowody={dlaCiebie} />
             </Fragment>
           ))}
 

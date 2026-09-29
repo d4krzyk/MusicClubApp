@@ -39,6 +39,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
      */
     String FILTR = """
         e.start_date >= :today
+        AND e.withdrawn_at IS NULL
         AND (:city = '' OR e.city_key = :city)
         AND (:pattern = ''
              OR LOWER(e.name) LIKE :pattern ESCAPE '\\'
@@ -89,7 +90,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
     /** Nadchodzace terminy jednej serii - na stronie wydarzenia. */
     @Query("""
         SELECT e FROM MusicEvent e
-         WHERE e.seriesKey = :seriesKey AND e.startDate >= :today
+         WHERE e.seriesKey = :seriesKey AND e.startDate >= :today AND e.withdrawnAt IS NULL
          ORDER BY e.startDate, e.startTime NULLS LAST, e.id
         """)
     List<MusicEvent> upcomingInSeries(@Param("seriesKey") String seriesKey,
@@ -100,7 +101,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
     @Query("""
         SELECT e.cityKey AS cityKey, MAX(e.city) AS cityName, COUNT(DISTINCT e.seriesKey) AS events
           FROM MusicEvent e
-         WHERE e.startDate >= :today AND e.cityKey IS NOT NULL
+         WHERE e.startDate >= :today AND e.cityKey IS NOT NULL AND e.withdrawnAt IS NULL
          GROUP BY e.cityKey
          ORDER BY COUNT(DISTINCT e.seriesKey) DESC, e.cityKey
         """)
@@ -114,4 +115,40 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
     List<MusicEvent> findByStartDateBefore(LocalDate date);
 
     long countByStartDateGreaterThanEqual(LocalDate today);
+
+    /** Wykonawcy nadchodzacych wydarzen - do uzupelnienia ich gatunkow z Last.fm. */
+    @Query("""
+        SELECT DISTINCT p.name FROM MusicEvent e JOIN e.performers p
+         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL
+        """)
+    List<String> upcomingPerformerNames(@Param("today") LocalDate today);
+
+    /** Nadchodzace wydarzenia w wersji do dopasowania - bez opisow i zdjec. */
+    @Query("""
+        SELECT e.id AS id, e.seriesKey AS seriesKey, e.name AS name,
+               e.startDate AS startDate, e.startTime AS startTime,
+               e.venueName AS venueName, e.cityKey AS cityKey,
+               e.genre AS genre, e.subGenre AS subGenre
+          FROM MusicEvent e
+         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL
+        """)
+    List<EventFeatureRow> upcomingFeatures(@Param("today") LocalDate today);
+
+    /** Sklad nadchodzacych wydarzen - jednym zapytaniem, a nie jednym na wydarzenie. */
+    @Query("""
+        SELECT e.id AS eventId, p.name AS name FROM MusicEvent e JOIN e.performers p
+         WHERE e.startDate >= :today AND e.withdrawnAt IS NULL
+        """)
+    List<EventPerformerRow> upcomingPerformers(@Param("today") LocalDate today);
+
+    /** To samo dla jednego wydarzenia - strona wydarzenia tez pokazuje, czemu pasuje. */
+    @Query("""
+        SELECT e.id AS id, e.seriesKey AS seriesKey, e.name AS name,
+               e.startDate AS startDate, e.startTime AS startTime,
+               e.venueName AS venueName, e.cityKey AS cityKey,
+               e.genre AS genre, e.subGenre AS subGenre
+          FROM MusicEvent e
+         WHERE e.id = :id
+        """)
+    Optional<EventFeatureRow> featuresOf(@Param("id") Long id);
 }

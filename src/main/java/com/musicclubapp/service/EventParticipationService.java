@@ -1,0 +1,148 @@
+package com.musicclubapp.service;
+
+import com.musicclubapp.dto.AttendeeResponse;
+import com.musicclubapp.dto.ParticipationResponse;
+import com.musicclubapp.entity.EventParticipation;
+import com.musicclubapp.entity.MusicEvent;
+import com.musicclubapp.entity.ParticipationStatus;
+import com.musicclubapp.entity.User;
+import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.error.OperationNotAllowedException;
+import com.musicclubapp.mapper.PostMapper;
+import com.musicclubapp.repository.EventParticipationRepository;
+import com.musicclubapp.repository.MusicEventRepository;
+import com.musicclubapp.repository.ParticipationCountRow;
+import com.musicclubapp.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+/** "Zainteresowany", "Biore udzial", rezygnacja i lista uczestnikow. */
+@Service
+public class EventParticipationService {
+
+    private final EventParticipationRepository participations;
+    private final MusicEventRepository events;
+    private final UserRepository users;
+    private final EventImportService importer;
+    private final Clock clock;
+
+    public EventParticipationService(EventParticipationRepository participations,
+                                     MusicEventRepository events,
+                                     UserRepository users,
+                                     EventImportService importer,
+                                     Clock clock) {
+        this.participations = participations;
+        this.events = events;
+        this.users = users;
+        this.importer = importer;
+        this.clock = clock;
+    }
+
+    /**
+     * Zapisuje na wydarzenie albo zmienia zapis (zainteresowany <-> ide,
+     * pokaz mnie <-> ukryj mnie).
+     *
+     * Na minione i wycofane zapisac sie nie mozna. Zrezygnowac - owszem.
+     */
+    @Transactional
+    public ParticipationResponse participate(Long eventId, String username,
+                                             ParticipationStatus status, boolean hidden) {
+        MusicEvent event = events.findById(eventId)
+            .orElseThrow(() -> new NoSuchElementFoundException("event", eventId));
+
+        if (event.getStartDate().isBefore(importer.today())) {
+            throw OperationNotAllowedException.eventPast();
+        }
+        if (event.isWithdrawn()) {
+            throw OperationNotAllowedException.eventWithdrawn();
+        }
+
+        LocalDateTime now = LocalDateTime.now(clock);
+        Optional<EventParticipation> mine = participations.findMine(eventId, username);
+        if (mine.isPresent()) {
+            mine.get().change(status, hidden, now);
+        } else {
+            User user = users.findByUsername(username)
+                .orElseThrow(() -> new NoSuchElementFoundException("user", username));
+            participations.save(new EventParticipation(event, user, status, hidden, now));
+        }
+        return summary(eventId, username);
+    }
+
+    /** Rezygnacja - zapis znika, jakby go nigdy nie bylo. */
+    @Transactional
+    public ParticipationResponse cancel(Long eventId, String username) {
+        if (!events.existsById(eventId)) {
+            throw new NoSuchElementFoundException("event", eventId);
+        }
+        participations.findMine(eventId, username).ifPresent(participations::delete);
+        participations.flush();
+        return summary(eventId, username);
+    }
+
+    /** Moj zapis i liczniki jednego wydarzenia. */
+    @Transactional(readOnly = true)
+    public ParticipationResponse summary(Long eventId, String username) {
+        long going = 0;
+        long interested = 0;
+        for (ParticipationCountRow row : participations.countByStatus(List.of(eventId))) {
+            if (row.getStatus() == ParticipationStatus.GOING) {
+                going = row.getTotal();
+            } else {
+                interested = row.getTotal();
+            }
+        }
+        Optional<EventParticipation> mine = participations.findMine(eventId, username);
+        return new ParticipationResponse(
+            mine.map(EventParticipation::getStatus).orElse(null),
+            mine.map(EventParticipation::isHidden).orElse(false),
+            going,
+            interested,
+            participations.countByEventIdAndStatusAndHiddenTrue(eventId, ParticipationStatus.GOING));
+    }
+
+    /**
+     * Kto idzie: wszyscy zalogowani widza liste, poza osobami, ktore
+     * zaznaczyly "nie pokazuj mnie". Siebie widze zawsze - z dopiskiem, ze
+     * inni mnie nie widza, jesli tak wybralem.
+     */
+    @Transactional(readOnly = true)
+    public Page<AttendeeResponse> attendees(Long eventId, String viewer, Pageable pageable) {
+        if (!events.existsById(eventId)) {
+            throw new NoSuchElementFoundException("event", eventId);
+        }
+        Set<Long> friendIds = new HashSet<>(users.friendIdsOf(viewer));
+
+        /* Pusta lista w "IN (...)" to blad skladni w czesci baz - podstawiamy identyfikator, ktorego nie ma. */
+        List<Long> doZapytania = friendIds.isEmpty() ? List.of(-1L) : List.copyOf(friendIds);
+
+        return participations.attendees(eventId, viewer, doZapytania, pageable)
+            .map(p -> new AttendeeResponse(
+                p.getUser().getUsername(),
+                avatarUrl(p.getUser()),
+                friendIds.contains(p.getUser().getId()),
+                p.getUser().getUsername().equals(viewer),
+                p.isHidden()));
+    }
+
+    /** Przy usuwaniu konta - zapisy znikaja razem z osoba. */
+    @Transactional
+    public void deleteAllOf(Long userId) {
+        participations.deleteByUserId(userId);
+    }
+
+    private String avatarUrl(User user) {
+        return user.getAvatarFileName() == null
+            ? null
+            : PostMapper.UPLOADS_PATH + user.getAvatarFileName();
+    }
+}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import EventReasons from './EventReasons';
 import { IconCalendar, IconClock, IconPin } from './Icons';
 import {
   godzina, nazwaMiasta, plakietka, wykonawcySpozaNazwy,
@@ -11,12 +12,19 @@ import {
  * Cala karta jest odnosnikiem - na telefonie trafienie palcem w maly
  * napis "szczegoly" byloby loteria.
  */
-export default function EventCard({ wydarzenie }) {
+export default function EventCard({ wydarzenie, pokazPowody = false }) {
   const { t, i18n } = useTranslation();
   const { dzien, miesiac } = plakietka(wydarzenie.date, i18n.language);
   const miasto = nazwaMiasta(wydarzenie.cityKey, wydarzenie.city, i18n.language);
   const sklad = wykonawcySpozaNazwy(wydarzenie.name, wydarzenie.performers).slice(0, 3);
-  const odwolane = wydarzenie.status === 'CANCELLED';
+  const odwolane = wydarzenie.status === 'CANCELLED' || wydarzenie.withdrawn;
+
+  /* "12 osob idzie · 30 zainteresowanych · 2 znajomych" - tylko to, co nie jest zerem */
+  const spolecznosc = [
+    wydarzenie.going > 0 && t('events.goingCount', { count: wydarzenie.going }),
+    wydarzenie.interested > 0 && t('events.interestedCount', { count: wydarzenie.interested }),
+    wydarzenie.friends > 0 && t('events.friendsCount', { count: wydarzenie.friends }),
+  ].filter(Boolean);
 
   return (
     <Link
@@ -37,6 +45,13 @@ export default function EventCard({ wydarzenie }) {
           <span className="wydarzenie-plakietka-dzien">{dzien}</span>
           <span className="wydarzenie-plakietka-miesiac">{miesiac}</span>
         </span>
+
+        {/* Moj zapis - widac go od razu, bez wchodzenia w wydarzenie */}
+        {wydarzenie.myStatus && (
+          <span className={`wydarzenie-moj-status wydarzenie-moj-status-${wydarzenie.myStatus.toLowerCase()}`}>
+            {t(`events.myStatus.${wydarzenie.myStatus}`)}
+          </span>
+        )}
       </div>
 
       <div className="wydarzenie-tresc">
@@ -57,9 +72,21 @@ export default function EventCard({ wydarzenie }) {
           <div className="wydarzenie-sklad">{sklad.join(' · ')}</div>
         )}
 
-        {(wydarzenie.status !== 'SCHEDULED' || wydarzenie.moreDates > 0 || wydarzenie.genre) && (
+        {pokazPowody && <EventReasons powody={wydarzenie.reasons} maks={3} />}
+
+        {spolecznosc.length > 0 && (
+          <div className="wydarzenie-spolecznosc">{spolecznosc.join(' · ')}</div>
+        )}
+
+        {(wydarzenie.withdrawn || wydarzenie.status !== 'SCHEDULED'
+          || wydarzenie.moreDates > 0 || wydarzenie.genre) && (
           <div className="wydarzenie-plakietki">
-            {wydarzenie.status !== 'SCHEDULED' && (
+            {wydarzenie.withdrawn && (
+              <span className="badge wydarzenie-status wydarzenie-status-cancelled">
+                {t('events.withdrawnBadge')}
+              </span>
+            )}
+            {!wydarzenie.withdrawn && wydarzenie.status !== 'SCHEDULED' && (
               <span className={`badge wydarzenie-status wydarzenie-status-${wydarzenie.status.toLowerCase()}`}>
                 {t(`events.status.${wydarzenie.status}`)}
               </span>

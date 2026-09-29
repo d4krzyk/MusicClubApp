@@ -1,6 +1,7 @@
 package com.musicclubapp.dto;
 
 import com.musicclubapp.entity.EventStatus;
+import com.musicclubapp.entity.ParticipationStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -43,6 +44,24 @@ public record EventCardResponse(
     String genre,
 
     @Schema(description = "Ile JESZCZE terminow ma ta seria poza pokazanym", example = "0")
-    long moreDates
+    long moreDates,
+
+    @Schema(description = "Moj zapis na TEN termin; pusty, gdy nic nie zaznaczylem")
+    ParticipationStatus myStatus,
+
+    @Schema(description = "Ile osob idzie - razem z ukrytymi", example = "12")
+    long going,
+
+    @Schema(description = "Ile osob jest zainteresowanych", example = "30")
+    long interested,
+
+    @Schema(description = "Ilu moich znajomych sie zapisalo", example = "2")
+    long friends,
+
+    @Schema(description = "Dlaczego pasuje do profilu - tylko w widoku \"Dla ciebie\"")
+    List<EventReasonResponse> reasons,
+
+    @Schema(description = "Ticketmaster juz go nie ma - pokazywane tylko zapisanym, w zakladce \"Moje\"")
+    boolean withdrawn
 ) {
 }

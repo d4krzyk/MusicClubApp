@@ -2,6 +2,7 @@ package com.musicclubapp.config;
 
 import com.musicclubapp.entity.EventStatus;
 import com.musicclubapp.entity.NotificationType;
+import com.musicclubapp.entity.ParticipationStatus;
 import com.musicclubapp.entity.PostVisibility;
 import com.musicclubapp.entity.ReactionType;
 import com.musicclubapp.entity.ReportContext;
@@ -69,7 +70,8 @@ public class EnumConstraintRefresher implements ApplicationRunner {
         new EnumColumn("users", "role", Role.class),
 
         /* Ticketmaster moze kiedys wprowadzic nowy stan wydarzenia - wtedy przybedzie stala. */
-        new EnumColumn("music_events", "status", EventStatus.class)
+        new EnumColumn("music_events", "status", EventStatus.class),
+        new EnumColumn("event_participations", "status", ParticipationStatus.class)
     );
 
     /** Kolumny objete odswiezaniem, jako "tabela.kolumna". */

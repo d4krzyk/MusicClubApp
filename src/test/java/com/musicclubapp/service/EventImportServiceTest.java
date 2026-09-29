@@ -4,9 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.musicclubapp.entity.EventParticipation;
 import com.musicclubapp.entity.EventPerformer;
 import com.musicclubapp.entity.MusicEvent;
+import com.musicclubapp.entity.ParticipationStatus;
+import com.musicclubapp.entity.User;
+import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
+import com.musicclubapp.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,8 +51,11 @@ class EventImportServiceTest {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Autowired private MusicEventRepository repository;
+    @Autowired private EventParticipationRepository participationRepository;
+    @Autowired private PerformerTagService performerTagService;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private EntityManager entityManager;
+    @Autowired private UserRepository userRepository;
 
     private TestHttpServer server;
     private TicketmasterClient ticketmaster;
@@ -67,7 +75,7 @@ class EventImportServiceTest {
     static final long SZESC_GODZIN = Duration.ofHours(6).toMillis();
 
     private EventImportService importer(Instant now) {
-        return new EventImportService(ticketmaster, repository, transactionManager,
+        return new EventImportService(ticketmaster, repository, participationRepository, performerTagService, transactionManager,
             Clock.fixed(now, ZoneOffset.UTC), 0, SZESC_GODZIN);
     }
 
@@ -104,7 +112,7 @@ class EventImportServiceTest {
     @DisplayName("po nieudanym imporcie kolejna proba za kwadrans, a nie za 6 godzin")
     void retriesSoonAfterFailure() throws IOException {
         Zegar zegar = new Zegar(TERAZ);
-        EventImportService importer = new EventImportService(ticketmaster, repository,
+        EventImportService importer = new EventImportService(ticketmaster, repository, participationRepository, performerTagService,
             transactionManager, zegar, 0, SZESC_GODZIN);
 
         server.odpowiadaj(TicketmasterClientTest.SCIEZKA,
@@ -338,6 +346,63 @@ class EventImportServiceTest {
         importer(TERAZ).runImport();
 
         assertThat(wBazie("druga-strona")).isNotNull();
+    }
+
+    @Test
+    @DisplayName("wycofane z zapisanymi nie znika - chowa sie z listy, a zapis zostaje")
+    void vanishedWithParticipantsIsWithdrawn() throws IOException {
+        String wszystko = TicketmasterClientTest.odpowiedzZPolski();
+        ticketmasterOddaje(wszystko);
+        importer(TERAZ).runImport();
+        User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));
+        participationRepository.save(new EventParticipation(wBazie("vvG1zZ9KSNach"), ala,
+            ParticipationStatus.GOING, false, LocalDateTime.of(2026, 9, 28, 12, 0)));
+        entityManager.flush();
+
+        ticketmasterOddaje(bez(wszystko, "vvG1zZ9KSNach", "vvG1zZ9KSGlob"));
+        EventImportService.ImportStatus wynik = importer(TERAZ.plus(Duration.ofHours(6))).runImport();
+
+        // Globus nikogo nie mial - zniknal. Nachtmahr mial zapis - zostal jako wycofany.
+        assertThat(wynik.removed()).isEqualTo(1);
+        assertThat(wBazie("vvG1zZ9KSGlob")).isNull();
+        assertThat(wBazie("vvG1zZ9KSNach").isWithdrawn()).isTrue();
+        assertThat(participationRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("wycofane wraca, gdy Ticketmaster znow je pokazuje")
+    void withdrawnComesBack() throws IOException {
+        String wszystko = TicketmasterClientTest.odpowiedzZPolski();
+        ticketmasterOddaje(wszystko);
+        importer(TERAZ).runImport();
+        User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));
+        participationRepository.save(new EventParticipation(wBazie("vvG1zZ9KSNach"), ala,
+            ParticipationStatus.GOING, false, LocalDateTime.of(2026, 9, 28, 12, 0)));
+        entityManager.flush();
+
+        ticketmasterOddaje(bez(wszystko, "vvG1zZ9KSNach"));
+        importer(TERAZ.plus(Duration.ofHours(6))).runImport();
+        ticketmasterOddaje(wszystko);
+        // +7 h, a nie +12: 10:00 UTC + 12 h to juz polnoc w Polsce, czyli nastepny
+        // dzien - a udawany Ticketmaster odpowiada tylko dla okresu od 28 wrzesnia
+        importer(TERAZ.plus(Duration.ofHours(7))).runImport();
+
+        assertThat(wBazie("vvG1zZ9KSNach").isWithdrawn()).isFalse();
+    }
+
+    @Test
+    @DisplayName("dawno minione znika razem z zapisami")
+    void oldEventTakesParticipationsAlong() throws IOException {
+        MusicEvent dawne = repository.save(stare("dawno", LocalDate.of(2026, 8, 1)));
+        User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));
+        participationRepository.save(new EventParticipation(dawne, ala,
+            ParticipationStatus.GOING, false, LocalDateTime.of(2026, 7, 28, 12, 0)));
+        ticketmasterOddaje(TicketmasterClientTest.odpowiedzZPolski());
+
+        importer(TERAZ).runImport();
+
+        assertThat(wBazie("dawno")).isNull();
+        assertThat(participationRepository.count()).isZero();
     }
 
     @Test

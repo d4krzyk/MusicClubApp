@@ -90,6 +90,18 @@ public class OperationNotAllowedException extends RuntimeException {
             "Ta playlista juz jest w gablotce", "error.playlist.duplicate");
     }
 
+    /** Zapis na wydarzenie, ktore juz sie odbylo. */
+    public static OperationNotAllowedException eventPast() {
+        return new OperationNotAllowedException(
+            "Wydarzenie juz sie odbylo", "error.event.past");
+    }
+
+    /** Zapis na wydarzenie, ktorego Ticketmaster juz nie ma. */
+    public static OperationNotAllowedException eventWithdrawn() {
+        return new OperationNotAllowedException(
+            "Wydarzenia nie ma juz w Ticketmasterze", "error.event.withdrawn");
+    }
+
     /** Proba importu z Last.fm przy niewpisanym kluczu API. */
     public static OperationNotAllowedException lastFmDisabled() {
         return new OperationNotAllowedException(

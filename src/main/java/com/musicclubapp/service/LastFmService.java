@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /** Odczyt historii sluchania z Last.fm. */
@@ -33,6 +34,9 @@ public class LastFmService {
 
     /** Ile gatunkow zapisujemy przy jednym artyscie. */
     private static final int MAX_GENRES = 5;
+
+    /** Kod bledu Last.fm "nie ma takiego artysty". */
+    private static final int LASTFM_BRAK_ARTYSTY = 6;
 
     private final RestClient restClient;
     private final String key;
@@ -101,8 +105,23 @@ public class LastFmService {
 
     /** Gatunki artysty - z tagow Last.fm, odsianych z etykiet niebedacych gatunkiem. */
     public Set<String> artistGenres(String artistName) {
-        if (!available() || artistName == null || artistName.isBlank()) {
-            return Set.of();
+        return lookupArtistGenres(artistName).orElse(Set.of());
+    }
+
+    /**
+     * To samo, ale z rozroznieniem "artysta nie ma tagow" (pusty zbior) od
+     * "Last.fm nie odpowiedzial" (pusty Optional).
+     *
+     * Pamiec podreczna gatunkow wykonawcow zapisuje wynik na dlugo. Gdyby
+     * awaria Last.fm wygladala tak samo jak brak tagow, jedna przerwa w jego
+     * dzialaniu zostawilaby setki wykonawcow bez gatunkow na dwa miesiace.
+     */
+    public Optional<Set<String>> lookupArtistGenres(String artistName) {
+        if (!available()) {
+            return Optional.empty();
+        }
+        if (artistName == null || artistName.isBlank()) {
+            return Optional.of(Set.of());
         }
 
         try {
@@ -116,8 +135,14 @@ public class LastFmService {
                 .toUriString();
 
             JsonNode response = restClient.get().uri(url).retrieve().body(JsonNode.class);
-            if (response == null || response.has("error")) {
-                return Set.of();
+            if (response == null) {
+                return Optional.empty();
+            }
+            if (response.has("error")) {
+                /* 6 = "nie ma takiego artysty" - to odpowiedz, a nie awaria. */
+                return response.path("error").asInt() == LASTFM_BRAK_ARTYSTY
+                    ? Optional.of(Set.of())
+                    : Optional.empty();
             }
 
             Set<String> genres = new LinkedHashSet<>();
@@ -136,12 +161,20 @@ public class LastFmService {
                     genres.add(normalized);
                 }
             }
-            return genres;
+            return Optional.of(genres);
 
         } catch (Exception e) {
-            log.warn("Nie udalo sie pobrac gatunkow dla '{}': {}", artistName, e.getMessage());
-            return Set.of();
+            /*
+             * Tresc wyjatku Springa zawiera caly adres zapytania, a w nim
+             * api_key - wiec klucz podmieniamy, zanim cokolwiek trafi do logu.
+             */
+            log.warn("Nie udalo sie pobrac gatunkow dla '{}': {}", artistName, bezKlucza(e.getMessage()));
+            return Optional.empty();
         }
+    }
+
+    private String bezKlucza(String tekst) {
+        return tekst == null || key.isEmpty() ? tekst : tekst.replace(key, "***");
     }
 
     /** Wspolna czesc obu zapytan o historie sluchania. */
@@ -164,7 +197,7 @@ public class LastFmService {
         try {
             response = restClient.get().uri(url).retrieve().body(JsonNode.class);
         } catch (Exception e) {
-            log.warn("Last.fm nie odpowiedzial ({}): {}", method, e.getMessage());
+            log.warn("Last.fm nie odpowiedzial ({}): {}", method, bezKlucza(e.getMessage()));
             throw new IllegalStateException("Last.fm nie odpowiada", e);
         }
 

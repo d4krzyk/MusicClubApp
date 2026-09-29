@@ -565,6 +565,57 @@
     "cancelledInfo": "This event has been cancelled.",
     "postponedInfo": "This event has been postponed. No new date yet.",
     "rescheduledInfo": "This event has a new date — shown below.",
-    "notFound": "No such event. It may have been withdrawn from sale."
+    "notFound": "No such event. It may have been withdrawn from sale.",
+    "viewsLabel": "Which events to show",
+    "views": {
+      "forYou": "For you",
+      "upcoming": "Upcoming",
+      "mine": "Mine"
+    },
+    "forYouHint": "Artists you listen to come first, then artists behind your tracks, shared genres and what your friends are going to.",
+    "forYouLastFmHint": "Genres are compared only broadly for now — they will get sharper once LASTFM_API_KEY is set.",
+    "noTasteTitle": "We don't know what you listen to yet",
+    "noTasteText": "Add favourite artists and tracks on your profile — then we will show concerts that match them here.",
+    "noTasteAction": "Go to profile",
+    "noMatchTitle": "Nothing matching your taste",
+    "noMatchText": "Nothing here matches your favourites. Pick another city or look through all upcoming events.",
+    "noMatchAction": "Show upcoming",
+    "mineEmptyTitle": "Nothing marked yet",
+    "mineEmptyText": "Tap “Interested” or “Going” on an event page — the event will show up here.",
+    "myStatus": {
+      "GOING": "Going",
+      "INTERESTED": "Interested"
+    },
+    "goingCount": "{{count}} going",
+    "goingCount_other": "{{count}} going",
+    "interestedCount": "{{count}} interested",
+    "interestedCount_other": "{{count}} interested",
+    "friendsCount": "{{count}} friend",
+    "friendsCount_other": "{{count}} friends",
+    "reason": {
+      "ARTIST": "You listen to: {{value}}",
+      "TRACK": "Your track: {{value}}",
+      "GENRE": "Genre: {{value}}",
+      "FRIENDS": "{{count}} friend signed up",
+      "FRIENDS_other": "{{count}} friends signed up"
+    },
+    "whyTitle": "Why it's for you",
+    "interestedBtn": "Interested",
+    "goingBtn": "Going",
+    "goingActive": "You're going",
+    "cancelGoing": "I'm not going after all",
+    "cancelInterested": "Not interested any more",
+    "hideMe": "Don't show me on the attendee list",
+    "hideMeHint": "You still count towards the total, just without your name.",
+    "attendeesTitle": "Who's going",
+    "attendeesNone": "Nobody has said they're going yet.",
+    "attendeesHidden": "and {{count}} person who prefers not to be listed",
+    "attendeesHidden_other": "and {{count}} people who prefer not to be listed",
+    "attendeesAll": "Show everyone ({{count}})",
+    "you": "you",
+    "friendBadge": "friend",
+    "hiddenMe": "others can't see you",
+    "withdrawnInfo": "This event is no longer on Ticketmaster — it may have been cancelled or moved. Check with the organiser.",
+    "withdrawnBadge": "Withdrawn"
   }
 }
