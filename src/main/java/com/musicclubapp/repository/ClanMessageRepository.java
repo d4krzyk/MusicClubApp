@@ -47,4 +47,8 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     @Modifying
     @Query("DELETE FROM ClanMessage m WHERE m.sender.id = :userId")
     void deleteBySenderId(@Param("userId") Long userId);
+
+    /** Wiadomosci na czatach klanow napisane przez te osobe. */
+    @Query("SELECT m FROM ClanMessage m JOIN FETCH m.clan WHERE m.sender.id = :userId ORDER BY m.id")
+    List<ClanMessage> writtenBy(@Param("userId") Long userId);
 }

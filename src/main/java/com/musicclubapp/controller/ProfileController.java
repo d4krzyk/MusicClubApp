@@ -3,6 +3,7 @@ package com.musicclubapp.controller;
 import com.musicclubapp.dto.ChangePasswordRequest;
 import com.musicclubapp.dto.ConfirmPasswordRequest;
 import com.musicclubapp.dto.UpdateProfileRequest;
+import com.musicclubapp.dto.ExportRequest;
 import com.musicclubapp.dto.PrivacySettings;
 import com.musicclubapp.dto.TermsStatusResponse;
 import com.musicclubapp.dto.UserResponse;
@@ -10,6 +11,7 @@ import com.musicclubapp.security.JsonRememberMeServices;
 import com.musicclubapp.security.SecurityStampFilter;
 import com.musicclubapp.service.AccountDeletionService;
 import com.musicclubapp.service.EmailVerificationService;
+import com.musicclubapp.service.DataExportService;
 import com.musicclubapp.service.PrivacyService;
 import com.musicclubapp.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +24,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -55,6 +61,7 @@ public class ProfileController {
     private final EmailVerificationService emailVerification;
     private final JsonRememberMeServices rememberMeServices;
     private final PrivacyService privacy;
+    private final DataExportService dataExport;
 
     public ProfileController(UserService userService,
                              AccountDeletionService deletion,
@@ -62,7 +69,9 @@ public class ProfileController {
                              SecurityContextRepository securityContextRepository,
                              EmailVerificationService emailVerification,
                              JsonRememberMeServices rememberMeServices,
-                             PrivacyService privacy) {
+                             PrivacyService privacy,
+                             DataExportService dataExport) {
+        this.dataExport = dataExport;
         this.privacy = privacy;
         this.userService = userService;
         this.deletion = deletion;
@@ -114,6 +123,25 @@ public class ProfileController {
     public ResponseEntity<UserResponse> cancelEmailChange(Authentication authentication) {
         emailVerification.cancelChange(authentication.getName());
         return ResponseEntity.ok(userService.getByUsername(authentication.getName()));
+    }
+
+    /**
+     * Pobranie wlasnych danych (ZIP). POST, a nie GET: wymaga hasla w tresci, a do tego zmienia
+     * stan (limit jednego pobrania na minute) - i chroni go CSRF. Dane zbieramy w transakcji, a do
+     * strumienia zapisujemy juz po niej.
+     */
+    @PostMapping("/export")
+    @Operation(summary = "Pobiera archiwum ZIP z wlasnymi danymi (wymaga hasla)")
+    public ResponseEntity<StreamingResponseBody> export(@RequestBody ExportRequest payload,
+                                                        Authentication authentication) {
+        DataExportService.Eksport eksport = dataExport.przygotuj(authentication.getName(), payload.currentPassword());
+        String nazwa = "musicclub-dane-" + eksport.login() + "-" + java.time.LocalDate.now() + ".zip";
+        return ResponseEntity.ok()
+            .contentType(MediaType.parseMediaType("application/zip"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(nazwa).build().toString())
+            // Zawartosc jest jednorazowa i wrazliwa - zadnych kopii w przegladarce ani posrednikach
+            .cacheControl(CacheControl.noStore())
+            .body(out -> dataExport.zapisz(eksport, out));
     }
 
     @GetMapping("/terms")

@@ -21,6 +21,7 @@ import LanguageSwitch from '../components/LanguageSwitch';
 import ThemeToggle from '../components/ThemeToggle';
 import { UstawieniaPrywatnosci, Zablokowani } from '../components/UstawieniaPrywatnosci';
 import UstawieniaPowiadomien from '../components/UstawieniaPowiadomien';
+import PobierzDane from '../components/PobierzDane';
 
 /** Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla. */
 export default function SettingsPage() {
@@ -42,6 +43,7 @@ export default function SettingsPage() {
         <UstawieniaPrywatnosci />
         <Zablokowani />
         <WygladIJezyk />
+        <PobierzDane />
         <StrefaNieodwracalna />
       </Col>
     </Row>

@@ -68,4 +68,8 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
     @Modifying
     @Query("DELETE FROM Reaction r WHERE r.post.id IN (SELECT p.id FROM Post p WHERE p.clan.id = :clanId)")
     void deleteByPostsOfClan(@Param("clanId") Long clanId);
+
+    /** Reakcje tej osoby razem z postami i ich autorami - do pobrania wlasnych danych. */
+    @Query("SELECT r FROM Reaction r JOIN FETCH r.post p JOIN FETCH p.author WHERE r.user.id = :userId ORDER BY r.createdAt")
+    List<Reaction> ofUser(@Param("userId") Long userId);
 }

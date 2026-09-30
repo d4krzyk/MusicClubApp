@@ -68,4 +68,12 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Modifying(flushAutomatically = true)
     @Query("UPDATE Report r SET r.post = null WHERE r.post.id IN (SELECT p.id FROM Post p WHERE p.clan.id = :clanId)")
     void detachPostsOfClan(@Param("clanId") Long clanId);
+
+    /** Zgloszenia zlozone przez te osobe. */
+    @Query("SELECT r FROM Report r JOIN FETCH r.reporter JOIN FETCH r.reported LEFT JOIN FETCH r.post WHERE r.reporter.id = :userId ORDER BY r.createdAt")
+    List<Report> filedBy(@Param("userId") Long userId);
+
+    /** Zgloszenia dotyczace tej osoby. */
+    @Query("SELECT r FROM Report r JOIN FETCH r.reported WHERE r.reported.id = :userId ORDER BY r.createdAt")
+    List<Report> about(@Param("userId") Long userId);
 }

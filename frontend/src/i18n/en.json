@@ -892,5 +892,14 @@
       "updated": "We have updated the terms of service and the privacy policy.",
       "accept": "I accept"
     }
+  },
+  "export": {
+    "title": "Your data",
+    "text": "Download a ZIP with everything we keep about you: account data and settings, profile and favourites, posts (clan ones too) with photos, reactions, messages, friends, blocks, event sign-ups, notifications, clan and reports. The data is in JSON, which you can move to another service.",
+    "password": "Your password",
+    "download": "Download my data",
+    "preparing": "Preparing the archive…",
+    "done": "Done — the archive has been downloaded.",
+    "hint": "We ask for your password because the archive holds sensitive data. You can download it at most once a minute. Messages contain the words of both sides of a conversation; there is no password or other people's data in it, apart from usernames."
   }
 }

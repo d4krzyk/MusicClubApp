@@ -226,6 +226,38 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | DELETE | `/api/users/{id}` | usunięcie konta wraz z jego treściami — **tylko admin** |
 | GET | `/actuator/health` | czy aplikacja żyje — używa tego healthcheck Dockera |
 
+### Nowsze punkty API
+
+Wydarzenia, konto, prywatność, klany i powiadomienia na telefon. Pełna lista
+z opisami: Swagger (adres niżej).
+
+| Metoda | Ścieżka | Opis |
+|--------|---------|------|
+| GET | `/api/events?view=&city=&q=` | lista wydarzeń (`FOR_YOU`, `UPCOMING`, `MINE`) |
+| GET | `/api/events/{id}` | wydarzenie z uczestnikami i powodami „Dla ciebie” |
+| PUT / DELETE | `/api/events/{id}/participation` | „Zainteresowany” / „Biorę udział” / rezygnacja |
+| GET | `/api/posts?event={id}` | posty pod wydarzeniem („szukam ekipy”) |
+| POST | `/api/auth/verify-email` | potwierdzenie adresu z linku w wiadomości |
+| POST | `/api/auth/password-reset/request` | prośba o reset hasła (zawsze 204) |
+| POST | `/api/auth/password-reset/confirm` | nowe hasło z linku |
+| GET / PUT | `/api/profile/privacy` | ustawienia prywatności (profil, zaproszenia, aktywność, klany) |
+| PUT / DELETE | `/api/blocks/{username}` | blokada osoby / odblokowanie |
+| GET / POST | `/api/profile/terms`, `/api/profile/terms/accept` | wersja regulaminu na koncie i jej akceptacja |
+| POST | `/api/profile/export` | archiwum ZIP z własnymi danymi — wymaga hasła |
+| GET | `/api/public/info` | co wiadomo przed zalogowaniem: poczta, wersja regulaminu, administrator danych |
+| GET | `/api/push` | czy działa push, klucz serwera, przypomnienia, liczba urządzeń |
+| POST / DELETE | `/api/push/subscriptions` | zapis / wypisanie urządzenia z powiadomień |
+| POST | `/api/push/test` | próbne powiadomienie |
+| GET | `/api/clans/mine` | mój klan i zaproszenia do klanów |
+| POST | `/api/clans` | założenie klanu |
+| GET / PUT / DELETE | `/api/clans/{id}` | strona klanu / zmiana / rozwiązanie |
+| POST | `/api/clans/{id}/invitations` | zaproszenie do klanu (jedyna droga do niego) |
+| POST | `/api/clans/invitations/{id}/accept`, `/decline` | przyjęcie / odmowa zaproszenia |
+| DELETE | `/api/clans/{id}/members/me`, `/members/{username}` | odejście / wyrzucenie |
+| PUT | `/api/clans/{id}/color` | mój głos na kolor klanu |
+| GET / POST | `/api/clans/{id}/chat` | czat klanu (`after=`, `before=`) |
+| GET | `/api/posts?clan={id}` | posty klanu — tylko członkowie i administrator aplikacji |
+
 Dokumentacja: http://localhost:8080/swagger-ui.html
 
 ## Role i konto administratora

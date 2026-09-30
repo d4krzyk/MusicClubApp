@@ -136,3 +136,25 @@ export async function zaakceptujRegulamin() {
   const { data } = await client.post('/profile/terms/accept');
   return data;
 }
+
+/**
+ * Archiwum ZIP z wlasnymi danymi. Odpowiedz to plik, wiec prosimy o blob - a przy bledzie serwer
+ * odsyla JSON, ktory axios tez oddaje jako blob, wiec tu go z powrotem rozpakowujemy: describeError
+ * czyta z niego komunikat i bledy pol jak przy kazdym innym zapytaniu.
+ */
+export async function pobierzDane(haslo) {
+  try {
+    const odp = await client.post('/profile/export', { currentPassword: haslo }, { responseType: 'blob' });
+    const nazwa = /filename="?([^";]+)"?/.exec(odp.headers['content-disposition'] ?? '')?.[1] ?? 'musicclub-dane.zip';
+    return { blob: odp.data, nazwa };
+  } catch (problem) {
+    if (problem.response?.data instanceof Blob) {
+      try {
+        problem.response.data = JSON.parse(await problem.response.data.text());
+      } catch {
+        problem.response.data = {};
+      }
+    }
+    throw problem;
+  }
+}

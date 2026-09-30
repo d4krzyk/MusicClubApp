@@ -935,5 +935,14 @@
       "updated": "Zaktualizowaliśmy regulamin i politykę prywatności.",
       "accept": "Akceptuję"
     }
+  },
+  "export": {
+    "title": "Twoje dane",
+    "text": "Pobierz archiwum ZIP ze wszystkim, co o Tobie przechowujemy: dane konta i ustawienia, profil i ulubione, posty (także klanu) razem ze zdjęciami, reakcje, wiadomości, znajomych, blokady, zapisy na wydarzenia, powiadomienia, klan i zgłoszenia. Dane są w formacie JSON, który da się przenieść do innego serwisu.",
+    "password": "Twoje hasło",
+    "download": "Pobierz moje dane",
+    "preparing": "Przygotowuję archiwum…",
+    "done": "Gotowe — archiwum zostało pobrane.",
+    "hint": "Wymagamy hasła, bo archiwum zawiera wrażliwe dane. Możesz je pobrać najwyżej raz na minutę. Wiadomości zawierają słowa obu stron rozmowy; nie ma w nim hasła ani danych innych osób poza loginami."
   }
 }

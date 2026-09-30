@@ -592,7 +592,7 @@ Przy klanach (wrzesień 2026):
   zwykłym poście i na profilu, obca osoba (bez czatu i postów, API 409),
   administrator (baner, czat i posty do odczytu, bez pisania), wyrzucenie z
   powiadomieniem; 320 px w ciemnym motywie bez przelewu;
-- `mvnw clean test` → 539 testów; klasy klanów, blokad, usuwania kont i powiadomień także na PostgreSQL 16.
+- `mvnw clean test` → 546 testów; klasy klanów, blokad, usuwania kont i powiadomień także na PostgreSQL 16.
 
 Przy regulaminie i polityce prywatności (wrzesień 2026):
 
@@ -607,6 +607,20 @@ Przy regulaminie i polityce prywatności (wrzesień 2026):
   wersja angielska przy 320 px w ciemnym motywie bez przelewu, baner dla konta
   bez akceptacji i jego zniknięcie po kliknięciu (także po odświeżeniu);
 - start produkcyjny bez `LEGAL_*` loguje ostrzeżenia, ale wstaje.
+
+Przy pobieraniu własnych danych (wrzesień 2026):
+
+- test przez całe API: bez hasła, z pustym i błędnym → 422, bez tokenu CSRF
+  403; archiwum zawiera własne konto, posty (także klanu) z prawdziwym
+  zdjęciem (bajt w bajt), wiadomości wysłane i otrzymane, znajomych,
+  reakcje, klan i własne wiadomości na jego czacie; nie zawiera cudzych
+  postów, rozmowy skasowanej u siebie, hasła, cudzych e-maili ani nazwy osoby,
+  która zgłosiła konto; drugie pobranie w ciągu minuty → 429. Testy wyłapują
+  wyłączenie sprawdzania hasła, limitu, filtra skasowanych rozmów i wyciek
+  skrótu hasła;
+- Chromium: przycisk nieaktywny bez hasła, błędne hasło, pobranie pliku
+  `musicclub-dane-<login>-<data>.zip` (rozpakowany i odczytany), drugie
+  pobranie w ciągu minuty z komunikatem, 390 px bez przelewu.
 
 Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
 (podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz

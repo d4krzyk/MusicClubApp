@@ -48,4 +48,8 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
     @Query("DELETE FROM FriendRequest f WHERE f.sender.id = :senderId OR f.recipient.id = :recipientId")
     void deleteBySenderIdOrRecipientId(@Param("senderId") Long senderId,
                                        @Param("recipientId") Long recipientId);
+
+    /** Zaproszenia wyslane i otrzymane przez te osobe. */
+    @Query("SELECT r FROM FriendRequest r JOIN FETCH r.sender JOIN FETCH r.recipient WHERE r.sender.id = :userId OR r.recipient.id = :userId ORDER BY r.createdAt")
+    List<FriendRequest> ofUser(@Param("userId") Long userId);
 }

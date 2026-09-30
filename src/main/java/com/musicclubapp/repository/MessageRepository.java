@@ -161,4 +161,16 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            WHERE m.hiddenForSender = true AND m.hiddenForRecipient = true
            """)
     int deleteHiddenByBothSides();
+
+    /**
+     * Wszystkie wiadomosci tej osoby - wyslane i otrzymane - bez tych z rozmow, ktore skasowala
+     * u siebie (znaczniki hidden): kto skasowal rozmowe, nie chce jej dostac w pobranych danych.
+     */
+    @Query("""
+           SELECT m FROM Message m JOIN FETCH m.sender JOIN FETCH m.recipient
+           WHERE (m.sender.id = :userId AND m.hiddenForSender = false)
+              OR (m.recipient.id = :userId AND m.hiddenForRecipient = false)
+           ORDER BY m.id
+           """)
+    List<Message> ofUser(@Param("userId") Long userId);
 }

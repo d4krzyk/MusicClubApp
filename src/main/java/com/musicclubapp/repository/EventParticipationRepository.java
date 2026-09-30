@@ -140,4 +140,8 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
            """)
     List<EventParticipation> dueForReminder(@Param("from") java.time.LocalDate from,
                                             @Param("to") java.time.LocalDate to);
+
+    /** Zapisy tej osoby razem z wydarzeniami - do pobrania wlasnych danych. */
+    @Query("SELECT p FROM EventParticipation p JOIN FETCH p.event WHERE p.user.id = :userId ORDER BY p.createdAt")
+    List<EventParticipation> ofUser(@Param("userId") Long userId);
 }

@@ -169,7 +169,7 @@ ma — gdy dojdą, mają działać także pod tymi postami.
 
 Przypomnienia i push (migracja V8) — opis niżej, w „Powiadomienia push”.
 Klany (migracja V9) — niżej, w „Klany”. Regulamin i polityka prywatności
-(V10) — niżej.
+(V10) oraz pobranie własnych danych — niżej.
 
 ## Poczta i potwierdzanie adresów
 
@@ -330,6 +330,22 @@ samo na produkcji).
   do klanów i o zapisie takich wejść w logu — to musi zostać prawdą.
 - Docker: rotacja logów w `docker-compose.prod.yml` (3×10 MB na usługę); w
   logach są adresy IP, a polityka mówi o krótkim przechowywaniu.
+
+## Pobranie własnych danych
+
+`POST /api/profile/export` (hasło w treści, najwyżej raz na minutę, CSRF) →
+ZIP: `dane.json`, `CZYTAJ-TO.txt`, `zdjecia/` (awatar i zdjęcia własnych
+postów). `DataExportService`: dane zbiera w transakcji (`przygotuj`), a
+do strumienia pisze poza nią (`zapisz`, `StreamingResponseBody`) — zdjęcia
+czytane z dysku po nazwach z bazy (sama nazwa pliku, bez ścieżki). W archiwum
+są: konto i ustawienia, profil i ulubione, posty (także klanu), reakcje,
+wiadomości (wysłane i otrzymane, **bez rozmów skasowanych u siebie**),
+znajomi, zaproszenia, blokady, zapisy, powiadomienia, klan i własne
+wiadomości w nim, urządzenia push (sam host usługi — bez kluczy), zgłoszenia
+złożone oraz „o tobie” (**bez nazwy zgłaszającego i opisu**). Nie ma hasła,
+znaczników bezpieczeństwa ani e-maili innych osób. **Nowa tabela z danymi
+osobowymi → dopisujesz ją tu** i do `AccountDeletionService`; polityka
+prywatności obiecuje obie rzeczy.
 
 ## Wybory, do których nie wracamy
 
