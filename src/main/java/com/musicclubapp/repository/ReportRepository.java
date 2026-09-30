@@ -63,4 +63,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Report r SET r.post = null WHERE r.post.id = :postId")
     void detachPost(@Param("postId") Long postId);
+
+    /** Odpina posty klanu od zgloszen - przed rozwiazaniem klanu i skasowaniem tych postow. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Report r SET r.post = null WHERE r.post.id IN (SELECT p.id FROM Post p WHERE p.clan.id = :clanId)")
+    void detachPostsOfClan(@Param("clanId") Long clanId);
 }

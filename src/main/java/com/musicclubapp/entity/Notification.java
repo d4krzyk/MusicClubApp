@@ -70,6 +70,12 @@ public class Notification {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private MusicEvent event;
 
+    /** Klan - przy zaproszeniu i wyrzuceniu. Znika razem z klanem. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "clan_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Clan clan;
+
     /** Ile dni zostalo do wydarzenia w chwili przypomnienia: 0 = dzis, 1 = jutro. */
     @Column(name = "days_left")
     private Integer daysLeft;
@@ -128,6 +134,20 @@ public class Notification {
         return n;
     }
 
+    /** Zaproszenie do klanu. */
+    public static Notification clanInvite(User recipient, User inviter, Clan clan) {
+        Notification n = new Notification(recipient, inviter, NotificationType.CLAN_INVITE);
+        n.clan = clan;
+        return n;
+    }
+
+    /** Wyrzucenie z klanu - bez sprawcy, zeby nie robic z tego narzedzia do klotni. */
+    public static Notification clanKicked(User recipient, Clan clan) {
+        Notification n = new Notification(recipient, null, NotificationType.CLAN_KICKED);
+        n.clan = clan;
+        return n;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -174,6 +194,10 @@ public class Notification {
 
     public MusicEvent getEvent() {
         return event;
+    }
+
+    public Clan getClan() {
+        return clan;
     }
 
     public Integer getDaysLeft() {

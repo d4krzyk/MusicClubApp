@@ -19,12 +19,15 @@ public class PublicProfileService {
     private final FriendService friendService;
     private final PresenceService presence;
     private final PrivacyService privacy;
+    private final ClanService clans;
 
     public PublicProfileService(UserRepository userRepository,
                                 PostRepository postRepository,
                                 FriendService friendService,
                                 PresenceService presence,
-                                PrivacyService privacy) {
+                                PrivacyService privacy,
+                                ClanService clans) {
+        this.clans = clans;
         this.privacy = privacy;
         this.userRepository = userRepository;
         this.postRepository = postRepository;
@@ -56,7 +59,8 @@ public class PublicProfileService {
             pelny ? presence.of(user) : presence.hidden(),
             widok == PrivacyService.ProfileView.BLOCKED_BY_ME,
             widok == PrivacyService.ProfileView.RESTRICTED,
-            viewer != null && relacja == FriendshipStatus.NONE && privacy.canInvite(viewer, user));
+            viewer != null && relacja == FriendshipStatus.NONE && privacy.canInvite(viewer, user),
+            clans.badgeOf(user.getId()));
     }
 
     /**

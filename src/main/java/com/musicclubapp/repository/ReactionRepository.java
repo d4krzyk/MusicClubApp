@@ -63,4 +63,9 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
     @Modifying
     @Query("DELETE FROM Reaction r WHERE r.post.id = :postId")
     void deleteByPostId(@Param("postId") Long postId);
+
+    /** Reakcje pod wszystkimi postami klanu - przed jego rozwiazaniem. */
+    @Modifying
+    @Query("DELETE FROM Reaction r WHERE r.post.id IN (SELECT p.id FROM Post p WHERE p.clan.id = :clanId)")
+    void deleteByPostsOfClan(@Param("clanId") Long clanId);
 }

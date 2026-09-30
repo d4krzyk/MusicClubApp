@@ -13,7 +13,7 @@ import Avatar from './Avatar';
 import ChatDrawer from './ChatDrawer';
 import ChatLauncher from './ChatLauncher';
 import {
-  IconBoard, IconCalendar, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
+  IconBoard, IconCalendar, IconClan, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
   IconShield, IconShieldAlert,
 } from './Icons';
 import LanguageSwitch from './LanguageSwitch';
@@ -220,6 +220,11 @@ export default function Layout({ children }) {
                 <NavDropdown.Item as={Link} to="/profil">
                   <IconPerson className="me-2" />
                   {t('menu.myProfile')}
+                </NavDropdown.Item>
+
+                <NavDropdown.Item as={Link} to="/klan">
+                  <IconClan className="me-2" />
+                  {t('menu.clan')}
                 </NavDropdown.Item>
 
                 <NavDropdown.Item as={Link} to="/moje-zgloszenia">

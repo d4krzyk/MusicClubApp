@@ -26,6 +26,10 @@ public record NotificationResponse(
     /** Przypomnienie: ktore wydarzenie i ile dni do niego zostalo (0 = dzis). */
     Long eventId,
     String eventName,
-    Integer daysLeft
+    Integer daysLeft,
+
+    /** Zaproszenie do klanu albo wyrzucenie: ktory klan. */
+    Long clanId,
+    String clanName
 ) {
 }

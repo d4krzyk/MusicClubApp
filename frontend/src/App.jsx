@@ -15,6 +15,7 @@ import ReportsPage from './pages/ReportsPage';
 import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
 import EventsPage from './pages/EventsPage';
 import EventPage from './pages/EventPage';
+import ClanPage from './pages/ClanPage';
 import PotwierdzEmailPage from './pages/PotwierdzEmailPage';
 import ResetHaslaPage from './pages/ResetHaslaPage';
 import NoweHasloPage from './pages/NoweHasloPage';
@@ -99,6 +100,23 @@ export default function App() {
                 element={
                   <RequireAuth>
                     <EventPage />
+                  </RequireAuth>
+                }
+              />
+              {/* Klan: /klan to moj klan albo zaproszenia i zakladanie, /klany/:id - strona dowolnego klanu */}
+              <Route
+                path="/klan"
+                element={
+                  <RequireAuth>
+                    <ClanPage />
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/klany/:id"
+                element={
+                  <RequireAuth>
+                    <ClanPage />
                   </RequireAuth>
                 }
               />

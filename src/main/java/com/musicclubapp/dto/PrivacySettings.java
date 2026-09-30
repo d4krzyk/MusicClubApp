@@ -1,5 +1,6 @@
 package com.musicclubapp.dto;
 
+import com.musicclubapp.entity.ClanInvitePolicy;
 import com.musicclubapp.entity.InvitePolicy;
 import com.musicclubapp.entity.ProfileVisibility;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 public record PrivacySettings(
     @NotNull ProfileVisibility profileVisibility,
     @NotNull InvitePolicy friendRequestsFrom,
+    @NotNull ClanInvitePolicy clanInvitesFrom,
     boolean showOnline,
     boolean showInSuggestions,
     boolean hideOnAttendeeLists

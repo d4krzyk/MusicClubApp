@@ -67,6 +67,16 @@ export function UstawieniaPrywatnosci() {
               </Form.Select>
             </Form.Group>
 
+            <Form.Group className="mb-3" controlId="clanInvitesFrom">
+              <Form.Label>{t('privacy.clanInvitesFrom')}</Form.Label>
+              <Form.Select value={dane.clanInvitesFrom} onChange={(e) => ustaw('clanInvitesFrom', e.target.value)}>
+                <option value="EVERYONE">{t('privacy.everyone')}</option>
+                <option value="FRIENDS">{t('privacy.friendsOnlyInvite')}</option>
+                <option value="NOBODY">{t('privacy.nobody')}</option>
+              </Form.Select>
+              <Form.Text>{t('privacy.clanInvitesHint')}</Form.Text>
+            </Form.Group>
+
             <Form.Check
               type="switch"
               id="showOnline"

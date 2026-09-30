@@ -12,6 +12,7 @@ import Reactions from './Reactions';
 import MusicPicker from './MusicPicker';
 import VisibilityPicker from './VisibilityPicker';
 import ReportButton from './ReportButton';
+import ClanBadge from './ClanBadge';
 import {
   IconTrash, IconPencil, IconLock, IconCalendar,
 } from './Icons';
@@ -25,7 +26,7 @@ import { nazwaMiasta, plakietka } from '../utils/wydarzenia';
 
 /** Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify. */
 export default function Post({
-  post, onDelete, onUpdate, onReaction, index = 0, bezWydarzenia = false,
+  post, onDelete, onUpdate, onReaction, index = 0, bezWydarzenia = false, bezKlanu = false,
 }) {
   const { t, i18n } = useTranslation();
   const [edycja, setEdycja] = useState(false);
@@ -46,6 +47,9 @@ export default function Post({
           </Link>
 
           <div className="flex-grow-1 d-flex align-items-center gap-2 flex-wrap">
+            {/* Klan autora - plakietka w jego kolorze, prowadzi na strone klanu. Obok daty, bo ta sie zawija */}
+            <ClanBadge clan={post.authorClan} className="flex-shrink-0" />
+
             <span className="text-body-secondary small">
               {formatDate(post.createdAt, i18n.language)}
             </span>
@@ -107,6 +111,13 @@ export default function Post({
           />
         ) : (
           <>
+            {/* Post klanu: widoczny tylko dla jego czlonkow - napis to przypomina, a plakietka prowadzi do klanu */}
+            {post.clan && !bezKlanu && (
+              <p className="small text-body-secondary mb-2">
+                {t('clans.postOf')} <ClanBadge clan={post.clan} />
+              </p>
+            )}
+
             {/* Pod stroną wydarzenia odnośnik do niego samego byłby zbędny */}
             {post.event && !bezWydarzenia && <PodWydarzeniem wydarzenie={post.event} />}
 

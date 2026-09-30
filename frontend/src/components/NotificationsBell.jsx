@@ -5,7 +5,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import * as powiadomienia from '../api/powiadomienia';
 import Avatar from './Avatar';
 import DoladujWiecej from './DoladujWiecej';
-import { IconBell, IconCalendar, IconCross } from './Icons';
+import { IconBell, IconCalendar, IconClan, IconCross } from './Icons';
 import { timeAgo } from '../utils/dates';
 import useOdswiezanie from '../hooks/useOdswiezanie';
 
@@ -161,6 +161,10 @@ export default function NotificationsBell() {
         return t('notifications.report');
       case 'REPORT_RESOLVED':
         return t('notifications.reportResolved');
+      case 'CLAN_INVITE':
+        return t('notifications.clanInvite', { username: notification.actorUsername, name: notification.clanName });
+      case 'CLAN_KICKED':
+        return t('notifications.clanKicked', { name: notification.clanName });
       case 'EVENT_REMINDER':
         if (notification.daysLeft === 0) {
           return t('notifications.reminderToday', { name: notification.eventName });
@@ -232,7 +236,7 @@ export default function NotificationsBell() {
                   />
                 ) : (
                   <span className="bell-item-icon" aria-hidden="true">
-                    <IconCalendar size={16} />
+                    {notification.clanId ? <IconClan size={16} /> : <IconCalendar size={16} />}
                   </span>
                 )}
 

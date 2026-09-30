@@ -77,6 +77,9 @@ public class PostController {
             @Parameter(description = "Identyfikator wydarzenia - posty pod tym wydarzeniem")
             @RequestParam(required = false) Long event,
 
+            @Parameter(description = "Identyfikator klanu - posty klanu (tylko dla jego czlonkow)")
+            @RequestParam(required = false) Long clan,
+
             Authentication authentication) {
 
         Sort sort = "asc".equalsIgnoreCase(direction)
@@ -91,7 +94,9 @@ public class PostController {
         String username = authentication.getName();
 
         Page<PostResponse> result;
-        if (event != null) {
+        if (clan != null) {
+            result = postService.byClan(clan, username, pageable);
+        } else if (event != null) {
             result = postService.byEvent(event, username, pageable);
         } else if (author == null || author.isBlank()) {
             result = postService.feed(username, scope, pageable);

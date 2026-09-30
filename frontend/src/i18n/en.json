@@ -17,7 +17,8 @@
     "myProfile": "My profile",
     "reports": "Reports",
     "myReports": "My reports",
-    "events": "Events"
+    "events": "Events",
+    "clan": "My clan"
   },
   "common": {
     "loading": "Loading…",
@@ -390,7 +391,9 @@
     "reminderToday": "Today: {{name}}",
     "reminderTomorrow": "Tomorrow: {{name}}",
     "reminderDays_one": "In {{count}} day: {{name}}",
-    "reminderDays_other": "In {{count}} days: {{name}}"
+    "reminderDays_other": "In {{count}} days: {{name}}",
+    "clanInvite": "{{username}} invites you to the clan {{name}}",
+    "clanKicked": "You are no longer in the clan {{name}}"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -738,7 +741,10 @@
     "hideOnAttendeeLists": "Hide me on event attendee lists by default",
     "saved": "Saved.",
     "restrictedTitle": "Friends-only profile",
-    "restrictedText": "Only {{username}}'s friends can see their profile details."
+    "restrictedText": "Only {{username}}'s friends can see their profile details.",
+    "clanInvitesFrom": "Who can invite me to a clan",
+    "friendsOnlyInvite": "Friends only",
+    "clanInvitesHint": "You join a clan only by invitation. You can accept or decline; whoever got a refusal can't invite you again for a week."
   },
   "push": {
     "title": "Notifications",
@@ -760,5 +766,116 @@
     "permissionRefused": "The browser didn't get permission to show notifications.",
     "disabled": "Notifications are off on this device.",
     "testSent": "Sent — the notification should appear in a moment."
+  },
+  "clans": {
+    "title": "Clan",
+    "notFound": "This clan doesn't exist.",
+    "badgeTitle": "Clan {{name}}",
+    "postOf": "Clan post",
+    "meta_one": "{{count}} member · founded {{date}}",
+    "meta_other": "{{count}} members · founded {{date}}",
+    "leave": "Leave the clan",
+    "leaveConfirm": "Leave the clan {{name}}? You can only come back with a new invitation. Your posts and messages stay in the clan.",
+    "adminDisband": "Disband clan (admin)",
+    "adminBanner": "You are viewing this clan as an app administrator. This is done only after a report or when a violation of the rules or the law is suspected; every visit is written to the log.",
+    "inviteOnly": "You can only join a clan with an invitation from one of its members. Only members see the chat and posts.",
+    "moderationNotice": "The app administrator can view clan content — only after a report or when a violation of the rules or the law is suspected.",
+    "inviteToClan": "Invite to clan {{name}}",
+    "tabs": {
+      "label": "Clan sections",
+      "chat": "Chat",
+      "posts": "Posts",
+      "members": "Members",
+      "settings": "Settings"
+    },
+    "none": {
+      "title": "You're not in a clan",
+      "text": "You join a clan when one of its members invites you — the invitation will show up here and in the bell. You can also start your own."
+    },
+    "invitations": {
+      "title": "Clan invitations",
+      "from_one": "Invited by {{username}} · {{count}} member",
+      "from_other": "Invited by {{username}} · {{count}} members",
+      "accept": "Join",
+      "decline": "Decline"
+    },
+    "create": {
+      "title": "Start a clan",
+      "hint": "A clan has its own chat and its own posts that nobody outside the clan can see. Its members choose the colour by voting. People join only by invitation.",
+      "name": "Clan name",
+      "tag": "Tag",
+      "tagHint": "2–5 letters or digits, e.g. MC",
+      "description": "Description (optional)",
+      "submit": "Start the clan"
+    },
+    "members": {
+      "title": "Members",
+      "you": "you",
+      "invite": "Invite to the clan",
+      "inviteHint": "You can invite someone who isn't in any clan and allows invitations in their privacy settings. They can accept or decline.",
+      "usernamePlaceholder": "Person's username",
+      "send": "Invite",
+      "invited": "Invitation for {{username}} sent.",
+      "pending": "Waiting for an answer",
+      "invitedBy": "invited by {{username}}",
+      "cancelInvite": "Withdraw",
+      "promote": "Make clan admin",
+      "demote": "Remove admin role",
+      "transfer": "Hand over the clan",
+      "transferConfirm": "Hand the clan over to {{username}}? You will become a clan admin.",
+      "kick": "Remove",
+      "kickConfirm": "Remove {{username}} from the clan? They will get a notification that doesn't say who did it."
+    },
+    "role": {
+      "FOUNDER": "Founder",
+      "ADMIN": "Clan admin",
+      "MEMBER": "Member"
+    },
+    "color": {
+      "title": "Clan colour",
+      "hint": "Members choose the colour: everyone has one vote and the colour with the most votes wins (on a tie, the one voted for earlier). Votes are public.",
+      "current": "Now: {{color}}.",
+      "myVote": "Your vote: {{color}}.",
+      "noVote": "You haven't voted yet.",
+      "names": {
+        "VIOLET": "Violet",
+        "PINK": "Pink",
+        "RED": "Red",
+        "ORANGE": "Orange",
+        "AMBER": "Amber",
+        "GREEN": "Green",
+        "TEAL": "Teal",
+        "BLUE": "Blue",
+        "INDIGO": "Indigo",
+        "SLATE": "Slate"
+      }
+    },
+    "chat": {
+      "title": "Clan chat",
+      "empty": "Nobody has written anything yet. Start the conversation!",
+      "placeholder": "Write to the clan…",
+      "readOnly": "You are reading as an app administrator — you can't write here."
+    },
+    "posts": {
+      "title": "Clan posts",
+      "placeholder": "Write something for the clan — only its members will see it…",
+      "emptyTitle": "The clan has no posts yet",
+      "emptyText": "Only members can see clan posts. They don't show up in the feed or on profiles."
+    },
+    "settings": {
+      "images": "Icon and photo",
+      "icon": "Icon (small image next to the tag)",
+      "photo": "Clan photo (top of the page)",
+      "imagesHint": "The icon and photo are visible to everyone — they show on the badge and on the clan page.",
+      "remove": "Remove",
+      "imageSaved": "Image saved.",
+      "imageRemoved": "Image removed.",
+      "details": "Clan details",
+      "saved": "Saved.",
+      "danger": "Disbanding the clan",
+      "disbandHint": "Disbanding removes the clan together with its chat, posts and invitations. This can't be undone.",
+      "disband": "Disband the clan",
+      "disbandConfirm": "Disband the clan {{name}}? It will disappear together with its chat and posts — permanently."
+    }
   }
 }

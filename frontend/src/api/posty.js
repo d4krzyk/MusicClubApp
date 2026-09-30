@@ -3,9 +3,9 @@ import client from './client';
 
 /** Co aplikacja moze poprosic serwer w sprawie postow i reakcji. */
 
-/** Strona tablicy - albo postow jednego autora, albo postow pod wydarzeniem. */
+/** Strona tablicy - albo postow jednego autora, pod wydarzeniem albo w klanie. */
 export async function tablica({
-  strona, rozmiar, zakres, autor, kolejnosc, wydarzenie,
+  strona, rozmiar, zakres, autor, kolejnosc, wydarzenie, klan,
 }) {
   const { data } = await client.get('/posts', {
     params: {
@@ -15,6 +15,7 @@ export async function tablica({
       author: autor,
       direction: kolejnosc,
       event: wydarzenie,
+      clan: klan,
     },
   });
   return data;

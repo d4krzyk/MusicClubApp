@@ -47,7 +47,7 @@ public class PrivacyService {
     @Transactional
     public PrivacySettings update(String username, PrivacySettings settings) {
         User user = require(username);
-        user.setPrivacy(settings.profileVisibility(), settings.friendRequestsFrom(),
+        user.setPrivacy(settings.profileVisibility(), settings.friendRequestsFrom(), settings.clanInvitesFrom(),
             settings.showOnline(), settings.showInSuggestions(), settings.hideOnAttendeeLists());
         return toDto(user);
     }
@@ -105,7 +105,7 @@ public class PrivacyService {
     }
 
     private static PrivacySettings toDto(User user) {
-        return new PrivacySettings(user.getProfileVisibility(), user.getFriendRequestsFrom(),
+        return new PrivacySettings(user.getProfileVisibility(), user.getFriendRequestsFrom(), user.getClanInvitesFrom(),
             user.isShowOnline(), user.isShowInSuggestions(), user.isHideOnAttendeeLists());
     }
 

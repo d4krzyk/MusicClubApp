@@ -35,7 +35,9 @@ public class NotificationMapper {
             notification.getCreatedAt(),
             event != null ? event.getId() : null,
             event != null ? event.getName() : null,
-            notification.getDaysLeft());
+            notification.getDaysLeft(),
+            notification.getClan() != null ? notification.getClan().getId() : null,
+            notification.getClan() != null ? notification.getClan().getName() : null);
     }
 
     private String avatarUrl(User user) {
@@ -58,6 +60,7 @@ public class NotificationMapper {
             case REPORT -> "/zgloszenia";
             // Zglaszajacy trafia na wlasna liste zgloszen, a nie do panelu admina
             case REPORT_RESOLVED -> "/moje-zgloszenia";
+            case CLAN_INVITE, CLAN_KICKED -> "/klan";
             case EVENT_REMINDER -> notification.getEvent() != null
                 ? "/wydarzenia/" + notification.getEvent().getId()
                 : "/wydarzenia?widok=moje";

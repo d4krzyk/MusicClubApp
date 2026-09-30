@@ -25,6 +25,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
            LEFT JOIN FETCH n.actor
            LEFT JOIN FETCH n.post
            LEFT JOIN FETCH n.event
+           LEFT JOIN FETCH n.clan
            WHERE n.recipient.username = :username
            ORDER BY n.createdAt DESC
            """,
@@ -113,4 +114,18 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
              AND n.type = com.musicclubapp.entity.NotificationType.EVENT_REMINDER
            """)
     void deleteReminders(@Param("recipientId") Long recipientId, @Param("eventId") Long eventId);
+
+    /** Zaproszenie do klanu przestalo czekac (przyjete, odrzucone, cofniete) - znika z dzwonka. */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.recipient.id = :recipientId AND n.clan.id = :clanId
+             AND n.type = com.musicclubapp.entity.NotificationType.CLAN_INVITE
+           """)
+    void deleteClanInvites(@Param("recipientId") Long recipientId, @Param("clanId") Long clanId);
+
+    /** Powiadomienia o postach klanu - przed skasowaniem tych postow. */
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.post.id IN (SELECT p.id FROM Post p WHERE p.clan.id = :clanId)")
+    void deleteByPostsOfClan(@Param("clanId") Long clanId);
 }

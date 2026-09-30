@@ -545,6 +545,26 @@ sam, który przyjmują (sprawdzony biblioteką, której używa pakiet
 `web-push`), ale pierwsze powiadomienie na prawdziwym telefonie trzeba
 zobaczyć po wdrożeniu.
 
+Przy klanach (wrzesień 2026):
+
+- migracja V9 na pustej bazie i po V8; schemat zgodny z encjami blok po bloku;
+- test przez całe API (11 scenariuszy): zakładanie (nazwa i skrót
+  unikalne bez względu na litery i znaki, zastrzeżone słowa), jedyna droga do
+  klanu — zaproszenie, blokady/„nikt”/„tylko znajomi”/odmowa, role, głosowanie
+  na kolor z remisem, posty klanu (nie ma ich na tablicy, profilu ani w
+  licznikach; obcy dostaje 404), czat, rozwiązanie klanu ze wszystkim, co w nim
+  jest, usunięcie konta założyciela i ostatniego członka. Testy wyłapują
+  wyłączenie sprawdzenia członkostwa, filtra tablicy, zakazu zapraszania osób
+  z klanu, drugiego przyjęcia zaproszenia i kasowania reakcji;
+- Chromium na czterech kontach: założenie z ikoną i zdjęciem, głosowanie na
+  kolor (kolor strony i plakietki zmienia się od razu), zaproszenie →
+  powiadomienie → przyjęcie, czat na żywo między dwoma kontami bez odświeżania,
+  post klanu (widzi klan i administrator, tablica nie), plakietka przy
+  zwykłym poście i na profilu, obca osoba (bez czatu i postów, API 409),
+  administrator (baner, czat i posty do odczytu, bez pisania), wyrzucenie z
+  powiadomieniem; 320 px w ciemnym motywie bez przelewu;
+- `mvnw clean test` → 539 testów; klasy klanów, blokad, usuwania kont i powiadomień także na PostgreSQL 16.
+
 Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
 (podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz
 jeszcze.

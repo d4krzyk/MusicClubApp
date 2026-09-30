@@ -1,10 +1,12 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.dto.ClanBadge;
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.FeedScope;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
+import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.Role;
@@ -35,6 +37,8 @@ import java.util.Map;
 @Service
 public class PostService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(PostService.class);
+
     /** Ile zdjec maksymalnie w jednym poscie. */
     public static final int MAX_IMAGES = 10;
 
@@ -49,6 +53,7 @@ public class PostService {
     private final BlockService blocks;
     private final PrivacyService privacy;
     private final MusicEventRepository events;
+    private final ClanService clans;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
@@ -60,9 +65,11 @@ public class PostService {
                        ReactionRepository reactionRepository,
                        BlockService blocks,
                        PrivacyService privacy,
-                       MusicEventRepository events) {
+                       MusicEventRepository events,
+                       ClanService clans) {
         this.privacy = privacy;
         this.events = events;
+        this.clans = clans;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.fileStorage = fileStorage;
@@ -91,6 +98,10 @@ public class PostService {
             post.setEvent(events.findById(request.eventId())
                 .orElseThrow(() -> new NoSuchElementFoundException("event", request.eventId())));
         }
+        if (request.clanId() != null) {
+            // Post klanu: tylko czlonek moze go napisac, a widoczny jest tylko w klanie - nie ma go na tablicy
+            post.setClan(clans.requireMember(username, request.clanId()));
+        }
 
         // Pusta wartosc = publiczny; setter na encji sam pilnuje, zeby post
         // nigdy nie zostal bez widocznosci
@@ -110,7 +121,7 @@ public class PostService {
         }
 
         // Swiezo dodany post nie ma jeszcze zadnych reakcji
-        return postMapper.toResponse(postRepository.save(post), author, ReactionSummary.empty());
+        return withAuthorClan(postMapper.toResponse(postRepository.save(post), author, ReactionSummary.empty()), author);
     }
 
     /** Edycja wlasnego posta - tresc i utwor ze Spotify. */
@@ -119,6 +130,10 @@ public class PostService {
         Post post = postRepository.findByIdWithAuthor(id)
             .orElseThrow(() -> new NoSuchElementFoundException("post", id));
 
+        // Post klanu: kto z niego wyszedl (albo nigdy w nim nie byl), nie ma do niego dostepu - ani do edycji
+        if (post.getClan() != null && !post.isVisibleTo(userRepository.findByUsername(username).orElse(null))) {
+            throw new NoSuchElementFoundException("post", id);
+        }
         if (!post.getAuthor().getUsername().equals(username)) {
             throw OperationNotAllowedException.someoneElsesPostEdit();
         }
@@ -143,7 +158,7 @@ public class PostService {
         /* Post moze juz miec reakcje - edycja tresci ich nie kasuje. */
         ReactionSummary reactions = reactionService.summaries(List.of(id), username).get(id);
 
-        return postMapper.toResponse(postRepository.save(post), author, reactions);
+        return withAuthorClan(postMapper.toResponse(postRepository.save(post), author, reactions), author);
     }
 
     /** Podpina nagranie do posta - razem z tytulem i miniaturka. */
@@ -189,6 +204,10 @@ public class PostService {
          * /post/12 z reki, zeby przeczytac cokolwiek.
          */
         if (!post.isVisibleTo(viewer)) {
+            // Post klanu dla obcego to post, ktorego nie ma - nie zdradzamy, ze klan istnieje
+            if (post.getClan() != null) {
+                throw new NoSuchElementFoundException("post", id);
+            }
             throw OperationNotAllowedException.friendsOnlyPost();
         }
         // Post osoby zablokowanej albo blokujacej - jakby go nie bylo
@@ -200,7 +219,7 @@ public class PostService {
             .summaries(List.of(id), viewerUsername)
             .getOrDefault(id, ReactionSummary.empty());
 
-        return postMapper.toResponse(post, viewer, summary);
+        return withAuthorClan(postMapper.toResponse(post, viewer, summary), post.getAuthor());
     }
 
     /** Posty jednego uzytkownika - do jego profilu. */
@@ -234,6 +253,24 @@ public class PostService {
             circle);
     }
 
+    /**
+     * Posty klanu - najnowsze na gorze. Dla czlonkow i administratora aplikacji; osoby z blokad
+     * ogladajacego sa pomijane, tak jak na tablicy.
+     */
+    @Transactional(readOnly = true)
+    public Page<PostResponse> byClan(Long clanId, String viewerUsername, Pageable pageable) {
+        User viewer = userRepository.findByUsername(viewerUsername)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", viewerUsername));
+        Clan clan = clans.requireAccess(viewer, clanId);
+        boolean adminSpozaKlanu = viewer.getRole() == Role.ADMIN && !clan.hasMember(viewer.getId());
+        if (adminSpozaKlanu && pageable.getPageNumber() == 0) {
+            log.info("Audyt: administrator {} czyta posty klanu {} (#{})", viewer.getUsername(), clan.getName(), clan.getId());
+        }
+        List<Long> hidden = adminSpozaKlanu ? List.of(-1L) : blocks.hiddenForQuery(viewer.getId());
+        Pageable newestFirst = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return withReactions(postRepository.findByClan(clanId, hidden, newestFirst), viewerUsername, List.of());
+    }
+
     /** Liczniki reakcji dla wskazanych postow - bez pobierania ich tresci. */
     @Transactional(readOnly = true)
     public Map<Long, ReactionSummary> reactionSummaries(List<Long> postIds, String viewerUsername) {
@@ -249,11 +286,21 @@ public class PostService {
         Map<Long, ReactionSummary> reactions =
             reactionService.summaries(postIds, viewerUsername);
 
+        // Plakietki klanow autorow calej strony - jedno zapytanie, a nie jedno na post
+        Map<Long, ClanBadge> badges = clans.badgesOf(
+            page.getContent().stream().map(p -> p.getAuthor().getId()).distinct().toList());
+
         return page.map(post -> postMapper.toResponse(
-            post,
-            viewer,
-            reactions.getOrDefault(post.getId(), ReactionSummary.empty()),
-            circle.contains(post.getAuthor().getId())));
+                post,
+                viewer,
+                reactions.getOrDefault(post.getId(), ReactionSummary.empty()),
+                circle.contains(post.getAuthor().getId()))
+            .withAuthorClan(badges.get(post.getAuthor().getId())));
+    }
+
+    /** Odpowiedz pojedynczego posta z plakietka klanu autora. */
+    private PostResponse withAuthorClan(PostResponse response, User author) {
+        return response.withAuthorClan(clans.badgeOf(author.getId()));
     }
 
     /** Usuwa post razem z jego zdjeciami. */
@@ -265,8 +312,13 @@ public class PostService {
         User viewer = userRepository.findByUsername(username)
             .orElseThrow(() -> new NoSuchElementFoundException("user", username));
 
+        // Post klanu dla kogos spoza klanu (takze dla autora, ktory z niego odszedl) - jakby go nie bylo
+        if (post.getClan() != null && !post.isVisibleTo(viewer)) {
+            throw new NoSuchElementFoundException("post", id);
+        }
         boolean isAuthor = post.getAuthor().getUsername().equals(username);
-        if (!isAuthor && viewer.getRole() != Role.ADMIN) {
+        boolean zarzadKlanu = post.getClan() != null && clans.canModerate(viewer, post.getClan());
+        if (!isAuthor && !zarzadKlanu && viewer.getRole() != Role.ADMIN) {
             throw OperationNotAllowedException.someoneElsesPost();
         }
 

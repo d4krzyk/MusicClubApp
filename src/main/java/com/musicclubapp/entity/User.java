@@ -107,6 +107,12 @@ public class User {
     @Column(name = "friend_requests_from", nullable = false, length = 20)
     private InvitePolicy friendRequestsFrom = InvitePolicy.EVERYONE;
 
+    /** Kto moze zaprosic mnie do klanu. */
+    @Enumerated(EnumType.STRING)
+    @org.hibernate.annotations.ColumnDefault("'EVERYONE'")
+    @Column(name = "clan_invites_from", nullable = false, length = 20)
+    private ClanInvitePolicy clanInvitesFrom = ClanInvitePolicy.EVERYONE;
+
     /** Czy inni widza, ze jestem teraz aktywny i kiedy bylem ostatnio. */
     @org.hibernate.annotations.ColumnDefault("true")
     @Column(name = "show_online", nullable = false)
@@ -343,9 +349,15 @@ public class User {
         this.eventReminders = eventReminders;
     }
 
+    public ClanInvitePolicy getClanInvitesFrom() {
+        return clanInvitesFrom == null ? ClanInvitePolicy.EVERYONE : clanInvitesFrom;
+    }
+
     /** Wszystkie ustawienia prywatnosci naraz - formularz zapisuje je razem. */
     public void setPrivacy(ProfileVisibility profileVisibility, InvitePolicy friendRequestsFrom,
+                           ClanInvitePolicy clanInvitesFrom,
                            boolean showOnline, boolean showInSuggestions, boolean hideOnAttendeeLists) {
+        this.clanInvitesFrom = clanInvitesFrom;
         this.profileVisibility = profileVisibility;
         this.friendRequestsFrom = friendRequestsFrom;
         this.showOnline = showOnline;

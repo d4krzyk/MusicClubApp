@@ -169,6 +169,73 @@ public class OperationNotAllowedException extends RuntimeException {
             "Brak urzadzen z wlaczonymi powiadomieniami", "error.push.noDevices");
     }
 
+    /* ------------------------------------------------------------------ */
+    /*  Klany                                                              */
+    /* ------------------------------------------------------------------ */
+
+    public static OperationNotAllowedException clanNameInvalid() {
+        return new OperationNotAllowedException("Niepoprawna nazwa klanu", "error.clan.name.invalid");
+    }
+
+    public static OperationNotAllowedException clanNameReserved() {
+        return new OperationNotAllowedException("Zarezerwowana nazwa klanu", "error.clan.name.reserved");
+    }
+
+    public static OperationNotAllowedException clanNameTaken() {
+        return new OperationNotAllowedException("Nazwa klanu zajeta", "error.clan.name.taken");
+    }
+
+    public static OperationNotAllowedException clanTagInvalid() {
+        return new OperationNotAllowedException("Niepoprawny skrot klanu", "error.clan.tag.invalid");
+    }
+
+    public static OperationNotAllowedException clanTagTaken() {
+        return new OperationNotAllowedException("Skrot klanu zajety", "error.clan.tag.taken");
+    }
+
+    /** Ta osoba jest juz w klanie - jeden klan na osobe. */
+    public static OperationNotAllowedException clanAlreadyMember() {
+        return new OperationNotAllowedException("Jestes juz w klanie", "error.clan.alreadyMember");
+    }
+
+    /** Tylko dla czlonkow klanu (i administratora aplikacji). */
+    public static OperationNotAllowedException clanNotMember() {
+        return new OperationNotAllowedException("Tylko dla czlonkow klanu", "error.clan.notMember");
+    }
+
+    public static OperationNotAllowedException clanNotManager() {
+        return new OperationNotAllowedException("Tylko zalozyciel i administratorzy klanu", "error.clan.notManager");
+    }
+
+    public static OperationNotAllowedException clanNotFounder() {
+        return new OperationNotAllowedException("Tylko zalozyciel klanu", "error.clan.notFounder");
+    }
+
+    public static OperationNotAllowedException clanFull(int max) {
+        return new OperationNotAllowedException("Klan jest pelny", "error.clan.full", max);
+    }
+
+    public static OperationNotAllowedException clanInviteeInClan() {
+        return new OperationNotAllowedException("Ta osoba jest juz w klanie", "error.clan.inviteeInClan");
+    }
+
+    public static OperationNotAllowedException clanAlreadyInvited() {
+        return new OperationNotAllowedException("Ta osoba jest juz zaproszona", "error.clan.alreadyInvited");
+    }
+
+    public static OperationNotAllowedException clanTooManyInvites(int max) {
+        return new OperationNotAllowedException("Za duzo oczekujacych zaproszen", "error.clan.tooManyInvites", max);
+    }
+
+    /** Zalozyciel nie moze po prostu odejsc - klan zostalby bez wlasciciela. */
+    public static OperationNotAllowedException clanFounderMustTransfer() {
+        return new OperationNotAllowedException("Najpierw przekaz klan", "error.clan.founderMustTransfer");
+    }
+
+    public static OperationNotAllowedException clanCannotKick() {
+        return new OperationNotAllowedException("Nie mozna wyrzucic tej osoby", "error.clan.cannotKick");
+    }
+
     /** Serwer nie wysyla poczty - nie ma jak dostarczyc linku. */
     public static OperationNotAllowedException mailDisabled() {
         return new OperationNotAllowedException(

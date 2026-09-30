@@ -20,6 +20,8 @@ public record PublicProfileResponse(
     /** Profil tylko dla znajomych, a ogladajacy nim nie jest - bez szczegolow. */
     boolean restricted,
     /** Czy ogladajacy moze teraz wyslac zaproszenie (ustawienia tej osoby, blokady). */
-    boolean canInvite
+    boolean canInvite,
+    /** Klan tej osoby - plakietka pod loginem; widoczna takze przy profilu tylko dla znajomych. */
+    ClanBadge clan
 ) {
 }

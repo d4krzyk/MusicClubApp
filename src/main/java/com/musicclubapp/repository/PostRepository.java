@@ -24,7 +24,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            SELECT p FROM Post p
            JOIN FETCH p.author a
            LEFT JOIN FETCH p.event
-           WHERE (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+           WHERE p.clan IS NULL
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR a.id IN :circle)
              AND a.id NOT IN :hidden
@@ -32,7 +33,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            """,
            countQuery = """
            SELECT COUNT(p) FROM Post p
-           WHERE (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
+           WHERE p.clan IS NULL
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR p.author.id IN :circle)
              AND p.author.id NOT IN :hidden
@@ -46,10 +48,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            SELECT p FROM Post p
            JOIN FETCH p.author a
            LEFT JOIN FETCH p.event
-           WHERE a.id IN :circle
+           WHERE a.id IN :circle AND p.clan IS NULL
            ORDER BY p.createdAt DESC
            """,
-           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.author.id IN :circle")
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.author.id IN :circle AND p.clan IS NULL")
     Page<Post> findCircleFeed(@Param("circle") Collection<Long> circle, Pageable pageable);
 
     /** Posty jednego uzytkownika - do jego profilu. */
@@ -57,14 +59,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            SELECT p FROM Post p
            JOIN FETCH p.author a
            LEFT JOIN FETCH p.event
-           WHERE a.username = :username
+           WHERE a.username = :username AND p.clan IS NULL
              AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR a.id IN :circle)
            """,
            countQuery = """
            SELECT COUNT(p) FROM Post p
-           WHERE p.author.username = :username
+           WHERE p.author.username = :username AND p.clan IS NULL
              AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR p.author.id IN :circle)
@@ -78,7 +80,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            SELECT p FROM Post p
            JOIN FETCH p.author a
            LEFT JOIN FETCH p.event e
-           WHERE e.id = :eventId
+           WHERE e.id = :eventId AND p.clan IS NULL
              AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR a.id IN :circle)
@@ -87,7 +89,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            """,
            countQuery = """
            SELECT COUNT(p) FROM Post p
-           WHERE p.event.id = :eventId
+           WHERE p.event.id = :eventId AND p.clan IS NULL
              AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR p.author.id IN :circle)
@@ -98,20 +100,40 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                            @Param("hidden") Collection<Long> hidden,
                            Pageable pageable);
 
+    /** Posty klanu, najnowsze na gorze; bez osob z blokad ogladajacego. */
+    @Query(value = """
+           SELECT p FROM Post p
+           JOIN FETCH p.author a
+           JOIN FETCH p.clan
+           WHERE p.clan.id = :clanId AND a.id NOT IN :hidden
+           ORDER BY p.createdAt DESC
+           """,
+           countQuery = """
+           SELECT COUNT(p) FROM Post p
+           WHERE p.clan.id = :clanId AND p.author.id NOT IN :hidden
+           """)
+    Page<Post> findByClan(@Param("clanId") Long clanId,
+                          @Param("hidden") Collection<Long> hidden,
+                          Pageable pageable);
+
+    /** Wszystkie posty klanu - przy jego rozwiazywaniu. */
+    List<Post> findByClanId(Long clanId);
+
     /**
      * Post razem z autorem - uzywane przy usuwaniu, zeby sprawdzic wlasciciela bez dodatkowego
      * zapytania do bazy.
      */
-    @Query("SELECT p FROM Post p JOIN FETCH p.author LEFT JOIN FETCH p.event WHERE p.id = :id")
+    @Query("SELECT p FROM Post p JOIN FETCH p.author LEFT JOIN FETCH p.event LEFT JOIN FETCH p.clan WHERE p.id = :id")
     Optional<Post> findByIdWithAuthor(@Param("id") Long id);
 
     /** Ile postow napisal dany uzytkownik - liczba na jego profilu. */
-    long countByAuthorUsername(String username);
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.author.username = :username AND p.clan IS NULL")
+    long countByAuthorUsername(@Param("username") String username);
 
     /** Ile postow tej osoby widzi konkretny ogladajacy - liczba na profilu. */
     @Query("""
            SELECT COUNT(p) FROM Post p
-           WHERE p.author.username = :username
+           WHERE p.author.username = :username AND p.clan IS NULL
              AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC
                   OR p.visibility IS NULL
                   OR p.author.id IN :circle)
@@ -131,6 +153,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
              JOIN users u ON u.id = p.author_id
             WHERE u.username = :username
               AND p.music_external_id IS NOT NULL
+              AND p.clan_id IS NULL
               AND p.music_kind = :kind
             GROUP BY p.music_provider, p.music_kind, p.music_external_id
             ORDER BY timesPosted DESC, MAX(p.created_at) DESC

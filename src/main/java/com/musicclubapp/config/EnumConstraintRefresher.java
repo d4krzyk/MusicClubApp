@@ -1,6 +1,10 @@
 package com.musicclubapp.config;
 
+import com.musicclubapp.entity.ClanColor;
+import com.musicclubapp.entity.ClanInvitePolicy;
+import com.musicclubapp.entity.ClanRole;
 import com.musicclubapp.entity.EventStatus;
+import com.musicclubapp.entity.InvitationStatus;
 import com.musicclubapp.entity.NotificationType;
 import com.musicclubapp.entity.ParticipationStatus;
 import com.musicclubapp.entity.PostVisibility;
@@ -77,7 +81,12 @@ public class EnumConstraintRefresher implements ApplicationRunner {
         /* Ticketmaster moze kiedys wprowadzic nowy stan wydarzenia - wtedy przybedzie stala. */
         new EnumColumn("music_events", "status", EventStatus.class),
         new EnumColumn("event_participations", "status", ParticipationStatus.class),
-        new EnumColumn("email_tokens", "purpose", TokenPurpose.class)
+        new EnumColumn("email_tokens", "purpose", TokenPurpose.class),
+        new EnumColumn("users", "clan_invites_from", ClanInvitePolicy.class),
+        new EnumColumn("clans", "color", ClanColor.class),
+        new EnumColumn("clan_members", "role", ClanRole.class),
+        new EnumColumn("clan_members", "color_vote", ClanColor.class),
+        new EnumColumn("clan_invitations", "status", InvitationStatus.class)
     );
 
     /** Kolumny objete odswiezaniem, jako "tabela.kolumna". */

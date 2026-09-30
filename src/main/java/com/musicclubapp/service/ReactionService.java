@@ -33,13 +33,16 @@ public class ReactionService {
     private final PostMapper postMapper;
     private final NotificationService notifications;
     private final BlockService blocks;
+    private final ClanService clans;
 
     public ReactionService(ReactionRepository reactionRepository,
                            PostRepository postRepository,
                            UserRepository userRepository,
                            PostMapper postMapper,
                            NotificationService notifications,
-                           BlockService blocks) {
+                           BlockService blocks,
+                           ClanService clans) {
+        this.clans = clans;
         this.blocks = blocks;
         this.reactionRepository = reactionRepository;
         this.postRepository = postRepository;
@@ -164,12 +167,17 @@ public class ReactionService {
         ReactionSummary summary =
             summaries(List.of(postId), viewer.getUsername()).get(postId);
 
-        return postMapper.toResponse(post, viewer, summary);
+        return postMapper.toResponse(post, viewer, summary)
+            .withAuthorClan(clans.badgeOf(post.getAuthor().getId()));
     }
 
     /** Nie da sie zareagowac na post, ktorego nie wolno nam zobaczyc. */
     private void checkVisible(Post post, User viewer) {
         if (!post.isVisibleTo(viewer)) {
+            // Post klanu dla obcego - jakby go nie bylo
+            if (post.getClan() != null) {
+                throw new NoSuchElementFoundException("post", post.getId());
+            }
             throw OperationNotAllowedException.friendsOnlyPost();
         }
         if (blocks.eitherWay(viewer.getId(), post.getAuthor().getId())) {

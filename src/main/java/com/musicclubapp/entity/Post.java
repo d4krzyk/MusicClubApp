@@ -33,8 +33,12 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "posts",
-    // Lista pod wydarzeniem szuka po event_id - bez indeksu to przeglad calej tabeli
-    indexes = @Index(name = "idx_posts_event", columnList = "event_id"))
+    indexes = {
+        // Lista pod wydarzeniem szuka po event_id - bez indeksu to przeglad calej tabeli
+        @Index(name = "idx_posts_event", columnList = "event_id"),
+        // Posty klanu - to samo, po clan_id
+        @Index(name = "idx_posts_clan", columnList = "clan_id")
+    })
 public class Post {
 
     /** Gorny limit dlugosci tresci - tyle samo pilnuje walidacja w DTO. */
@@ -64,6 +68,16 @@ public class Post {
     @JoinColumn(name = "event_id")
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private MusicEvent event;
+
+    /**
+     * Klan, w ktorym napisano post, albo null. Post klanu jest tylko dla
+     * czlonkow: nie ma go na tablicy, na profilu autora ani pod wydarzeniem,
+     * a reakcje i pojedynczy adres tez sa dla czlonkow. Klan kasuje swoje
+     * posty sam (rozwiazanie klanu), wiec bez ON DELETE.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "clan_id")
+    private Clan clan;
 
     /** Tresc posta. {@code TEXT} zamiast VARCHAR - dluzsze wpisy sie zmieszcza. */
     @Column(nullable = false, length = MAX_CONTENT_LENGTH, columnDefinition = "TEXT")
@@ -156,6 +170,15 @@ public class Post {
         return event;
     }
 
+    public Clan getClan() {
+        return clan;
+    }
+
+    /** Ustawiane tylko przy dodawaniu - post nie przenosi sie miedzy klanami. */
+    public void setClan(Clan clan) {
+        this.clan = clan;
+    }
+
     /** Ustawiane tylko przy dodawaniu - edycja nie przenosi posta pod inne wydarzenie. */
     public void setEvent(MusicEvent event) {
         this.event = event;
@@ -242,6 +265,11 @@ public class Post {
 
     /** Czy dana osoba ma prawo zobaczyc ten post. */
     public boolean isVisibleTo(User viewer) {
+        // Post klanu widza czlonkowie i administrator aplikacji - i nikt wiecej,
+        // bez wzgledu na to, co jest w polu widocznosci
+        if (clan != null) {
+            return viewer != null && (viewer.getRole() == Role.ADMIN || clan.hasMember(viewer.getId()));
+        }
         if (getVisibility() == PostVisibility.PUBLIC) {
             return true;
         }

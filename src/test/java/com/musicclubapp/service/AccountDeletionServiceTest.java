@@ -51,6 +51,7 @@ class AccountDeletionServiceTest {
     @Mock private BlockService blocks;
     @Mock private UserService users;
     @Mock private PushService push;
+    @Mock private ClanService clans;
 
     @InjectMocks private AccountDeletionService deletion;
 
@@ -79,12 +80,13 @@ class AccountDeletionServiceTest {
 
         deletion.erase(target);
 
-        InOrder kolejnosc = inOrder(notifications, reactions, reports, posts, friends,
+        InOrder kolejnosc = inOrder(notifications, reactions, reports, clans, posts, friends,
             messages, network, playlists, eventParticipations, emailVerification, blocks, push, users, userRepository);
 
         kolejnosc.verify(notifications).deleteAllOf(target.getId());
         kolejnosc.verify(reactions).deleteAllOf(target.getId());
         kolejnosc.verify(reports).deleteAllOf(target.getId());
+        kolejnosc.verify(clans).deleteAllOf(target);
         kolejnosc.verify(posts).deleteAllOf(target.getId());
         kolejnosc.verify(friends).deleteAllOf(target);
         kolejnosc.verify(messages).deleteAllOf(target.getId());

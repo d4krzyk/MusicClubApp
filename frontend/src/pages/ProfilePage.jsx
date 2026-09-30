@@ -25,6 +25,8 @@ import Favorites from '../components/Favorites';
 import Playlists from '../components/Playlists';
 import FriendshipButton from '../components/FriendshipButton';
 import BlockButton from '../components/BlockButton';
+import ClanBadge from '../components/ClanBadge';
+import ClanInviteButton from '../components/ClanInviteButton';
 import { IconBan, IconChat, IconInbox, IconLock, IconPlus } from '../components/Icons';
 import { formatDate } from '../utils/dates';
 
@@ -168,7 +170,11 @@ export default function ProfilePage() {
             <Avatar avatarUrl={profile.avatarUrl} username={profile.username} size={80} />
 
             <div className="flex-grow-1">
-              <h1 className="h4 mb-1">{profile.username}</h1>
+              <div className="d-flex align-items-center gap-2 flex-wrap mb-1">
+                <h1 className="h4 mb-0">{profile.username}</h1>
+                {/* Plakietka klanu - takze przy profilu tylko dla znajomych */}
+                <ClanBadge clan={profile.clan} />
+              </div>
 
               {/* Obecnosc pokazujemy tylko na CUDZYM profilu. */}
               {!profile.self && (
@@ -200,6 +206,10 @@ export default function ProfilePage() {
                 <Link to="/settings" className="btn btn-outline-secondary btn-sm">
                   {t('profile.editAccount')}
                 </Link>
+              )}
+
+              {!profile.self && !profile.clan && !profile.blockedByMe && (
+                <ClanInviteButton username={profile.username} />
               )}
 
               <FriendshipButton

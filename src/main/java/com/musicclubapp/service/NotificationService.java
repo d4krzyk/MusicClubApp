@@ -1,6 +1,7 @@
 package com.musicclubapp.service;
 
 import com.musicclubapp.dto.NotificationResponse;
+import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
 import com.musicclubapp.entity.NotificationType;
@@ -58,6 +59,10 @@ public class NotificationService {
             case REPORT_RESOLVED -> new PushService.Message("push.reportResolved.title", null,
                 "push.reportResolved.body", null, link, "report-resolved");
             case EVENT_REMINDER -> przypomnienie(n, link);
+            case CLAN_INVITE -> new PushService.Message("push.clanInvite.title", null,
+                "push.clanInvite.body", new Object[] {kto, n.getClan().getName()}, link, "clan-invite-" + n.getClan().getId());
+            case CLAN_KICKED -> new PushService.Message("push.clanKicked.title", null,
+                "push.clanKicked.body", new Object[] {n.getClan().getName()}, link, "clan-kicked");
             case REACTION -> null;
         };
     }
@@ -140,6 +145,31 @@ public class NotificationService {
     @Transactional
     public void deleteBetween(Long a, Long b) {
         notificationRepository.deleteBetween(a, b);
+    }
+
+    /** Zaproszenie do klanu - w dzwonku i na telefonie. */
+    @Transactional
+    public void clanInvited(User recipient, User inviter, Clan clan) {
+        notificationRepository.deleteClanInvites(recipient.getId(), clan.getId());
+        zapisz(Notification.clanInvite(recipient, inviter, clan));
+    }
+
+    /** Zaproszenie przestalo czekac. */
+    @Transactional
+    public void clanInviteGone(Long recipientId, Long clanId) {
+        notificationRepository.deleteClanInvites(recipientId, clanId);
+    }
+
+    /** Wyrzucenie z klanu - jedno powiadomienie, bez podawania kto. */
+    @Transactional
+    public void clanKicked(User recipient, Clan clan) {
+        zapisz(Notification.clanKicked(recipient, clan));
+    }
+
+    /** Przed skasowaniem postow klanu. */
+    @Transactional
+    public void clanPostsDeleted(Long clanId) {
+        notificationRepository.deleteByPostsOfClan(clanId);
     }
 
     /**

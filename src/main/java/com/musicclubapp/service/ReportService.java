@@ -255,6 +255,12 @@ public class ReportService {
         reportRepository.detachPostsOfAuthor(authorId);
     }
 
+    /** Odpina posty klanu od zgloszen - przed rozwiazaniem klanu. */
+    @Transactional
+    public void detachPostsOfClan(Long clanId) {
+        reportRepository.detachPostsOfClan(clanId);
+    }
+
     @Transactional
     public void deleteAllOf(Long userId) {
         reportRepository.detachPostsOfAuthor(userId);

@@ -33,13 +33,16 @@ public record CreatePostRequest(
     PostVisibility visibility,
 
     /** Wydarzenie, pod ktorym piszemy post - albo null, gdy to zwykly wpis na tablicy. */
-    Long eventId
+    Long eventId,
+
+    /** Klan, w ktorym piszemy post (widoczny tylko dla jego czlonkow) - albo null. */
+    Long clanId
 
 ) implements MusicLinkToValidate {
 
     /** Zwykly post na tablicy - bez wydarzenia. */
     public CreatePostRequest(String content, String musicUrl, MusicKind musicKind,
                              Integer musicStartSeconds, PostVisibility visibility) {
-        this(content, musicUrl, musicKind, musicStartSeconds, visibility, null);
+        this(content, musicUrl, musicKind, musicStartSeconds, visibility, null, null);
     }
 }

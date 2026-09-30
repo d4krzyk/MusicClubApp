@@ -18,10 +18,11 @@ const MAX_IMAGES = 10;
 
 /**
  * Formularz dodawania posta: tekst, zdjecia, utwor i wybor widocznosci.
- * Z eventId post trafia pod to wydarzenie - poza tym niczym sie nie rozni.
+ * Z eventId post trafia pod to wydarzenie, z clanId - do klanu (i jest tylko dla jego czlonkow);
+ * poza tym niczym sie nie rozni.
  */
 export default function PostForm({
-  onAdded, eventId = null, idPola = 'content', etykieta, podpowiedz,
+  onAdded, eventId = null, clanId = null, idPola = 'content', etykieta, podpowiedz, bezWidocznosci = false,
 }) {
   const { t } = useTranslation();
 
@@ -63,6 +64,7 @@ export default function PostForm({
         musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
         visibility,
         eventId,
+        clanId,
       }, files);
 
       clear();
@@ -110,7 +112,8 @@ export default function PostForm({
             serverErrors={fieldErrors}
           />
 
-          <VisibilityPicker value={visibility} onChange={setVisibility} />
+          {/* Post klanu widza czlonkowie - wybor "publiczny / znajomi" nie ma tu sensu */}
+          {!bezWidocznosci && <VisibilityPicker value={visibility} onChange={setVisibility} />}
 
           <Button type="submit" disabled={sending || Boolean(blokada)}>
             {sending ? t('posts.publishing') : t('posts.publish')}

@@ -164,6 +164,7 @@ dniach od daty znika, a posty zostają bez odnośnika. Komentarzy jeszcze nie
 ma — gdy dojdą, mają działać także pod tymi postami.
 
 Przypomnienia i push (migracja V8) — opis niżej, w „Powiadomienia push”.
+Klany (migracja V9) — niżej, w „Klany”.
 
 ## Poczta i potwierdzanie adresów
 
@@ -252,6 +253,53 @@ samo na produkcji).
   `PushManager.subscribe` podmieniony w init script, dostarczenie do
   prawdziwego service workera przez CDP `ServiceWorker.deliverPushMessage`,
   kliknięcie przez `NotificationEvent` w `serviceWorkers()[0].evaluate`.
+
+## Klany (V9)
+
+- Jedna osoba = najwyżej jeden klan (`clan_members.user_id` unikalny). Do klanu
+  wchodzi się **wyłącznie** przez zaproszenie od członka (`clan_invitations`);
+  przyjęcie kasuje wszystkie inne zaproszenia tej osoby. Odmowa zostaje jako
+  `DECLINED` — przez 7 dni nie da się zaprosić ponownie, a odpowiedź dla
+  zapraszającego jest ta sama co przy blokadzie i „nikt” (nie zdradza powodu).
+  Ustawienie `users.clan_invites_from`: wszyscy / tylko znajomi / nikt; blokada
+  w obie strony też odbiera możliwość zaproszenia.
+- Role: `FOUNDER` (nazwa, skrót, role, przekazanie, rozwiązanie), `ADMIN`
+  (wyrzuca zwykłych członków, zmienia opis i obrazy, kasuje cudze posty i
+  wiadomości w klanie), `MEMBER`. Założyciel nie odejdzie bez przekazania klanu;
+  gdy jest sam, odejście = rozwiązanie klanu. Limit 30 osób, 50 oczekujących
+  zaproszeń.
+- **Kolor klanu wybierają członkowie**: jeden głos na osobę z palety 10
+  kolorów (`ClanColor`, wszystkie ciemne — biały napis ma kontrast ≥ 4,5:1),
+  wygrywa najwięcej głosów, przy remisie ten głosowany wcześniej (nanosekundy —
+  dwa głosy w jednej sekundzie to normalka). `clans.color` to zapisany wynik,
+  przeliczany przy głosie i zmianie składu. Łatwo zmienić na „ustala założyciel”:
+  wystarczy nie wołać `recomputeColor`.
+- Post klanu = zwykły `Post` z `clan_id`. **Wszystkie** zapytania publiczne
+  (tablica, krąg, profil, pod wydarzeniem, liczniki, „top muzyki” — natywne SQL!)
+  mają `p.clan IS NULL`. Widoczność: `Post.isVisibleTo` (członek albo
+  administrator aplikacji); dla obcego pojedynczy post, reakcje, edycja i
+  kasowanie dają **404**, nie 409 — klan nie zdradza, że istnieje. Nowa
+  kwerenda na `Post` musi pamiętać o tym filtrze.
+- Czat klanu (`ClanChatService`): odpytywanie co 4 s (`after=` nowsze,
+  `before=` starsze); wiadomości osób z blokad oglądającego są pomijane.
+- **Administrator aplikacji może czytać klany** (czat, posty, członkowie) i
+  je rozwiązać — po zgłoszeniu albo przy podejrzeniu naruszenia prawa. Każde
+  wejście zostaje w logu (`Audyt: administrator … przegląda klan …`); strona
+  klanu mówi to członkom wprost, a administratorowi pokazuje baner. Polityka
+  prywatności **musi** o tym mówić.
+- Po odejściu/wyrzuceniu posty i wiadomości zostają w klanie (UI o tym
+  uprzedza); po usunięciu konta znikają. Usunięcie konta: zaproszenia i
+  wiadomości kasowane, założyciela zastępuje administrator albo najstarszy
+  członek, sam członek zabiera klan ze sobą (`ClanService.deleteAllOf`).
+- Rozwiązanie klanu kasuje wiersz **zapytaniem** (`ClanRepository.deleteRow`),
+  nie `em.remove`: po zapytaniach czyszczących kontekst `remove` scala odpiętą
+  encję razem z listą członków, których już nie ma („Unable to find
+  ClanMember”). Reakcje pod postami kasowane wprost — kaskada z encji nie
+  widzi reakcji dopisanych w tej samej sesji. W teście jednosesyjnym po
+  rozwiązaniu klanu trzeba `em.clear()`, żeby `findById` nie oddał z pamięci.
+- Powiadomienia: `CLAN_INVITE` (z push), `CLAN_KICKED` (bez sprawcy); klucz
+  klanu w powiadomieniu znika razem z klanem (`ON DELETE CASCADE`). Po
+  przyjęciu/odrzuceniu zaproszenie znika z dzwonka.
 
 ## Wybory, do których nie wracamy
 

@@ -3,6 +3,7 @@ package com.musicclubapp.mapper;
 import com.musicclubapp.dto.PostEventRef;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
+import com.musicclubapp.entity.ClanRole;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
@@ -51,7 +52,9 @@ public class PostMapper {
             reactions,
             post.getVisibility(),
             fromFriend,
-            eventRef(post.getEvent()));
+            eventRef(post.getEvent()),
+            ClanMapper.badge(post.getClan()),
+            null);
     }
 
     private PostEventRef eventRef(MusicEvent event) {
@@ -103,10 +106,16 @@ public class PostMapper {
             && post.getAuthor().getUsername().equals(viewer.getUsername());
     }
 
-    /** Post moze skasowac jego autor albo administrator. */
+    /** Post moze skasowac jego autor, administrator aplikacji albo - przy poscie klanu - zarzad klanu. */
     private boolean canDelete(Post post, User viewer) {
         if (viewer == null) {
             return false;
+        }
+        if (post.getClan() != null) {
+            ClanRole rola = post.getClan().roleOf(viewer.getId());
+            if (rola != null && rola.manages()) {
+                return true;
+            }
         }
         return viewer.getRole() == Role.ADMIN
             || post.getAuthor().getUsername().equals(viewer.getUsername());

@@ -17,7 +17,8 @@
     "myProfile": "Mój profil",
     "reports": "Zgłoszenia",
     "myReports": "Moje zgłoszenia",
-    "events": "Wydarzenia"
+    "events": "Wydarzenia",
+    "clan": "Mój klan"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -413,7 +414,9 @@
     "reminderDays_one": "Za {{count}} dzień: {{name}}",
     "reminderDays_few": "Za {{count}} dni: {{name}}",
     "reminderDays_many": "Za {{count}} dni: {{name}}",
-    "reminderDays_other": "Za {{count}} dni: {{name}}"
+    "reminderDays_other": "Za {{count}} dni: {{name}}",
+    "clanInvite": "{{username}} zaprasza cię do klanu {{name}}",
+    "clanKicked": "Nie jesteś już w klanie {{name}}"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -775,7 +778,10 @@
     "hideOnAttendeeLists": "Domyślnie ukrywaj mnie na listach uczestników wydarzeń",
     "saved": "Zapisano.",
     "restrictedTitle": "Profil tylko dla znajomych",
-    "restrictedText": "Szczegóły profilu {{username}} widzą tylko znajomi tej osoby."
+    "restrictedText": "Szczegóły profilu {{username}} widzą tylko znajomi tej osoby.",
+    "clanInvitesFrom": "Kto może zaprosić mnie do klanu",
+    "friendsOnlyInvite": "Tylko znajomi",
+    "clanInvitesHint": "Do klanu wchodzi się tylko z zaproszenia. Możesz je przyjąć albo odrzucić; kto dostał odmowę, przez tydzień nie zaprosi cię ponownie."
   },
   "push": {
     "title": "Powiadomienia",
@@ -799,5 +805,120 @@
     "permissionRefused": "Przeglądarka nie dostała zgody na powiadomienia.",
     "disabled": "Powiadomienia na tym urządzeniu są wyłączone.",
     "testSent": "Wysłane — powiadomienie powinno pojawić się za chwilę."
+  },
+  "clans": {
+    "title": "Klan",
+    "notFound": "Nie ma takiego klanu.",
+    "badgeTitle": "Klan {{name}}",
+    "postOf": "Post klanu",
+    "meta_one": "{{count}} osoba · założony {{date}}",
+    "meta_few": "{{count}} osoby · założony {{date}}",
+    "meta_many": "{{count}} osób · założony {{date}}",
+    "meta_other": "{{count}} osoby · założony {{date}}",
+    "leave": "Odejdź z klanu",
+    "leaveConfirm": "Odejść z klanu {{name}}? Wrócić można tylko po nowym zaproszeniu. Twoje posty i wiadomości zostaną w klanie.",
+    "adminDisband": "Rozwiąż klan (administrator)",
+    "adminBanner": "Przeglądasz ten klan jako administrator aplikacji. Robisz to tylko w razie zgłoszenia albo podejrzenia naruszenia zasad lub prawa; każde wejście zostaje zapisane w logu.",
+    "inviteOnly": "Do klanu można dołączyć tylko z zaproszenia od jego członka. Czat i posty widzą tylko członkowie.",
+    "moderationNotice": "Administrator aplikacji może przeglądać zawartość klanów — tylko w razie zgłoszenia albo podejrzenia naruszenia zasad lub prawa.",
+    "inviteToClan": "Zaproś do klanu {{name}}",
+    "tabs": {
+      "label": "Sekcje klanu",
+      "chat": "Czat",
+      "posts": "Posty",
+      "members": "Członkowie",
+      "settings": "Ustawienia"
+    },
+    "none": {
+      "title": "Nie jesteś w żadnym klanie",
+      "text": "Do klanu dołączysz, gdy ktoś z niego cię zaprosi — wtedy zaproszenie pojawi się tutaj i w dzwonku. Możesz też założyć własny."
+    },
+    "invitations": {
+      "title": "Zaproszenia do klanów",
+      "from_one": "Zaprasza {{username}} · {{count}} osoba w klanie",
+      "from_few": "Zaprasza {{username}} · {{count}} osoby w klanie",
+      "from_many": "Zaprasza {{username}} · {{count}} osób w klanie",
+      "from_other": "Zaprasza {{username}} · {{count}} osoby w klanie",
+      "accept": "Dołącz",
+      "decline": "Odrzuć"
+    },
+    "create": {
+      "title": "Załóż klan",
+      "hint": "Klan ma własny czat i własne posty, których nie widzi nikt spoza klanu. Kolor wybierają jego członkowie głosowaniem. Do klanu wchodzi się tylko z zaproszenia.",
+      "name": "Nazwa klanu",
+      "tag": "Skrót",
+      "tagHint": "2–5 liter lub cyfr, np. MC",
+      "description": "Opis (niewymagany)",
+      "submit": "Załóż klan"
+    },
+    "members": {
+      "title": "Członkowie",
+      "you": "ty",
+      "invite": "Zaproś do klanu",
+      "inviteHint": "Zaprosić można osobę, która nie jest w żadnym klanie i pozwala na zaproszenia w ustawieniach prywatności. Zaproszenie może przyjąć albo odrzucić.",
+      "usernamePlaceholder": "Login osoby",
+      "send": "Zaproś",
+      "invited": "Zaproszenie dla {{username}} wysłane.",
+      "pending": "Czekają na odpowiedź",
+      "invitedBy": "zaprasza {{username}}",
+      "cancelInvite": "Cofnij",
+      "promote": "Mianuj administratorem",
+      "demote": "Odbierz rolę administratora",
+      "transfer": "Przekaż klan",
+      "transferConfirm": "Przekazać klan osobie {{username}}? Zostaniesz administratorem klanu.",
+      "kick": "Wyrzuć",
+      "kickConfirm": "Wyrzucić {{username}} z klanu? Ta osoba dostanie powiadomienie bez informacji, kto to zrobił."
+    },
+    "role": {
+      "FOUNDER": "Założyciel",
+      "ADMIN": "Administrator klanu",
+      "MEMBER": "Członek"
+    },
+    "color": {
+      "title": "Kolor klanu",
+      "hint": "Kolor wybierają członkowie: każdy ma jeden głos, wygrywa kolor z największą liczbą głosów (przy remisie ten, na który zagłosowano wcześniej). Głosy są jawne.",
+      "current": "Teraz: {{color}}.",
+      "myVote": "Twój głos: {{color}}.",
+      "noVote": "Nie oddałeś jeszcze głosu.",
+      "names": {
+        "VIOLET": "Fiolet",
+        "PINK": "Róż",
+        "RED": "Czerwień",
+        "ORANGE": "Pomarańcz",
+        "AMBER": "Bursztyn",
+        "GREEN": "Zieleń",
+        "TEAL": "Morski",
+        "BLUE": "Błękit",
+        "INDIGO": "Granat",
+        "SLATE": "Grafit"
+      }
+    },
+    "chat": {
+      "title": "Czat klanu",
+      "empty": "Nikt jeszcze nic nie napisał. Zacznij rozmowę!",
+      "placeholder": "Napisz do klanu…",
+      "readOnly": "Czytasz jako administrator aplikacji — nie możesz tu pisać."
+    },
+    "posts": {
+      "title": "Posty klanu",
+      "placeholder": "Napisz coś dla klanu — zobaczą to tylko jego członkowie…",
+      "emptyTitle": "Klan nie ma jeszcze postów",
+      "emptyText": "Posty klanu widzą tylko jego członkowie. Nie pokazują się na tablicy ani na profilach."
+    },
+    "settings": {
+      "images": "Ikona i zdjęcie",
+      "icon": "Ikona (mały obraz przy skrócie)",
+      "photo": "Zdjęcie klanu (u góry strony)",
+      "imagesHint": "Ikona i zdjęcie są widoczne dla wszystkich — pokazują się na plakietce i na stronie klanu.",
+      "remove": "Usuń",
+      "imageSaved": "Obraz zapisany.",
+      "imageRemoved": "Obraz usunięty.",
+      "details": "Dane klanu",
+      "saved": "Zapisano.",
+      "danger": "Rozwiązanie klanu",
+      "disbandHint": "Rozwiązanie klanu usuwa go razem z czatem, postami i zaproszeniami. Tego nie da się cofnąć.",
+      "disband": "Rozwiąż klan",
+      "disbandConfirm": "Rozwiązać klan {{name}}? Zniknie razem z czatem i postami — bezpowrotnie."
+    }
   }
 }

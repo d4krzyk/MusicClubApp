@@ -22,5 +22,11 @@ public enum NotificationType {
     REPORT_RESOLVED,
 
     /** Wydarzenie, na ktore jestem zapisany, jest za kilka dni. Bez sprawcy - pisze aplikacja. */
-    EVENT_REMINDER
+    EVENT_REMINDER,
+
+    /** Ktos zaprosil mnie do klanu. Prowadzi na strone klanu z przyciskami przyjecia i odmowy. */
+    CLAN_INVITE,
+
+    /** Zostalem wyrzucony z klanu. Bez sprawcy - klan nie mowi, kto to zrobil. */
+    CLAN_KICKED
 }

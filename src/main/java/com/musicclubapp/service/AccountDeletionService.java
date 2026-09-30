@@ -42,6 +42,7 @@ public class AccountDeletionService {
     private final BlockService blocks;
     private final UserService users;
     private final PushService push;
+    private final ClanService clans;
 
     public AccountDeletionService(UserRepository userRepository,
                                   PasswordEncoder passwordEncoder,
@@ -57,7 +58,9 @@ public class AccountDeletionService {
                                   EmailVerificationService emailVerification,
                                   BlockService blocks,
                                   UserService users,
-                                  PushService push) {
+                                  PushService push,
+                                  ClanService clans) {
+        this.clans = clans;
         this.push = push;
         this.blocks = blocks;
         this.userRepository = userRepository;
@@ -141,6 +144,13 @@ public class AccountDeletionService {
 
         // 3. Zgloszenia zlozone przez to konto i te na nie
         reports.deleteAllOf(id);
+
+        /*
+         * 3a. Klan: zaproszenia i wiadomosci konta, wyjscie z klanu (zalozyciela zastepuje
+         * nastepca, a klan, w ktorym byl sam, znika razem z postami). Przed krokiem z postami -
+         * klan sam sprzata swoje posty razem z powiadomieniami i zgloszeniami do nich.
+         */
+        clans.deleteAllOf(target);
 
         /*
          * 4. Wlasne posty razem ze zdjeciami z dysku. Wprost, a nie przez

@@ -40,6 +40,17 @@ public record PostResponse(
     /** Czy autor jest w kregu ogladajacego (jego znajomym albo nim samym). */
     boolean fromFriend,
     /** Wydarzenie, pod ktorym napisano post, albo {@code null}. */
-    PostEventRef event
+    PostEventRef event,
+    /** Klan, w ktorym napisano post (post klanu, widoczny tylko dla jego czlonkow), albo {@code null}. */
+    ClanBadge clan,
+    /** Klan autora - plakietka obok loginu; {@code null}, gdy autor nie jest w zadnym. */
+    ClanBadge authorClan
 ) {
+
+    /** Ta sama odpowiedz z plakietka klanu autora - dolepia ja serwis, ktory ma plakietki calej strony. */
+    public PostResponse withAuthorClan(ClanBadge badge) {
+        return new PostResponse(id, authorUsername, authorAvatarUrl, content, imageUrls, musicEmbedUrl,
+            musicProvider, musicKind, musicTitle, musicThumbnailUrl, musicStartSeconds, musicUrl, createdAt,
+            canDelete, canEdit, reactions, visibility, fromFriend, event, clan, badge);
+    }
 }
