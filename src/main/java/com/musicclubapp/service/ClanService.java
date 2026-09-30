@@ -25,8 +25,11 @@ import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.ClanMapper;
 import com.musicclubapp.repository.ClanInvitationRepository;
 import com.musicclubapp.repository.ClanMemberRepository;
+import com.musicclubapp.repository.ClanMessageReactionRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
 import com.musicclubapp.repository.ClanRepository;
+import com.musicclubapp.repository.ClanTrackRepository;
+import com.musicclubapp.repository.ClanTrackVoteRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
@@ -93,6 +96,9 @@ public class ClanService {
     private final NotificationService notifications;
     private final ReportService reports;
     private final ReactionRepository reactions;
+    private final ClanMessageReactionRepository chatReactions;
+    private final ClanTrackRepository tracks;
+    private final ClanTrackVoteRepository trackVotes;
     private final FileStorageService fileStorage;
     private final Clock clock;
 
@@ -106,9 +112,15 @@ public class ClanService {
                        NotificationService notifications,
                        ReportService reports,
                        ReactionRepository reactions,
+                       ClanMessageReactionRepository chatReactions,
+                       ClanTrackRepository tracks,
+                       ClanTrackVoteRepository trackVotes,
                        FileStorageService fileStorage,
                        Clock clock) {
         this.reactions = reactions;
+        this.chatReactions = chatReactions;
+        this.tracks = tracks;
+        this.trackVotes = trackVotes;
         this.clans = clans;
         this.members = members;
         this.invitations = invitations;
@@ -137,7 +149,8 @@ public class ClanService {
             : invitations.pendingFor(user.getId()).stream()
                 .filter(i -> !blocks.eitherWay(user.getId(), i.getInviter().getId()))
                 .map(i -> new ClanInvitationResponse(i.getId(), ClanMapper.badge(i.getClan()),
-                    i.getInviter().getUsername(), (int) members.countByClanId(i.getClan().getId()), i.getCreatedAt()))
+                    i.getInviter().getUsername(), (int) members.countByClanId(i.getClan().getId()), i.getCreatedAt(),
+                    i.getClan().getRules()))
                 .toList();
         return new MyClanResponse(clan, zaproszenia);
     }
@@ -226,7 +239,7 @@ public class ClanService {
         }
 
         Clan clan = clans.save(new Clan(name, key, tag, blankToNull(request.description())));
-        attach(clan, members.save(new ClanMember(clan, founder, ClanRole.FOUNDER, now())));
+        attach(clan, members.save(newMember(clan, founder, ClanRole.FOUNDER)));
         // Zalozyciel od razu jest w klanie - inne oczekujace zaproszenia nie maja juz sensu
         invitations.deleteByInviteeId(founder.getId());
         return response(clan, founder);
@@ -261,6 +274,13 @@ public class ClanService {
         }
         if (request.description() != null) {
             clan.setDescription(blankToNull(request.description()));
+        }
+        // Ogloszenie i zasady - null = bez zmiany, puste = zdjecie/usuniecie
+        if (request.announcement() != null) {
+            clan.setAnnouncement(blankToNull(request.announcement()), now());
+        }
+        if (request.rules() != null) {
+            clan.setRules(blankToNull(request.rules()));
         }
         return response(clan, user);
     }
@@ -366,6 +386,13 @@ public class ClanService {
         return response(clan, inviter);
     }
 
+    /** Nowy czlonek zaczyna od ostatniej wiadomosci na czacie - historia sprzed jego wejscia nie jest "nowa". */
+    private ClanMember newMember(Clan clan, User user, ClanRole role) {
+        ClanMember m = new ClanMember(clan, user, role, now());
+        m.markChatRead(clan.getId() == null ? 0 : messages.maxId(clan.getId()));
+        return m;
+    }
+
     private void pilnujLimitu(Clan clan) {
         if (invitations.countByClanIdAndStatus(clan.getId(), InvitationStatus.PENDING) >= MAX_OCZEKUJACYCH) {
             throw OperationNotAllowedException.clanTooManyInvites(MAX_OCZEKUJACYCH);
@@ -404,7 +431,7 @@ public class ClanService {
         if (members.countByClanId(clan.getId()) >= Clan.MAX_MEMBERS) {
             throw OperationNotAllowedException.clanFull(Clan.MAX_MEMBERS);
         }
-        attach(clan, members.save(new ClanMember(clan, user, ClanRole.MEMBER, now())));
+        attach(clan, members.save(newMember(clan, user, ClanRole.MEMBER)));
         // Jestem w klanie - reszta zaproszen (takze odrzucone) przestaje miec sens
         for (ClanInvitation inne : invitations.pendingFor(user.getId())) {
             notifications.clanInviteGone(user.getId(), inne.getClan().getId());
@@ -587,7 +614,14 @@ public class ClanService {
     public void deleteAllOf(User user) {
         Long id = user.getId();
         invitations.deleteAllOfUser(id);
+        // Reakcje i glosy: dane przez te osobe i pod jej wiadomosciami/propozycjami (odpowiedzi na jej
+        // wiadomosci zostaja bez cytatu - odnosnik czysci baza)
+        chatReactions.deleteByUserId(id);
+        chatReactions.deleteUnderMessagesOf(id);
         messages.deleteBySenderId(id);
+        trackVotes.deleteByUserId(id);
+        trackVotes.deleteUnderTracksOf(id);
+        tracks.deleteByProposerId(id);
         members.findByUserId(id).ifPresent(m -> {
             Clan clan = m.getClan();
             if (members.countByClanId(clan.getId()) <= 1) {
@@ -644,7 +678,10 @@ public class ClanService {
         posts.deleteAll(postyKlanu);
         posts.flush();
 
+        chatReactions.deleteByClanId(id);
         messages.deleteByClanId(id);
+        trackVotes.deleteByClanId(id);
+        tracks.deleteByClanId(id);
         invitations.deleteByClanId(id);
         members.deleteByClanId(id);
         clans.deleteRow(id);
@@ -693,11 +730,22 @@ public class ClanService {
                     i.getCreatedAt(), zarzadza || i.getInviter().getId().equals(viewer.getId())))
                 .toList();
 
+        // Nieprzeczytane liczy sie tylko czlonkowi; administrator aplikacji czyta bez znacznika
+        ClanMember mojeCzlonkostwo = czlonkowie.stream()
+            .filter(m -> m.getUser().getId().equals(viewer.getId())).findFirst().orElse(null);
+        long przeczytane = mojeCzlonkostwo == null || mojeCzlonkostwo.getChatReadId() == null
+            ? 0 : mojeCzlonkostwo.getChatReadId();
+        long nieprzeczytane = mojeCzlonkostwo == null ? 0
+            : messages.unread(clan.getId(), przeczytane, viewer.getId(), blocks.hiddenForQuery(viewer.getId()));
+
         return new ClanResponse(clan.getId(), clan.getName(), clan.getTag(), clan.getDescription(),
             clan.getColor().name(), clan.getColor().hex(),
             ClanMapper.uploadUrl(clan.getIconFileName()), ClanMapper.uploadUrl(clan.getPhotoFileName()),
             clan.getCreatedAt(), czlonkowie.size(), Clan.MAX_MEMBERS, moja, admin && moja == null, wglad,
-            lista, paleta, mojGlos, zaproszenia);
+            lista, paleta, mojGlos, zaproszenia,
+            wglad ? clan.getAnnouncement() : null, wglad ? clan.getAnnouncementAt() : null,
+            wglad ? clan.getRules() : null,
+            nieprzeczytane, przeczytane, mojeCzlonkostwo != null && mojeCzlonkostwo.isChatMuted());
     }
 
     /* ------------------------------------------------------------------ */

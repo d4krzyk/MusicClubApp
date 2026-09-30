@@ -33,6 +33,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     boolean existsByReporterIdAndReportedIdAndStatus(Long reporterId, Long reportedId,
                                                      ReportStatus status);
 
+    /** Czy zglaszajacy ma juz OTWARTE zgloszenie tego klanu. */
+    boolean existsByReporterIdAndClanIdAndStatus(Long reporterId, Long clanId, ReportStatus status);
+
     /** Ile zgloszen ta osoba wyslala od podanej chwili. */
     long countByReporterIdAndCreatedAtAfter(Long reporterId, LocalDateTime since);
 
@@ -70,7 +73,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     void detachPostsOfClan(@Param("clanId") Long clanId);
 
     /** Zgloszenia zlozone przez te osobe. */
-    @Query("SELECT r FROM Report r JOIN FETCH r.reporter JOIN FETCH r.reported LEFT JOIN FETCH r.post WHERE r.reporter.id = :userId ORDER BY r.createdAt")
+    @Query("SELECT r FROM Report r JOIN FETCH r.reporter JOIN FETCH r.reported LEFT JOIN FETCH r.post LEFT JOIN FETCH r.clan WHERE r.reporter.id = :userId ORDER BY r.createdAt")
     List<Report> filedBy(@Param("userId") Long userId);
 
     /** Zgloszenia dotyczace tej osoby. */

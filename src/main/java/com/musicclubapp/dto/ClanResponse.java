@@ -29,6 +29,16 @@ public record ClanResponse(
     List<ClanColorOption> palette,
     ClanColor myVote,
     /** Oczekujace zaproszenia - tylko dla czlonkow, dla innych pusta lista. */
-    List<ClanPendingInvite> invitations
+    List<ClanPendingInvite> invitations,
+    /** Przypiete ogloszenie zarzadu - tylko dla czlonkow i administratora aplikacji. */
+    String announcement,
+    LocalDateTime announcementAt,
+    /** Zasady klanu - tylko dla czlonkow i administratora aplikacji (zaproszeni widza je w zaproszeniu). */
+    String rules,
+    /** Ile wiadomosci na czacie czeka nieprzeczytanych (0 dla niebedacych czlonkami). */
+    long unreadChat,
+    /** Numer ostatniej przeczytanej wiadomosci - do kreski "nowe wiadomosci" na czacie. */
+    long chatReadId,
+    boolean chatMuted
 ) {
 }

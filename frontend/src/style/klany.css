@@ -243,3 +243,528 @@ a.klan-plakietka:focus-visible {
 .klan-uwaga {
   font-size: .85rem;
 }
+
+/* --- czat: pasek, cytaty, reakcje, "nowe wiadomosci" ---------------------- */
+
+.klan-czat-pasek {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  padding: .4rem .6rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.klan-nowe {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin: .5rem 0;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--klan, var(--mc-3));
+}
+
+.klan-nowe::before,
+.klan-nowe::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: currentColor;
+  opacity: .45;
+}
+
+.klan-wiadomosc.is-podswietlona .bubble {
+  outline: 2px solid var(--klan, var(--mc-3));
+  outline-offset: 2px;
+}
+
+/* Cytowana wiadomosc nad trescia odpowiedzi */
+.klan-cytat {
+  display: flex;
+  flex-direction: column;
+  gap: .05rem;
+  width: 100%;
+  margin: 0 0 .3rem;
+  padding: .2rem .45rem;
+  border: 0;
+  border-left: 3px solid currentColor;
+  border-radius: .4rem;
+  background: rgba(0, 0, 0, .07);
+  color: inherit;
+  font-size: .75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bubble-row.is-mine .klan-cytat {
+  background: rgba(0, 0, 0, .2);
+}
+
+.klan-cytat.is-brak {
+  cursor: default;
+  font-style: italic;
+  opacity: .75;
+}
+
+.klan-cytat-autor {
+  font-weight: 700;
+}
+
+.klan-cytat-tekst {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  opacity: .9;
+}
+
+.klan-reakcje {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+  margin-top: .3rem;
+}
+
+.klan-reakcja {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-height: 24px;
+  padding: 0 .45rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: .75rem;
+  line-height: 1;
+}
+
+.klan-reakcja.is-moja {
+  border-color: var(--klan, var(--mc-3));
+  background: color-mix(in srgb, var(--klan, var(--mc-3)) 16%, var(--bs-body-bg));
+}
+
+.klan-reakcja:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.klan-reakcja-liczba {
+  font-weight: 600;
+}
+
+/* Male przyciski przy godzinie wiadomosci: odpowiedz, reakcja, usun */
+.klan-akcja {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  min-height: 22px;
+  margin-left: .25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  vertical-align: middle;
+  opacity: .85;
+}
+
+.klan-akcja:hover,
+.klan-akcja:focus-visible {
+  background: rgba(0, 0, 0, .12);
+  opacity: 1;
+}
+
+.klan-wybor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .15rem;
+  margin-top: .3rem;
+  padding: .2rem;
+  border-radius: 999px;
+  background: var(--bs-body-bg);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+.klan-wybor-emoji {
+  min-width: 34px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.klan-wybor-emoji:hover,
+.klan-wybor-emoji:focus-visible {
+  background: var(--bs-secondary-bg);
+}
+
+.klan-odpowiadasz {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .4rem;
+  padding: .3rem .5rem;
+  border-left: 3px solid var(--klan, var(--mc-3));
+  border-radius: .4rem;
+  background: var(--bs-secondary-bg);
+  font-size: .75rem;
+}
+
+.klan-odpowiadasz-tekst {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.klan-odpowiadasz-tekst > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.klan-odpowiadasz .klan-akcja {
+  flex: 0 0 auto;
+  opacity: 1;
+}
+
+/* --- ogloszenie i zasady ---------------------------------------------- */
+
+.klan-ogloszenie,
+.klan-zasady {
+  display: flex;
+  gap: .6rem;
+  margin-top: 1rem;
+  padding: .7rem .9rem;
+  border: 1px solid var(--bs-border-color);
+  border-left: 4px solid var(--klan, var(--mc-3));
+  border-radius: var(--mc-radius);
+  background: var(--bs-body-bg);
+}
+
+.klan-ogloszenie > svg,
+.klan-zasady > svg {
+  flex: 0 0 auto;
+  margin-top: .2rem;
+  color: var(--klan, var(--mc-3));
+}
+
+.klan-ogloszenie-tresc,
+.klan-zasady-tresc {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.klan-ogloszenie-tekst,
+.klan-zasady-tekst {
+  margin: .15rem 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.klan-zasady-zaproszenie {
+  margin: .1rem 0 .6rem;
+  padding: .4rem .6rem;
+  border-left: 3px solid var(--bs-border-color);
+  font-size: .85rem;
+}
+
+.klan-zasady-zaproszenie summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* --- muzyka klanu ------------------------------------------------------ */
+
+.klan-gust-artysci {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: .5rem;
+  margin: 0;
+}
+
+.klan-gust-artysta {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.klan-gust-nazwa {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.klan-gust-imie {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.klan-gust-gatunki {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.klan-gatunek {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .15rem .3rem .15rem .6rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  font-size: .8rem;
+}
+
+.klan-gatunek-liczba {
+  min-width: 1.3rem;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  background: var(--klan, var(--mc-3));
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.klan-utwory {
+  display: grid;
+  gap: .6rem;
+  margin: 0;
+}
+
+.klan-utwor {
+  padding: .6rem .7rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mc-radius);
+  background: var(--bs-body-bg);
+}
+
+.klan-utwor.is-prowadzi {
+  border-color: var(--klan, var(--mc-3));
+  box-shadow: 0 0 0 1px var(--klan, var(--mc-3));
+}
+
+.klan-utwor-gora {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+}
+
+.klan-utwor-okladka {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: .6rem;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+}
+
+.klan-utwor-okladka img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.klan-utwor-opis {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.klan-utwor-tytul {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.klan-utwor-autor {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+}
+
+.klan-utwor-notatka {
+  font-size: .85rem;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.klan-utwor-korona {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  background: var(--klan, var(--mc-3));
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+}
+
+.klan-utwor-dol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4rem;
+  margin-top: .55rem;
+}
+
+/* --- koncerty klanu ---------------------------------------------------- */
+
+.klan-koncert {
+  display: flex;
+  gap: .75rem;
+  padding: .75rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--mc-radius);
+  background: var(--bs-body-bg);
+}
+
+.klan-koncert-data {
+  flex: 0 0 52px;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: .7rem;
+  background: var(--klan, var(--mc-3));
+  color: #fff;
+  line-height: 1.05;
+}
+
+.klan-koncert-dzien {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.klan-koncert-miesiac {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.klan-koncert-tresc {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+}
+
+.klan-koncert-nazwa {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.klan-koncert-nazwa:hover {
+  text-decoration: underline;
+}
+
+.klan-koncert-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .2rem .9rem;
+  font-size: .8rem;
+  color: var(--bs-secondary-color);
+}
+
+.klan-koncert-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  min-width: 0;
+}
+
+.klan-koncert-miejsce {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.klan-koncert-osoby {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.klan-koncert-avatary {
+  display: inline-flex;
+}
+
+.klan-koncert-avatary > * + * {
+  margin-left: -6px;
+}
+
+.klan-koncert-lista {
+  overflow-wrap: anywhere;
+}
+
+.klan-koncert-akcje {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .2rem;
+}
+
+.klan-koncert-moj {
+  padding: .1rem .55rem;
+  border-radius: 999px;
+  background: var(--bs-secondary-bg);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+/* --- licznik nieprzeczytanych w menu konta ---------------------------- */
+
+.konto-kropka {
+  position: absolute;
+  top: -.15rem;
+  right: -.2rem;
+  width: .7rem;
+  height: .7rem;
+  border-radius: 50%;
+  background: var(--mc-3);
+  box-shadow: 0 0 0 2px var(--bs-body-bg);
+}
+
+.klan-zakladka-licznik {
+  margin-left: .35rem;
+  padding: 0 .4rem;
+  border-radius: 999px;
+  background: var(--mc-3);
+  color: #1a0d16;
+  font-size: .68rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Na ekranie dotykowym male przyciski przy wiadomosci dostaja wiekszy obszar trafienia */
+@media (pointer: coarse) {
+  .klan-akcja {
+    min-width: 30px;
+    min-height: 30px;
+  }
+}

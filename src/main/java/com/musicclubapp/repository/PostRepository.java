@@ -119,6 +119,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** Wszystkie posty klanu - przy jego rozwiazywaniu. */
     List<Post> findByClanId(Long clanId);
 
+    /** Ktore z tych wydarzen klan juz "zapytal" postem - numer najnowszego takiego posta. */
+    @Query("""
+           SELECT p.event.id AS eventId, MAX(p.id) AS total FROM Post p
+           WHERE p.clan.id = :clanId AND p.event.id IN :eventIds
+           GROUP BY p.event.id
+           """)
+    List<EventCountRow> clanPostsUnderEvents(@Param("clanId") Long clanId,
+                                             @Param("eventIds") java.util.Collection<Long> eventIds);
+
+
     /**
      * Post razem z autorem - uzywane przy usuwaniu, zeby sprawdzic wlasciciela bez dodatkowego
      * zapytania do bazy.

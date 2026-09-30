@@ -67,6 +67,11 @@ export async function zglos(login, zgloszenie) {
   await client.post(`/reports/on/${encodeURIComponent(login)}`, zgloszenie);
 }
 
+/** Zglasza klan (nazwe, skrot, opis, obrazy). */
+export async function zglosKlan(idKlanu, zgloszenie) {
+  await client.post(`/reports/clans/${idKlanu}`, zgloszenie);
+}
+
 /** Strona wlasnych zgloszen razem z decyzja administratora - kazdy widzi tylko swoje. */
 export async function mojeZgloszenia({ strona = 0, rozmiar } = {}) {
   const { data } = await client.get('/reports/mine', {

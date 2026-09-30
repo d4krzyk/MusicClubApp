@@ -16,6 +16,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -67,6 +69,16 @@ public class Report {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id")
     private Post post;
+
+    /**
+     * Klan, ktorego dotyczy zgloszenie - tylko przy ReportContext#CLAN. Klan moze zniknac (rozwiazanie
+     * po zgloszeniu to zwykly skutek), a zgloszenie ma zostac jako historia - baza czysci odnosnik sama.
+     * Tresc, ktora zgloszono, jest w migawce dowodow.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "clan_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Clan clan;
 
     /** Co zglaszajacy napisal od siebie. */
     @Column(length = MAX_DESCRIPTION_LENGTH, columnDefinition = "TEXT")
@@ -153,6 +165,14 @@ public class Report {
 
     public void setPost(Post post) {
         this.post = post;
+    }
+
+    public Clan getClan() {
+        return clan;
+    }
+
+    public void setClan(Clan clan) {
+        this.clan = clan;
     }
 
     public Long getId() {

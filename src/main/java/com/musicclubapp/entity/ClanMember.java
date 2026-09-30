@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -54,6 +55,19 @@ public class ClanMember {
     @Column(name = "color_voted_at")
     private LocalDateTime colorVotedAt;
 
+    /**
+     * Numer ostatniej wiadomosci czatu, jaka ta osoba widziala. Wszystko nowsze (od innych osob)
+     * to "nieprzeczytane". null = jeszcze nic nie czytala. Nowy czlonek startuje od ostatniej
+     * wiadomosci w klanie - historia sprzed jego wejscia nie liczy sie jako nowa.
+     */
+    @Column(name = "chat_read_id")
+    private Long chatReadId;
+
+    /** Wyciszony czat: nadal liczy nieprzeczytane, ale nie wysyla powiadomien na telefon. */
+    @ColumnDefault("false")
+    @Column(name = "chat_muted", nullable = false)
+    private boolean chatMuted;
+
     protected ClanMember() {
         // wymagany przez JPA
     }
@@ -68,6 +82,25 @@ public class ClanMember {
     public void vote(ClanColor color, LocalDateTime now) {
         this.colorVote = color;
         this.colorVotedAt = color == null ? null : now;
+    }
+
+    public Long getChatReadId() {
+        return chatReadId;
+    }
+
+    /** Pamieta tylko ruch do przodu - pozniejszy, spozniony odczyt nie cofa przeczytanych. */
+    public void markChatRead(long upTo) {
+        if (chatReadId == null || upTo > chatReadId) {
+            chatReadId = upTo;
+        }
+    }
+
+    public boolean isChatMuted() {
+        return chatMuted;
+    }
+
+    public void setChatMuted(boolean chatMuted) {
+        this.chatMuted = chatMuted;
     }
 
     public Long getId() {

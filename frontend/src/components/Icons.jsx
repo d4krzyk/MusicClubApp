@@ -383,3 +383,25 @@ export function IconMail(props) {
     </Svg>
   );
 }
+
+/** Strzalka odpowiedzi - "odpowiedz na te wiadomosc". */
+export function IconReply(props) {
+  return (
+    <Svg {...props}>
+      <path fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        d="M6 3 2 7l4 4M2 7h7.5A4.5 4.5 0 0 1 14 11.5V13" />
+    </Svg>
+  );
+}
+
+/** Buzka - "zareaguj emoji". */
+export function IconSmile(props) {
+  return (
+    <Svg {...props}>
+      <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <path fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" d="M5.3 9.7a3 3 0 0 0 5.4 0" />
+      <circle cx="6" cy="6.6" r=".95" />
+      <circle cx="10" cy="6.6" r=".95" />
+    </Svg>
+  );
+}

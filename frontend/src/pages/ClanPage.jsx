@@ -10,12 +10,15 @@ import { describeError } from '../api/client';
 import * as klany from '../api/klany';
 import ClanBadge from '../components/ClanBadge';
 import EmptyState from '../components/EmptyState';
-import { IconClan } from '../components/Icons';
+import { IconClan, IconPin } from '../components/Icons';
 import KlanCzat from '../components/klan/KlanCzat';
 import KlanCzlonkowie from '../components/klan/KlanCzlonkowie';
+import KlanKoncerty from '../components/klan/KlanKoncerty';
+import KlanMuzyka from '../components/klan/KlanMuzyka';
 import KlanPosty from '../components/klan/KlanPosty';
 import KlanUstawienia from '../components/klan/KlanUstawienia';
-import { formatDate } from '../utils/dates';
+import ReportButton from '../components/ReportButton';
+import { formatDate, formatDateTime } from '../utils/dates';
 
 /**
  * Klan. Dwa adresy, jedna strona: /klan to MOJ klan (a bez klanu - zaproszenia i zakladanie),
@@ -123,8 +126,10 @@ function Klan({ klan, zakladka, onZakladka, onZmiana, onMoj, onRozwiazany }) {
   }
 
   const karty = [
-    klan.canSeeContent && { klucz: 'czat', tekst: t('clans.tabs.chat') },
+    klan.canSeeContent && { klucz: 'czat', tekst: t('clans.tabs.chat'), licznik: klan.unreadChat },
     klan.canSeeContent && { klucz: 'posty', tekst: t('clans.tabs.posts') },
+    klan.canSeeContent && { klucz: 'muzyka', tekst: t('clans.tabs.music') },
+    klan.canSeeContent && { klucz: 'koncerty', tekst: t('clans.tabs.events') },
     { klucz: 'czlonkowie', tekst: t('clans.tabs.members') },
     zarzad && { klucz: 'ustawienia', tekst: t('clans.tabs.settings') },
   ].filter(Boolean);
@@ -151,6 +156,10 @@ function Klan({ klan, zakladka, onZakladka, onZmiana, onMoj, onRozwiazany }) {
             {klan.viewingAsAdmin && (
               <Button variant="outline-danger" size="sm" onClick={rozwiazJakoAdmin}>{t('clans.adminDisband')}</Button>
             )}
+            {/* Zglosic mozna kazdy klan poza wlasnym; administrator aplikacji o zgloszeniach decyduje, nie zglasza */}
+            {klan.myRole !== 'FOUNDER' && !klan.viewingAsAdmin && (
+              <ReportButton clanId={klan.id} clanName={klan.name} contexts={['CLAN']} />
+            )}
           </div>
         </div>
       </header>
@@ -165,6 +174,22 @@ function Klan({ klan, zakladka, onZakladka, onZmiana, onMoj, onRozwiazany }) {
       )}
       {czlonek && <p className="small text-body-secondary mt-3 mb-0">{t('clans.moderationNotice')}</p>}
 
+      {klan.canSeeContent && klan.announcement && (
+        <aside className="klan-ogloszenie" aria-label={t('clans.announcement.title')}>
+          <IconPin size={18} />
+          <div className="klan-ogloszenie-tresc">
+            <strong>{t('clans.announcement.title')}</strong>
+            <p className="klan-ogloszenie-tekst">{klan.announcement}</p>
+            {klan.announcementAt && (
+              <span className="small text-body-secondary">
+                {t('clans.announcement.updated', { when: formatDateTime(klan.announcementAt, i18n.language) })}
+              </span>
+            )}
+          </div>
+        </aside>
+      )}
+      {klan.canSeeContent && klan.rules && <Zasady klan={klan} />}
+
       <nav className="klan-zakladki" aria-label={t('clans.tabs.label')}>
         {karty.map((k) => (
           <Button
@@ -175,17 +200,74 @@ function Klan({ klan, zakladka, onZakladka, onZmiana, onMoj, onRozwiazany }) {
             onClick={() => onZakladka(k.klucz)}
           >
             {k.tekst}
+            {k.licznik > 0 && (
+              <span className="klan-zakladka-licznik" aria-label={t('clans.unread', { count: k.licznik })}>
+                {k.licznik > 99 ? '99+' : k.licznik}
+              </span>
+            )}
           </Button>
         ))}
       </nav>
 
-      {aktywna === 'czat' && klan.canSeeContent && <KlanCzat klan={klan} />}
+      {aktywna === 'czat' && klan.canSeeContent && <KlanCzat klan={klan} onZmiana={onZmiana} />}
       {aktywna === 'posty' && klan.canSeeContent && <KlanPosty klan={klan} />}
+      {aktywna === 'muzyka' && klan.canSeeContent && <KlanMuzyka klan={klan} />}
+      {aktywna === 'koncerty' && klan.canSeeContent && <KlanKoncerty klan={klan} />}
       {aktywna === 'czlonkowie' && <KlanCzlonkowie klan={klan} onZmiana={onZmiana} />}
       {aktywna === 'ustawienia' && zarzad && (
         <KlanUstawienia klan={klan} onZmiana={onZmiana} onRozwiazany={onRozwiazany} />
       )}
     </div>
+  );
+}
+
+/**
+ * Zasady klanu na jego stronie. Rozwiniete, dopoki ktos ich nie potwierdzi ("Rozumiem") - dzieki temu
+ * nowy czlonek na pewno je zobaczy; po zmianie tresci rozwijaja sie znowu. Potwierdzenie pamieta
+ * tylko przegladarka (nic nie idzie na serwer).
+ */
+function Zasady({ klan }) {
+  const { t } = useTranslation();
+  const klucz = `mc-klan-zasady-${klan.id}`;
+  const [otwarte, setOtwarte] = useState(() => {
+    try {
+      return localStorage.getItem(klucz) !== klan.rules;
+    } catch {
+      return true;
+    }
+  });
+
+  function potwierdz() {
+    try {
+      localStorage.setItem(klucz, klan.rules);
+    } catch {
+      // bez zapisu zasady po prostu rozwina sie przy nastepnej wizycie
+    }
+    setOtwarte(false);
+  }
+
+  return (
+    <aside className="klan-zasady" aria-label={t('clans.rules.title')}>
+      <IconClan size={18} />
+      <div className="klan-zasady-tresc">
+        <div className="d-flex align-items-center flex-wrap gap-2">
+          <strong>{t('clans.rules.title')}</strong>
+          {!otwarte && (
+            <Button variant="link" size="sm" className="p-0" onClick={() => setOtwarte(true)}>
+              {t('clans.rules.show')}
+            </Button>
+          )}
+        </div>
+        {otwarte && (
+          <>
+            <p className="klan-zasady-tekst">{klan.rules}</p>
+            {klan.myRole != null && (
+              <Button size="sm" variant="outline-secondary" onClick={potwierdz}>{t('clans.rules.ack')}</Button>
+            )}
+          </>
+        )}
+      </div>
+    </aside>
   );
 }
 
@@ -234,7 +316,8 @@ function BezKlanu({ zaproszenia, onZmiana, onZalozony }) {
             <Card.Title as="h2" className="h6 text-uppercase text-body-secondary">{t('clans.invitations.title')}</Card.Title>
             <ul className="list-unstyled mb-0">
               {zaproszenia.map((z) => (
-                <li key={z.id} className="klan-czlonek">
+                <li key={z.id}>
+                <div className="klan-czlonek">
                   <span className="klan-czlonek-nazwa">
                     <span>
                       <ClanBadge clan={z.clan} className="me-2" />
@@ -253,6 +336,13 @@ function BezKlanu({ zaproszenia, onZmiana, onZalozony }) {
                       {t('clans.invitations.decline')}
                     </Button>
                   </span>
+                </div>
+                {z.rules && (
+                  <details className="klan-zasady-zaproszenie">
+                    <summary>{t('clans.rules.inInvitation')}</summary>
+                    <p className="klan-zasady-tekst mb-0">{z.rules}</p>
+                  </details>
+                )}
                 </li>
               ))}
             </ul>

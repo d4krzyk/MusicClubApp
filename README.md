@@ -256,6 +256,15 @@ z opisami: Swagger (adres niżej).
 | DELETE | `/api/clans/{id}/members/me`, `/members/{username}` | odejście / wyrzucenie |
 | PUT | `/api/clans/{id}/color` | mój głos na kolor klanu |
 | GET / POST | `/api/clans/{id}/chat` | czat klanu (`after=`, `before=`) |
+| POST / PUT | `/api/clans/{id}/chat/read`, `/chat/mute` | „przeczytane do” (licznik nieprzeczytanych) / wyciszenie powiadomień z czatu |
+| GET | `/api/clans/mine/unread` | ile nieprzeczytanych wiadomości czeka w moim klanie |
+| PUT / DELETE | `/api/clans/{id}/chat/{messageId}/reaction` | reakcja emoji na wiadomość (jedna na osobę) |
+| GET | `/api/clans/{id}/chat/reactions?since=` | reakcje pod wiadomościami od podanej wzwyż |
+| GET | `/api/clans/{id}/taste` | gust klanu: wykonawcy i gatunki wspólne dla co najmniej dwóch osób |
+| GET / POST | `/api/clans/{id}/tracks` | utwór tygodnia: propozycje i zwycięzcy / nowa propozycja |
+| PUT / DELETE | `/api/clans/{id}/tracks/{trackId}/vote`, `DELETE …/tracks/{trackId}` | głos na propozycję / jego cofnięcie, usunięcie propozycji |
+| GET | `/api/clans/{id}/events` | koncerty, na które zapisali się członkowie klanu |
+| POST | `/api/reports/clans/{id}` | zgłoszenie klanu (nazwa, skrót, opis, obrazy) |
 | GET | `/api/posts?clan={id}` | posty klanu — tylko członkowie i administrator aplikacji |
 
 Dokumentacja: http://localhost:8080/swagger-ui.html

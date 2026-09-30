@@ -144,4 +144,20 @@ public interface EventParticipationRepository extends JpaRepository<EventPartici
     /** Zapisy tej osoby razem z wydarzeniami - do pobrania wlasnych danych. */
     @Query("SELECT p FROM EventParticipation p JOIN FETCH p.event WHERE p.user.id = :userId ORDER BY p.createdAt")
     List<EventParticipation> ofUser(@Param("userId") Long userId);
+
+    /**
+     * Nadchodzace zapisy tych osob (czlonkow klanu) razem z wydarzeniami i osobami: bez wycofanych
+     * i odwolanych. Do zakladki "Koncerty" klanu.
+     */
+    @Query("""
+           SELECT p FROM EventParticipation p
+           JOIN FETCH p.event e
+           JOIN FETCH p.user u
+           WHERE u.id IN :userIds AND e.startDate >= :today
+             AND e.withdrawnAt IS NULL
+             AND e.status <> com.musicclubapp.entity.EventStatus.CANCELLED
+           ORDER BY e.startDate, e.startTime NULLS LAST, e.id, p.createdAt, p.id
+           """)
+    List<EventParticipation> upcomingOf(@Param("userIds") Collection<Long> userIds,
+                                        @Param("today") LocalDate today);
 }

@@ -37,6 +37,8 @@ public class Clan {
     public static final int TAG_MIN = 2;
     public static final int TAG_MAX = 5;
     public static final int DESCRIPTION_MAX = 300;
+    public static final int ANNOUNCEMENT_MAX = 500;
+    public static final int RULES_MAX = 600;
 
     /** Tylu czlonkow najwyzej. */
     public static final int MAX_MEMBERS = 30;
@@ -70,6 +72,17 @@ public class Clan {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
     private ClanColor color = ClanColor.DEFAULT;
+
+    /** Przypiete ogloszenie zarzadu - u gory strony klanu, widoczne dla czlonkow. */
+    @Column(length = ANNOUNCEMENT_MAX)
+    private String announcement;
+
+    @Column(name = "announcement_at")
+    private LocalDateTime announcementAt;
+
+    /** Krotkie zasady klanu. Widza je czlonkowie i - przed przyjeciem - osoby zaproszone. */
+    @Column(length = RULES_MAX)
+    private String rules;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -140,6 +153,31 @@ public class Clan {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getAnnouncement() {
+        return announcement;
+    }
+
+    public LocalDateTime getAnnouncementAt() {
+        return announcementAt;
+    }
+
+    /** Puste ogloszenie = brak ogloszenia; czas zapisuje tylko prawdziwa zmiana tresci. */
+    public void setAnnouncement(String announcement, LocalDateTime now) {
+        if (java.util.Objects.equals(this.announcement, announcement)) {
+            return;
+        }
+        this.announcement = announcement;
+        this.announcementAt = announcement == null ? null : now;
+    }
+
+    public String getRules() {
+        return rules;
+    }
+
+    public void setRules(String rules) {
+        this.rules = rules;
     }
 
     public String getIconFileName() {

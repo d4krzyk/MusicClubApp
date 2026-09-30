@@ -10,5 +10,8 @@ public enum ReportContext {
     POST,
 
     /** Rozmowa na czacie. */
-    CONVERSATION
+    CONVERSATION,
+
+    /** Klan: nazwa, skrot, opis i obrazy - to, co klan pokazuje o sobie. */
+    CLAN
 }

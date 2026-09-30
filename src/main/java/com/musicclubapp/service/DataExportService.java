@@ -11,9 +11,13 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.InvalidCurrentPasswordException;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.TooManyRequestsException;
+import com.musicclubapp.music.MusicEmbed;
 import com.musicclubapp.repository.ClanInvitationRepository;
 import com.musicclubapp.repository.ClanMemberRepository;
+import com.musicclubapp.repository.ClanMessageReactionRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
+import com.musicclubapp.repository.ClanTrackRepository;
+import com.musicclubapp.repository.ClanTrackVoteRepository;
 import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.FavoritePlaylistRepository;
 import com.musicclubapp.repository.FriendRequestRepository;
@@ -97,6 +101,9 @@ public class DataExportService {
     private final ClanMemberRepository clanMembers;
     private final ClanMessageRepository clanMessages;
     private final ClanInvitationRepository clanInvitations;
+    private final ClanMessageReactionRepository clanReactions;
+    private final ClanTrackRepository clanTracks;
+    private final ClanTrackVoteRepository clanTrackVotes;
     private final PushSubscriptionRepository pushSubscriptions;
     private final ReportRepository reports;
     private final FileStorageService fileStorage;
@@ -110,8 +117,13 @@ public class DataExportService {
                              EventParticipationRepository participations, FavoritePlaylistRepository playlists,
                              NotificationRepository notifications, ClanMemberRepository clanMembers,
                              ClanMessageRepository clanMessages, ClanInvitationRepository clanInvitations,
+                             ClanMessageReactionRepository clanReactions, ClanTrackRepository clanTracks,
+                             ClanTrackVoteRepository clanTrackVotes,
                              PushSubscriptionRepository pushSubscriptions, ReportRepository reports,
                              FileStorageService fileStorage, ObjectMapper mapper, Clock clock) {
+        this.clanReactions = clanReactions;
+        this.clanTracks = clanTracks;
+        this.clanTrackVotes = clanTrackVotes;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.posts = posts;
@@ -327,17 +339,29 @@ public class DataExportService {
             .collect(java.util.stream.Collectors.toList());
         return mapa(
             "membership", m == null ? null : mapa("clan", m.getClan().getName(), "tag", m.getClan().getTag(),
-                "role", m.getRole(), "joinedAt", m.getJoinedAt(), "colorVote", m.getColorVote()),
+                "role", m.getRole(), "joinedAt", m.getJoinedAt(), "colorVote", m.getColorVote(),
+                "chatNotificationsMuted", m.isChatMuted()),
             "pendingInvitations", clanInvitations.pendingFor(userId).stream()
                 .map(i -> mapa("clan", i.getClan().getName(), "invitedBy", i.getInviter().getUsername(),
                     "at", i.getCreatedAt())).toList(),
-            "messagesWritten", wiadomosci);
+            "messagesWritten", wiadomosci,
+            "chatReactionsGiven", clanReactions.ofUser(userId).stream()
+                .map(r -> mapa("clan", r.getMessage().getClan().getName(), "reaction", r.getType(),
+                    "at", r.getCreatedAt())).toList(),
+            "tracksProposed", clanTracks.ofUser(userId).stream()
+                .map(t -> mapa("clan", t.getClan().getName(), "title", t.getMusicTitle(),
+                    "link", MusicEmbed.canonicalUrl(t.getMusicProvider(), t.getMusicKind(), t.getMusicExternalId()),
+                    "note", t.getNote(), "week", t.getWeekStart(), "at", t.getCreatedAt())).toList(),
+            "trackVotes", clanTrackVotes.ofUser(userId).stream()
+                .map(v -> mapa("clan", v.getTrack().getClan().getName(), "title", v.getTrack().getMusicTitle(),
+                    "at", v.getCreatedAt())).toList());
     }
 
     private List<Object> zgloszeniaZlozone(Long userId) {
         return reports.filedBy(userId).stream()
             .map(r -> mapa("at", r.getCreatedAt(), "about", r.getReported().getUsername(), "reason", r.getReason(),
-                "context", r.getContext(), "description", r.getDescription(), "status", r.getStatus(),
+                "context", r.getContext(), "clan", r.getClan() == null ? null : r.getClan().getName(),
+                "description", r.getDescription(), "status", r.getStatus(),
                 "resolvedAt", r.getResolvedAt(), "resolutionNote", r.getResolutionNote()))
             .collect(java.util.stream.Collectors.toList());
     }

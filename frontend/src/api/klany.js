@@ -96,11 +96,78 @@ export async function czat(id, { po, przed, limit } = {}) {
   return data;
 }
 
-export async function napisz(id, tresc) {
-  const { data } = await client.post(`/clans/${id}/chat`, { content: tresc });
+export async function napisz(id, tresc, odpowiedzNa = null) {
+  const { data } = await client.post(`/clans/${id}/chat`, { content: tresc, replyTo: odpowiedzNa });
   return data;
 }
 
 export async function usunWiadomosc(id, idWiadomosci) {
   await client.delete(`/clans/${id}/chat/${idWiadomosci}`);
+}
+
+/** Ile nieprzeczytanych wiadomosci czeka na czacie mojego klanu ({ clanId, unread }). */
+export async function nieprzeczytane() {
+  const { data } = await client.get('/clans/mine/unread');
+  return data;
+}
+
+/** "Przeczytalem do tej wiadomosci wlacznie". */
+export async function oznaczPrzeczytane(id, doNumeru) {
+  await client.post(`/clans/${id}/chat/read`, { upTo: doNumeru });
+}
+
+/** Wyciszenie (albo wlaczenie) powiadomien na telefon z czatu klanu. */
+export async function wycisz(id, wyciszony) {
+  await client.put(`/clans/${id}/chat/mute`, { muted: wyciszony });
+}
+
+/** Reakcje pod wiadomosciami od podanej wzwyz - lista { messageId, reactions }. */
+export async function reakcjeOd(id, od) {
+  const { data } = await client.get(`/clans/${id}/chat/reactions`, { params: { since: od } });
+  return data;
+}
+
+export async function reaguj(id, idWiadomosci, emoji) {
+  const { data } = await client.put(`/clans/${id}/chat/${idWiadomosci}/reaction`, { emoji });
+  return data;
+}
+
+export async function cofnijReakcje(id, idWiadomosci) {
+  const { data } = await client.delete(`/clans/${id}/chat/${idWiadomosci}/reaction`);
+  return data;
+}
+
+/** Gust klanu: wykonawcy i gatunki wspolne dla kilku czlonkow. */
+export async function gust(id) {
+  const { data } = await client.get(`/clans/${id}/taste`);
+  return data;
+}
+
+/** Utwor tygodnia: propozycje z biezacego tygodnia i zwyciezcy poprzednich. */
+export async function utwory(id) {
+  const { data } = await client.get(`/clans/${id}/tracks`);
+  return data;
+}
+
+export async function zaproponujUtwor(id, url, notatka) {
+  const { data } = await client.post(`/clans/${id}/tracks`, { url, note: notatka || null });
+  return data;
+}
+
+export async function glosujNaUtwor(id, idUtworu, tak) {
+  if (tak) {
+    await client.put(`/clans/${id}/tracks/${idUtworu}/vote`);
+  } else {
+    await client.delete(`/clans/${id}/tracks/${idUtworu}/vote`);
+  }
+}
+
+export async function usunUtwor(id, idUtworu) {
+  await client.delete(`/clans/${id}/tracks/${idUtworu}`);
+}
+
+/** Nadchodzace wydarzenia, na ktore zapisali sie czlonkowie klanu. */
+export async function koncerty(id) {
+  const { data } = await client.get(`/clans/${id}/events`);
+  return data;
 }

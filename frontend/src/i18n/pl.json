@@ -496,12 +496,14 @@
     "contexts": {
       "PROFILE": "Profil tej osoby",
       "POST": "Konkretny post",
-      "CONVERSATION": "Wasza rozmowa"
+      "CONVERSATION": "Wasza rozmowa",
+      "CLAN": "Klan (nazwa, skrót, opis, obrazy)"
     },
     "contextHints": {
       "PROFILE": "Administrator obejrzy profil — nazwę, zdjęcie i to, co ta osoba o sobie pokazuje.",
       "POST": "Do zgłoszenia dołączymy treść tego posta.",
-      "CONVERSATION": "Do zgłoszenia dołączymy kopię ostatnich 20 wiadomości z Waszej rozmowy. Zobaczy je wyłącznie administrator."
+      "CONVERSATION": "Do zgłoszenia dołączymy kopię ostatnich 20 wiadomości z Waszej rozmowy. Zobaczy je wyłącznie administrator.",
+      "CLAN": "Administrator obejrzy nazwę, skrót, opis i obrazy klanu. Do zgłoszenia dołączymy kopię nazwy i opisu z tej chwili."
     },
     "description": "Co się stało?",
     "descriptionPlaceholder": "Opisz własnymi słowami, na czym polega problem…",
@@ -556,7 +558,12 @@
     },
     "reopen": "Zmień decyzję",
     "reopenHint": "Otwiera sprawę ponownie. Nie cofa działań, które już zostały wykonane.",
-    "selfReportHint": "To zgłoszenie dotyczy Twojego konta — możesz je zamknąć, ale nie możesz nałożyć na siebie kary."
+    "selfReportHint": "To zgłoszenie dotyczy Twojego konta — możesz je zamknąć, ale nie możesz nałożyć na siebie kary.",
+    "reportClan": "Zgłoś klan {{name}}",
+    "openClan": "Otwórz klan",
+    "clanGone": "Klan został już rozwiązany.",
+    "reportedFounder": "założyciel klanu",
+    "evidenceHintClan": "Nazwa i opis klanu z chwili zgłoszenia — zachowane także wtedy, gdy klan został zmieniony albo rozwiązany."
   },
   "myReports": {
     "title": "Moje zgłoszenia",
@@ -792,7 +799,7 @@
     "serverOff": "Powiadomienia na telefon nie są włączone na tym serwerze. Przypomnienia będą w dzwonku.",
     "unsupported": "Ta przeglądarka nie obsługuje powiadomień push. Na iPhonie działają po dodaniu MusicClub do ekranu głównego (Udostępnij → Do ekranu początkowego).",
     "blocked": "Powiadomienia są zablokowane w ustawieniach przeglądarki. Zezwól na nie dla tej strony (ikona kłódki obok adresu) i wróć tutaj.",
-    "offHint": "Przypomnienia o wydarzeniach i zaproszenia do znajomych jako powiadomienia na telefonie — także gdy aplikacja jest zamknięta.",
+    "offHint": "Przypomnienia o wydarzeniach, zaproszenia (do znajomych i do klanu) oraz nowe wiadomości na czacie klanu jako powiadomienia na telefonie — także gdy aplikacja jest zamknięta. Czat klanu wyciszysz na jego stronie.",
     "enable": "Włącz powiadomienia",
     "disable": "Wyłącz na tym urządzeniu",
     "test": "Wyślij próbne",
@@ -828,7 +835,9 @@
       "chat": "Czat",
       "posts": "Posty",
       "members": "Członkowie",
-      "settings": "Ustawienia"
+      "settings": "Ustawienia",
+      "music": "Muzyka",
+      "events": "Koncerty"
     },
     "none": {
       "title": "Nie jesteś w żadnym klanie",
@@ -898,7 +907,17 @@
       "title": "Czat klanu",
       "empty": "Nikt jeszcze nic nie napisał. Zacznij rozmowę!",
       "placeholder": "Napisz do klanu…",
-      "readOnly": "Czytasz jako administrator aplikacji — nie możesz tu pisać."
+      "readOnly": "Czytasz jako administrator aplikacji — nie możesz tu pisać.",
+      "reply": "Odpowiedz",
+      "replyingTo": "Odpowiadasz osobie {{username}}",
+      "cancelReply": "Anuluj odpowiedź",
+      "replyUnavailable": "Wiadomość niedostępna",
+      "react": "Zareaguj",
+      "newMessages": "Nowe wiadomości",
+      "mute": "Wycisz powiadomienia",
+      "unmute": "Włącz powiadomienia",
+      "mutedNote": "Powiadomienia na telefon z tego czatu są wyciszone — licznik nieprzeczytanych nadal działa.",
+      "goToMessage": "Przejdź do wiadomości"
     },
     "posts": {
       "title": "Posty klanu",
@@ -919,7 +938,101 @@
       "danger": "Rozwiązanie klanu",
       "disbandHint": "Rozwiązanie klanu usuwa go razem z czatem, postami i zaproszeniami. Tego nie da się cofnąć.",
       "disband": "Rozwiąż klan",
-      "disbandConfirm": "Rozwiązać klan {{name}}? Zniknie razem z czatem i postami — bezpowrotnie."
+      "disbandConfirm": "Rozwiązać klan {{name}}? Zniknie razem z czatem i postami — bezpowrotnie.",
+      "announcement": "Przypięte ogłoszenie",
+      "announcementHint": "Widać je u góry strony klanu, nad czatem. Zostaw puste, żeby je zdjąć.",
+      "rules": "Zasady klanu",
+      "rulesHint": "Krótko — osoba zaproszona zobaczy je przed dołączeniem, a członkowie na stronie klanu."
+    },
+    "report": "Zgłoś klan",
+    "unread": "Nieprzeczytane wiadomości: {{count}}",
+    "announcement": {
+      "title": "Ogłoszenie zarządu",
+      "updated": "Zaktualizowano {{when}}"
+    },
+    "rules": {
+      "title": "Zasady klanu",
+      "ack": "Rozumiem",
+      "show": "Pokaż zasady",
+      "hide": "Ukryj zasady",
+      "inInvitation": "Zasady tego klanu"
+    },
+    "emoji": {
+      "THUMBS_UP": "Kciuk w górę",
+      "HEART": "Serce",
+      "LAUGH": "Śmiech",
+      "FIRE": "Ogień",
+      "MUSIC": "Nuta",
+      "WOW": "Wow"
+    },
+    "music": {
+      "taste": {
+        "title": "Gust klanu",
+        "intro": "Wykonawcy i gatunki, które lubią co najmniej dwie osoby z klanu. Bez wskazywania, kto.",
+        "artists": "Wspólni wykonawcy",
+        "genres": "Wspólne gatunki",
+        "people_one": "{{count}} osoba",
+        "people_few": "{{count}} osoby",
+        "people_many": "{{count}} osób",
+        "people_other": "{{count}} osoby",
+        "none": "Na razie nic wspólnego. Gdy co najmniej dwie osoby dodadzą tych samych wykonawców do ulubionych, pojawią się tutaj.",
+        "counted": "Uwzględniono {{counted}} z {{members}}. Profile ograniczone do znajomych są pomijane."
+      },
+      "weekly": {
+        "title": "Utwór tygodnia",
+        "hint": "Wrzuć link do utworu, a reszta klanu zagłosuje. Tydzień trwa od poniedziałku do niedzieli.",
+        "range": "{{from}} – {{to}}",
+        "remaining_one": "Możesz dodać jeszcze {{count}} propozycję",
+        "remaining_few": "Możesz dodać jeszcze {{count}} propozycje",
+        "remaining_many": "Możesz dodać jeszcze {{count}} propozycji",
+        "remaining_other": "Możesz dodać jeszcze {{count}} propozycji",
+        "noneLeft": "Wykorzystano limit propozycji na ten tydzień.",
+        "url": "Link do utworu",
+        "urlHint": "Spotify, YouTube Music albo Apple Music",
+        "note": "Dlaczego ten? (niewymagane)",
+        "add": "Zaproponuj",
+        "empty": "W tym tygodniu nikt jeszcze niczego nie zaproponował.",
+        "vote": "Głosuj",
+        "voted": "Zagłosowano",
+        "votes_one": "{{count}} głos",
+        "votes_few": "{{count}} głosy",
+        "votes_many": "{{count}} głosów",
+        "votes_other": "{{count}} głosu",
+        "leader": "Prowadzi",
+        "proposedBy": "Proponuje: {{username}}",
+        "open": "Otwórz w serwisie",
+        "delete": "Usuń propozycję",
+        "deleteConfirm": "Usunąć tę propozycję razem z głosami?",
+        "previous": "Zwycięzcy poprzednich tygodni",
+        "week": "Tydzień od {{date}}",
+        "added": "Propozycja dodana.",
+        "play": "Odtwórz"
+      }
+    },
+    "events": {
+      "title": "Klan na koncertach",
+      "intro": "Nadchodzące wydarzenia, na które zapisali się członkowie klanu. Zapisujesz się w zakładce Wydarzenia.",
+      "emptyTitle": "Nikt z klanu nie zapisał się jeszcze na koncert",
+      "emptyText": "Gdy ktoś zaznaczy „Biorę udział” albo „Zainteresowany” przy wydarzeniu, pojawi się tutaj razem z resztą klanu.",
+      "going_one": "Idzie {{count}} osoba",
+      "going_few": "Idą {{count}} osoby",
+      "going_many": "Idzie {{count}} osób",
+      "going_other": "Idzie {{count}} osoby",
+      "interested_one": "{{count}} osoba zainteresowana",
+      "interested_few": "{{count}} osoby zainteresowane",
+      "interested_many": "{{count}} osób zainteresowanych",
+      "interested_other": "{{count}} osoby zainteresowanej",
+      "hiddenNote": "Część osób nie chce być na liście — są tylko w liczniku.",
+      "mine": {
+        "GOING": "Ty idziesz",
+        "INTERESTED": "Interesuje cię"
+      },
+      "ask": "Zapytaj klan: kto jedzie?",
+      "asked": "Klan już pytany",
+      "openAsked": "Zobacz post",
+      "askText": "Kto jedzie na „{{name}}” ({{date}})? Dajcie znać — może się zgramy!",
+      "askSent": "Pytanie trafiło do postów klanu.",
+      "open": "Strona wydarzenia"
     }
   },
   "legal": {

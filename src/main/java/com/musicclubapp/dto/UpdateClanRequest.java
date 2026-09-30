@@ -7,6 +7,10 @@ import jakarta.validation.constraints.Size;
 public record UpdateClanRequest(
     @Size(max = 64) String name,
     @Size(max = 16) String tag,
-    @Size(max = Clan.DESCRIPTION_MAX) String description
+    @Size(max = Clan.DESCRIPTION_MAX) String description,
+    /** Przypiete ogloszenie - null = bez zmiany, puste = zdejmij. */
+    @Size(max = Clan.ANNOUNCEMENT_MAX) String announcement,
+    /** Zasady klanu - null = bez zmiany, puste = usun. */
+    @Size(max = Clan.RULES_MAX) String rules
 ) {
 }

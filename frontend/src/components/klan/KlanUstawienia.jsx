@@ -16,6 +16,8 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
   const { t } = useTranslation();
   const zalozyciel = klan.myRole === 'FOUNDER';
   const [opis, setOpis] = useState(klan.description ?? '');
+  const [ogloszenie, setOgloszenie] = useState(klan.announcement ?? '');
+  const [zasady, setZasady] = useState(klan.rules ?? '');
   const [nazwa, setNazwa] = useState(klan.name);
   const [skrot, setSkrot] = useState(klan.tag);
   const [zajety, setZajety] = useState(false);
@@ -43,7 +45,7 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
 
   function zapisz(e) {
     e.preventDefault();
-    const dane = { description: opis };
+    const dane = { description: opis, announcement: ogloszenie, rules: zasady };
     if (zalozyciel) {
       dane.name = nazwa;
       dane.tag = skrot;
@@ -135,6 +137,17 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
             <Form.Label htmlFor="klan-opis">{t('clans.create.description')}</Form.Label>
             <Form.Control id="klan-opis" as="textarea" rows={3} maxLength={300} value={opis}
               onChange={(e) => setOpis(e.target.value)} className="mb-3" />
+
+            <Form.Label htmlFor="klan-ogloszenie">{t('clans.settings.announcement')}</Form.Label>
+            <Form.Control id="klan-ogloszenie" as="textarea" rows={3} maxLength={500} value={ogloszenie}
+              onChange={(e) => setOgloszenie(e.target.value)} aria-describedby="klan-ogloszenie-podp" />
+            <Form.Text id="klan-ogloszenie-podp" className="d-block mb-3">{t('clans.settings.announcementHint')}</Form.Text>
+
+            <Form.Label htmlFor="klan-zasady">{t('clans.settings.rules')}</Form.Label>
+            <Form.Control id="klan-zasady" as="textarea" rows={4} maxLength={600} value={zasady}
+              onChange={(e) => setZasady(e.target.value)} aria-describedby="klan-zasady-podp" />
+            <Form.Text id="klan-zasady-podp" className="d-block mb-3">{t('clans.settings.rulesHint')}</Form.Text>
+
             <Button type="submit" disabled={zajety}>{t('common.save')}</Button>
           </Form>
         </Card.Body>

@@ -17,6 +17,7 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     /** Najnowsze wiadomosci (od najnowszej); bez osob z blokad ogladajacego. */
     @Query("""
            SELECT m FROM ClanMessage m JOIN FETCH m.sender
+           LEFT JOIN FETCH m.replyTo rt LEFT JOIN FETCH rt.sender
            WHERE m.clan.id = :clanId AND m.sender.id NOT IN :hidden
            ORDER BY m.id DESC
            """)
@@ -25,6 +26,7 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     /** Starsze niz podana (od najnowszej) - "pokaz wczesniejsze". */
     @Query("""
            SELECT m FROM ClanMessage m JOIN FETCH m.sender
+           LEFT JOIN FETCH m.replyTo rt LEFT JOIN FETCH rt.sender
            WHERE m.clan.id = :clanId AND m.id < :before AND m.sender.id NOT IN :hidden
            ORDER BY m.id DESC
            """)
@@ -34,11 +36,24 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     /** Nowsze niz podana (od najstarszej) - odswiezanie czatu. */
     @Query("""
            SELECT m FROM ClanMessage m JOIN FETCH m.sender
+           LEFT JOIN FETCH m.replyTo rt LEFT JOIN FETCH rt.sender
            WHERE m.clan.id = :clanId AND m.id > :after AND m.sender.id NOT IN :hidden
            ORDER BY m.id ASC
            """)
     List<ClanMessage> after(@Param("clanId") Long clanId, @Param("after") Long after,
                             @Param("hidden") Collection<Long> hidden, Pageable limit);
+
+    /** Numer najnowszej wiadomosci klanu (0, gdy czat jest pusty). */
+    @Query("SELECT COALESCE(MAX(m.id), 0) FROM ClanMessage m WHERE m.clan.id = :clanId")
+    long maxId(@Param("clanId") Long clanId);
+
+    /** Ile wiadomosci od innych osob jest nowszych niz ostatnia przeczytana - bez osob z blokad. */
+    @Query("""
+           SELECT COUNT(m) FROM ClanMessage m
+           WHERE m.clan.id = :clanId AND m.id > :readId AND m.sender.id <> :userId AND m.sender.id NOT IN :hidden
+           """)
+    long unread(@Param("clanId") Long clanId, @Param("readId") long readId, @Param("userId") Long userId,
+                @Param("hidden") Collection<Long> hidden);
 
     @Modifying
     @Query("DELETE FROM ClanMessage m WHERE m.clan.id = :clanId")

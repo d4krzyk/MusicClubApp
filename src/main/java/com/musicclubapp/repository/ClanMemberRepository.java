@@ -33,6 +33,21 @@ public interface ClanMemberRepository extends JpaRepository<ClanMember, Long> {
 
     long countByClanId(Long clanId);
 
+    /**
+     * Osoby, ktore dostana powiadomienie o nowej wiadomosci na czacie: nie autor, nie wyciszeni
+     * i tacy, ktorzy nie maja jeszcze zadnej nieprzeczytanej (inaczej telefon brzeczalby przy
+     * kazdej wiadomosci - jedno powiadomienie wystarcza, dopoki ktos nie zajrzy do czatu).
+     */
+    @Query("""
+           SELECT m FROM ClanMember m JOIN FETCH m.user
+           WHERE m.clan.id = :clanId AND m.user.id <> :senderId AND m.chatMuted = false
+             AND NOT EXISTS (SELECT 1 FROM ClanMessage x
+                             WHERE x.clan.id = m.clan.id AND x.id > COALESCE(m.chatReadId, 0)
+                               AND x.id < :newId AND x.sender.id <> m.user.id)
+           """)
+    List<ClanMember> toNotify(@Param("clanId") Long clanId, @Param("senderId") Long senderId,
+                              @Param("newId") Long newId);
+
     /** Czlonkostwa tych osob razem z klanami - do plakietek pod postami, jednym zapytaniem. */
     @Query("SELECT m FROM ClanMember m JOIN FETCH m.clan WHERE m.user.id IN :userIds")
     List<ClanMember> ofUsers(@Param("userIds") Collection<Long> userIds);

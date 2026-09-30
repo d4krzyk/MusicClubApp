@@ -17,6 +17,8 @@ public record ReportResponse(
     ReportContext context,
     /** Identyfikator posta albo {@code null}; post moze byc juz skasowany. */
     Long postId,
+    /** Numer klanu (przy zgloszeniu klanu) albo {@code null}; klan moze byc juz rozwiazany. */
+    Long clanId,
     String description,
     List<EvidenceLineResponse> evidence,
     ReportStatus status,

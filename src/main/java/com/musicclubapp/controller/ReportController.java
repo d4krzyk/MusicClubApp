@@ -72,6 +72,25 @@ public class ReportController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    /** Zglasza klan - jego nazwe, skrot, opis albo obrazy. */
+    @PostMapping("/clans/{clanId}")
+    @Operation(summary = "Zglasza klan do administratora")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Zgloszenie przyjete"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiego klanu"),
+        @ApiResponse(responseCode = "409",
+                     description = "Zgloszenie wlasnego klanu, powtorzone zgloszenie "
+                         + "albo wyczerpany dzienny limit"),
+        @ApiResponse(responseCode = "422", description = "Brak powodu albo opisu")
+    })
+    public ResponseEntity<ReportResponse> reportClan(
+            @PathVariable Long clanId,
+            @Valid @RequestBody CreateReportRequest request,
+            Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+            reportService.createForClan(authentication.getName(), clanId, request));
+    }
+
     /** Wlasne zgloszenia - login bierzemy z sesji, wiec kazdy widzi tylko swoje. */
     @GetMapping("/mine")
     @Operation(summary = "Moje zgloszenia i to, jak sie skonczyly")

@@ -279,6 +279,15 @@ function ReportCard({ report, language, t, me, onResolved }) {
           )}
         </div>
 
+        {/* Zgloszony klan: odnosnik do jego strony (wejscie administratora zostaje w logu) albo informacja, ze go juz nie ma */}
+        {report.context === 'CLAN' && (
+          <div className="mt-2 small">
+            {report.clanId
+              ? <Link to={`/klany/${report.clanId}`}>{t('reports.openClan')}</Link>
+              : <span className="text-body-secondary">{t('reports.clanGone')}</span>}
+          </div>
+        )}
+
         {/* Post prowadzi wprost do tresci - administrator nie musi go szukac */}
         {report.postId && (
           <div className="mt-2">
@@ -298,6 +307,9 @@ function ReportCard({ report, language, t, me, onResolved }) {
           <div className="mt-3">
             {report.context === 'CONVERSATION' && (
               <p className="text-body-secondary small">{t('reports.evidenceHint')}</p>
+            )}
+            {report.context === 'CLAN' && (
+              <p className="text-body-secondary small">{t('reports.evidenceHintClan')}</p>
             )}
 
             {evidence.length === 0 ? (

@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -213,6 +214,39 @@ public interface UserRepository extends JpaRepository<User, Long> {
            WHERE u.username = :username
            """)
     List<String> genreTagsOfFavorites(@Param("username") String username);
+
+    /**
+     * Wykonawcy, ktorych lubi co najmniej {@code min} osob z tej grupy - z liczba tych osob.
+     * Zestawienie klanu: nie wskazuje, KTO ich lubi, a osoby z ograniczonym profilem
+     * (tylko dla znajomych) nie sa do niego wliczane - nie po to je ukryly.
+     */
+    @Query("""
+           SELECT a.externalId AS externalId, a.name AS name, a.imageUrl AS imageUrl,
+                  COUNT(DISTINCT u.id) AS total
+           FROM User u JOIN u.favoriteArtists a
+           WHERE u.id IN :userIds AND u.profileVisibility = com.musicclubapp.entity.ProfileVisibility.EVERYONE
+           GROUP BY a.id, a.externalId, a.name, a.imageUrl
+           HAVING COUNT(DISTINCT u.id) >= :min
+           ORDER BY COUNT(DISTINCT u.id) DESC, a.name
+           """)
+    List<TasteArtistRow> commonArtists(@Param("userIds") Collection<Long> userIds, @Param("min") long min,
+                                       Pageable limit);
+
+    /** Gatunki wspolne dla co najmniej {@code min} osob z grupy - te same zasady co wyzej. */
+    @Query("""
+           SELECT g AS name, COUNT(DISTINCT u.id) AS total
+           FROM User u JOIN u.favoriteArtists a JOIN a.genres g
+           WHERE u.id IN :userIds AND u.profileVisibility = com.musicclubapp.entity.ProfileVisibility.EVERYONE
+           GROUP BY g
+           HAVING COUNT(DISTINCT u.id) >= :min
+           ORDER BY COUNT(DISTINCT u.id) DESC, g
+           """)
+    List<TasteGenreRow> commonGenres(@Param("userIds") Collection<Long> userIds, @Param("min") long min,
+                                     Pageable limit);
+
+    /** Ile z tych osob ma jawny profil - tyle wchodzi do zestawienia gustow. */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.id IN :userIds AND u.profileVisibility = com.musicclubapp.entity.ProfileVisibility.EVERYONE")
+    long countOpenProfiles(@Param("userIds") Collection<Long> userIds);
 
     /** Kraje wydarzen wybrane na kontach - od najczesciej wybieranego. Do importu. */
     @Query("""

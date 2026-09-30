@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Navbar from 'react-bootstrap/Navbar';
@@ -23,6 +23,9 @@ import NapisMC from './NapisMC';
 import NotificationsBell from './NotificationsBell';
 import ThemeToggle from './ThemeToggle';
 import { scrollToTop } from '../utils/scroll';
+import { nieprzeczytane as klanNieprzeczytane } from '../api/klany';
+import { ODSWIEZ_LICZNIK } from '../utils/klan';
+import useOdswiezanie from '../hooks/useOdswiezanie';
 
 /** Wspolna rama strony: gorne menu, tresc i stopka. */
 export default function Layout({ children }) {
@@ -36,6 +39,9 @@ export default function Layout({ children }) {
 
   /* Ile zgloszen czeka na decyzje. */
   const [openReports, setOpenReports] = useState(0);
+
+  /* Ile nieprzeczytanych wiadomosci czeka na czacie mojego klanu. */
+  const [klanNowe, setKlanNowe] = useState(0);
 
   /* Czy strona jest przewinieta. */
   const [scrolled, setScrolled] = useState(false);
@@ -62,6 +68,24 @@ export default function Layout({ children }) {
         .catch(() => setOpenReports(0));
     }
   }, [user, location.pathname]);
+
+  /* Licznik klanu: przy zmianie strony, co pol minuty (gdy karta na wierzchu) i zaraz po przeczytaniu czatu */
+  const odswiezKlan = useCallback(() => {
+    if (!user) {
+      setKlanNowe(0);
+      return;
+    }
+    klanNieprzeczytane()
+      .then((odpowiedz) => setKlanNowe(odpowiedz.unread))
+      .catch(() => setKlanNowe(0));   // licznik to dodatek, nie psujemy menu
+  }, [user]);
+
+  useEffect(() => { odswiezKlan(); }, [odswiezKlan, location.pathname]);
+  useOdswiezanie(odswiezKlan, 30_000, Boolean(user));
+  useEffect(() => {
+    window.addEventListener(ODSWIEZ_LICZNIK, odswiezKlan);
+    return () => window.removeEventListener(ODSWIEZ_LICZNIK, odswiezKlan);
+  }, [odswiezKlan]);
 
   /* Zmiana strony zaczyna sie OD GORY. */
   useEffect(() => {
@@ -214,6 +238,9 @@ export default function Layout({ children }) {
                     {user.admin && openReports > 0 && (
                       <span className="nav-badge konto-badge d-sm-none">{openReports}</span>
                     )}
+
+                    {/* Nieprzeczytane w klanie - sama kropka, liczba jest przy pozycji "Mój klan" */}
+                    {klanNowe > 0 && <span className="konto-kropka" aria-hidden="true" />}
                   </span>
                 }
                 id="account-menu"
@@ -226,6 +253,11 @@ export default function Layout({ children }) {
                 <NavDropdown.Item as={Link} to="/klan">
                   <IconClan className="me-2" />
                   {t('menu.clan')}
+                  {klanNowe > 0 && (
+                    <span className="klan-zakladka-licznik" aria-label={t('clans.unread', { count: klanNowe })}>
+                      {klanNowe > 99 ? '99+' : klanNowe}
+                    </span>
+                  )}
                 </NavDropdown.Item>
 
                 <NavDropdown.Item as={Link} to="/moje-zgloszenia">

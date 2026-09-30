@@ -1,6 +1,7 @@
 package com.musicclubapp.config;
 
 import com.musicclubapp.entity.ClanColor;
+import com.musicclubapp.entity.ClanEmoji;
 import com.musicclubapp.entity.ClanInvitePolicy;
 import com.musicclubapp.entity.ClanRole;
 import com.musicclubapp.entity.EventStatus;
@@ -86,7 +87,10 @@ public class EnumConstraintRefresher implements ApplicationRunner {
         new EnumColumn("clans", "color", ClanColor.class),
         new EnumColumn("clan_members", "role", ClanRole.class),
         new EnumColumn("clan_members", "color_vote", ClanColor.class),
-        new EnumColumn("clan_invitations", "status", InvitationStatus.class)
+        new EnumColumn("clan_invitations", "status", InvitationStatus.class),
+        new EnumColumn("clan_message_reactions", "type", ClanEmoji.class),
+        new EnumColumn("clan_tracks", "music_provider", MusicProvider.class),
+        new EnumColumn("clan_tracks", "music_kind", MusicKind.class)
     );
 
     /** Kolumny objete odswiezaniem, jako "tabela.kolumna". */

@@ -76,7 +76,9 @@ const pl = {
         {
           lista: [
             'Do klanu dołącza się wyłącznie z zaproszenia od jego członka. Zaproszenie możesz przyjąć albo odrzucić, a w ustawieniach prywatności — ograniczyć, kto może Cię zapraszać (wszyscy, tylko znajomi, nikt). Możesz należeć do jednego klanu.',
-            'Klanem zarządzają jego założyciel i administratorzy klanu: zapraszają, wyrzucają członków, zmieniają opis, ikonę i zdjęcie. Kolor klanu wybierają jego członkowie głosowaniem. Nazwa, skrót, ikona i zdjęcie klanu są widoczne dla wszystkich zalogowanych osób.',
+            'Klanem zarządzają jego założyciel i administratorzy klanu: zapraszają, wyrzucają członków, zmieniają opis, ikonę i zdjęcie, wpisują przypięte ogłoszenie i krótkie zasady klanu. Kolor klanu wybierają jego członkowie głosowaniem. Nazwa, skrót, ikona, zdjęcie i opis klanu są widoczne dla wszystkich zalogowanych osób, a zasady — także dla osoby zaproszonej. Zasady klanu nie mogą być sprzeczne z Regulaminem.',
+            'W klanie możesz pisać na czacie (odpowiadać na wiadomości i reagować emoji), dodawać posty, proponować „utwór tygodnia” i głosować na propozycje innych osób oraz sprawdzać, na jakie koncerty zapisali się członkowie. Możesz wyciszyć powiadomienia z czatu klanu.',
+            'Każdy klan możesz zgłosić administratorowi Serwisu (np. za obraźliwą nazwę, opis albo obraz).',
             'Czat i posty klanu widzą jego członkowie. Administrator Serwisu może je przeglądać wyłącznie wtedy, gdy wpłynie zgłoszenie, istnieje uzasadnione podejrzenie naruszenia Regulaminu lub prawa albo żąda tego uprawniony organ; każde takie wejście jest zapisywane w dzienniku. Klan nie może więc ukryć przed moderacją treści niezgodnych z prawem lub z Regulaminem.',
             'Po odejściu z klanu lub wyrzuceniu Twoje posty i wiadomości pozostają w klanie. Usuwając konto, usuwasz własne posty i wiadomości.',
             'Nazwa i skrót klanu nie mogą udawać Serwisu ani jego obsługi. Usługodawca może rozwiązać klan naruszający Regulamin.',
@@ -200,7 +202,9 @@ const en = {
         {
           lista: [
             'You join a clan only by invitation from one of its members. You can accept or decline, and limit in your privacy settings who may invite you (everyone, friends only, nobody). You can belong to one clan.',
-            'A clan is run by its founder and clan admins: they invite, remove members and change the description, icon and photo. The clan colour is chosen by its members by voting. The clan’s name, tag, icon and photo are visible to all logged-in users.',
+            'A clan is run by its founder and clan admins: they invite, remove members, change the description, icon and photo, and write a pinned announcement and short clan rules. The clan colour is chosen by its members by voting. The clan’s name, tag, icon, photo and description are visible to all logged-in users, and the rules also to an invited person. Clan rules must not contradict the Terms.',
+            'In a clan you can chat (reply to messages and react with emoji), add posts, suggest a “track of the week” and vote on other people’s suggestions, and see which concerts members have signed up for. You can mute notifications from the clan chat.',
+            'You can report any clan to the Service administrator (e.g. for an offensive name, description or image).',
             'A clan’s chat and posts are visible to its members. The Service administrator may view them only when a report has been made, there is a reasonable suspicion of a breach of the Terms or the law, or an authorised body requires it; each such visit is written to a log. A clan therefore cannot hide unlawful or rule-breaking content from moderation.',
             'After you leave or are removed, your posts and messages stay in the clan. By deleting your account you delete your own posts and messages.',
             'A clan’s name and tag must not imitate the Service or its staff. The Provider may disband a clan that breaks the Terms.',

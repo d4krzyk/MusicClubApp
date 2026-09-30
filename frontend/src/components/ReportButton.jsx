@@ -5,7 +5,7 @@ import Modal from 'react-bootstrap/Modal';
 import Form from 'react-bootstrap/Form';
 import Alert from 'react-bootstrap/Alert';
 import { describeError } from '../api/client';
-import { zglos } from '../api/moderacja';
+import { zglos, zglosKlan } from '../api/moderacja';
 import { IconFlag } from './Icons';
 
 /** Powody w kolejnosci od najczestszego. */
@@ -14,9 +14,12 @@ const REASONS = ['HARASSMENT', 'SPAM', 'HATE', 'INAPPROPRIATE', 'IMPERSONATION',
 /** Minimalna dlugosc opisu - ta sama liczba, ktorej pilnuje serwer. */
 const MIN_DESCRIPTION = 10;
 
-/** Przycisk „Zgłoś" razem z okienkiem wyboru powodu. */
+/**
+ * Przycisk „Zgłoś" razem z okienkiem wyboru powodu. Z clanId zglasza klan (a nie osobe):
+ * idzie osobna sciezka, a do zgloszenia serwer dolacza kopie nazwy i opisu klanu.
+ */
 export default function ReportButton({
-  username, contexts = ['PROFILE'], postId = null, compact = false,
+  username, contexts = ['PROFILE'], postId = null, compact = false, clanId = null, clanName = '',
 }) {
   const { t } = useTranslation();
 
@@ -44,12 +47,16 @@ export default function ReportButton({
     setError(null);
 
     try {
-      await zglos(username, {
-        reason,
-        context,
-        postId: context === 'POST' ? postId : null,
-        description: description.trim(),
-      });
+      if (clanId != null) {
+        await zglosKlan(clanId, { reason, context: 'CLAN', description: description.trim() });
+      } else {
+        await zglos(username, {
+          reason,
+          context,
+          postId: context === 'POST' ? postId : null,
+          description: description.trim(),
+        });
+      }
       setDone(true);
     } catch (problem) {
       const details = describeError(problem, 'reports.failed');
@@ -60,6 +67,7 @@ export default function ReportButton({
   }
 
   const tooShort = description.trim().length < MIN_DESCRIPTION;
+  const tytul = clanId != null ? t('reports.reportClan', { name: clanName }) : t('reports.reportUser', { username });
 
   return (
     <>
@@ -68,16 +76,16 @@ export default function ReportButton({
         size="sm"
         className={compact ? 'report-button-compact' : undefined}
         onClick={() => setOpen(true)}
-        title={t('reports.reportUser', { username })}
-        aria-label={t('reports.reportUser', { username })}
+        title={tytul}
+        aria-label={tytul}
       >
         <IconFlag />
-        {!compact && <span className="ms-1">{t('reports.report')}</span>}
+        {!compact && <span className="ms-1">{clanId != null ? t('clans.report') : t('reports.report')}</span>}
       </Button>
 
       <Modal show={open} onHide={close} centered>
         <Modal.Header closeButton>
-          <Modal.Title as="h5">{t('reports.reportUser', { username })}</Modal.Title>
+          <Modal.Title as="h5">{tytul}</Modal.Title>
         </Modal.Header>
 
         {done ? (
@@ -109,6 +117,8 @@ export default function ReportButton({
                   ))}
                 </Form.Select>
               </Form.Group>
+
+              {clanId != null && <p className="small text-body-secondary">{t('reports.contextHints.CLAN')}</p>}
 
               {/* Wybor rodzaju TYLKO wtedy, gdy jest z czego wybierac */}
               {contexts.length > 1 && (

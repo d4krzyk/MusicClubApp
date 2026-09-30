@@ -5,6 +5,9 @@ import com.musicclubapp.dto.EvidenceLineResponse;
 import com.musicclubapp.dto.MyReportResponse;
 import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
+import com.musicclubapp.entity.Clan;
+import com.musicclubapp.entity.ClanMember;
+import com.musicclubapp.entity.ClanRole;
 import com.musicclubapp.entity.Message;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.Report;
@@ -16,6 +19,8 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
+import com.musicclubapp.repository.ClanMemberRepository;
+import com.musicclubapp.repository.ClanRepository;
 import com.musicclubapp.repository.MessageRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReportRepository;
@@ -47,12 +52,18 @@ public class ReportService {
     private final PostRepository postRepository;
     private final MessageRepository messageRepository;
     private final NotificationService notifications;
+    private final ClanRepository clanRepository;
+    private final ClanMemberRepository clanMembers;
 
     public ReportService(ReportRepository reportRepository,
                          UserRepository userRepository,
                          PostRepository postRepository,
                          MessageRepository messageRepository,
-                         NotificationService notifications) {
+                         NotificationService notifications,
+                         ClanRepository clanRepository,
+                         ClanMemberRepository clanMembers) {
+        this.clanRepository = clanRepository;
+        this.clanMembers = clanMembers;
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
         this.postRepository = postRepository;
@@ -97,6 +108,45 @@ public class ReportService {
         return toResponse(saved);
     }
 
+    /**
+     * Zgloszenie klanu (nazwa, skrot, opis, obrazy). "Zglaszanym" jest zalozyciel - to on odpowiada
+     * za klan - a klan jest dolaczony do zgloszenia razem z migawka tego, co zglaszano: po zmianie nazwy
+     * albo rozwiazaniu klanu administrator dalej widzi, o co chodzilo.
+     */
+    @Transactional
+    public ReportResponse createForClan(String reporterUsername, Long clanId, CreateReportRequest request) {
+        User reporter = requireUser(reporterUsername);
+        Clan clan = clanRepository.findById(clanId)
+            .orElseThrow(() -> new NoSuchElementFoundException("clan", clanId));
+        User founder = clanMembers.ofClan(clanId).stream()
+            .filter(m -> m.getRole() == ClanRole.FOUNDER)
+            .map(ClanMember::getUser)
+            .findFirst()
+            .orElseThrow(() -> new NoSuchElementFoundException("clan", clanId));
+
+        if (founder.getId().equals(reporter.getId())) {
+            throw OperationNotAllowedException.reportSelf();
+        }
+        if (reportRepository.existsByReporterIdAndClanIdAndStatus(reporter.getId(), clanId, ReportStatus.OPEN)) {
+            throw OperationNotAllowedException.reportAlreadyOpen();
+        }
+        if (reportRepository.countByReporterIdAndCreatedAtAfter(
+                reporter.getId(), LocalDateTime.now().minusDays(1)) >= MAX_PER_DAY) {
+            throw OperationNotAllowedException.reportLimit(MAX_PER_DAY);
+        }
+
+        Report report = new Report(reporter, founder, request.reason(), ReportContext.CLAN,
+            request.description().trim());
+        report.setClan(clan);
+        report.addEvidence(new ReportEvidence("[" + clan.getTag() + "] " + clan.getName(),
+            clan.getDescription() == null ? "" : clan.getDescription(), clan.getCreatedAt()));
+
+        Report saved = reportRepository.save(report);
+        notifications.reportFiled(userRepository.findByRole(Role.ADMIN), reporter);
+        log.info("Uzytkownik {} zglosil klan {} (#{}) ({})", reporterUsername, clan.getName(), clanId, request.reason());
+        return toResponse(saved);
+    }
+
     /** Dwie blokady przed nadużywaniem - w tej kolejnosci, i to ma znaczenie. */
     private void checkLimits(User reporter, User reported) {
         boolean alreadyOpen = reportRepository.existsByReporterIdAndReportedIdAndStatus(
@@ -121,6 +171,8 @@ public class ReportService {
             case POST -> attachPost(report, reporter, reported, request.postId());
             case CONVERSATION -> attachConversation(report, reporter, reported);
             case PROFILE -> { /* dowodem jest sam profil */ }
+            // Klan zglasza sie osobna sciezka (createForClan) - tu nie wiadomo, ktorego dotyczy
+            case CLAN -> throw OperationNotAllowedException.reportClanEndpoint();
         }
     }
 
@@ -294,6 +346,7 @@ public class ReportService {
             report.getReason(),
             report.getContext(),
             report.getPost() == null ? null : report.getPost().getId(),
+            report.getClan() == null ? null : report.getClan().getId(),
             report.getDescription(),
             report.getEvidence().stream()
                 .map(line -> new EvidenceLineResponse(

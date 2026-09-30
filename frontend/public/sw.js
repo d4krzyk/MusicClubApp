@@ -141,15 +141,27 @@ self.addEventListener('push', (event) => {
     dane = { title: event.data ? event.data.text() : '' };
   }
 
+  const pokaz = () => self.registration.showNotification(dane.title || 'MusicClub', {
+    body: dane.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    tag: dane.tag || undefined,
+    renotify: Boolean(dane.tag),
+    data: { url: dane.url || '/' },
+  });
+
+  /*
+     Czat klanu: gdy aplikacja jest na ekranie, nowa wiadomosc i tak widac - brzeczyk
+     bylby tylko halasem. Reszta powiadomien (zaproszenia, przypomnienia) idzie zawsze.
+  */
+  const czatKlanu = typeof dane.tag === 'string' && dane.tag.startsWith('clan-chat-');
+  if (!czatKlanu) {
+    event.waitUntil(pokaz());
+    return;
+  }
   event.waitUntil(
-    self.registration.showNotification(dane.title || 'MusicClub', {
-      body: dane.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      tag: dane.tag || undefined,
-      renotify: Boolean(dane.tag),
-      data: { url: dane.url || '/' },
-    }),
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((okna) => (okna.some((okno) => okno.visibilityState === 'visible') ? undefined : pokaz())),
   );
 });
 

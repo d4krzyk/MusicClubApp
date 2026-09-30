@@ -11,6 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -37,6 +39,15 @@ public class ClanMessage {
     @Column(nullable = false, length = MAX_CONTENT_LENGTH)
     private String content;
 
+    /**
+     * Wiadomosc, na ktora ta odpowiada, albo null. Skasowanie tamtej wiadomosci nie usuwa tej -
+     * baza sama czysci odnosnik (ON DELETE SET NULL), jak przy poscie pod wydarzeniem.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private ClanMessage replyTo;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -48,6 +59,11 @@ public class ClanMessage {
         this.clan = clan;
         this.sender = sender;
         this.content = content;
+    }
+
+    public ClanMessage(Clan clan, User sender, String content, ClanMessage replyTo) {
+        this(clan, sender, content);
+        this.replyTo = replyTo;
     }
 
     @PrePersist
@@ -71,6 +87,10 @@ public class ClanMessage {
 
     public String getContent() {
         return content;
+    }
+
+    public ClanMessage getReplyTo() {
+        return replyTo;
     }
 
     public LocalDateTime getCreatedAt() {

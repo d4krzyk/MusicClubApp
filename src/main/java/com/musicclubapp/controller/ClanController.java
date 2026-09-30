@@ -1,15 +1,28 @@
 package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.ClanColorRequest;
+import com.musicclubapp.dto.ClanEventResponse;
+import com.musicclubapp.dto.ClanMessageReactions;
 import com.musicclubapp.dto.ClanMessageRequest;
 import com.musicclubapp.dto.ClanMessageResponse;
+import com.musicclubapp.dto.ClanMuteRequest;
+import com.musicclubapp.dto.ClanReactionCount;
+import com.musicclubapp.dto.ClanReactionRequest;
+import com.musicclubapp.dto.ClanReadRequest;
 import com.musicclubapp.dto.ClanResponse;
 import com.musicclubapp.dto.ClanRoleRequest;
+import com.musicclubapp.dto.ClanTasteResponse;
+import com.musicclubapp.dto.ClanTrackRequest;
+import com.musicclubapp.dto.ClanTrackResponse;
+import com.musicclubapp.dto.ClanTracksResponse;
+import com.musicclubapp.dto.ClanUnreadResponse;
 import com.musicclubapp.dto.ClanUsernameRequest;
 import com.musicclubapp.dto.CreateClanRequest;
 import com.musicclubapp.dto.MyClanResponse;
 import com.musicclubapp.dto.UpdateClanRequest;
 import com.musicclubapp.service.ClanChatService;
+import com.musicclubapp.service.ClanEventsService;
+import com.musicclubapp.service.ClanMusicService;
 import com.musicclubapp.service.ClanService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,7 +45,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/** Klany: zakladanie, zaproszenia, czlonkowie, kolor z glosowania i czat. */
+/** Klany: zakladanie, zaproszenia, czlonkowie, kolor z glosowania, czat, muzyka i koncerty. */
 @RestController
 @RequestMapping("/api/clans")
 @Tag(name = "Klany", description = "Klany, zaproszenia i czat klanu")
@@ -40,16 +53,27 @@ public class ClanController {
 
     private final ClanService clans;
     private final ClanChatService chat;
+    private final ClanMusicService music;
+    private final ClanEventsService events;
 
-    public ClanController(ClanService clans, ClanChatService chat) {
+    public ClanController(ClanService clans, ClanChatService chat, ClanMusicService music,
+                          ClanEventsService events) {
         this.clans = clans;
         this.chat = chat;
+        this.music = music;
+        this.events = events;
     }
 
     @GetMapping("/mine")
     @Operation(summary = "Moj klan i zaproszenia, ktore na mnie czekaja")
     public ResponseEntity<MyClanResponse> mine(Authentication auth) {
         return ResponseEntity.ok(clans.mine(auth.getName()));
+    }
+
+    @GetMapping("/mine/unread")
+    @Operation(summary = "Ile nieprzeczytanych wiadomosci czeka na czacie mojego klanu")
+    public ResponseEntity<ClanUnreadResponse> unread(Authentication auth) {
+        return ResponseEntity.ok(chat.unread(auth.getName()));
     }
 
     @PostMapping
@@ -65,7 +89,7 @@ public class ClanController {
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Zmienia opis (zarzad klanu) albo nazwe i skrot (zalozyciel)")
+    @Operation(summary = "Zmienia opis, ogloszenie i zasady (zarzad klanu) albo nazwe i skrot (zalozyciel)")
     public ResponseEntity<ClanResponse> update(@PathVariable Long id, @Valid @RequestBody UpdateClanRequest payload,
                                                Authentication auth) {
         return ResponseEntity.ok(clans.update(id, auth.getName(), payload));
@@ -192,7 +216,8 @@ public class ClanController {
     @Operation(summary = "Pisze na czacie klanu")
     public ResponseEntity<ClanMessageResponse> send(@PathVariable Long id, @Valid @RequestBody ClanMessageRequest payload,
                                                     Authentication auth) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(chat.send(id, auth.getName(), payload.content()));
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(chat.send(id, auth.getName(), payload.content(), payload.replyTo()));
     }
 
     @DeleteMapping("/{id}/chat/{messageId}")
@@ -200,5 +225,93 @@ public class ClanController {
     public ResponseEntity<Void> deleteMessage(@PathVariable Long id, @PathVariable Long messageId, Authentication auth) {
         chat.delete(id, messageId, auth.getName());
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/chat/read")
+    @Operation(summary = "Oznacza czat jako przeczytany do podanej wiadomosci wlacznie")
+    public ResponseEntity<Void> markRead(@PathVariable Long id, @Valid @RequestBody ClanReadRequest payload,
+                                         Authentication auth) {
+        chat.markRead(id, auth.getName(), payload.upTo());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/chat/mute")
+    @Operation(summary = "Wycisza albo wlacza powiadomienia z czatu tego klanu")
+    public ResponseEntity<Void> mute(@PathVariable Long id, @Valid @RequestBody ClanMuteRequest payload,
+                                     Authentication auth) {
+        chat.setMuted(id, auth.getName(), payload.muted());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/chat/reactions")
+    @Operation(summary = "Reakcje pod wiadomosciami od podanej wzwyz (odswiezanie przy odpytywaniu czatu)")
+    public ResponseEntity<List<ClanMessageReactions>> reactions(@PathVariable Long id, @RequestParam long since,
+                                                                Authentication auth) {
+        return ResponseEntity.ok(chat.reactionsSince(id, auth.getName(), since));
+    }
+
+    @PutMapping("/{id}/chat/{messageId}/reaction")
+    @Operation(summary = "Moja reakcja na wiadomosc (jedna na osobe)")
+    public ResponseEntity<List<ClanReactionCount>> react(@PathVariable Long id, @PathVariable Long messageId,
+                                                         @Valid @RequestBody ClanReactionRequest payload,
+                                                         Authentication auth) {
+        return ResponseEntity.ok(chat.react(id, messageId, auth.getName(), payload.emoji()));
+    }
+
+    @DeleteMapping("/{id}/chat/{messageId}/reaction")
+    @Operation(summary = "Cofa moja reakcje na wiadomosc")
+    public ResponseEntity<List<ClanReactionCount>> unreact(@PathVariable Long id, @PathVariable Long messageId,
+                                                           Authentication auth) {
+        return ResponseEntity.ok(chat.unreact(id, messageId, auth.getName()));
+    }
+
+    /* --- muzyka --- */
+
+    @GetMapping("/{id}/taste")
+    @Operation(summary = "Gust klanu: wykonawcy i gatunki wspolne dla kilku czlonkow")
+    public ResponseEntity<ClanTasteResponse> taste(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(music.taste(id, auth.getName()));
+    }
+
+    @GetMapping("/{id}/tracks")
+    @Operation(summary = "Utwor tygodnia: propozycje z biezacego tygodnia i zwyciezcy poprzednich")
+    public ResponseEntity<ClanTracksResponse> tracks(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(music.weekly(id, auth.getName()));
+    }
+
+    @PostMapping("/{id}/tracks")
+    @Operation(summary = "Proponuje utwor tygodnia")
+    public ResponseEntity<ClanTrackResponse> propose(@PathVariable Long id, @Valid @RequestBody ClanTrackRequest payload,
+                                                     Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(music.propose(id, auth.getName(), payload));
+    }
+
+    @PutMapping("/{id}/tracks/{trackId}/vote")
+    @Operation(summary = "Glosuje na propozycje z biezacego tygodnia")
+    public ResponseEntity<Void> vote(@PathVariable Long id, @PathVariable Long trackId, Authentication auth) {
+        music.vote(id, trackId, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/tracks/{trackId}/vote")
+    @Operation(summary = "Cofa glos na propozycje")
+    public ResponseEntity<Void> unvote(@PathVariable Long id, @PathVariable Long trackId, Authentication auth) {
+        music.unvote(id, trackId, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/tracks/{trackId}")
+    @Operation(summary = "Usuwa propozycje (proponujacy albo zarzad klanu)")
+    public ResponseEntity<Void> deleteTrack(@PathVariable Long id, @PathVariable Long trackId, Authentication auth) {
+        music.delete(id, trackId, auth.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    /* --- koncerty --- */
+
+    @GetMapping("/{id}/events")
+    @Operation(summary = "Nadchodzace wydarzenia, na ktore zapisali sie czlonkowie klanu")
+    public ResponseEntity<List<ClanEventResponse>> events(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(events.upcoming(id, auth.getName()));
     }
 }

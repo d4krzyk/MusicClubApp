@@ -608,6 +608,56 @@ Przy regulaminie i polityce prywatności (wrzesień 2026):
   bez akceptacji i jego zniknięcie po kliknięciu (także po odświeżeniu);
 - start produkcyjny bez `LEGAL_*` loguje ostrzeżenia, ale wstaje.
 
+Przy rozszerzeniach klanów (wrzesień 2026, migracja V11):
+
+- migracja V11 na **pustej** bazie (V1 → V11, profil `prod`: Flyway + `validate`)
+  i na bazie **po V10 z danymi** (klan, dwóch członków, trzy wiadomości):
+  istniejący członkowie dostają `chat_read_id` = ostatnia wiadomość klanu,
+  więc po wdrożeniu nikt nie widzi całej historii jako „nowej”. Schemat po
+  migracjach porównany blok po bloku ze schematem Hibernate (tabele, kolumny,
+  indeksy, klucze obce z `ON DELETE`) — bez różnic poza kolejnością kolumn
+  i zapisem `CHECK`;
+- `mvnw clean test` → 560 testów (14 nowych w `ClanExtrasFlowTest`, plus
+  rozszerzony eksport danych); testy klanów przechodzą też na PostgreSQL 16;
+- testy z mutacjami — wyłączenie każdej z poniższych ochron czerwieni test:
+  filtr wyciszonych, ograniczenie „jedno powiadomienie do przeczytania”,
+  pomijanie osób z blokad przy push i przy liczniku, znacznik „przeczytane do”
+  tylko do przodu i przycięty do ostatniej wiadomości, cytowanie tylko
+  wiadomości tego samego klanu i widocznych, reakcje tylko na wiadomości tego
+  klanu i bez osób z blokad, odrzucanie kontekstu `CLAN` na zwykłej ścieżce
+  zgłoszeń, zgłoszenie własnego klanu, zasady i ogłoszenie dla obcych,
+  zmiana ogłoszenia tylko przez zarząd, wykluczenie profili „tylko znajomi”
+  z gustu klanu, limit propozycji, duplikaty, zamknięcie głosowania po
+  tygodniu, ukryci na liście koncertów, osoby z blokad w zapisach,
+  sprzątanie propozycji i głosów przy rozwiązaniu klanu. Jedyny mutant, który
+  przeżył (`counted < 1` zamiast `< 2` w `ClanMusicService.taste`), jest
+  równoważny — `HAVING` w zapytaniu i tak odrzuca pojedyncze osoby;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V11, `ddl-auto=validate`;
+  78 sprawdzeń, w tym 390 i 320 px, jasny i ciemny motyw): licznik w menu
+  (kropka przy awatarze i liczba przy „Mój klan”), kreska „Nowe wiadomości”
+  nad pierwszą nieprzeczytaną, oznaczanie przeczytanych tylko gdy czat jest
+  na ekranie, odpowiedź z cytatem i przejściem do oryginału, reakcje (własna,
+  cudza pojawiająca się przez odpytywanie, cofnięcie), wyciszenie, ogłoszenie
+  i zasady („Rozumiem” zwija, zmiana zasad rozwija znowu, obca osoba nic nie
+  widzi, zaproszony widzi zasady przed przyjęciem), gust klanu (wspólni
+  wykonawcy i gatunki, bez nazw osób), utwór tygodnia (zły link zablokowany,
+  propozycja, głos, korona prowadzącego, odtwarzacz dopiero po kliknięciu),
+  koncerty (ukryci tylko w liczniku, „Zapytaj klan” tworzy post klanu, którego
+  nie ma pod wydarzeniem dla wszystkich), zgłoszenie klanu i panel
+  administratora, brak przelewu strony (mierzone w oknie o sztywnej szerokości);
+- service worker w prawdziwym Chromium (`ServiceWorker.deliverPushMessage`):
+  powiadomienie z czatu klanu **nie** pokazuje się przy widocznej aplikacji,
+  pokazuje się, gdy aplikacji nie ma na ekranie, a inne powiadomienia
+  (zaproszenia) pokazują się zawsze. Mutacje po stronie przeglądarki:
+  wyłączenie sprawdzania widoczności i wyłączenie oznaczania czatu jako
+  przeczytanego czerwienią odpowiednie sprawdzenia.
+
+**Nie sprawdzone stąd:** wysyłka push z czatu do prawdziwej usługi (Google,
+Mozilla) — tu jest tylko kontrakt po stronie serwera (kto dostaje, kiedy,
+z jaką treścią) i przyjęcie powiadomienia przez service worker; oraz
+odtwarzacze Spotify/YouTube (środowisko nie ma dostępu do tych serwisów —
+ramka jest, ale się nie ładuje, a tytuł i okładka nie są pobierane).
+
 Przy pobieraniu własnych danych (wrzesień 2026):
 
 - test przez całe API: bez hasła, z pustym i błędnym → 422, bez tokenu CSRF

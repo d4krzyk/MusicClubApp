@@ -168,8 +168,8 @@ dniach od daty znika, a posty zostają bez odnośnika. Komentarzy jeszcze nie
 ma — gdy dojdą, mają działać także pod tymi postami.
 
 Przypomnienia i push (migracja V8) — opis niżej, w „Powiadomienia push”.
-Klany (migracja V9) — niżej, w „Klany”. Regulamin i polityka prywatności
-(V10) oraz pobranie własnych danych — niżej.
+Klany (migracja V9) — niżej, w „Klany”, rozszerzone w V11. Regulamin i polityka
+prywatności (V10) oraz pobranie własnych danych — niżej.
 
 ## Poczta i potwierdzanie adresów
 
@@ -305,6 +305,73 @@ samo na produkcji).
 - Powiadomienia: `CLAN_INVITE` (z push), `CLAN_KICKED` (bez sprawcy); klucz
   klanu w powiadomieniu znika razem z klanem (`ON DELETE CASCADE`). Po
   przyjęciu/odrzuceniu zaproszenie znika z dzwonka.
+
+## Rozszerzenia klanów (V11)
+
+- **Nieprzeczytane i push z czatu.** `clan_members.chat_read_id` = numer
+  ostatniej wiadomości, którą osoba widziała. Nowy członek startuje od ostatniej
+  wiadomości w klanie (historia sprzed wejścia nie jest „nowa”; migracja robi to
+  samo istniejącym członkom). Licznik to wiadomości **innych** osób nowsze niż
+  znacznik, bez osób z blokad (`ClanMessageRepository.unread`). Klient oznacza
+  czat jako przeczytany dopiero, gdy jest na ekranie (`POST /chat/read`;
+  znacznik nigdy się nie cofa i jest przycinany do ostatniej wiadomości), a kto
+  sam pisze, ma znacznik przesunięty na własną wiadomość.
+- Push z czatu (`ClanChatService.powiadom`): dostaje go tylko ten, kto nie ma
+  jeszcze żadnej nieprzeczytanej (`ClanMemberRepository.toNotify`) — jedno
+  powiadomienie do czasu zajrzenia, telefon nie brzęczy przy każdej wiadomości.
+  Pomijani: autor, wyciszeni (`chat_muted`), osoby z blokadą. W powiadomieniu
+  jest nazwa nadawcy, **bez treści** (ekran blokady). `sw.js` nie pokazuje
+  powiadomień z tagiem `clan-chat-…`, gdy aplikacja jest widoczna. Licznik
+  w menu (`GET /mine/unread`) odświeża się co 30 s i po przeczytaniu czatu
+  (zdarzenie `mc-klan-odswiez`).
+- **Odpowiedzi i reakcje.** `clan_messages.reply_to_id` z `ON DELETE SET NULL`:
+  skasowanie oryginału zostawia odpowiedź bez cytatu; cytat znika też wtedy, gdy
+  oglądający blokuje autora oryginału (odpowiedź zostaje z „wiadomość
+  niedostępna”). `clan_message_reactions`: jedna reakcja na osobę i wiadomość
+  (inne emoji podmienia), stała lista `ClanEmoji` (kolumna z CHECK — wpis
+  w `EnumConstraintRefresher`), liczniki bez osób z blokad oglądającego.
+  Odpytywanie czatu dopytuje też `GET /chat/reactions?since=`, a odpowiedź
+  opisuje **cały** zakres — wiadomości, której w niej nie ma, nie ma reakcji.
+- **Zgłoś klan.** `ReportContext.CLAN` i osobna ścieżka
+  `POST /api/reports/clans/{id}`; zwykła ścieżka odrzuca ten kontekst (nie
+  wiedziałaby, którego klanu dotyczy). „Zgłaszanym” jest założyciel. Do
+  zgłoszenia idzie migawka nazwy, skrótu i opisu (`report_evidence`), a
+  `reports.clan_id` ma `ON DELETE SET NULL` — rozwiązanie klanu zostawia
+  zgłoszenie z dowodem. Nie zgłosisz własnego klanu; jedno otwarte zgłoszenie
+  na osobę i klan; dzienny limit jest wspólny z pozostałymi zgłoszeniami.
+- **Ogłoszenie i zasady.** `clans.announcement` (500 zn.) i `clans.rules`
+  (600 zn.) ustawia zarząd tym samym `PUT /api/clans/{id}` (`null` = bez zmiany,
+  puste = zdejmij; data ogłoszenia przesuwa się tylko przy zmianie treści).
+  Obca osoba nie widzi żadnego z nich; zasady widzi też zaproszony — w
+  zaproszeniu, przed przyjęciem. „Rozumiem” pamięta tylko przeglądarka
+  (`localStorage`), po zmianie zasad rozwijają się znowu.
+- **Gust klanu** (`GET /taste`): wykonawcy i gatunki, które lubią co najmniej
+  dwie osoby — bez wskazywania kto. Nie wliczamy osób z profilem „tylko
+  znajomi” ani z blokad oglądającego. Polityka prywatności o tym mówi.
+  (Warunek `counted < MINIMUM` w `ClanMusicService.taste` jest tylko
+  oszczędnością zapytań — `HAVING` i tak by to odrzuciło; mutant go wyłączający
+  jest równoważny.)
+- **Utwór tygodnia** (`clan_tracks`, `clan_track_votes`): tylko link do
+  pojedynczego utworu (`MusicKind.TRACK`), 3 propozycje na osobę w tygodniu,
+  bez duplikatów w tygodniu, jeden głos na propozycję. Tydzień od poniedziałku
+  wg czasu polskiego (`week_start`); po nim głosowanie jest zamknięte
+  (409), a wygrana zostaje w historii (8 tygodni; tygodnie bez głosów pomijane).
+  Prowadzi propozycja z co najmniej jednym głosem, przy remisie wcześniejsza.
+- **Koncerty klanu** (`GET /events`): nadchodzące, niewycofane wydarzenia
+  z zapisami członków; ukryci (`hidden`) są tylko w liczniku, a siebie widzisz
+  zawsze. „Kto jedzie?” to zwykły post klanu z `eventId` (istniejące
+  `POST /api/posts` z `clanId` i `eventId`) — nie pokazuje się pod wydarzeniem
+  dla wszystkich (`p.clan IS NULL`), a wydarzenie z takim postem import
+  wycofuje, a nie kasuje.
+- **Sprzątanie**: rozwiązanie klanu i usunięcie konta kasują reakcje, głosy
+  i propozycje (`ClanService.delete` / `deleteAllOf`); odpowiedzi na skasowaną
+  wiadomość zostają. Eksport ma reakcje, propozycje, głosy i wyciszenie, a
+  polityka je wymienia. `app.legal.version` zostało na 2026-09-30 (data
+  tekstów, których nikt jeszcze nie akceptował) — po wypuszczeniu aplikacji
+  każda zmiana tekstu = nowa data.
+- Odpowiedź serwera po `charset`: `MockHttpServletResponse` bez charsetu czyta
+  JSON jako ISO-8859-1 — test z polskimi znakami albo „…” musi wołać
+  `getContentAsString(UTF_8)` (cytat z wielokropkiem „miał” 122 znaki zamiast 120).
 
 ## Regulamin i polityka prywatności (V10)
 

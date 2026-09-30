@@ -236,6 +236,28 @@ public class OperationNotAllowedException extends RuntimeException {
         return new OperationNotAllowedException("Nie mozna wyrzucic tej osoby", "error.clan.cannotKick");
     }
 
+    public static OperationNotAllowedException clanTrackInvalid() {
+        return new OperationNotAllowedException("Podaj link do utworu", "error.clan.track.invalid");
+    }
+
+    public static OperationNotAllowedException clanTrackLimit(int max) {
+        return new OperationNotAllowedException("Limit propozycji w tygodniu", "error.clan.track.limit", max);
+    }
+
+    public static OperationNotAllowedException clanTrackDuplicate() {
+        return new OperationNotAllowedException("Ten utwor juz jest zaproponowany", "error.clan.track.duplicate");
+    }
+
+    /** Glosowanie nad utworem z minionego tygodnia jest zamkniete. */
+    public static OperationNotAllowedException clanTrackClosed() {
+        return new OperationNotAllowedException("Glosowanie zamkniete", "error.clan.track.closed");
+    }
+
+    /** Zgloszenie klanu idzie osobna sciezka - zwykle zgloszenie z kontekstem CLAN nie wie, ktorego klanu dotyczy. */
+    public static OperationNotAllowedException reportClanEndpoint() {
+        return new OperationNotAllowedException("Klan zglasza sie przez strone klanu", "error.report.clanEndpoint");
+    }
+
     /** Serwer nie wysyla poczty - nie ma jak dostarczyc linku. */
     public static OperationNotAllowedException mailDisabled() {
         return new OperationNotAllowedException(

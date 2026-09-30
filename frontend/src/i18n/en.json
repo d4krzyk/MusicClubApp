@@ -473,12 +473,14 @@
     "contexts": {
       "PROFILE": "This person's profile",
       "POST": "A specific post",
-      "CONVERSATION": "Your conversation"
+      "CONVERSATION": "Your conversation",
+      "CLAN": "Clan (name, tag, description, images)"
     },
     "contextHints": {
       "PROFILE": "The administrator will look at the profile — the name, picture and what this person shows about themselves.",
       "POST": "We will attach the content of that post to the report.",
-      "CONVERSATION": "We will attach a copy of the last 20 messages from your conversation. Only an administrator will see them."
+      "CONVERSATION": "We will attach a copy of the last 20 messages from your conversation. Only an administrator will see them.",
+      "CLAN": "The administrator will look at the clan’s name, tag, description and images. We attach a copy of the name and description as they are now."
     },
     "description": "What happened?",
     "descriptionPlaceholder": "Describe the problem in your own words…",
@@ -531,7 +533,12 @@
     },
     "reopen": "Change the decision",
     "reopenHint": "Reopens the case. It does not undo actions that were already carried out.",
-    "selfReportHint": "This report is about your own account - you can close it, but you cannot punish yourself."
+    "selfReportHint": "This report is about your own account - you can close it, but you cannot punish yourself.",
+    "reportClan": "Report clan {{name}}",
+    "openClan": "Open clan",
+    "clanGone": "The clan has been disbanded.",
+    "reportedFounder": "clan founder",
+    "evidenceHintClan": "The clan’s name and description at the time of the report — kept even if the clan is later changed or disbanded."
   },
   "myReports": {
     "title": "My reports",
@@ -755,7 +762,7 @@
     "serverOff": "Phone notifications aren't enabled on this server. Reminders will show up in the bell.",
     "unsupported": "This browser doesn't support push notifications. On iPhone they work after adding MusicClub to the Home Screen (Share → Add to Home Screen).",
     "blocked": "Notifications are blocked in your browser settings. Allow them for this site (the lock icon next to the address) and come back here.",
-    "offHint": "Event reminders and friend requests as phone notifications — even when the app is closed.",
+    "offHint": "Event reminders, invitations (to friends and to a clan) and new messages in your clan chat as phone notifications — even when the app is closed. You can mute the clan chat on its page.",
     "enable": "Turn on notifications",
     "disable": "Turn off on this device",
     "test": "Send a test",
@@ -787,7 +794,9 @@
       "chat": "Chat",
       "posts": "Posts",
       "members": "Members",
-      "settings": "Settings"
+      "settings": "Settings",
+      "music": "Music",
+      "events": "Concerts"
     },
     "none": {
       "title": "You're not in a clan",
@@ -855,7 +864,17 @@
       "title": "Clan chat",
       "empty": "Nobody has written anything yet. Start the conversation!",
       "placeholder": "Write to the clan…",
-      "readOnly": "You are reading as an app administrator — you can't write here."
+      "readOnly": "You are reading as an app administrator — you can't write here.",
+      "reply": "Reply",
+      "replyingTo": "Replying to {{username}}",
+      "cancelReply": "Cancel reply",
+      "replyUnavailable": "Message unavailable",
+      "react": "React",
+      "newMessages": "New messages",
+      "mute": "Mute notifications",
+      "unmute": "Turn notifications on",
+      "mutedNote": "Phone notifications from this chat are muted — the unread counter still works.",
+      "goToMessage": "Go to message"
     },
     "posts": {
       "title": "Clan posts",
@@ -876,7 +895,91 @@
       "danger": "Disbanding the clan",
       "disbandHint": "Disbanding removes the clan together with its chat, posts and invitations. This can't be undone.",
       "disband": "Disband the clan",
-      "disbandConfirm": "Disband the clan {{name}}? It will disappear together with its chat and posts — permanently."
+      "disbandConfirm": "Disband the clan {{name}}? It will disappear together with its chat and posts — permanently.",
+      "announcement": "Pinned announcement",
+      "announcementHint": "Shown at the top of the clan page, above the chat. Leave empty to take it down.",
+      "rules": "Clan rules",
+      "rulesHint": "Keep it short — invited people see it before joining, members see it on the clan page."
+    },
+    "report": "Report clan",
+    "unread": "Unread messages: {{count}}",
+    "announcement": {
+      "title": "Announcement from the leaders",
+      "updated": "Updated {{when}}"
+    },
+    "rules": {
+      "title": "Clan rules",
+      "ack": "Got it",
+      "show": "Show the rules",
+      "hide": "Hide the rules",
+      "inInvitation": "This clan’s rules"
+    },
+    "emoji": {
+      "THUMBS_UP": "Thumbs up",
+      "HEART": "Heart",
+      "LAUGH": "Laugh",
+      "FIRE": "Fire",
+      "MUSIC": "Music note",
+      "WOW": "Wow"
+    },
+    "music": {
+      "taste": {
+        "title": "Clan taste",
+        "intro": "Artists and genres liked by at least two people in the clan. Without saying who.",
+        "artists": "Shared artists",
+        "genres": "Shared genres",
+        "people_one": "{{count}} person",
+        "people_other": "{{count}} people",
+        "none": "Nothing in common yet. Once at least two people add the same artists to their favourites, they will show up here.",
+        "counted": "Counted {{counted}} of {{members}}. Profiles limited to friends are left out."
+      },
+      "weekly": {
+        "title": "Track of the week",
+        "hint": "Drop a link to a track and the rest of the clan votes. The week runs from Monday to Sunday.",
+        "range": "{{from}} – {{to}}",
+        "remaining_one": "You can add {{count}} more suggestion",
+        "remaining_other": "You can add {{count}} more suggestions",
+        "noneLeft": "You have used this week’s suggestion limit.",
+        "url": "Link to the track",
+        "urlHint": "Spotify, YouTube Music or Apple Music",
+        "note": "Why this one? (optional)",
+        "add": "Suggest",
+        "empty": "Nobody has suggested anything this week yet.",
+        "vote": "Vote",
+        "voted": "Voted",
+        "votes_one": "{{count}} vote",
+        "votes_other": "{{count}} votes",
+        "leader": "Leading",
+        "proposedBy": "Suggested by {{username}}",
+        "open": "Open in the service",
+        "delete": "Delete suggestion",
+        "deleteConfirm": "Delete this suggestion together with its votes?",
+        "previous": "Winners of previous weeks",
+        "week": "Week of {{date}}",
+        "added": "Suggestion added.",
+        "play": "Play"
+      }
+    },
+    "events": {
+      "title": "Clan at concerts",
+      "intro": "Upcoming events that clan members signed up for. You sign up in the Events tab.",
+      "emptyTitle": "Nobody from the clan has signed up for a concert yet",
+      "emptyText": "When someone marks “I’m going” or “Interested” on an event, it will show up here along with the rest of the clan.",
+      "going_one": "{{count}} person going",
+      "going_other": "{{count}} people going",
+      "interested_one": "{{count}} person interested",
+      "interested_other": "{{count}} people interested",
+      "hiddenNote": "Some people prefer not to be listed — they are only in the counter.",
+      "mine": {
+        "GOING": "You’re going",
+        "INTERESTED": "You’re interested"
+      },
+      "ask": "Ask the clan: who’s going?",
+      "asked": "Clan already asked",
+      "openAsked": "See the post",
+      "askText": "Who’s going to “{{name}}” ({{date}})? Let us know — maybe we can meet up!",
+      "askSent": "The question is in the clan posts.",
+      "open": "Event page"
     }
   },
   "legal": {
