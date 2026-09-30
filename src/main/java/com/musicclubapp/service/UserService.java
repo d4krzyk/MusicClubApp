@@ -4,6 +4,7 @@ import com.musicclubapp.dto.AdminUserResponse;
 import com.musicclubapp.dto.ChangePasswordRequest;
 import com.musicclubapp.dto.ChangeRoleRequest;
 import com.musicclubapp.dto.RegisterRequest;
+import com.musicclubapp.dto.TermsStatusResponse;
 import com.musicclubapp.dto.UpdateProfileRequest;
 import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.entity.User;
@@ -23,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +41,7 @@ public class UserService {
     private final ReportRepository reportRepository;
     private final EmailVerificationService emailVerification;
     private final AccountLinks accountLinks;
+    private final Legal legal;
 
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -46,7 +49,9 @@ public class UserService {
                        FileStorageService fileStorage,
                        ReportRepository reportRepository,
                        EmailVerificationService emailVerification,
-                       AccountLinks accountLinks) {
+                       AccountLinks accountLinks,
+                       Legal legal) {
+        this.legal = legal;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
@@ -89,7 +94,10 @@ public class UserService {
         // Haslo NIGDY nie trafia do bazy jawnym tekstem - zapisujemy hash BCrypt.
         String hash = passwordEncoder.encode(request.password());
 
-        User stored = userRepository.save(new User(request.username(), email, hash));
+        User created = new User(request.username(), email, hash);
+        // Zgoda na regulamin: wersja, ktora osoba miala przed oczami, i moment - dowod na wypadek sporu
+        created.acceptTerms(legal.version(), LocalDateTime.now());
+        User stored = userRepository.save(created);
         emailVerification.afterRegistration(stored);
 
         return userMapper.toResponse(stored);
@@ -150,6 +158,24 @@ public class UserService {
         // save() nie jest tu konieczne (encja jest zarzadzana w transakcji),
         // ale zapisane wprost latwiej sie czyta i testuje
         return userMapper.toResponse(userRepository.save(user));
+    }
+
+    /** Jaka wersje regulaminu ma zaakceptowana ta osoba i czy to jest obecna. */
+    @Transactional(readOnly = true)
+    public TermsStatusResponse termsStatus(String username) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
+        return new TermsStatusResponse(legal.version(), user.getTermsVersion(), user.getTermsAcceptedAt(),
+            legal.version().equals(user.getTermsVersion()));
+    }
+
+    /** Akceptacja obecnej wersji - dla kont zalozonych przed regulaminem albo po jego zmianie. */
+    @Transactional
+    public TermsStatusResponse acceptTerms(String username) {
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", username));
+        user.acceptTerms(legal.version(), LocalDateTime.now());
+        return termsStatus(username);
     }
 
     /** Zmiana wlasnego hasla. */

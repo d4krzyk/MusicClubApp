@@ -133,6 +133,13 @@ public class User {
     @Column(name = "event_reminders", nullable = false)
     private boolean eventReminders = true;
 
+    /** Wersja regulaminu i polityki prywatnosci, ktora ta osoba zaakceptowala (null = konto sprzed regulaminu). */
+    @Column(name = "terms_version", length = 20)
+    private String termsVersion;
+
+    @Column(name = "terms_accepted_at")
+    private LocalDateTime termsAcceptedAt;
+
     /** Kraj, z ktorego pokazujemy wydarzenia. Pusty = Polska. */
     @Column(name = "events_country", length = 2)
     private String eventsCountry;
@@ -339,6 +346,19 @@ public class User {
 
     public boolean isHideOnAttendeeLists() {
         return hideOnAttendeeLists;
+    }
+
+    public String getTermsVersion() {
+        return termsVersion;
+    }
+
+    public LocalDateTime getTermsAcceptedAt() {
+        return termsAcceptedAt;
+    }
+
+    public void acceptTerms(String version, LocalDateTime now) {
+        this.termsVersion = version;
+        this.termsAcceptedAt = now;
     }
 
     public boolean isEventReminders() {

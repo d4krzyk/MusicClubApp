@@ -50,8 +50,18 @@
 # uruchomienie nie moze podebrac bazy drugiemu.
 name: musicclub-prod
 
+# Rotacja logow: bez niej pliki logow Dockera rosna w nieskonczonosc, a w logach sa adresy IP i czasy
+# zapytan (dane osobowe - polityka prywatnosci mowi, ze przechowujemy je krotko). Trzy pliki po 10 MB
+# na usluge; starsze znikaja same.
+x-logi: &logi
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
+    logging: *logi
     image: postgres:16-alpine
     container_name: musicclub-prod-db
     restart: unless-stopped
@@ -76,6 +86,7 @@ services:
       retries: 10
 
   backend:
+    logging: *logi
     build: .
     container_name: musicclub-prod-backend
     restart: unless-stopped
@@ -121,6 +132,12 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+
+      # Administrator danych w polityce prywatnosci (docs/WDROZENIE.md, krok "Regulamin i polityka prywatnosci")
+      LEGAL_CONTROLLER: ${LEGAL_CONTROLLER:-}
+      LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
+      LEGAL_HOSTING: ${LEGAL_HOSTING:-}
+      LEGAL_MAIL_PROVIDER: ${LEGAL_MAIL_PROVIDER:-}
     volumes:
       - musicclub-uploads:/app/uploads
     # Tez bez "ports". Backend jest osiagalny wylacznie przez nginx, ktory
@@ -133,6 +150,7 @@ services:
       start_period: 40s
 
   frontend:
+    logging: *logi
     build: ./frontend
     container_name: musicclub-prod-frontend
     restart: unless-stopped
@@ -149,6 +167,7 @@ services:
   # Cloudflare wystawia publiczny adres HTTPS i przekazuje ruch do kontenera
   # frontendu. Nie trzeba otwierac zadnego portu na serwerze ani zakladac konta.
   tunel:
+    logging: *logi
     image: cloudflare/cloudflared:latest
     container_name: musicclub-prod-tunel
     restart: unless-stopped
@@ -162,6 +181,7 @@ services:
   # Caddy sam pobiera i odnawia certyfikat Let's Encrypt. Cala konfiguracja
   # miesci sie w pliku Caddyfile obok.
   caddy:
+    logging: *logi
     image: caddy:2-alpine
     container_name: musicclub-prod-caddy
     restart: unless-stopped

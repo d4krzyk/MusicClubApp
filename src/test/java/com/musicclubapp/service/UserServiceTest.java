@@ -55,6 +55,9 @@ class UserServiceTest {
     @Mock
     private AccountLinks accountLinks;
 
+    @Mock
+    private Legal legal;
+
     @InjectMocks
     private UserService userService;
 

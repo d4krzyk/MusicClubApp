@@ -100,6 +100,12 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-}
+
+      # Administrator danych w polityce prywatnosci (docs/WDROZENIE.md, krok "Regulamin i polityka prywatnosci")
+      LEGAL_CONTROLLER: ${LEGAL_CONTROLLER:-}
+      LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
+      LEGAL_HOSTING: ${LEGAL_HOSTING:-}
+      LEGAL_MAIL_PROVIDER: ${LEGAL_MAIL_PROVIDER:-}
     volumes:
       # BEZ TEGO WGRANE ZDJECIA ZNIKAJA przy kazdym `docker compose down`.
       # Kontenery sa jednorazowe - wszystko, co ma przezyc restart, musi lezec

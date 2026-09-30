@@ -68,3 +68,18 @@
   opacity: 1;
   font-weight: 600;
 }
+
+/* Regulamin i polityka prywatnosci - dlugi tekst, wiec waska kolumna i wygodny odstep */
+.prawna-strona {
+  max-width: 760px;
+}
+
+.prawna-strona p,
+.prawna-strona li {
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.prawna-strona section {
+  scroll-margin-top: 5rem;
+}

@@ -59,7 +59,8 @@
     "submit": "Create account",
     "submitting": "Creating account…",
     "haveAccount": "Already have an account?",
-    "goToLogin": "Sign in"
+    "goToLogin": "Sign in",
+    "acceptTerms": "I accept the <0>terms</0> and confirm that I have read the <1>privacy policy</1>. I am at least 16 years old."
   },
   "users": {
     "title": "Users",
@@ -876,6 +877,20 @@
       "disbandHint": "Disbanding removes the clan together with its chat, posts and invitations. This can't be undone.",
       "disband": "Disband the clan",
       "disbandConfirm": "Disband the clan {{name}}? It will disappear together with its chat and posts — permanently."
+    }
+  },
+  "legal": {
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "toc": "Contents",
+    "version": "Version of {{version}}",
+    "missing": "[to be filled in by the site owner]",
+    "unfilled": "The site owner hasn't filled in the controller details yet (LEGAL_CONTROLLER, LEGAL_CONTACT_EMAIL) — places in square brackets must be completed before the public launch.",
+    "notice": {
+      "title": "Terms and privacy policy",
+      "new": "We have terms of service and a privacy policy.",
+      "updated": "We have updated the terms of service and the privacy policy.",
+      "accept": "I accept"
     }
   }
 }

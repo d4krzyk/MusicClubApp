@@ -11,6 +11,7 @@ import AccountSwitchNotice from './AccountSwitchNotice';
 import { useAuth } from '../auth/AuthContext';
 import Avatar from './Avatar';
 import ChatDrawer from './ChatDrawer';
+import AkceptacjaRegulaminu from './AkceptacjaRegulaminu';
 import ChatLauncher from './ChatLauncher';
 import {
   IconBoard, IconCalendar, IconClan, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
@@ -270,6 +271,7 @@ export default function Layout({ children }) {
       <main className="flex-grow-1 py-4">
         <Container>
           <AccountSwitchNotice />
+          <AkceptacjaRegulaminu />
           {children}
         </Container>
       </main>
@@ -279,6 +281,11 @@ export default function Layout({ children }) {
 
       <footer className="border-top py-3 text-center text-body-secondary small">
         <div>{t('app.tagline')}</div>
+        <div className="mt-1">
+          <Link to="/regulamin" className="text-body-secondary">{t('legal.terms')}</Link>
+          {' · '}
+          <Link to="/polityka-prywatnosci" className="text-body-secondary">{t('legal.privacy')}</Link>
+        </div>
 
         {/*
           Zalogowany zmienia jezyk i motyw w Ustawieniach. Kto nie ma konta, tam nie dojdzie,

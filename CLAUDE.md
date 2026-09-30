@@ -96,6 +96,10 @@ Opisana w `docs/WDROZENIE.md`. W skrócie:
 
 ## Do zrobienia przed wystawieniem na świat
 
+- **Uzupełnić dane administratora w `.env`** (`LEGAL_CONTROLLER`,
+  `LEGAL_CONTACT_EMAIL`, `LEGAL_HOSTING`, `LEGAL_MAIL_PROVIDER`) i dać
+  regulamin z polityką do przeczytania prawnikowi — bez tego polityka
+  prywatności jest niepełna, a Google Play jej wymaga.
 - **Ustawić własne `REMEMBER_ME_KEY` i `ADMIN_PASSWORD` w `.env`.** Na produkcji
   nie mają wartości domyślnych, więc bez nich nic nie wystartuje — ale wartość
   trzeba wygenerować (`openssl rand -base64 48`). Domyślny klucz z repozytorium
@@ -164,7 +168,8 @@ dniach od daty znika, a posty zostają bez odnośnika. Komentarzy jeszcze nie
 ma — gdy dojdą, mają działać także pod tymi postami.
 
 Przypomnienia i push (migracja V8) — opis niżej, w „Powiadomienia push”.
-Klany (migracja V9) — niżej, w „Klany”.
+Klany (migracja V9) — niżej, w „Klany”. Regulamin i polityka prywatności
+(V10) — niżej.
 
 ## Poczta i potwierdzanie adresów
 
@@ -300,6 +305,31 @@ samo na produkcji).
 - Powiadomienia: `CLAN_INVITE` (z push), `CLAN_KICKED` (bez sprawcy); klucz
   klanu w powiadomieniu znika razem z klanem (`ON DELETE CASCADE`). Po
   przyjęciu/odrzuceniu zaproszenie znika z dzwonka.
+
+## Regulamin i polityka prywatności (V10)
+
+- Treść to **szablon, nie porada prawna**: `frontend/src/legal/regulamin.js` i
+  `polityka.js` (PL i EN, dane + placeholdery `{{administrator}}`, `{{kontakt}}`,
+  `{{hosting}}`, `{{poczta}}`, `{{wersja}}`). Przed wpuszczeniem prawdziwych
+  użytkowników powinien go przeczytać prawnik. Polityka opisuje to, co
+  aplikacja **naprawdę** robi (retencja: konta niepotwierdzone 7 dni, linki 24 h,
+  itd.) — zmieniasz zachowanie (nowa tabela z danymi osobowymi, nowy odbiorca
+  danych, nowy okres przechowywania) → poprawiasz też politykę.
+- **Dane administratora nie leżą w repozytorium** (to dane osobowe właściciela):
+  `LEGAL_CONTROLLER`, `LEGAL_CONTACT_EMAIL`, `LEGAL_HOSTING`,
+  `LEGAL_MAIL_PROVIDER` w `.env`; serwer oddaje je przez `/api/public/info`, a
+  strona podstawia. Puste = w tekście widnieje „[do uzupełnienia…]” i baner
+  ostrzegawczy, a backend loguje ostrzeżenie przy starcie.
+- Wersja dokumentów: `app.legal.version` (data ostatniej zmiany treści).
+  **Każda zmiana tekstu = podniesienie wersji**, inaczej nikt nie dostanie
+  prośby o ponowną akceptację. Konto pamięta `terms_version` i
+  `terms_accepted_at`; rejestracja wymaga `acceptTerms=true` (`@AssertTrue`,
+  422 z polem); starsze konta (NULL) i konta ze starą wersją widzą baner
+  `AkceptacjaRegulaminu` (nie blokuje) → `POST /api/profile/terms/accept`.
+- Wiek: 16 lat (art. 8 RODO w Polsce). Polityka mówi o dostępie administratora
+  do klanów i o zapisie takich wejść w logu — to musi zostać prawdą.
+- Docker: rotacja logów w `docker-compose.prod.yml` (3×10 MB na usługę); w
+  logach są adresy IP, a polityka mówi o krótkim przechowywaniu.
 
 ## Wybory, do których nie wracamy
 

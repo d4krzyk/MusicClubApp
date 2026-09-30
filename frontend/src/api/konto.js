@@ -125,3 +125,14 @@ export async function usunWszystkiePosty(currentPassword) {
 export async function usunKonto(currentPassword) {
   await client.delete('/profile', { data: { currentPassword } });
 }
+
+/** Ktora wersje regulaminu ma zaakceptowana to konto i czy to jest obecna. */
+export async function regulamin() {
+  const { data } = await client.get('/profile/terms');
+  return data;
+}
+
+export async function zaakceptujRegulamin() {
+  const { data } = await client.post('/profile/terms/accept');
+  return data;
+}

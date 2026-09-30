@@ -151,7 +151,7 @@ abstract class PocztaTestowa {
             .header("Accept-Language", "pl")
             .contentType(MediaType.APPLICATION_JSON)
             .content(json.writeValueAsString(java.util.Map.of(
-                "username", login, "email", email, "password", HASLO, "confirmPassword", HASLO))));
+                "username", login, "email", email, "password", HASLO, "confirmPassword", HASLO, "acceptTerms", true))));
     }
 
     protected ResultActions zaloguj(String login, String haslo) throws Exception {

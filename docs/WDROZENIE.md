@@ -328,6 +328,35 @@ docker compose -f docker-compose.prod.yml logs backend | grep Poczta
 albo `MAIL_PASSWORD` (przy Gmailu: zwykłe hasło zamiast hasła aplikacji).
 Adresy odbiorców w logu są zamaskowane (`j***i@gmail.com`).
 
+### Regulamin i polityka prywatności
+
+Aplikacja ma strony `/regulamin` i `/polityka-prywatnosci` (PL i EN), link
+w stopce, zgodę przy rejestracji i baner ponownej akceptacji dla kont
+starszych albo po zmianie treści. Tekst to **szablon**, który odzwierciedla to,
+co aplikacja naprawdę robi z danymi — **przed wpuszczeniem prawdziwych
+użytkowników niech go przeczyta prawnik**. Google Play wymaga polityki
+prywatności pod publicznym adresem (`https://twoja-domena/polityka-prywatnosci`).
+
+Dane administratora nie leżą w repozytorium — wpisujesz je w `.env`:
+
+```
+LEGAL_CONTROLLER=Imię i nazwisko albo nazwa firmy, adres
+LEGAL_CONTACT_EMAIL=adres, na który użytkownicy piszą w sprawie danych
+LEGAL_HOSTING=kto prowadzi serwer (np. nazwa hostingu)
+LEGAL_MAIL_PROVIDER=przez kogo idzie poczta (np. Google Gmail, Brevo)
+```
+
+Puste wartości nie zatrzymują serwera, ale strona pokazuje w ich miejsce
+„[do uzupełnienia…]” z ostrzeżeniem, a log przy starcie przypomina o
+uzupełnieniu. Zmiana danych nie wymaga przebudowy aplikacji — wystarczy
+restart backendu.
+
+Zmiana **treści** dokumentów (pliki `frontend/src/legal/`) wymaga podniesienia
+`app.legal.version` w `application.properties` na dzisiejszą datę — dopiero
+wtedy każdy zalogowany dostanie prośbę o ponowną akceptację. Logi kontenerów
+mają rotację (3 pliki po 10 MB na usługę), bo zawierają adresy IP, a polityka
+obiecuje krótkie przechowywanie.
+
 ### Powiadomienia push i przypomnienia o wydarzeniach
 
 Przypomnienia („za 3 dni”, „jutro”) działają zawsze — w dzwonku. Żeby
@@ -564,6 +593,20 @@ Przy klanach (wrzesień 2026):
   administrator (baner, czat i posty do odczytu, bez pisania), wyrzucenie z
   powiadomieniem; 320 px w ciemnym motywie bez przelewu;
 - `mvnw clean test` → 539 testów; klasy klanów, blokad, usuwania kont i powiadomień także na PostgreSQL 16.
+
+Przy regulaminie i polityce prywatności (wrzesień 2026):
+
+- migracja V10 na pustej bazie i po V9; schemat zgodny z encjami;
+- testy: rejestracja bez zgody (brak pola i `false`) → 422 z polem
+  `acceptTerms`, ze zgodą — zapisana wersja i moment; konto bez akceptacji i ze
+  starą wersją dostaje `current=false` i może zaakceptować; dane administratora
+  i dostawcy idą z konfiguracji; test z wyciętym `@AssertTrue` czerwienieje;
+- Chromium: pole zgody z linkami w nowej karcie, błąd bez zgody (konto się nie
+  zakłada), konto ze zgodą, strony dokumentów z danymi z serwera (administrator,
+  kontakt, hosting, poczta — żadnych nierozwiniętych `{{`), spis treści, stopka,
+  wersja angielska przy 320 px w ciemnym motywie bez przelewu, baner dla konta
+  bez akceptacji i jego zniknięcie po kliknięciu (także po odświeżeniu);
+- start produkcyjny bez `LEGAL_*` loguje ostrzeżenia, ale wstaje.
 
 Ciasteczka „zapamiętaj mnie” wystawione przed tą wersją przestaną działać
 (podpis zawiera teraz znacznik bezpieczeństwa) — każdy zaloguje się raz

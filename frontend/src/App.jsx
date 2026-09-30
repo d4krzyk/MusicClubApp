@@ -16,6 +16,7 @@ import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
 import EventsPage from './pages/EventsPage';
 import EventPage from './pages/EventPage';
 import ClanPage from './pages/ClanPage';
+import PrawnaPage from './pages/PrawnaPage';
 import PotwierdzEmailPage from './pages/PotwierdzEmailPage';
 import ResetHaslaPage from './pages/ResetHaslaPage';
 import NoweHasloPage from './pages/NoweHasloPage';
@@ -120,6 +121,9 @@ export default function App() {
                   </RequireAuth>
                 }
               />
+              {/* Dokumenty prawne - publiczne, bo czyta je ktos, kto dopiero zaklada konto */}
+              <Route path="/regulamin" element={<PrawnaPage dokument="regulamin" />} />
+              <Route path="/polityka-prywatnosci" element={<PrawnaPage dokument="polityka" />} />
               {/* Wlasne zgloszenia - kazdy zalogowany widzi tylko swoje */}
               <Route
                 path="/moje-zgloszenia"

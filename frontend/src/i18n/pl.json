@@ -59,7 +59,8 @@
     "submit": "Załóż konto",
     "submitting": "Zakładanie konta…",
     "haveAccount": "Masz już konto?",
-    "goToLogin": "Zaloguj się"
+    "goToLogin": "Zaloguj się",
+    "acceptTerms": "Akceptuję <0>regulamin</0> i potwierdzam zapoznanie się z <1>polityką prywatności</1>. Mam co najmniej 16 lat."
   },
   "users": {
     "title": "Użytkownicy",
@@ -919,6 +920,20 @@
       "disbandHint": "Rozwiązanie klanu usuwa go razem z czatem, postami i zaproszeniami. Tego nie da się cofnąć.",
       "disband": "Rozwiąż klan",
       "disbandConfirm": "Rozwiązać klan {{name}}? Zniknie razem z czatem i postami — bezpowrotnie."
+    }
+  },
+  "legal": {
+    "terms": "Regulamin",
+    "privacy": "Polityka prywatności",
+    "toc": "Spis treści",
+    "version": "Wersja z dnia {{version}}",
+    "missing": "[do uzupełnienia przez administratora serwisu]",
+    "unfilled": "Właściciel serwisu nie uzupełnił jeszcze danych administratora (LEGAL_CONTROLLER, LEGAL_CONTACT_EMAIL) — miejsca oznaczone nawiasami kwadratowymi trzeba wypełnić przed publicznym uruchomieniem.",
+    "notice": {
+      "title": "Regulamin i polityka prywatności",
+      "new": "Mamy regulamin i politykę prywatności.",
+      "updated": "Zaktualizowaliśmy regulamin i politykę prywatności.",
+      "accept": "Akceptuję"
     }
   }
 }

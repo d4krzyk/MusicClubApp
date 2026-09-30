@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
@@ -20,6 +20,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    acceptTerms: false,
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -126,6 +127,27 @@ export default function RegisterPage() {
             error={fieldErrors.confirmPassword}
             autoComplete="new-password"
           />
+
+          {/* Zgoda na regulamin i potwierdzenie zapoznania sie z polityka - bez niej serwer konta nie zaklada */}
+          <Form.Group className="mb-3" controlId="acceptTerms">
+            <Form.Check
+              type="checkbox"
+              checked={data.acceptTerms}
+              onChange={(e) => ustaw('acceptTerms', e.target.checked)}
+              isInvalid={Boolean(fieldErrors.acceptTerms)}
+              label={(
+                <Trans
+                  i18nKey="register.acceptTerms"
+                  components={[
+                    <Link key="r" to="/regulamin" target="_blank" rel="noopener noreferrer" />,
+                    <Link key="p" to="/polityka-prywatnosci" target="_blank" rel="noopener noreferrer" />,
+                  ]}
+                />
+              )}
+              feedback={fieldErrors.acceptTerms}
+              feedbackType="invalid"
+            />
+          </Form.Group>
 
           <Button type="submit" className="w-100" disabled={wysylanie}>
             {wysylanie ? t('register.submitting') : t('register.submit')}

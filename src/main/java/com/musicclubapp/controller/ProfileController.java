@@ -4,6 +4,7 @@ import com.musicclubapp.dto.ChangePasswordRequest;
 import com.musicclubapp.dto.ConfirmPasswordRequest;
 import com.musicclubapp.dto.UpdateProfileRequest;
 import com.musicclubapp.dto.PrivacySettings;
+import com.musicclubapp.dto.TermsStatusResponse;
 import com.musicclubapp.dto.UserResponse;
 import com.musicclubapp.security.JsonRememberMeServices;
 import com.musicclubapp.security.SecurityStampFilter;
@@ -113,6 +114,18 @@ public class ProfileController {
     public ResponseEntity<UserResponse> cancelEmailChange(Authentication authentication) {
         emailVerification.cancelChange(authentication.getName());
         return ResponseEntity.ok(userService.getByUsername(authentication.getName()));
+    }
+
+    @GetMapping("/terms")
+    @Operation(summary = "Ktora wersje regulaminu ma zaakceptowana to konto")
+    public ResponseEntity<TermsStatusResponse> terms(Authentication authentication) {
+        return ResponseEntity.ok(userService.termsStatus(authentication.getName()));
+    }
+
+    @PostMapping("/terms/accept")
+    @Operation(summary = "Akceptuje obecna wersje regulaminu i polityki prywatnosci")
+    public ResponseEntity<TermsStatusResponse> acceptTerms(Authentication authentication) {
+        return ResponseEntity.ok(userService.acceptTerms(authentication.getName()));
     }
 
     @GetMapping("/privacy")

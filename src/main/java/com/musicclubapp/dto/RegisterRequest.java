@@ -4,6 +4,7 @@ import com.musicclubapp.validation.PasswordsToCompare;
 import com.musicclubapp.validation.PasswordsMatch;
 import com.musicclubapp.validation.UniqueUsername;
 import com.musicclubapp.validation.NotDisposableEmail;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -32,7 +33,19 @@ public record RegisterRequest(
 
     /** Powtorzenie hasla - wyklad 7, slajd 35. Sprawdzane przez {@link PasswordsMatch}. */
     @NotBlank(message = "{validation.password.confirm.notblank}")
-    String confirmPassword
+    String confirmPassword,
+
+    /**
+     * Zgoda na regulamin i zapoznanie sie z polityka prywatnosci. Bez niej konta sie nie zaklada -
+     * a wersja dokumentow, ktora osoba widziala, jest zapisywana na koncie (Legal#version).
+     */
+    @AssertTrue(message = "{validation.terms.required}")
+    boolean acceptTerms
 
 ) implements PasswordsToCompare {
+
+    /** Poprawna rejestracja z zaakceptowanym regulaminem - dla krotkich zapisow w testach. */
+    public RegisterRequest(String username, String email, String password, String confirmPassword) {
+        this(username, email, password, confirmPassword, true);
+    }
 }
