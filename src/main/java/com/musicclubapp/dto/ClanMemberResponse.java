@@ -4,6 +4,7 @@ import com.musicclubapp.entity.ClanColor;
 import com.musicclubapp.entity.ClanRole;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ClanMemberResponse(
     String username,
@@ -12,6 +13,8 @@ public record ClanMemberResponse(
     LocalDateTime joinedAt,
     boolean me,
     /** Na jaki kolor glosuje ta osoba - widoczne dla wszystkich w klanie, glosowanie jest jawne. */
-    ClanColor vote
+    ClanColor vote,
+    /** Tytuly tej osoby w klanie - tylko dla czlonkow i administratora aplikacji. */
+    List<ClanTitleBadge> titles
 ) {
 }

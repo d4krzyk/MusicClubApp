@@ -9,6 +9,8 @@ import { describeError } from '../../api/client';
 import * as klany from '../../api/klany';
 import Avatar from '../Avatar';
 import { timeAgo } from '../../utils/dates';
+import KlanProsby from './KlanProsby';
+import Tytul from './Tytul';
 
 /**
  * Czlonkowie, zaproszenia i glosowanie na kolor.
@@ -60,6 +62,8 @@ export default function KlanCzlonkowie({ klan, onZmiana }) {
     <div className="d-grid gap-3">
       {blad && <Alert variant="danger" className="mb-0">{blad}</Alert>}
       {info && <Alert variant="success" className="mb-0" dismissible onClose={() => setInfo(null)}>{info}</Alert>}
+
+      {zarzadzam && <KlanProsby klan={klan} onZmiana={onZmiana} />}
 
       {jestem && (
         <Card>
@@ -169,8 +173,31 @@ export default function KlanCzlonkowie({ klan, onZmiana }) {
                         </>
                       )}
                     </span>
+                    {m.titles.length > 0 && (
+                      <span className="klan-tytuly" aria-label={t('clans.titles.of', { username: m.username })}>
+                        {m.titles.map((tytul) => {
+                          // Zdjac mozna nadany i wziety - nie automatyczny; zarzad zdejmuje kazdy, osoba swoj wziety sama
+                          const mogeZdjac = tytul.mode !== 'AUTO' && (zarzadzam || (m.me && tytul.mode === 'SELF'));
+                          return (
+                            <Tytul key={tytul.id} tytul={tytul} usunEtykieta={t('clans.titles.takeAway', { name: tytul.name })}
+                              onUsun={mogeZdjac && !zajety ? () => wykonaj(() => klany.zdejmijTytul(klan.id, m.username, tytul.id)) : null} />
+                          );
+                        })}
+                      </span>
+                    )}
                   </span>
                   <span className="klan-czlonek-akcje">
+                    {zarzadzam && (() => {
+                      const dostepne = klan.titles.filter((x) => x.mode !== 'AUTO' && !m.titles.some((b) => b.id === x.id));
+                      return dostepne.length > 0 && (
+                        <Form.Select size="sm" className="klan-nadaj" value="" disabled={zajety}
+                          aria-label={t('clans.titles.giveTo', { username: m.username })}
+                          onChange={(e) => e.target.value && wykonaj(() => klany.nadajTytul(klan.id, m.username, Number(e.target.value)))}>
+                          <option value="">{t('clans.titles.give')}</option>
+                          {dostepne.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                        </Form.Select>
+                      );
+                    })()}
                     {zalozyciel && m.role !== 'FOUNDER' && (
                       <>
                         <Button

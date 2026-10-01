@@ -165,6 +165,10 @@ export default function NotificationsBell() {
         return t('notifications.clanInvite', { username: notification.actorUsername, name: notification.clanName });
       case 'CLAN_KICKED':
         return t('notifications.clanKicked', { name: notification.clanName });
+      case 'CLAN_JOIN_REQUEST':
+        return t('notifications.clanJoinRequest', { username: notification.actorUsername, name: notification.clanName });
+      case 'CLAN_REQUEST_ACCEPTED':
+        return t('notifications.clanRequestAccepted', { name: notification.clanName });
       case 'EVENT_REMINDER':
         if (notification.daysLeft === 0) {
           return t('notifications.reminderToday', { name: notification.eventName });

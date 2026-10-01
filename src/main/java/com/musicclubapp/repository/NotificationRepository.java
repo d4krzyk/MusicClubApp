@@ -124,6 +124,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
            """)
     void deleteClanInvites(@Param("recipientId") Long recipientId, @Param("clanId") Long clanId);
 
+    /** Prosba o dolaczenie przestala czekac - znika z dzwonka calego zarzadu. */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.actor.id = :requesterId AND n.clan.id = :clanId
+             AND n.type = com.musicclubapp.entity.NotificationType.CLAN_JOIN_REQUEST
+           """)
+    void deleteClanJoinRequests(@Param("requesterId") Long requesterId, @Param("clanId") Long clanId);
+
     /** Powiadomienia o postach klanu - przed skasowaniem tych postow. */
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.post.id IN (SELECT p.id FROM Post p WHERE p.clan.id = :clanId)")

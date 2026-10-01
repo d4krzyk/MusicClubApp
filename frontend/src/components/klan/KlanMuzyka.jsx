@@ -29,7 +29,8 @@ export default function KlanMuzyka({ klan }) {
 /*  Gust klanu                                                              */
 /* ------------------------------------------------------------------------ */
 
-function Gust({ klan }) {
+/** Gust klanu - tez dla osob spoza klanu, gdy klan jest w przegladarce (dane zbiorcze, bez wskazywania osob). */
+export function Gust({ klan }) {
   const { t } = useTranslation();
   const [gust, setGust] = useState(null);
   const [blad, setBlad] = useState(null);

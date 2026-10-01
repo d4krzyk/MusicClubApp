@@ -148,6 +148,20 @@ public class Notification {
         return n;
     }
 
+    /** Prosba o dolaczenie do klanu - dla jednej osoby z zarzadu, z proszacym jako sprawca. */
+    public static Notification clanJoinRequest(User manager, User requester, Clan clan) {
+        Notification n = new Notification(manager, requester, NotificationType.CLAN_JOIN_REQUEST);
+        n.clan = clan;
+        return n;
+    }
+
+    /** Prosba przyjeta - dla proszacego, bez wskazywania, kto ja przyjal. */
+    public static Notification clanRequestAccepted(User requester, Clan clan) {
+        Notification n = new Notification(requester, null, NotificationType.CLAN_REQUEST_ACCEPTED);
+        n.clan = clan;
+        return n;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {

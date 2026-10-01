@@ -258,6 +258,75 @@ public class OperationNotAllowedException extends RuntimeException {
         return new OperationNotAllowedException("Klan zglasza sie przez strone klanu", "error.report.clanEndpoint");
     }
 
+    /** Klan nie przyjmuje prosb - ani z wyboru, ani przez blokade; nie mowimy, ktore z nich. */
+    public static OperationNotAllowedException clanNoRequests() {
+        return new OperationNotAllowedException("Ten klan nie przyjmuje teraz prosb", "error.clan.noRequests");
+    }
+
+    public static OperationNotAllowedException clanRequestAlready() {
+        return new OperationNotAllowedException("Prosba juz czeka", "error.clan.request.already");
+    }
+
+    public static OperationNotAllowedException clanTooManyRequests(int max) {
+        return new OperationNotAllowedException("Za duzo prosb", "error.clan.request.tooMany", max);
+    }
+
+    public static OperationNotAllowedException clanInvitedAlready() {
+        return new OperationNotAllowedException("Masz zaproszenie", "error.clan.request.invited");
+    }
+
+    public static OperationNotAllowedException clanGenreInvalid() {
+        return new OperationNotAllowedException("Niepoprawny gatunek", "error.clan.genre.invalid");
+    }
+
+    public static OperationNotAllowedException clanCityInvalid() {
+        return new OperationNotAllowedException("Niepoprawne miasto", "error.clan.city.invalid");
+    }
+
+    public static OperationNotAllowedException clanTitleInvalid() {
+        return new OperationNotAllowedException("Niepoprawny tytul", "error.clan.title.invalid");
+    }
+
+    public static OperationNotAllowedException clanTitleTaken() {
+        return new OperationNotAllowedException("Taki tytul juz jest", "error.clan.title.taken");
+    }
+
+    public static OperationNotAllowedException clanTitleLimit(int max) {
+        return new OperationNotAllowedException("Za duzo tytulow", "error.clan.title.limit", max);
+    }
+
+    public static OperationNotAllowedException clanTitleAutoRule() {
+        return new OperationNotAllowedException("Tytul automatyczny wymaga reguly", "error.clan.title.autoRule");
+    }
+
+    public static OperationNotAllowedException clanTitleNotAssignable() {
+        return new OperationNotAllowedException("Tego tytulu nie nadaje sie recznie", "error.clan.title.notAssignable");
+    }
+
+    public static OperationNotAllowedException clanTitleNotSelf() {
+        return new OperationNotAllowedException("Tego tytulu nie mozna wziac samemu", "error.clan.title.notSelf");
+    }
+
+    public static OperationNotAllowedException clanTitleSelfLimit(int max) {
+        return new OperationNotAllowedException("Za duzo wlasnych tytulow", "error.clan.title.selfLimit", max);
+    }
+
+    public static OperationNotAllowedException clanTitleMemberLimit(int max) {
+        return new OperationNotAllowedException("Za duzo tytulow u jednej osoby", "error.clan.title.memberLimit", max);
+    }
+
+    public static OperationNotAllowedException clanPollInvalid() {
+        return new OperationNotAllowedException("Niepoprawna ankieta", "error.clan.poll.invalid");
+    }
+
+    public static OperationNotAllowedException clanPollLimit(int max) {
+        return new OperationNotAllowedException("Za duzo otwartych ankiet", "error.clan.poll.limit", max);
+    }
+
+    public static OperationNotAllowedException clanPollClosed() {
+        return new OperationNotAllowedException("Ankieta zamknieta", "error.clan.poll.closed");
+    }
+
     /** Serwer nie wysyla poczty - nie ma jak dostarczyc linku. */
     public static OperationNotAllowedException mailDisabled() {
         return new OperationNotAllowedException(

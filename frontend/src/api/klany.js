@@ -171,3 +171,124 @@ export async function koncerty(id) {
   const { data } = await client.get(`/clans/${id}/events`);
   return data;
 }
+
+/* ------------------------------------------------------------------------ */
+/*  Przegladarka klanow, prosby o dolaczenie                                */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Lista klanow z przegladarki. Filtry: q (nazwa, skrot, haslo, miasto), genre, city,
+ * joinable (tylko takie, do ktorych mozna poprosic o dolaczenie); sort: MATCH, MEMBERS,
+ * NEWEST, OLDEST, ACTIVE, NAME.
+ */
+export async function przegladarka({ q, genre, city, joinable, sort, page, size } = {}) {
+  const { data } = await client.get('/clans/directory', {
+    params: {
+      q: q || undefined,
+      genre: genre || undefined,
+      city: city || undefined,
+      joinable: joinable || undefined,
+      sort,
+      page,
+      size,
+    },
+  });
+  return data;
+}
+
+/** Prosba o dolaczenie do klanu, ktory przyjmuje prosby; zwraca strone klanu. */
+export async function poprosODolaczenie(id, wiadomosc) {
+  const { data } = await client.post(`/clans/${id}/requests`, { message: wiadomosc || null });
+  return data;
+}
+
+export async function cofnijProsbe(id) {
+  const { data } = await client.delete(`/clans/${id}/requests/mine`);
+  return data;
+}
+
+export async function przyjmijProsbe(id, idProsby) {
+  const { data } = await client.post(`/clans/${id}/requests/${idProsby}/accept`);
+  return data;
+}
+
+export async function odrzucProsbe(id, idProsby) {
+  const { data } = await client.post(`/clans/${id}/requests/${idProsby}/decline`);
+  return data;
+}
+
+/* ------------------------------------------------------------------------ */
+/*  Tytuly                                                                  */
+/* ------------------------------------------------------------------------ */
+
+export async function dodajTytul(id, dane) {
+  const { data } = await client.post(`/clans/${id}/titles`, dane);
+  return data;
+}
+
+export async function zmienTytul(id, idTytulu, dane) {
+  const { data } = await client.put(`/clans/${id}/titles/${idTytulu}`, dane);
+  return data;
+}
+
+export async function usunTytul(id, idTytulu) {
+  const { data } = await client.delete(`/clans/${id}/titles/${idTytulu}`);
+  return data;
+}
+
+export async function nadajTytul(id, login, idTytulu) {
+  const { data } = await client.put(`/clans/${id}/members/${encodeURIComponent(login)}/titles/${idTytulu}`);
+  return data;
+}
+
+export async function zdejmijTytul(id, login, idTytulu) {
+  const { data } = await client.delete(`/clans/${id}/members/${encodeURIComponent(login)}/titles/${idTytulu}`);
+  return data;
+}
+
+/** Bierze sobie tytul, ktory klan zostawil do wziecia samemu. */
+export async function wezTytul(id, idTytulu) {
+  const { data } = await client.put(`/clans/${id}/titles/${idTytulu}/claim`);
+  return data;
+}
+
+export async function oddajTytul(id, idTytulu) {
+  const { data } = await client.delete(`/clans/${id}/titles/${idTytulu}/claim`);
+  return data;
+}
+
+/* ------------------------------------------------------------------------ */
+/*  Ankiety i ranking                                                       */
+/* ------------------------------------------------------------------------ */
+
+export async function ankiety(id) {
+  const { data } = await client.get(`/clans/${id}/polls`);
+  return data;
+}
+
+export async function zalozAnkiete(id, dane) {
+  const { data } = await client.post(`/clans/${id}/polls`, dane);
+  return data;
+}
+
+export async function glosujWAnkiecie(id, idAnkiety, idOdpowiedzi) {
+  await client.put(`/clans/${id}/polls/${idAnkiety}/vote`, { optionId: idOdpowiedzi });
+}
+
+export async function cofnijGlosAnkiety(id, idAnkiety) {
+  await client.delete(`/clans/${id}/polls/${idAnkiety}/vote`);
+}
+
+export async function zamknijAnkiete(id, idAnkiety) {
+  await client.post(`/clans/${id}/polls/${idAnkiety}/close`);
+}
+
+export async function usunAnkiete(id, idAnkiety) {
+  await client.delete(`/clans/${id}/polls/${idAnkiety}`);
+}
+
+/** Ranking aktywnosci: okres 'WEEK' (ostatnie 7 dni) albo 'ALL'. */
+export async function aktywnosc(id, okres = 'WEEK') {
+  const { data } = await client.get(`/clans/${id}/activity`, { params: { period: okres } });
+  return data;
+}

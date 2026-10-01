@@ -6,7 +6,14 @@ import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.ClanMember;
 import com.musicclubapp.entity.ClanEmoji;
 import com.musicclubapp.entity.ClanMessage;
+import com.musicclubapp.entity.ClanJoinRequest;
+import com.musicclubapp.entity.ClanMemberTitle;
 import com.musicclubapp.entity.ClanMessageReaction;
+import com.musicclubapp.entity.ClanPoll;
+import com.musicclubapp.entity.ClanPollVote;
+import com.musicclubapp.entity.ClanTitle;
+import com.musicclubapp.entity.ClanColor;
+import com.musicclubapp.entity.ClanTitleMode;
 import com.musicclubapp.entity.ClanTrack;
 import com.musicclubapp.entity.ClanTrackVote;
 import com.musicclubapp.entity.ClanRole;
@@ -20,7 +27,12 @@ import com.musicclubapp.entity.ReportContext;
 import com.musicclubapp.entity.ReportReason;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.repository.ClanMemberRepository;
+import com.musicclubapp.repository.ClanJoinRequestRepository;
+import com.musicclubapp.repository.ClanMemberTitleRepository;
 import com.musicclubapp.repository.ClanMessageReactionRepository;
+import com.musicclubapp.repository.ClanPollRepository;
+import com.musicclubapp.repository.ClanPollVoteRepository;
+import com.musicclubapp.repository.ClanTitleRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
 import com.musicclubapp.repository.ClanTrackRepository;
 import com.musicclubapp.repository.ClanTrackVoteRepository;
@@ -88,6 +100,11 @@ class DataExportFlowTest {
     @Autowired private ClanMessageReactionRepository clanReactions;
     @Autowired private ClanTrackRepository clanTracks;
     @Autowired private ClanTrackVoteRepository clanTrackVotes;
+    @Autowired private ClanJoinRequestRepository clanRequests;
+    @Autowired private ClanPollRepository clanPolls;
+    @Autowired private ClanPollVoteRepository clanPollVotes;
+    @Autowired private ClanTitleRepository clanTitleDefs;
+    @Autowired private ClanMemberTitleRepository clanMemberTitles;
     @Autowired private MessageService messageService;
     @Autowired private PasswordEncoder encoder;
     @Autowired private FileStorageService fileStorage;
@@ -128,6 +145,18 @@ class DataExportFlowTest {
             com.musicclubapp.music.MusicKind.TRACK, "4uLU6hMCjMI75M1A2tKUQC", "Utwor z eksportu", null,
             "notatka do utworu", java.time.LocalDate.now(), java.time.LocalDateTime.now()));
         clanTrackVotes.save(new ClanTrackVote(utwor, ala, java.time.LocalDateTime.now()));
+        // Prosba o dolaczenie do innego klanu, ankieta z glosem i tytul w klanie
+        Clan inny = clans.save(new Clan("Cudzy Klan", "cudzy klan", "CK", null));
+        clanRequests.save(new ClanJoinRequest(inny, ala, "chce dolaczyc do cudzych", java.time.LocalDateTime.now()));
+        ClanPoll ankieta = new ClanPoll(klan, ala, "Ankieta z eksportu?", java.time.LocalDateTime.now(),
+            java.time.LocalDateTime.now().plusDays(3));
+        ankieta.addOption("odpowiedz pierwsza");
+        ankieta.addOption("odpowiedz druga");
+        clanPolls.save(ankieta);
+        clanPollVotes.save(new ClanPollVote(ankieta, ankieta.getOptions().get(1), ala, java.time.LocalDateTime.now()));
+        ClanTitle tytul = clanTitleDefs.save(new ClanTitle(klan, "Tytul z eksportu", "tytul z eksportu", ClanColor.TEAL,
+            ClanTitleMode.SELF, null, null, java.time.LocalDateTime.now()));
+        clanMemberTitles.save(new ClanMemberTitle(tytul, ala, true, java.time.LocalDateTime.now()));
         Post klanowy = new Post(ala, "tajny post klanu");
         klanowy.setClan(klan);
         posts.save(klanowy);
@@ -207,6 +236,13 @@ class DataExportFlowTest {
         assertThat(dane.at("/clan/tracksProposed/0/link").asText()).isEqualTo("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
         assertThat(dane.at("/clan/tracksProposed/0/note").asText()).isEqualTo("notatka do utworu");
         assertThat(dane.at("/clan/trackVotes/0/title").asText()).isEqualTo("Utwor z eksportu");
+        assertThat(dane.at("/clan/joinRequests/0/clan").asText()).isEqualTo("Cudzy Klan");
+        assertThat(dane.at("/clan/joinRequests/0/message").asText()).isEqualTo("chce dolaczyc do cudzych");
+        assertThat(dane.at("/clan/pollsCreated/0/question").asText()).isEqualTo("Ankieta z eksportu?");
+        assertThat(dane.at("/clan/pollsCreated/0/options").size()).isEqualTo(2);
+        assertThat(dane.at("/clan/pollVotes/0/answer").asText()).isEqualTo("odpowiedz druga");
+        assertThat(dane.at("/clan/titles/0/title").asText()).isEqualTo("Tytul z eksportu");
+        assertThat(dane.at("/clan/titles/0/selfClaimed").asBoolean()).isTrue();
         assertThat(dane.at("/messages").size()).isEqualTo(2);
         // Zdjecie z posta lezy w archiwum, z ta sama trescia
         String sciezka = dane.at("/posts/0/images/0").asText();
@@ -226,7 +262,8 @@ class DataExportFlowTest {
         String daneBoba = new String(rozpakuj(mvc.perform(asyncDispatch(startBoba)).andReturn().getResponse()
             .getContentAsByteArray()).get("dane.json"), StandardCharsets.UTF_8);
         assertThat(daneBoba).contains("post boba - nie mój", "czesc ala").doesNotContain("moj post do eksportu",
-            "tajny post klanu", "ex_ala@example.com", "Utwor z eksportu", "notatka do utworu");
+            "tajny post klanu", "ex_ala@example.com", "Utwor z eksportu", "notatka do utworu",
+            "Ankieta z eksportu?", "chce dolaczyc do cudzych", "Tytul z eksportu");
     }
 
     @Test

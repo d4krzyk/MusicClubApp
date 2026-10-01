@@ -13,6 +13,10 @@ import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.TooManyRequestsException;
 import com.musicclubapp.music.MusicEmbed;
 import com.musicclubapp.repository.ClanInvitationRepository;
+import com.musicclubapp.repository.ClanJoinRequestRepository;
+import com.musicclubapp.repository.ClanMemberTitleRepository;
+import com.musicclubapp.repository.ClanPollRepository;
+import com.musicclubapp.repository.ClanPollVoteRepository;
 import com.musicclubapp.repository.ClanMemberRepository;
 import com.musicclubapp.repository.ClanMessageReactionRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
@@ -104,6 +108,10 @@ public class DataExportService {
     private final ClanMessageReactionRepository clanReactions;
     private final ClanTrackRepository clanTracks;
     private final ClanTrackVoteRepository clanTrackVotes;
+    private final ClanJoinRequestRepository clanRequests;
+    private final ClanPollRepository clanPolls;
+    private final ClanPollVoteRepository clanPollVotes;
+    private final ClanMemberTitleRepository clanTitles;
     private final PushSubscriptionRepository pushSubscriptions;
     private final ReportRepository reports;
     private final FileStorageService fileStorage;
@@ -118,12 +126,18 @@ public class DataExportService {
                              NotificationRepository notifications, ClanMemberRepository clanMembers,
                              ClanMessageRepository clanMessages, ClanInvitationRepository clanInvitations,
                              ClanMessageReactionRepository clanReactions, ClanTrackRepository clanTracks,
-                             ClanTrackVoteRepository clanTrackVotes,
+                             ClanTrackVoteRepository clanTrackVotes, ClanJoinRequestRepository clanRequests,
+                             ClanPollRepository clanPolls, ClanPollVoteRepository clanPollVotes,
+                             ClanMemberTitleRepository clanTitles,
                              PushSubscriptionRepository pushSubscriptions, ReportRepository reports,
                              FileStorageService fileStorage, ObjectMapper mapper, Clock clock) {
         this.clanReactions = clanReactions;
         this.clanTracks = clanTracks;
         this.clanTrackVotes = clanTrackVotes;
+        this.clanRequests = clanRequests;
+        this.clanPolls = clanPolls;
+        this.clanPollVotes = clanPollVotes;
+        this.clanTitles = clanTitles;
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.posts = posts;
@@ -354,7 +368,20 @@ public class DataExportService {
                     "note", t.getNote(), "week", t.getWeekStart(), "at", t.getCreatedAt())).toList(),
             "trackVotes", clanTrackVotes.ofUser(userId).stream()
                 .map(v -> mapa("clan", v.getTrack().getClan().getName(), "title", v.getTrack().getMusicTitle(),
-                    "at", v.getCreatedAt())).toList());
+                    "at", v.getCreatedAt())).toList(),
+            "joinRequests", clanRequests.ofUser(userId).stream()
+                .map(r -> mapa("clan", r.getClan().getName(), "message", r.getMessage(), "status", r.getStatus(),
+                    "at", r.getCreatedAt())).toList(),
+            "pollsCreated", clanPolls.writtenBy(userId).stream()
+                .map(p -> mapa("clan", p.getClan().getName(), "question", p.getQuestion(),
+                    "options", p.getOptions().stream().map(o -> o.getText()).toList(), "at", p.getCreatedAt()))
+                .toList(),
+            "pollVotes", clanPollVotes.ofUser(userId).stream()
+                .map(v -> mapa("clan", v.getPoll().getClan().getName(), "question", v.getPoll().getQuestion(),
+                    "answer", v.getOption().getText(), "at", v.getCreatedAt())).toList(),
+            "titles", clanTitles.ofUser(userId).stream()
+                .map(t -> mapa("clan", t.getTitle().getClan().getName(), "title", t.getTitle().getName(),
+                    "selfClaimed", t.isSelfClaimed(), "at", t.getCreatedAt())).toList());
     }
 
     private List<Object> zgloszeniaZlozone(Long userId) {

@@ -1,7 +1,9 @@
 package com.musicclubapp.dto;
 
 import com.musicclubapp.entity.ClanColor;
+import com.musicclubapp.entity.ClanJoinPolicy;
 import com.musicclubapp.entity.ClanRole;
+import com.musicclubapp.entity.InvitationStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,6 +41,24 @@ public record ClanResponse(
     long unreadChat,
     /** Numer ostatniej przeczytanej wiadomosci - do kreski "nowe wiadomosci" na czacie. */
     long chatReadId,
-    boolean chatMuted
+    boolean chatMuted,
+    /** Haslo, miasto i gatunki, ktore klan sam o sobie podaje - widoczne dla kazdego zalogowanego. */
+    String motto,
+    String city,
+    List<String> genres,
+    ClanJoinPolicy joinPolicy,
+    boolean listed,
+    /** Moja prosba o dolaczenie (PENDING / DECLINED) albo null. */
+    InvitationStatus myRequestStatus,
+    /** Ogladajacy moze teraz poprosic o dolaczenie. */
+    boolean canRequest,
+    /** Numer mojego oczekujacego zaproszenia do tego klanu albo null. */
+    Long invitationId,
+    /** Prosby o dolaczenie - tylko dla zarzadu klanu. */
+    List<ClanJoinRequestResponse> requests,
+    /** Tytuly zdefiniowane w klanie - tylko dla czlonkow i administratora aplikacji. */
+    List<ClanTitleResponse> titles,
+    /** Poziom aktywnosci czatu - dla czlonkow, administratora i - gdy klan jest w przegladarce - dla kazdego. */
+    ClanActivityLevel activityLevel
 ) {
 }

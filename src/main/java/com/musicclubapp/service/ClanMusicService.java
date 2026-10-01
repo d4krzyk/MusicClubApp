@@ -92,7 +92,8 @@ public class ClanMusicService {
     @Transactional(readOnly = true)
     public ClanTasteResponse taste(Long clanId, String viewerName) {
         User viewer = user(viewerName);
-        Clan clan = clans.requireAccess(viewer, clanId);
+        // Gust to rekonesans: widzi go kazdy, jesli klan jest w przegladarce (nie czat, nie posty, nie osoby)
+        Clan clan = clans.requireRecon(viewer, clanId);
         List<Long> ids = visibleMemberIds(clan, viewer);
         long counted = ids.isEmpty() ? 0 : users.countOpenProfiles(ids);
         if (counted < MINIMUM) {

@@ -18,7 +18,8 @@
     "reports": "Zgłoszenia",
     "myReports": "Moje zgłoszenia",
     "events": "Wydarzenia",
-    "clan": "Mój klan"
+    "clan": "Mój klan",
+    "clans": "Przeglądarka klanów"
   },
   "common": {
     "loading": "Ładowanie…",
@@ -417,7 +418,9 @@
     "reminderDays_many": "Za {{count}} dni: {{name}}",
     "reminderDays_other": "Za {{count}} dni: {{name}}",
     "clanInvite": "{{username}} zaprasza cię do klanu {{name}}",
-    "clanKicked": "Nie jesteś już w klanie {{name}}"
+    "clanKicked": "Nie jesteś już w klanie {{name}}",
+    "clanJoinRequest": "{{username}} prosi o dołączenie do klanu {{name}}",
+    "clanRequestAccepted": "Twoja prośba została przyjęta — jesteś w klanie {{name}}"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -789,7 +792,7 @@
     "restrictedText": "Szczegóły profilu {{username}} widzą tylko znajomi tej osoby.",
     "clanInvitesFrom": "Kto może zaprosić mnie do klanu",
     "friendsOnlyInvite": "Tylko znajomi",
-    "clanInvitesHint": "Do klanu wchodzi się tylko z zaproszenia. Możesz je przyjąć albo odrzucić; kto dostał odmowę, przez tydzień nie zaprosi cię ponownie."
+    "clanInvitesHint": "Do klanu wchodzi się z zaproszenia albo przez prośbę, którą klan przyjmie — to ustawienie dotyczy zaproszeń. Możesz je przyjąć albo odrzucić; kto dostał odmowę, przez tydzień nie zaprosi cię ponownie."
   },
   "push": {
     "title": "Powiadomienia",
@@ -827,7 +830,7 @@
     "leaveConfirm": "Odejść z klanu {{name}}? Wrócić można tylko po nowym zaproszeniu. Twoje posty i wiadomości zostaną w klanie.",
     "adminDisband": "Rozwiąż klan (administrator)",
     "adminBanner": "Przeglądasz ten klan jako administrator aplikacji. Robisz to tylko w razie zgłoszenia albo podejrzenia naruszenia zasad lub prawa; każde wejście zostaje zapisane w logu.",
-    "inviteOnly": "Do klanu można dołączyć tylko z zaproszenia od jego członka. Czat i posty widzą tylko członkowie.",
+    "inviteOnly": "Do tego klanu można dołączyć tylko z zaproszenia od jego członka.",
     "moderationNotice": "Administrator aplikacji może przeglądać zawartość klanów — tylko w razie zgłoszenia albo podejrzenia naruszenia zasad lub prawa.",
     "inviteToClan": "Zaproś do klanu {{name}}",
     "tabs": {
@@ -837,11 +840,15 @@
       "members": "Członkowie",
       "settings": "Ustawienia",
       "music": "Muzyka",
-      "events": "Koncerty"
+      "events": "Koncerty",
+      "about": "O klanie",
+      "polls": "Ankiety",
+      "ranking": "Ranking",
+      "titles": "Tytuły"
     },
     "none": {
       "title": "Nie jesteś w żadnym klanie",
-      "text": "Do klanu dołączysz, gdy ktoś z niego cię zaprosi — wtedy zaproszenie pojawi się tutaj i w dzwonku. Możesz też założyć własny."
+      "text": "Do klanu dołączysz z zaproszenia od jego członka albo wysyłając prośbę do klanu, który je przyjmuje (znajdziesz go w przeglądarce klanów). Możesz też założyć własny."
     },
     "invitations": {
       "title": "Zaproszenia do klanów",
@@ -854,12 +861,19 @@
     },
     "create": {
       "title": "Załóż klan",
-      "hint": "Klan ma własny czat i własne posty, których nie widzi nikt spoza klanu. Kolor wybierają jego członkowie głosowaniem. Do klanu wchodzi się tylko z zaproszenia.",
+      "hint": "Klan ma własny czat i własne posty, których nie widzi nikt spoza klanu. Kolor wybierają jego członkowie głosowaniem. Do klanu wchodzi się z zaproszenia albo — jeśli klan to włączy — przez prośbę, którą przyjmuje zarząd.",
       "name": "Nazwa klanu",
       "tag": "Skrót",
       "tagHint": "2–5 liter lub cyfr, np. MC",
       "description": "Opis (niewymagany)",
-      "submit": "Załóż klan"
+      "submit": "Załóż klan",
+      "icon": "Ikona klanu (niewymagana)",
+      "iconHint": "Mały obraz obok skrótu — widać go przy loginie każdego członka. Najlepiej kwadratowy.",
+      "iconNotImage": "To nie jest obraz.",
+      "iconFailed": "Klan został założony, ale nie udało się wgrać ikony: {{reason}} Możesz dodać ją w ustawieniach klanu.",
+      "preview": "Tak będzie wyglądać obok loginu:",
+      "previewUser": "twój_login",
+      "more": "Więcej: hasło, miasto, gatunki, sposób dołączania"
     },
     "members": {
       "title": "Członkowie",
@@ -1033,6 +1047,250 @@
       "askText": "Kto jedzie na „{{name}}” ({{date}})? Dajcie znać — może się zgramy!",
       "askSent": "Pytanie trafiło do postów klanu.",
       "open": "Strona wydarzenia"
+    },
+    "requests": {
+      "title": "Prośby o dołączenie",
+      "hint": "Przyjęcie wpuszcza osobę do klanu od razu. Odrzucenie nie wysyła powiadomienia ani powodu — osoba zobaczy tylko, że prośba nie została przyjęta, i może spróbować ponownie po tygodniu.",
+      "accept": "Przyjmij",
+      "decline": "Odrzuć",
+      "count_one": "{{count}} oczekująca prośba",
+      "count_few": "{{count}} oczekujące prośby",
+      "count_many": "{{count}} oczekujących próśb",
+      "count_other": "{{count}} oczekujących próśb"
+    },
+    "myRequests": {
+      "title": "Moje prośby o dołączenie",
+      "pending": "Czeka na odpowiedź zarządu",
+      "declined": "Nie została przyjęta"
+    },
+    "join": {
+      "title": "Dołączenie",
+      "invited": "Masz zaproszenie do tego klanu.",
+      "pending": "Twoja prośba czeka na odpowiedź zarządu klanu.",
+      "withdraw": "Cofnij prośbę",
+      "declined": "Zarząd nie przyjął twojej prośby. Możesz spróbować ponownie po tygodniu od odmowy.",
+      "hint": "Zarząd klanu zobaczy twoją prośbę razem z loginem. Możesz dopisać kilka słów o sobie — nie musisz.",
+      "message": "Wiadomość do zarządu (niewymagana)",
+      "messagePlaceholder": "Np. skąd się znamy albo czego słuchasz",
+      "send": "Poproś o dołączenie",
+      "full": "Ten klan jest już pełny.",
+      "unavailable": "Teraz nie możesz poprosić o dołączenie do tego klanu — na przykład dlatego, że jesteś już w innym klanie."
+    },
+    "about": {
+      "title": "O klanie",
+      "members": "Członkowie: {{count}}/{{max}}",
+      "hidden": "Ten klan nie pokazuje swojego gustu osobom spoza klanu.",
+      "private": "Czat, posty, ankiety i ranking widzą tylko członkowie."
+    },
+    "activity": {
+      "hint": "Aktywność czatu z ostatnich 7 dni — bez treści wiadomości",
+      "NONE": "Cisza",
+      "LOW": "Spokojny",
+      "MEDIUM": "Aktywny",
+      "HIGH": "Bardzo aktywny"
+    },
+    "card": {
+      "title": "Wizytówka i nabór",
+      "intro": "To, co klan mówi o sobie w przeglądarce klanów. Czat, posty i ankiety zostają prywatne.",
+      "motto": "Hasło klanu",
+      "mottoPlaceholder": "Np. gramy głośno, słuchamy uważnie",
+      "city": "Miasto",
+      "cityPlaceholder": "Np. Kraków (niewymagane)",
+      "genres": "Gatunki klanu",
+      "genresFull": "Komplet gatunków",
+      "genrePlaceholder": "Np. rock",
+      "addGenre": "Dodaj",
+      "removeGenre": "Usuń gatunek {{genre}}",
+      "genresHint": "Do trzech gatunków, które najlepiej opisują klan. Przeglądarka pokazuje je obok gatunków wspólnych dla członków.",
+      "joinPolicy": "Jak się dołącza",
+      "policy": {
+        "REQUESTS": "Można poprosić o dołączenie (zarząd decyduje)",
+        "INVITE_ONLY": "Tylko na zaproszenie od członka"
+      },
+      "policyShort": {
+        "REQUESTS": "Przyjmuje prośby",
+        "INVITE_ONLY": "Tylko zaproszenia"
+      },
+      "joinPolicyHint": "Zaproszenia od członków działają zawsze. Prośby przyjmuje i odrzuca zarząd klanu.",
+      "listed": "Pokazuj klan w przeglądarce klanów",
+      "listedHint": "Ukryty klan nie jest na liście, a jego gust i aktywność widzą tylko członkowie i osoby zaproszone."
+    },
+    "directory": {
+      "title": "Przeglądarka klanów",
+      "intro": "Znajdź klan dla siebie: szukaj po nazwie, filtruj po gatunku i mieście, sortuj po wielkości, aktywności albo dopasowaniu do twojego gustu. Widzisz tylko to, co klan sam o sobie mówi, i gust zbiorczy — nigdy czatu ani postów.",
+      "myClan": "Mój klan",
+      "browse": "Przeglądaj klany",
+      "searchPlaceholder": "Szukaj klanu (nazwa, skrót, hasło, miasto)",
+      "searchLabel": "Szukaj klanu",
+      "genreLabel": "Gatunek",
+      "allGenres": "Każdy gatunek",
+      "cityLabel": "Miasto",
+      "cityPlaceholder": "Miasto",
+      "sortLabel": "Sortuj",
+      "sort": {
+        "MATCH": "Najlepiej pasujące do mnie",
+        "MEMBERS": "Najwięcej osób",
+        "ACTIVE": "Najaktywniejsze",
+        "NEWEST": "Najnowsze",
+        "OLDEST": "Najstarsze",
+        "NAME": "Nazwa A–Z"
+      },
+      "joinable": "Tylko takie, do których mogę dołączyć",
+      "emptyTitle": "Nie ma jeszcze klanów w przeglądarce",
+      "emptyText": "Załóż pierwszy — inni znajdą go tutaj.",
+      "emptyFilteredTitle": "Żaden klan nie pasuje",
+      "emptyFilteredText": "Zmień filtry albo wyczyść wyszukiwanie.",
+      "clear": "Wyczyść filtry",
+      "createOwn": "Załóż klan",
+      "loadMore": "Pokaż więcej klanów",
+      "invited": "Masz zaproszenie",
+      "requested": "Prośba wysłana",
+      "full": "Pełny",
+      "since": "od {{date}}",
+      "declaredGenre": "Gatunek podany przez klan",
+      "tasteGenre": "Gatunek wspólny dla członków klanu",
+      "matchGenres": "Pasuje do twojego gustu: {{genres}}",
+      "matchArtists": "Członkowie słuchają artystów, których też lubisz"
+    },
+    "titles": {
+      "title": "Tytuły w klanie",
+      "intro": "Tytuł to ozdoba przy loginie w klanie — nie zmienia uprawnień. Zarząd może go nadać, zostawić do wzięcia samemu albo przyznawać automatycznie za aktywność.",
+      "none": "Klan nie ma jeszcze tytułów.",
+      "noneManager": "Klan nie ma jeszcze tytułów. Dodaj pierwszy poniżej — możesz zacząć od gotowego szablonu.",
+      "holders_one": "{{count}} osoba",
+      "holders_few": "{{count}} osoby",
+      "holders_many": "{{count}} osób",
+      "holders_other": "{{count}} osoby",
+      "mine": "masz go",
+      "giveBack": "Oddaj",
+      "claim": "Weź",
+      "edit": "Edytuj",
+      "delete": "Usuń",
+      "deleteConfirm": "Usunąć tytuł „{{name}}”? Zniknie też u wszystkich, którzy go mają.",
+      "newTitle": "Nowy tytuł",
+      "editTitle": "Edycja tytułu",
+      "presetsHint": "Gotowe szablony wypełniają formularz — możesz je jeszcze zmienić.",
+      "presets": {
+        "chatty": "Dusza czatu",
+        "regular": "Stały punkt programu",
+        "explorer": "Nos do hitów",
+        "voter": "Głos ludu",
+        "concertGoer": "Zawsze pod sceną",
+        "dj": "DJ klanu"
+      },
+      "create": "Własny tytuł",
+      "name": "Nazwa tytułu",
+      "color": "Kolor",
+      "how": "Jak się go dostaje",
+      "howOption": {
+        "MANUAL": "Nadaje zarząd",
+        "SELF": "Każdy członek może wziąć go sam",
+        "AUTO": "Przyznawany automatycznie za aktywność"
+      },
+      "mode": {
+        "MANUAL": "Nadawany przez zarząd",
+        "SELF": "Do wzięcia samemu"
+      },
+      "rule": {
+        "MESSAGES_one": "Automatycznie: od {{count}} wiadomości na czacie",
+        "MESSAGES_few": "Automatycznie: od {{count}} wiadomości na czacie",
+        "MESSAGES_many": "Automatycznie: od {{count}} wiadomości na czacie",
+        "MESSAGES_other": "Automatycznie: od {{count}} wiadomości na czacie",
+        "POSTS_one": "Automatycznie: od {{count}} posta",
+        "POSTS_few": "Automatycznie: od {{count}} postów",
+        "POSTS_many": "Automatycznie: od {{count}} postów",
+        "POSTS_other": "Automatycznie: od {{count}} postów",
+        "TRACKS_one": "Automatycznie: od {{count}} zaproponowanego utworu",
+        "TRACKS_few": "Automatycznie: od {{count}} zaproponowanych utworów",
+        "TRACKS_many": "Automatycznie: od {{count}} zaproponowanych utworów",
+        "TRACKS_other": "Automatycznie: od {{count}} zaproponowanych utworów",
+        "VOTES_one": "Automatycznie: od {{count}} oddanego głosu",
+        "VOTES_few": "Automatycznie: od {{count}} oddanych głosów",
+        "VOTES_many": "Automatycznie: od {{count}} oddanych głosów",
+        "VOTES_other": "Automatycznie: od {{count}} oddanych głosów",
+        "REACTIONS_one": "Automatycznie: od {{count}} reakcji",
+        "REACTIONS_few": "Automatycznie: od {{count}} reakcji",
+        "REACTIONS_many": "Automatycznie: od {{count}} reakcji",
+        "REACTIONS_other": "Automatycznie: od {{count}} reakcji",
+        "DAYS_one": "Automatycznie: od {{count}} dnia w klanie",
+        "DAYS_few": "Automatycznie: od {{count}} dni w klanie",
+        "DAYS_many": "Automatycznie: od {{count}} dni w klanie",
+        "DAYS_other": "Automatycznie: od {{count}} dni w klanie"
+      },
+      "metric": "Za co",
+      "metricName": {
+        "MESSAGES": "wiadomości na czacie",
+        "POSTS": "posty",
+        "TRACKS": "zaproponowane utwory",
+        "VOTES": "oddane głosy (utwory i ankiety)",
+        "REACTIONS": "reakcje",
+        "DAYS": "dni w klanie"
+      },
+      "threshold": "Od ilu",
+      "autoHint": "Liczy się wszystko od wejścia do klanu. Po zmianie progu tytuły przeliczają się same.",
+      "preview": "Podgląd",
+      "of": "Tytuły: {{username}}",
+      "takeAway": "Zdejmij tytuł {{name}}",
+      "giveTo": "Nadaj tytuł: {{username}}",
+      "give": "Nadaj tytuł…"
+    },
+    "polls": {
+      "none": "Nie ma jeszcze ankiet. Zacznij pierwszą — np. „Na jaki koncert jedziemy?”.",
+      "closed": "Zakończone",
+      "by": "Autor: {{username}}",
+      "endsAt": "kończy się {{when}}",
+      "ended": "zakończona",
+      "votes_one": "{{count}} głos",
+      "votes_few": "{{count}} głosy",
+      "votes_many": "{{count}} głosów",
+      "votes_other": "{{count}} głosu",
+      "total_one": "Łącznie {{count}} głos",
+      "total_few": "Łącznie {{count}} głosy",
+      "total_many": "Łącznie {{count}} głosów",
+      "total_other": "Łącznie {{count}} głosu",
+      "voteHint": "kliknij swoją odpowiedź jeszcze raz, żeby cofnąć głos",
+      "close": "Zakończ teraz",
+      "delete": "Usuń ankietę",
+      "deleteConfirm": "Usunąć tę ankietę razem z głosami?",
+      "new": "Nowa ankieta",
+      "question": "Pytanie",
+      "questionPlaceholder": "Np. na jaki koncert jedziemy razem?",
+      "options": "Odpowiedzi (od 2 do 6)",
+      "optionN": "Odpowiedź {{n}}",
+      "removeOption": "Usuń odpowiedź",
+      "addOption": "Dodaj odpowiedź",
+      "duration": "Trwa",
+      "days_one": "{{count}} dzień",
+      "days_few": "{{count}} dni",
+      "days_many": "{{count}} dni",
+      "days_other": "{{count}} dnia",
+      "publish": "Opublikuj ankietę"
+    },
+    "ranking": {
+      "goalTitle": "Cel tygodnia",
+      "points": "pkt",
+      "goalDone": "cel osiągnięty, brawo!",
+      "breakdown": "Z tego: wiadomości {{messages}}, posty {{posts}}, utwory {{tracks}}, głosy {{votes}}, reakcje {{reactions}}.",
+      "title": "Ranking aktywności",
+      "period": "Okres",
+      "periods": {
+        "WEEK": "Ostatnie 7 dni",
+        "ALL": "Cały czas"
+      },
+      "empty": "Nikt jeszcze nic nie zrobił w tym okresie — napisz pierwszą wiadomość!",
+      "place": "Miejsce {{n}}",
+      "level": "Poziom {{n}}",
+      "levels": {
+        "0": "Próba dźwięku",
+        "1": "Rozgrzewka",
+        "2": "Na scenie",
+        "3": "Gwiazda wieczoru",
+        "4": "Legenda klanu"
+      },
+      "toNext": "do kolejnego poziomu: {{count}} pkt",
+      "pointsShort": "pkt",
+      "howTitle": "Jak liczymy punkty?",
+      "how": "Wiadomość na czacie to 1 punkt, post 4, zaproponowany utwór 3, oddany głos (na utwór tygodnia albo w ankiecie) 1, reakcja pod wiadomością 1. Poziom zależy od punktów z całego czasu, więc nie spada. Cel tygodnia to wspólny wynik całego klanu z ostatnich 7 dni."
     }
   },
   "legal": {

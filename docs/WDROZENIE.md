@@ -658,6 +658,50 @@ z jaką treścią) i przyjęcie powiadomienia przez service worker; oraz
 odtwarzacze Spotify/YouTube (środowisko nie ma dostępu do tych serwisów —
 ramka jest, ale się nie ładuje, a tytuł i okładka nie są pobierane).
 
+Przy społeczności klanów (październik 2026, migracja V12):
+
+- migracja V12 na **pustej** bazie (V1 → V12, profil `prod`: Flyway + `validate`)
+  i na bazie **po V11 z danymi** (klan z członkiem): istniejący klan zostaje
+  `INVITE_ONLY` i dostaje `listed=false` — nikt nie zgodził się na przeglądarkę.
+  Schemat po migracjach porównany blok po bloku ze schematem Hibernate
+  (tabele, kolumny, indeksy, klucze obce z `ON DELETE`) — bez różnic poza
+  kolejnością kolumn;
+- `mvnw clean test` → 576 testów (16 nowych w `ClanCommunityFlowTest`, plus
+  rozszerzone eksport danych i gust klanu); klasy klanów, eksportu, usuwania
+  kont, blokad i powiadomień (78 testów) przechodzą też na PostgreSQL 16;
+- testy z mutacjami — wyłączenie każdej z poniższych ochron czerwieni test
+  (24 z 25): sprawdzenie polityki naboru, blokada założyciela przy prośbie,
+  tydzień po odmowie, limit oczekujących próśb, prośby osób z blokad na liście
+  zarządu, kasowanie prośb przy wejściu do klanu, wiek wygasania próśb,
+  małe litery gatunków, klan blokującego w przeglądarce, filtr „mogę
+  dołączyć”, tylko profile `EVERYONE` w gustach, rekonesans tylko dla klanów
+  z przeglądarki, limit tytułów wziętych samemu, brak nadawania tytułów
+  automatycznych, oddawanie tylko własnego tytułu, sprzątanie tytułów przy
+  odejściu, zamknięta ankieta, limit ankiet na osobę, punkty za post, próg
+  poziomu, osoby z blokad w rankingu, sprzątanie ankiet przy rozwiązaniu klanu,
+  sortowanie „najnowsze”, duplikaty odpowiedzi w ankiecie. Jedyny mutant, który
+  przeżył (usunięcie `memberTitles.deleteByUserId` z `ClanCleanup.ofUser`),
+  jest równoważny — członkostwo i tak sprząta tytuły;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V12,
+  `ddl-auto=validate`; 129 sprawdzeń, w tym 390 i 320 px, jasny i ciemny
+  motyw): przeglądarka klanów (12 + „Pokaż więcej”, filtr gatunku z licznikami,
+  miasta, szukanie z opóźnieniem, wszystkie sortowania, „tylko takie, do
+  których mogę dołączyć”, pusty stan, filtry w adresie i powrót „wstecz”,
+  klan z bardzo długimi tekstami), strona obcej osoby (tylko „O klanie”
+  i „Członkowie”, gust zbiorczy, API czatu, ankiet, rankingu i gustu klanu
+  ukrytego = 409), prośba → powiadomienie → przyjęcie / odmowa (bez
+  powiadomienia, „Moje prośby”), zakładanie klanu z ikoną i **podglądem
+  plakietki** (blob, potem adres z serwera), gatunki (Enter nie wysyła
+  formularza, limit trzech), tytuły (szablony, wzięcie samemu, nadanie przez
+  zarząd, automatyczny po pierwszej wiadomości bez krzyżyka, usunięcie),
+  ankiety (głos, zmiana, cofnięcie, zamknięcie, usunięcie), ranking
+  (poziom 1 po 31 wiadomościach, cel tygodnia), ustawienia wizytówki
+  (ukrycie klanu usuwa go z przeglądarki, klan „tylko zaproszenia” odrzuca
+  prośby); brak przelewu strony mierzony w oknie o sztywnej szerokości.
+  Oglądanie zrzutów wyłapało jedno, czego liczby nie pokazały: przyciski
+  w wierszu członka ściskały nazwę do jednej litery przy 390 px — teraz
+  przechodzą pod nazwę.
+
 Przy pobieraniu własnych danych (wrzesień 2026):
 
 - test przez całe API: bez hasła, z pustym i błędnym → 422, bez tokenu CSRF

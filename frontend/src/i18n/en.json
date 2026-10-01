@@ -18,7 +18,8 @@
     "reports": "Reports",
     "myReports": "My reports",
     "events": "Events",
-    "clan": "My clan"
+    "clan": "My clan",
+    "clans": "Browse clans"
   },
   "common": {
     "loading": "Loading…",
@@ -394,7 +395,9 @@
     "reminderDays_one": "In {{count}} day: {{name}}",
     "reminderDays_other": "In {{count}} days: {{name}}",
     "clanInvite": "{{username}} invites you to the clan {{name}}",
-    "clanKicked": "You are no longer in the clan {{name}}"
+    "clanKicked": "You are no longer in the clan {{name}}",
+    "clanJoinRequest": "{{username}} asks to join the clan {{name}}",
+    "clanRequestAccepted": "Your request was accepted — you are now in the clan {{name}}"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -752,7 +755,7 @@
     "restrictedText": "Only {{username}}'s friends can see their profile details.",
     "clanInvitesFrom": "Who can invite me to a clan",
     "friendsOnlyInvite": "Friends only",
-    "clanInvitesHint": "You join a clan only by invitation. You can accept or decline; whoever got a refusal can't invite you again for a week."
+    "clanInvitesHint": "You join a clan by invitation or by a request the clan accepts — this setting is about invitations. You can accept or decline; whoever got a refusal can't invite you again for a week."
   },
   "push": {
     "title": "Notifications",
@@ -786,7 +789,7 @@
     "leaveConfirm": "Leave the clan {{name}}? You can only come back with a new invitation. Your posts and messages stay in the clan.",
     "adminDisband": "Disband clan (admin)",
     "adminBanner": "You are viewing this clan as an app administrator. This is done only after a report or when a violation of the rules or the law is suspected; every visit is written to the log.",
-    "inviteOnly": "You can only join a clan with an invitation from one of its members. Only members see the chat and posts.",
+    "inviteOnly": "You can join this clan only by invitation from one of its members.",
     "moderationNotice": "The app administrator can view clan content — only after a report or when a violation of the rules or the law is suspected.",
     "inviteToClan": "Invite to clan {{name}}",
     "tabs": {
@@ -796,11 +799,15 @@
       "members": "Members",
       "settings": "Settings",
       "music": "Music",
-      "events": "Concerts"
+      "events": "Concerts",
+      "about": "About",
+      "polls": "Polls",
+      "ranking": "Ranking",
+      "titles": "Titles"
     },
     "none": {
       "title": "You're not in a clan",
-      "text": "You join a clan when one of its members invites you — the invitation will show up here and in the bell. You can also start your own."
+      "text": "You join a clan by invitation from a member, or by sending a request to a clan that accepts them (find one in the clan browser). You can also start your own."
     },
     "invitations": {
       "title": "Clan invitations",
@@ -811,12 +818,19 @@
     },
     "create": {
       "title": "Start a clan",
-      "hint": "A clan has its own chat and its own posts that nobody outside the clan can see. Its members choose the colour by voting. People join only by invitation.",
+      "hint": "A clan has its own chat and posts that nobody outside it can see. Its members pick the colour by voting. You join by invitation or — if the clan allows it — by a request the leaders accept.",
       "name": "Clan name",
       "tag": "Tag",
       "tagHint": "2–5 letters or digits, e.g. MC",
       "description": "Description (optional)",
-      "submit": "Start the clan"
+      "submit": "Start the clan",
+      "icon": "Clan icon (optional)",
+      "iconHint": "A small image next to the tag — shown next to every member's username. Square works best.",
+      "iconNotImage": "That isn't an image.",
+      "iconFailed": "The clan was created, but the icon couldn't be uploaded: {{reason}} You can add it in the clan settings.",
+      "preview": "This is how it will look next to a username:",
+      "previewUser": "your_username",
+      "more": "More: motto, city, genres, how people join"
     },
     "members": {
       "title": "Members",
@@ -980,6 +994,228 @@
       "askText": "Who’s going to “{{name}}” ({{date}})? Let us know — maybe we can meet up!",
       "askSent": "The question is in the clan posts.",
       "open": "Event page"
+    },
+    "requests": {
+      "title": "Requests to join",
+      "hint": "Accepting lets the person in right away. Declining sends no notification or reason — they only see that the request wasn't accepted, and can try again after a week.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "count_one": "{{count}} pending request",
+      "count_other": "{{count}} pending requests"
+    },
+    "myRequests": {
+      "title": "My requests to join",
+      "pending": "Waiting for the leaders' answer",
+      "declined": "Not accepted"
+    },
+    "join": {
+      "title": "Joining",
+      "invited": "You have an invitation to this clan.",
+      "pending": "Your request is waiting for the clan leaders to answer.",
+      "withdraw": "Withdraw request",
+      "declined": "The leaders didn't accept your request. You can try again a week after the refusal.",
+      "hint": "The clan leaders will see your request together with your username. You may add a few words about yourself — you don't have to.",
+      "message": "Message to the leaders (optional)",
+      "messagePlaceholder": "E.g. how we know each other, or what you listen to",
+      "send": "Ask to join",
+      "full": "This clan is full.",
+      "unavailable": "You can't ask to join this clan right now — for example because you're already in another clan."
+    },
+    "about": {
+      "title": "About the clan",
+      "members": "Members: {{count}}/{{max}}",
+      "hidden": "This clan doesn't show its taste to people outside it.",
+      "private": "Only members see the chat, posts, polls and ranking."
+    },
+    "activity": {
+      "hint": "Chat activity over the last 7 days — no message content",
+      "NONE": "Quiet",
+      "LOW": "Calm",
+      "MEDIUM": "Active",
+      "HIGH": "Very active"
+    },
+    "card": {
+      "title": "Profile card and joining",
+      "intro": "What the clan says about itself in the clan browser. The chat, posts and polls stay private.",
+      "motto": "Clan motto",
+      "mottoPlaceholder": "E.g. we play loud, we listen close",
+      "city": "City",
+      "cityPlaceholder": "E.g. Kraków (optional)",
+      "genres": "Clan genres",
+      "genresFull": "All genres added",
+      "genrePlaceholder": "E.g. rock",
+      "addGenre": "Add",
+      "removeGenre": "Remove genre {{genre}}",
+      "genresHint": "Up to three genres that describe the clan best. The browser shows them next to the genres its members have in common.",
+      "joinPolicy": "How people join",
+      "policy": {
+        "REQUESTS": "People can ask to join (the leaders decide)",
+        "INVITE_ONLY": "Invitation from a member only"
+      },
+      "policyShort": {
+        "REQUESTS": "Takes requests",
+        "INVITE_ONLY": "Invitations only"
+      },
+      "joinPolicyHint": "Invitations from members always work. Requests are accepted or declined by the clan leaders.",
+      "listed": "Show the clan in the clan browser",
+      "listedHint": "A hidden clan isn't on the list, and only members and invited people see its taste and activity."
+    },
+    "directory": {
+      "title": "Clan browser",
+      "intro": "Find a clan for you: search by name, filter by genre and city, sort by size, activity or match with your taste. You see only what the clan says about itself and aggregate taste — never the chat or posts.",
+      "myClan": "My clan",
+      "browse": "Browse clans",
+      "searchPlaceholder": "Search clans (name, tag, motto, city)",
+      "searchLabel": "Search clans",
+      "genreLabel": "Genre",
+      "allGenres": "Any genre",
+      "cityLabel": "City",
+      "cityPlaceholder": "City",
+      "sortLabel": "Sort",
+      "sort": {
+        "MATCH": "Best match for me",
+        "MEMBERS": "Most members",
+        "ACTIVE": "Most active",
+        "NEWEST": "Newest",
+        "OLDEST": "Oldest",
+        "NAME": "Name A–Z"
+      },
+      "joinable": "Only ones I can join",
+      "emptyTitle": "No clans in the browser yet",
+      "emptyText": "Start the first one — others will find it here.",
+      "emptyFilteredTitle": "No clan matches",
+      "emptyFilteredText": "Change the filters or clear the search.",
+      "clear": "Clear filters",
+      "createOwn": "Start a clan",
+      "loadMore": "Show more clans",
+      "invited": "You're invited",
+      "requested": "Request sent",
+      "full": "Full",
+      "since": "since {{date}}",
+      "declaredGenre": "Genre given by the clan",
+      "tasteGenre": "Genre shared by the clan's members",
+      "matchGenres": "Matches your taste: {{genres}}",
+      "matchArtists": "Members listen to artists you like too"
+    },
+    "titles": {
+      "title": "Titles in the clan",
+      "intro": "A title is a decoration next to a username inside the clan — it doesn't change permissions. The leaders can give it, leave it to be taken by anyone, or award it automatically for activity.",
+      "none": "The clan has no titles yet.",
+      "noneManager": "The clan has no titles yet. Add the first one below — you can start from a ready-made template.",
+      "holders_one": "{{count}} person",
+      "holders_other": "{{count}} people",
+      "mine": "you have it",
+      "giveBack": "Give back",
+      "claim": "Take it",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Delete the title “{{name}}”? It will disappear for everyone who has it.",
+      "newTitle": "New title",
+      "editTitle": "Edit title",
+      "presetsHint": "Ready-made templates fill in the form — you can still change them.",
+      "presets": {
+        "chatty": "Soul of the chat",
+        "regular": "Part of the furniture",
+        "explorer": "Nose for hits",
+        "voter": "Voice of the people",
+        "concertGoer": "Always front row",
+        "dj": "Clan DJ"
+      },
+      "create": "Custom title",
+      "name": "Title name",
+      "color": "Colour",
+      "how": "How it's obtained",
+      "howOption": {
+        "MANUAL": "Given by the leaders",
+        "SELF": "Any member can take it",
+        "AUTO": "Awarded automatically for activity"
+      },
+      "mode": {
+        "MANUAL": "Given by the leaders",
+        "SELF": "Anyone can take it"
+      },
+      "rule": {
+        "MESSAGES_one": "Automatic: {{count}}+ chat message",
+        "MESSAGES_other": "Automatic: {{count}}+ chat messages",
+        "POSTS_one": "Automatic: {{count}}+ post",
+        "POSTS_other": "Automatic: {{count}}+ posts",
+        "TRACKS_one": "Automatic: {{count}}+ suggested track",
+        "TRACKS_other": "Automatic: {{count}}+ suggested tracks",
+        "VOTES_one": "Automatic: {{count}}+ vote cast",
+        "VOTES_other": "Automatic: {{count}}+ votes cast",
+        "REACTIONS_one": "Automatic: {{count}}+ reaction",
+        "REACTIONS_other": "Automatic: {{count}}+ reactions",
+        "DAYS_one": "Automatic: {{count}}+ day in the clan",
+        "DAYS_other": "Automatic: {{count}}+ days in the clan"
+      },
+      "metric": "For what",
+      "metricName": {
+        "MESSAGES": "chat messages",
+        "POSTS": "posts",
+        "TRACKS": "suggested tracks",
+        "VOTES": "votes cast (tracks and polls)",
+        "REACTIONS": "reactions",
+        "DAYS": "days in the clan"
+      },
+      "threshold": "From how many",
+      "autoHint": "Everything since joining the clan counts. When you change the threshold, titles are recalculated on their own.",
+      "preview": "Preview",
+      "of": "Titles: {{username}}",
+      "takeAway": "Remove the title {{name}}",
+      "giveTo": "Give a title to {{username}}",
+      "give": "Give title…"
+    },
+    "polls": {
+      "none": "No polls yet. Start the first one — e.g. “Which concert are we going to?”.",
+      "closed": "Ended",
+      "by": "By {{username}}",
+      "endsAt": "ends {{when}}",
+      "ended": "ended",
+      "votes_one": "{{count}} vote",
+      "votes_other": "{{count}} votes",
+      "total_one": "{{count}} vote in total",
+      "total_other": "{{count}} votes in total",
+      "voteHint": "click your answer again to withdraw your vote",
+      "close": "End now",
+      "delete": "Delete poll",
+      "deleteConfirm": "Delete this poll together with its votes?",
+      "new": "New poll",
+      "question": "Question",
+      "questionPlaceholder": "E.g. which concert are we going to together?",
+      "options": "Answers (2 to 6)",
+      "optionN": "Answer {{n}}",
+      "removeOption": "Remove answer",
+      "addOption": "Add answer",
+      "duration": "Lasts",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "publish": "Publish poll"
+    },
+    "ranking": {
+      "goalTitle": "Weekly goal",
+      "points": "pts",
+      "goalDone": "goal reached, well done!",
+      "breakdown": "Of which: messages {{messages}}, posts {{posts}}, tracks {{tracks}}, votes {{votes}}, reactions {{reactions}}.",
+      "title": "Activity ranking",
+      "period": "Period",
+      "periods": {
+        "WEEK": "Last 7 days",
+        "ALL": "All time"
+      },
+      "empty": "Nobody has done anything in this period yet — write the first message!",
+      "place": "Place {{n}}",
+      "level": "Level {{n}}",
+      "levels": {
+        "0": "Soundcheck",
+        "1": "Warm-up",
+        "2": "On stage",
+        "3": "Headliner",
+        "4": "Clan legend"
+      },
+      "toNext": "to the next level: {{count}} pts",
+      "pointsShort": "pts",
+      "howTitle": "How are points counted?",
+      "how": "A chat message is 1 point, a post 4, a suggested track 3, a vote (for the track of the week or in a poll) 1, a reaction under a message 1. The level depends on all-time points, so it never drops. The weekly goal is a shared score of the whole clan over the last 7 days."
     }
   },
   "legal": {

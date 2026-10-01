@@ -55,6 +55,14 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     long unread(@Param("clanId") Long clanId, @Param("readId") long readId, @Param("userId") Long userId,
                 @Param("hidden") Collection<Long> hidden);
 
+    /** Ile wiadomosci napisano w tym klanie od podanej chwili. */
+    @Query("SELECT COUNT(m) FROM ClanMessage m WHERE m.clan.id = :clanId AND m.createdAt >= :since")
+    long countSince(@Param("clanId") Long clanId, @Param("since") java.time.LocalDateTime since);
+
+    /** Ile wiadomosci napisano w kazdym klanie od podanej chwili - poziom aktywnosci w przegladarce klanow. */
+    @Query("SELECT m.clan.id AS clanId, COUNT(m) AS total FROM ClanMessage m WHERE m.createdAt >= :since GROUP BY m.clan.id")
+    List<ClanCountRow> countsSince(@Param("since") java.time.LocalDateTime since);
+
     @Modifying
     @Query("DELETE FROM ClanMessage m WHERE m.clan.id = :clanId")
     void deleteByClanId(@Param("clanId") Long clanId);

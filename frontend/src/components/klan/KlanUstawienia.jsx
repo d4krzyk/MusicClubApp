@@ -7,6 +7,7 @@ import Form from 'react-bootstrap/Form';
 import { describeError } from '../../api/client';
 import * as klany from '../../api/klany';
 import { IconClan } from '../Icons';
+import KlanWizytowka, { wizytowkaKlanu } from './KlanWizytowka';
 
 /**
  * Ustawienia klanu: ikona i zdjecie oraz opis (zarzad), nazwa i skrot (tylko zalozyciel),
@@ -18,6 +19,7 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
   const [opis, setOpis] = useState(klan.description ?? '');
   const [ogloszenie, setOgloszenie] = useState(klan.announcement ?? '');
   const [zasady, setZasady] = useState(klan.rules ?? '');
+  const [wizytowka, setWizytowka] = useState(() => wizytowkaKlanu(klan));
   const [nazwa, setNazwa] = useState(klan.name);
   const [skrot, setSkrot] = useState(klan.tag);
   const [zajety, setZajety] = useState(false);
@@ -51,6 +53,17 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
       dane.tag = skrot;
     }
     return wykonaj(() => klany.zmien(klan.id, dane), t('clans.settings.saved'));
+  }
+
+  function zapiszWizytowke(e) {
+    e.preventDefault();
+    return wykonaj(() => klany.zmien(klan.id, {
+      motto: wizytowka.motto,
+      city: wizytowka.city,
+      genres: wizytowka.genres,
+      joinPolicy: wizytowka.joinPolicy,
+      listed: wizytowka.listed,
+    }), t('clans.settings.saved'));
   }
 
   function wgraj(rodzaj, pole) {
@@ -149,6 +162,18 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
             <Form.Text id="klan-zasady-podp" className="d-block mb-3">{t('clans.settings.rulesHint')}</Form.Text>
 
             <Button type="submit" disabled={zajety}>{t('common.save')}</Button>
+          </Form>
+        </Card.Body>
+      </Card>
+
+      <Card>
+        <Card.Body>
+          <Card.Title as="h2" className="h6 text-uppercase text-body-secondary">{t('clans.card.title')}</Card.Title>
+          <p className="small text-body-secondary">{t('clans.card.intro')}</p>
+          <Form onSubmit={zapiszWizytowke} noValidate>
+            <KlanWizytowka wartosc={wizytowka} zablokowane={zajety}
+              onZmien={(zmiana) => setWizytowka((obecna) => ({ ...obecna, ...zmiana }))} />
+            <Button type="submit" className="mt-3" disabled={zajety}>{t('common.save')}</Button>
           </Form>
         </Card.Body>
       </Card>

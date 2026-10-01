@@ -28,5 +28,9 @@ public enum NotificationType {
     CLAN_INVITE,
 
     /** Zostalem wyrzucony z klanu. Bez sprawcy - klan nie mowi, kto to zrobil. */
-    CLAN_KICKED
+    CLAN_KICKED,
+    /** Ktos prosi o dolaczenie do mojego klanu - dla zarzadu klanu. Prowadzi na strone klanu. */
+    CLAN_JOIN_REQUEST,
+    /** Moja prosba o dolaczenie do klanu zostala przyjeta. Bez sprawcy. */
+    CLAN_REQUEST_ACCEPTED
 }

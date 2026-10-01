@@ -63,6 +63,11 @@ public class NotificationService {
                 "push.clanInvite.body", new Object[] {kto, n.getClan().getName()}, link, "clan-invite-" + n.getClan().getId());
             case CLAN_KICKED -> new PushService.Message("push.clanKicked.title", null,
                 "push.clanKicked.body", new Object[] {n.getClan().getName()}, link, "clan-kicked");
+            case CLAN_JOIN_REQUEST -> new PushService.Message("push.clanRequest.title", null,
+                "push.clanRequest.body", new Object[] {kto, n.getClan().getName()}, link,
+                "clan-request-" + n.getClan().getId());
+            case CLAN_REQUEST_ACCEPTED -> new PushService.Message("push.clanAccepted.title", null,
+                "push.clanAccepted.body", new Object[] {n.getClan().getName()}, link, "clan-accepted");
             case REACTION -> null;
         };
     }
@@ -158,6 +163,27 @@ public class NotificationService {
     @Transactional
     public void clanInviteGone(Long recipientId, Long clanId) {
         notificationRepository.deleteClanInvites(recipientId, clanId);
+    }
+
+    /** Ktos prosi o dolaczenie do klanu - powiadomienie dla kazdej osoby z zarzadu (w dzwonku i na telefonie). */
+    @Transactional
+    public void clanJoinRequested(List<User> managers, User requester, Clan clan) {
+        notificationRepository.deleteClanJoinRequests(requester.getId(), clan.getId());
+        for (User manager : managers) {
+            zapisz(Notification.clanJoinRequest(manager, requester, clan));
+        }
+    }
+
+    /** Prosba przestala czekac (przyjeta, odrzucona, cofnieta) - znika z dzwonka zarzadu. */
+    @Transactional
+    public void clanRequestGone(Long requesterId, Long clanId) {
+        notificationRepository.deleteClanJoinRequests(requesterId, clanId);
+    }
+
+    /** Prosba przyjeta - dla proszacego, bez wskazywania, kto ja przyjal. */
+    @Transactional
+    public void clanRequestAccepted(User requester, Clan clan) {
+        zapisz(Notification.clanRequestAccepted(requester, clan));
     }
 
     /** Wyrzucenie z klanu - jedno powiadomienie, bez podawania kto. */

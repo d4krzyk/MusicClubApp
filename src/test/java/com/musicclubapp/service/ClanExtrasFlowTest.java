@@ -592,7 +592,9 @@ class ClanExtrasFlowTest {
         assertThat(bezBoba.get("artists").size()).isZero();
         assertThat(bezBoba.get("genres").size()).isZero();
 
-        // Obcy nie widzi; administrator tak
+        // Gust to rekonesans: obcy widzi go dla klanu z przegladarki (domyslnie), ale nie dla ukrytego
+        get_("ce_dan", "/api/clans/" + klan + "/taste").andExpect(status().isOk());
+        wyslij("PUT", "ce_ala", "/api/clans/" + klan, Map.of("listed", false)).andExpect(status().isOk());
         get_("ce_dan", "/api/clans/" + klan + "/taste").andExpect(status().isConflict());
         get_("ce_szef", "/api/clans/" + klan + "/taste").andExpect(status().isOk());
     }

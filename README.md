@@ -251,7 +251,10 @@ z opisami: Swagger (adres niżej).
 | GET | `/api/clans/mine` | mój klan i zaproszenia do klanów |
 | POST | `/api/clans` | założenie klanu |
 | GET / PUT / DELETE | `/api/clans/{id}` | strona klanu / zmiana / rozwiązanie |
-| POST | `/api/clans/{id}/invitations` | zaproszenie do klanu (jedyna droga do niego) |
+| POST | `/api/clans/{id}/invitations` | zaproszenie do klanu |
+| GET | `/api/clans/directory` | przeglądarka klanów: `q`, `genre`, `city`, `joinable`, `sort` (MATCH, MEMBERS, ACTIVE, NEWEST, OLDEST, NAME), `page`, `size` |
+| POST / DELETE | `/api/clans/{id}/requests`, `/requests/mine` | prośba o dołączenie (klan musi przyjmować prośby) / jej cofnięcie |
+| POST | `/api/clans/{id}/requests/{requestId}/accept`, `/decline` | rozpatrzenie prośby — zarząd klanu |
 | POST | `/api/clans/invitations/{id}/accept`, `/decline` | przyjęcie / odmowa zaproszenia |
 | DELETE | `/api/clans/{id}/members/me`, `/members/{username}` | odejście / wyrzucenie |
 | PUT | `/api/clans/{id}/color` | mój głos na kolor klanu |
@@ -260,7 +263,14 @@ z opisami: Swagger (adres niżej).
 | GET | `/api/clans/mine/unread` | ile nieprzeczytanych wiadomości czeka w moim klanie |
 | PUT / DELETE | `/api/clans/{id}/chat/{messageId}/reaction` | reakcja emoji na wiadomość (jedna na osobę) |
 | GET | `/api/clans/{id}/chat/reactions?since=` | reakcje pod wiadomościami od podanej wzwyż |
-| GET | `/api/clans/{id}/taste` | gust klanu: wykonawcy i gatunki wspólne dla co najmniej dwóch osób |
+| GET | `/api/clans/{id}/taste` | gust klanu: wykonawcy i gatunki wspólne dla co najmniej dwóch osób (dla obcych — tylko klany z przeglądarki) |
+| GET | `/api/clans/{id}/activity?period=WEEK\|ALL` | ranking aktywności i cel tygodnia — tylko członkowie |
+| POST / PUT / DELETE | `/api/clans/{id}/titles[/{titleId}]` | tytuły klanu: dodanie, zmiana, usunięcie — zarząd |
+| PUT / DELETE | `/api/clans/{id}/members/{username}/titles/{titleId}` | nadanie / zdjęcie tytułu — zarząd |
+| PUT / DELETE | `/api/clans/{id}/titles/{titleId}/claim` | wzięcie / oddanie tytułu „do wzięcia samemu” |
+| GET / POST | `/api/clans/{id}/polls` | ankiety klanu |
+| PUT / DELETE | `/api/clans/{id}/polls/{pollId}/vote` | głos w ankiecie / jego cofnięcie |
+| POST / DELETE | `/api/clans/{id}/polls/{pollId}/close`, `…/polls/{pollId}` | zamknięcie / usunięcie ankiety — autor albo zarząd |
 | GET / POST | `/api/clans/{id}/tracks` | utwór tygodnia: propozycje i zwycięzcy / nowa propozycja |
 | PUT / DELETE | `/api/clans/{id}/tracks/{trackId}/vote`, `DELETE …/tracks/{trackId}` | głos na propozycję / jego cofnięcie, usunięcie propozycji |
 | GET | `/api/clans/{id}/events` | koncerty, na które zapisali się członkowie klanu |

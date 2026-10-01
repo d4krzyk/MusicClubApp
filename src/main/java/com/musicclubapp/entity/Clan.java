@@ -1,17 +1,23 @@
 package com.musicclubapp.entity;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,6 +45,10 @@ public class Clan {
     public static final int DESCRIPTION_MAX = 300;
     public static final int ANNOUNCEMENT_MAX = 500;
     public static final int RULES_MAX = 600;
+    public static final int MOTTO_MAX = 80;
+    public static final int CITY_MAX = 60;
+    public static final int GENRES_MAX = 3;
+    public static final int GENRE_MAX = 30;
 
     /** Tylu czlonkow najwyzej. */
     public static final int MAX_MEMBERS = 30;
@@ -83,6 +93,32 @@ public class Clan {
     /** Krotkie zasady klanu. Widza je czlonkowie i - przed przyjeciem - osoby zaproszone. */
     @Column(length = RULES_MAX)
     private String rules;
+
+    /** Haslo klanu - jedno zdanie na karcie w przegladarce klanow. */
+    @Column(length = MOTTO_MAX)
+    private String motto;
+
+    /** Miasto albo okolica - pomaga znalezc klan "u siebie". */
+    @Column(length = CITY_MAX)
+    private String city;
+
+    /** Czy klan przyjmuje prosby o dolaczenie, czy tylko zaproszenia od czlonkow. */
+    @Enumerated(EnumType.STRING)
+    @ColumnDefault("'INVITE_ONLY'")
+    @Column(name = "join_policy", nullable = false, length = 16)
+    private ClanJoinPolicy joinPolicy = ClanJoinPolicy.INVITE_ONLY;
+
+    /** Czy klan jest w przegladarce klanow. Strona klanu pod adresem dziala tak czy inaczej. */
+    @ColumnDefault("true")
+    @Column(nullable = false)
+    private boolean listed = true;
+
+    /** Gatunki, ktore klan sam o sobie podaje (najwyzej trzy) - do szukania w przegladarce. */
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "clan_genres", joinColumns = @JoinColumn(name = "clan_id"))
+    @OrderColumn(name = "position")
+    @Column(name = "genre", length = GENRE_MAX)
+    private List<String> genres = new ArrayList<>();
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -153,6 +189,47 @@ public class Clan {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getMotto() {
+        return motto;
+    }
+
+    public void setMotto(String motto) {
+        this.motto = motto;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public ClanJoinPolicy getJoinPolicy() {
+        return joinPolicy == null ? ClanJoinPolicy.INVITE_ONLY : joinPolicy;
+    }
+
+    public void setJoinPolicy(ClanJoinPolicy joinPolicy) {
+        this.joinPolicy = joinPolicy;
+    }
+
+    public boolean isListed() {
+        return listed;
+    }
+
+    public void setListed(boolean listed) {
+        this.listed = listed;
+    }
+
+    public List<String> getGenres() {
+        return genres;
+    }
+
+    public void setGenres(List<String> genres) {
+        this.genres.clear();
+        this.genres.addAll(genres);
     }
 
     public String getAnnouncement() {

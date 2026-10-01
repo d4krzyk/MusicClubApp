@@ -26,4 +26,17 @@ public interface ClanRepository extends JpaRepository<Clan, Long> {
     @Modifying
     @Query("DELETE FROM Clan c WHERE c.id = :id")
     void deleteRow(@Param("id") Long id);
+
+    /** Klany widoczne w przegladarce. */
+    @Query("SELECT c FROM Clan c WHERE c.listed = true")
+    java.util.List<Clan> listed();
+
+    /** Gatunki podane przez klany z przegladarki - jednym zapytaniem, zeby nie ladowac ich po jednym. */
+    @Query("SELECT c.id AS clanId, g AS genre FROM Clan c JOIN c.genres g WHERE c.listed = true")
+    java.util.List<ClanGenreRow> listedGenres();
+
+    /** Gatunki klanu - przed skasowaniem wiersza (kasowanie zapytaniem nie rusza tabeli kolekcji). */
+    @Modifying
+    @Query(value = "DELETE FROM clan_genres WHERE clan_id = :id", nativeQuery = true)
+    void deleteGenres(@Param("id") Long id);
 }

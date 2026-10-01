@@ -55,4 +55,43 @@ public interface ClanMemberRepository extends JpaRepository<ClanMember, Long> {
     @Modifying
     @Query("DELETE FROM ClanMember m WHERE m.clan.id = :clanId")
     void deleteByClanId(@Param("clanId") Long clanId);
+
+    /** Ilu czlonkow ma kazdy klan - do przegladarki klanow. */
+    @Query("SELECT m.clan.id AS clanId, COUNT(m) AS total FROM ClanMember m GROUP BY m.clan.id")
+    List<ClanCountRow> memberCounts();
+
+    /** Zalozyciele wszystkich klanow. */
+    @Query("SELECT m.clan.id AS clanId, m.user.id AS userId FROM ClanMember m WHERE m.role = com.musicclubapp.entity.ClanRole.FOUNDER")
+    List<ClanUserRow> founders();
+
+    /** Zalozyciel i administratorzy klanu - ci, ktorzy rozpatruja prosby o dolaczenie. */
+    @Query("""
+           SELECT m FROM ClanMember m JOIN FETCH m.user
+           WHERE m.clan.id = :clanId
+             AND m.role IN (com.musicclubapp.entity.ClanRole.FOUNDER, com.musicclubapp.entity.ClanRole.ADMIN)
+           """)
+    List<ClanMember> managersOf(@Param("clanId") Long clanId);
+
+    /**
+     * Gatunki ulubionych wykonawcow wspolne dla co najmniej dwoch osob z KAZDEGO klanu z przegladarki.
+     * Bez osob z ograniczonym profilem - tak samo jak gust na stronie klanu.
+     */
+    @Query("""
+           SELECT m.clan.id AS clanId, g AS name, COUNT(DISTINCT u.id) AS total
+           FROM ClanMember m JOIN m.user u JOIN u.favoriteArtists a JOIN a.genres g
+           WHERE m.clan.listed = true AND u.profileVisibility = com.musicclubapp.entity.ProfileVisibility.EVERYONE
+           GROUP BY m.clan.id, g
+           HAVING COUNT(DISTINCT u.id) >= 2
+           """)
+    List<ClanTasteRow> listedGenres();
+
+    /** To samo dla wykonawcow (identyfikator z katalogu) - do dopasowania klanu do gustu ogladajacego. */
+    @Query("""
+           SELECT m.clan.id AS clanId, a.externalId AS name, COUNT(DISTINCT u.id) AS total
+           FROM ClanMember m JOIN m.user u JOIN u.favoriteArtists a
+           WHERE m.clan.listed = true AND u.profileVisibility = com.musicclubapp.entity.ProfileVisibility.EVERYONE
+           GROUP BY m.clan.id, a.id, a.externalId
+           HAVING COUNT(DISTINCT u.id) >= 2
+           """)
+    List<ClanTasteRow> listedArtists();
 }

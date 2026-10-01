@@ -1,11 +1,15 @@
 package com.musicclubapp.service;
 
+import com.musicclubapp.dto.ClanActivityLevel;
 import com.musicclubapp.dto.ClanBadge;
 import com.musicclubapp.dto.ClanColorOption;
 import com.musicclubapp.dto.ClanInvitationResponse;
+import com.musicclubapp.dto.ClanJoinRequestResponse;
 import com.musicclubapp.dto.ClanMemberResponse;
+import com.musicclubapp.dto.ClanMyRequest;
 import com.musicclubapp.dto.ClanPendingInvite;
 import com.musicclubapp.dto.ClanResponse;
+import com.musicclubapp.dto.ClanTitleBadge;
 import com.musicclubapp.dto.CreateClanRequest;
 import com.musicclubapp.dto.MyClanResponse;
 import com.musicclubapp.dto.UpdateClanRequest;
@@ -13,6 +17,8 @@ import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.ClanColor;
 import com.musicclubapp.entity.ClanInvitation;
 import com.musicclubapp.entity.ClanInvitePolicy;
+import com.musicclubapp.entity.ClanJoinPolicy;
+import com.musicclubapp.entity.ClanJoinRequest;
 import com.musicclubapp.entity.ClanMember;
 import com.musicclubapp.entity.ClanRole;
 import com.musicclubapp.entity.InvitationStatus;
@@ -24,12 +30,10 @@ import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.ClanMapper;
 import com.musicclubapp.repository.ClanInvitationRepository;
+import com.musicclubapp.repository.ClanJoinRequestRepository;
 import com.musicclubapp.repository.ClanMemberRepository;
-import com.musicclubapp.repository.ClanMessageReactionRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
 import com.musicclubapp.repository.ClanRepository;
-import com.musicclubapp.repository.ClanTrackRepository;
-import com.musicclubapp.repository.ClanTrackVoteRepository;
 import com.musicclubapp.repository.PostRepository;
 import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
@@ -74,11 +78,16 @@ public class ClanService {
     /** Po odmowie te same osoby nie zapraszaja jeszcze raz przez ten czas. */
     static final Duration ZAPROSZENIE_PO_ODMOWIE = Duration.ofDays(7);
 
+    /** Po odmowie prosby o dolaczenie kolejna dopiero po tym czasie. */
+    static final Duration PROSBA_PO_ODMOWIE = Duration.ofDays(7);
+
     /** Tyle zaproszen najwyzej czeka na odpowiedz naraz - klan nie zasypie ludzi zaproszeniami. */
     static final int MAX_OCZEKUJACYCH = 50;
 
     /** Litery, cyfry, spacja i kilka znakow interpunkcyjnych; bez znakow sterujacych i ozdobnikow. */
     private static final Pattern NAZWA = Pattern.compile("[\\p{L}\\p{N}][\\p{L}\\p{N} ._'-]*");
+    private static final Pattern MIASTO = Pattern.compile("[\\p{L}\\p{N}][\\p{L}\\p{N} .,'-]*");
+    private static final Pattern GATUNEK = Pattern.compile("[\\p{L}\\p{N}][\\p{L}\\p{N} &+'/.-]*");
     private static final Pattern SKROT = Pattern.compile("[A-Z0-9]{" + Clan.TAG_MIN + "," + Clan.TAG_MAX + "}");
 
     /** Slowa, ktorymi nazwa klanu nie moze udawac aplikacji ani jej obslugi. */
@@ -96,9 +105,9 @@ public class ClanService {
     private final NotificationService notifications;
     private final ReportService reports;
     private final ReactionRepository reactions;
-    private final ClanMessageReactionRepository chatReactions;
-    private final ClanTrackRepository tracks;
-    private final ClanTrackVoteRepository trackVotes;
+    private final ClanCleanup cleanup;
+    private final ClanJoinRequestRepository requests;
+    private final ClanTitleEngine titleEngine;
     private final FileStorageService fileStorage;
     private final Clock clock;
 
@@ -112,15 +121,15 @@ public class ClanService {
                        NotificationService notifications,
                        ReportService reports,
                        ReactionRepository reactions,
-                       ClanMessageReactionRepository chatReactions,
-                       ClanTrackRepository tracks,
-                       ClanTrackVoteRepository trackVotes,
+                       ClanCleanup cleanup,
+                       ClanJoinRequestRepository requests,
+                       ClanTitleEngine titleEngine,
                        FileStorageService fileStorage,
                        Clock clock) {
         this.reactions = reactions;
-        this.chatReactions = chatReactions;
-        this.tracks = tracks;
-        this.trackVotes = trackVotes;
+        this.cleanup = cleanup;
+        this.requests = requests;
+        this.titleEngine = titleEngine;
         this.clans = clans;
         this.members = members;
         this.invitations = invitations;
@@ -145,6 +154,10 @@ public class ClanService {
         ClanResponse clan = members.findByUserId(user.getId())
             .map(m -> response(m.getClan(), user))
             .orElse(null);
+        List<ClanMyRequest> prosby = clan != null ? List.of()
+            : requests.ofUser(user.getId()).stream()
+                .map(r -> new ClanMyRequest(r.getId(), ClanMapper.badge(r.getClan()), r.getStatus(), r.getCreatedAt()))
+                .toList();
         List<ClanInvitationResponse> zaproszenia = clan != null ? List.of()
             : invitations.pendingFor(user.getId()).stream()
                 .filter(i -> !blocks.eitherWay(user.getId(), i.getInviter().getId()))
@@ -152,7 +165,7 @@ public class ClanService {
                     i.getInviter().getUsername(), (int) members.countByClanId(i.getClan().getId()), i.getCreatedAt(),
                     i.getClan().getRules()))
                 .toList();
-        return new MyClanResponse(clan, zaproszenia);
+        return new MyClanResponse(clan, zaproszenia, prosby);
     }
 
     /** Strona klanu - dane jawne dla kazdego zalogowanego; zawartosc tylko dla czlonkow i administratora. */
@@ -238,10 +251,16 @@ public class ClanService {
             throw OperationNotAllowedException.clanTagTaken();
         }
 
-        Clan clan = clans.save(new Clan(name, key, tag, blankToNull(request.description())));
+        Clan clan = new Clan(name, key, tag, blankToNull(request.description()));
+        clan.setMotto(checkMotto(request.motto()));
+        clan.setCity(checkCity(request.city()));
+        clan.setGenres(checkGenres(request.genres()));
+        clan.setJoinPolicy(request.joinPolicy() == null ? ClanJoinPolicy.INVITE_ONLY : request.joinPolicy());
+        clan.setListed(request.listed() == null || request.listed());
+        clan = clans.save(clan);
         attach(clan, members.save(newMember(clan, founder, ClanRole.FOUNDER)));
-        // Zalozyciel od razu jest w klanie - inne oczekujace zaproszenia nie maja juz sensu
-        invitations.deleteByInviteeId(founder.getId());
+        // Zalozyciel od razu jest w klanie - inne oczekujace zaproszenia i prosby nie maja juz sensu
+        dropApplications(founder);
         return response(clan, founder);
     }
 
@@ -281,6 +300,22 @@ public class ClanService {
         }
         if (request.rules() != null) {
             clan.setRules(blankToNull(request.rules()));
+        }
+        // Wizytowka klanu w przegladarce - haslo, miasto, gatunki, nabor, widocznosc (null = bez zmiany)
+        if (request.motto() != null) {
+            clan.setMotto(checkMotto(request.motto()));
+        }
+        if (request.city() != null) {
+            clan.setCity(checkCity(request.city()));
+        }
+        if (request.genres() != null) {
+            clan.setGenres(checkGenres(request.genres()));
+        }
+        if (request.joinPolicy() != null) {
+            clan.setJoinPolicy(request.joinPolicy());
+        }
+        if (request.listed() != null) {
+            clan.setListed(request.listed());
         }
         return response(clan, user);
     }
@@ -386,6 +421,27 @@ public class ClanService {
         return response(clan, inviter);
     }
 
+    /**
+     * Wspolna droga do klanu - zaproszenie albo prosba przyjeta przez zarzad: dopisuje czlonka
+     * i porzadkuje wszystko inne, co ta osoba miala w toku.
+     */
+    void enroll(Clan clan, User user) {
+        attach(clan, members.save(newMember(clan, user, ClanRole.MEMBER)));
+        dropApplications(user);
+    }
+
+    /** Jestem w klanie - reszta zaproszen (takze odrzucone) i prosb o dolaczenie przestaje miec sens. */
+    private void dropApplications(User user) {
+        for (ClanInvitation inne : invitations.pendingFor(user.getId())) {
+            notifications.clanInviteGone(user.getId(), inne.getClan().getId());
+        }
+        invitations.deleteByInviteeId(user.getId());
+        for (ClanJoinRequest r : requests.ofUser(user.getId())) {
+            notifications.clanRequestGone(user.getId(), r.getClan().getId());
+        }
+        requests.deleteByUserId(user.getId());
+    }
+
     /** Nowy czlonek zaczyna od ostatniej wiadomosci na czacie - historia sprzed jego wejscia nie jest "nowa". */
     private ClanMember newMember(Clan clan, User user, ClanRole role) {
         ClanMember m = new ClanMember(clan, user, role, now());
@@ -431,12 +487,7 @@ public class ClanService {
         if (members.countByClanId(clan.getId()) >= Clan.MAX_MEMBERS) {
             throw OperationNotAllowedException.clanFull(Clan.MAX_MEMBERS);
         }
-        attach(clan, members.save(newMember(clan, user, ClanRole.MEMBER)));
-        // Jestem w klanie - reszta zaproszen (takze odrzucone) przestaje miec sens
-        for (ClanInvitation inne : invitations.pendingFor(user.getId())) {
-            notifications.clanInviteGone(user.getId(), inne.getClan().getId());
-        }
-        invitations.deleteByInviteeId(user.getId());
+        enroll(clan, user);
         return mine(username);
     }
 
@@ -614,14 +665,10 @@ public class ClanService {
     public void deleteAllOf(User user) {
         Long id = user.getId();
         invitations.deleteAllOfUser(id);
-        // Reakcje i glosy: dane przez te osobe i pod jej wiadomosciami/propozycjami (odpowiedzi na jej
-        // wiadomosci zostaja bez cytatu - odnosnik czysci baza)
-        chatReactions.deleteByUserId(id);
-        chatReactions.deleteUnderMessagesOf(id);
+        // Reakcje, glosy, propozycje, ankiety, tytuly i prosby tej osoby (oraz to, co jest pod jej wiadomosciami,
+        // propozycjami i ankietami); odpowiedzi na jej wiadomosci zostaja bez cytatu - odnosnik czysci baza
+        cleanup.ofUser(id);
         messages.deleteBySenderId(id);
-        trackVotes.deleteByUserId(id);
-        trackVotes.deleteUnderTracksOf(id);
-        tracks.deleteByProposerId(id);
         members.findByUserId(id).ifPresent(m -> {
             Clan clan = m.getClan();
             if (members.countByClanId(clan.getId()) <= 1) {
@@ -650,6 +697,8 @@ public class ClanService {
     }
 
     private void remove(Clan clan, ClanMember m) {
+        // Tytuly z tego klanu zostaja przy kims, kto juz w nim nie jest - nie ma jak ich zostawic
+        cleanup.ofMembership(m.getUser().getId(), clan.getId());
         clan.getMembers().removeIf(x -> x.getId().equals(m.getId()));
         members.delete(m);
         members.flush();
@@ -678,10 +727,8 @@ public class ClanService {
         posts.deleteAll(postyKlanu);
         posts.flush();
 
-        chatReactions.deleteByClanId(id);
+        cleanup.ofClan(id);
         messages.deleteByClanId(id);
-        trackVotes.deleteByClanId(id);
-        tracks.deleteByClanId(id);
         invitations.deleteByClanId(id);
         members.deleteByClanId(id);
         clans.deleteRow(id);
@@ -705,11 +752,14 @@ public class ClanService {
 
         // Osoby z blokad ogladajacego (w obie strony) nie pojawiaja sie na liscie; administrator widzi wszystkich
         Set<Long> ukryci = admin ? Set.of() : blocks.hiddenFor(viewer.getId());
+        // Tytuly (nadane, wziete i z aktywnosci) widza tylko ci, ktorzy maja wglad w zawartosc klanu
+        Map<Long, List<ClanTitleBadge>> tytuly = wglad ? titleEngine.badges(clan.getId(), czlonkowie) : Map.of();
         List<ClanMemberResponse> lista = czlonkowie.stream()
             .filter(m -> !ukryci.contains(m.getUser().getId()))
             .map(m -> new ClanMemberResponse(
                 m.getUser().getUsername(), ClanMapper.avatarUrl(m.getUser()), m.getRole(), m.getJoinedAt(),
-                m.getUser().getId().equals(viewer.getId()), m.getColorVote()))
+                m.getUser().getId().equals(viewer.getId()), m.getColorVote(),
+                tytuly.getOrDefault(m.getUser().getId(), List.of())))
             .toList();
 
         Map<ClanColor, Long> glosy = new EnumMap<>(ClanColor.class);
@@ -738,6 +788,37 @@ public class ClanService {
         long nieprzeczytane = mojeCzlonkostwo == null ? 0
             : messages.unread(clan.getId(), przeczytane, viewer.getId(), blocks.hiddenForQuery(viewer.getId()));
 
+        // Nabor: moja prosba, zaproszenie i to, czy moge teraz poprosic o dolaczenie
+        Optional<ClanJoinRequest> mojaProsba = requests.findByClanIdAndUserId(clan.getId(), viewer.getId());
+        LocalDateTime teraz = now();
+        InvitationStatus statusProsby = mojaProsba
+            .filter(r -> r.getStatus() == InvitationStatus.PENDING
+                || (r.getAnsweredAt() != null && r.getAnsweredAt().plus(PROSBA_PO_ODMOWIE).isAfter(teraz)))
+            .map(ClanJoinRequest::getStatus).orElse(null);
+        Long numerZaproszenia = invitations.findByClanIdAndInviteeId(clan.getId(), viewer.getId())
+            .filter(i -> i.getStatus() == InvitationStatus.PENDING).map(ClanInvitation::getId).orElse(null);
+        boolean maKlan = moja != null || members.findByUserId(viewer.getId()).isPresent();
+        Long zalozycielId = czlonkowie.stream().filter(m -> m.getRole() == ClanRole.FOUNDER)
+            .map(m -> m.getUser().getId()).findFirst().orElse(null);
+        boolean mozeProsic = !admin && !maKlan && clan.getJoinPolicy() == ClanJoinPolicy.REQUESTS
+            && czlonkowie.size() < Clan.MAX_MEMBERS && statusProsby == null && numerZaproszenia == null
+            && (zalozycielId == null || !blocks.eitherWay(viewer.getId(), zalozycielId));
+
+        List<ClanJoinRequestResponse> prosby = !zarzadza ? List.of()
+            : requests.pendingOf(clan.getId()).stream()
+                .filter(r -> !ukryci.contains(r.getUser().getId()))
+                .map(r -> new ClanJoinRequestResponse(r.getId(), r.getUser().getUsername(),
+                    ClanMapper.avatarUrl(r.getUser()), r.getMessage(), r.getCreatedAt()))
+                .toList();
+
+        // Definicje tytulow - dla czlonkow i administratora aplikacji
+        List<com.musicclubapp.dto.ClanTitleResponse> definicje = wglad
+            ? titleEngine.definitions(clan.getId(), viewer, moja != null, tytuly) : List.of();
+
+        // Poziom aktywnosci czatu to rekonesans - dla klanow z przegladarki widzi go kazdy, dla reszty tylko "swoi"
+        ClanActivityLevel poziom = wglad || clan.isListed() || numerZaproszenia != null
+            ? ClanActivityLevel.of(messages.countSince(clan.getId(), teraz.minusDays(7))) : null;
+
         return new ClanResponse(clan.getId(), clan.getName(), clan.getTag(), clan.getDescription(),
             clan.getColor().name(), clan.getColor().hex(),
             ClanMapper.uploadUrl(clan.getIconFileName()), ClanMapper.uploadUrl(clan.getPhotoFileName()),
@@ -745,7 +826,26 @@ public class ClanService {
             lista, paleta, mojGlos, zaproszenia,
             wglad ? clan.getAnnouncement() : null, wglad ? clan.getAnnouncementAt() : null,
             wglad ? clan.getRules() : null,
-            nieprzeczytane, przeczytane, mojeCzlonkostwo != null && mojeCzlonkostwo.isChatMuted());
+            nieprzeczytane, przeczytane, mojeCzlonkostwo != null && mojeCzlonkostwo.isChatMuted(),
+            clan.getMotto(), clan.getCity(), List.copyOf(clan.getGenres()), clan.getJoinPolicy(), clan.isListed(),
+            statusProsby, mozeProsic, numerZaproszenia, prosby, definicje, poziom);
+    }
+
+    /**
+     * Klan, o ktorym ta osoba moze zobaczyc dane zbiorcze ("rekonesans": gust, aktywnosc) bez bycia
+     * w nim: czlonek, administrator aplikacji, ktokolwiek - jesli klan jest w przegladarce, albo
+     * zaproszony. Klan ukryty nie zdradza swoich gustow przypadkowym osobom.
+     */
+    @Transactional(readOnly = true)
+    public Clan requireRecon(User viewer, Long clanId) {
+        Clan clan = clan(clanId);
+        boolean swoj = viewer.getRole() == Role.ADMIN || clan.hasMember(viewer.getId());
+        boolean zaproszony = invitations.findByClanIdAndInviteeId(clanId, viewer.getId())
+            .filter(i -> i.getStatus() == InvitationStatus.PENDING).isPresent();
+        if (!swoj && !clan.isListed() && !zaproszony) {
+            throw OperationNotAllowedException.clanNotMember();
+        }
+        return clan;
     }
 
     /* ------------------------------------------------------------------ */
@@ -777,6 +877,48 @@ public class ClanService {
         return tag;
     }
 
+    /** Haslo: jedna linia, bez znakow sterujacych; puste = brak. */
+    private static String checkMotto(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String motto = raw.replaceAll("\\p{Cntrl}", " ").strip().replaceAll("\\s+", " ");
+        return motto.isEmpty() ? null : motto;
+    }
+
+    private static String checkCity(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String city = raw.strip().replaceAll("\\s+", " ");
+        if (city.length() > Clan.CITY_MAX || !MIASTO.matcher(city).matches()) {
+            throw OperationNotAllowedException.clanCityInvalid();
+        }
+        return city;
+    }
+
+    /** Gatunki malymi literami, bez powtorzen, najwyzej trzy. */
+    private static List<String> checkGenres(List<String> raw) {
+        if (raw == null) {
+            return List.of();
+        }
+        java.util.LinkedHashSet<String> wynik = new java.util.LinkedHashSet<>();
+        for (String g : raw) {
+            if (g == null || g.isBlank()) {
+                continue;
+            }
+            String gatunek = g.strip().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+            if (gatunek.length() < 2 || gatunek.length() > Clan.GENRE_MAX || !GATUNEK.matcher(gatunek).matches()) {
+                throw OperationNotAllowedException.clanGenreInvalid();
+            }
+            wynik.add(gatunek);
+        }
+        if (wynik.size() > Clan.GENRES_MAX) {
+            throw OperationNotAllowedException.clanGenreInvalid();
+        }
+        return List.copyOf(wynik);
+    }
+
     private static String blankToNull(String text) {
         return text == null || text.isBlank() ? null : text.strip();
     }
@@ -789,12 +931,12 @@ public class ClanService {
         return LocalDateTime.now(clock);
     }
 
-    private User user(String username) {
+    User user(String username) {
         return users.findByUsername(username)
             .orElseThrow(() -> new NoSuchElementFoundException("user", username));
     }
 
-    private Clan clan(Long id) {
+    Clan clan(Long id) {
         return clans.findById(id).orElseThrow(() -> new NoSuchElementFoundException("clan", id));
     }
 }

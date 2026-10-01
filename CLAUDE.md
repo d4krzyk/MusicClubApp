@@ -15,7 +15,8 @@ postawionym na serwerze, tak żeby każdy mógł ją pobrać i się połączyć.
 Zrobione: responsywność na telefonie, PWA, logo i napis MusicClub, krój Poppins,
 konfiguracja produkcyjna z HTTPS i migracjami (`docs/WDROZENIE.md`),
 zakładka Wydarzenia — etapy 1–2 i wybór kraju (niżej), potwierdzanie adresu
-e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów.
+e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów, klany
+z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -262,8 +263,10 @@ samo na produkcji).
 ## Klany (V9)
 
 - Jedna osoba = najwyżej jeden klan (`clan_members.user_id` unikalny). Do klanu
-  wchodzi się **wyłącznie** przez zaproszenie od członka (`clan_invitations`);
-  przyjęcie kasuje wszystkie inne zaproszenia tej osoby. Odmowa zostaje jako
+  wchodzi się **wyłącznie za zgodą klanu**: z zaproszenia od członka
+  (`clan_invitations`) albo — od V12, jeśli klan to włączył — przez prośbę
+  o dołączenie, którą rozpatruje zarząd (niżej, „Społeczność klanów”);
+  przyjęcie kasuje wszystkie inne zaproszenia i prośby tej osoby. Odmowa zostaje jako
   `DECLINED` — przez 7 dni nie da się zaprosić ponownie, a odpowiedź dla
   zapraszającego jest ta sama co przy blokadzie i „nikt” (nie zdradza powodu).
   Ustawienie `users.clan_invites_from`: wszyscy / tylko znajomi / nikt; blokada
@@ -372,6 +375,86 @@ samo na produkcji).
 - Odpowiedź serwera po `charset`: `MockHttpServletResponse` bez charsetu czyta
   JSON jako ISO-8859-1 — test z polskimi znakami albo „…” musi wołać
   `getContentAsString(UTF_8)` (cytat z wielokropkiem „miał” 122 znaki zamiast 120).
+
+## Społeczność klanów (V12)
+
+Przeglądarka klanów, prośby o dołączenie, wizytówka, tytuły, ankiety, ranking.
+Reguła stała: **czat, posty, ankiety, ranking, tytuły, utwór tygodnia i koncerty
+klanu widzą tylko członkowie i administrator aplikacji** (obcy: 409 albo 404).
+Obcy dostaje wyłącznie „rekonesans” — dane, po których poznaje, co to za klan.
+
+- **Prośby o dołączenie** (`clan_join_requests`, `ClanRequestService`):
+  `clans.join_policy` = `REQUESTS` albo `INVITE_ONLY` (domyślnie; istniejące
+  klany zostają `INVITE_ONLY`). Wiadomość do zarządu ≤ 200 znaków, najwyżej
+  5 oczekujących próśb na osobę, jedna na klan. Przyjmuje i odrzuca zarząd
+  (`POST …/requests/{id}/accept|decline`); odmowa nie wysyła powiadomienia
+  i nie ma powodu, ale zostaje jako `DECLINED` na 7 dni
+  (`ClanService.PROSBA_PO_ODMOWIE`) — wtedy `canRequest=false`. Wejście do klanu
+  (założenie, przyjęcie zaproszenia, przyjęcie prośby) kasuje wszystkie inne
+  prośby i zaproszenia tej osoby (`ClanService.dropApplications`). Blokada
+  w obie strony z założycielem daje tę samą odpowiedź co klan bez próśb.
+  Powiadomienia i push: `CLAN_JOIN_REQUEST` (do zarządu), `CLAN_REQUEST_ACCEPTED`.
+  Oczekujące prośby wygasają po 30 dniach, odrzucone po 7 (`ClanRequestCleanup`).
+- **Przeglądarka** (`GET /api/clans/directory`, `ClanDirectoryService`):
+  szukanie (nazwa, skrót, hasło, miasto), filtr gatunku (fasety z liczbą klanów)
+  i miasta, „tylko do których mogę dołączyć”, sortowanie MATCH / MEMBERS /
+  ACTIVE / NEWEST / OLDEST / NAME. Liczy się w pamięci (kilka zapytań
+  grupujących na całość, nie zapytanie na klan). Strona 12, najwyżej 50.
+  Klan z `listed=false` nie ma go na liście; klany blokującego/zablokowanego
+  założyciela też znikają. **Istniejące klany dostały `listed=false`** (V12) —
+  nikt się nie zgodził na przeglądarkę; nowe mają domyślnie `true`.
+  Filtry siedzą w adresie (`?q=&genre=&city=&joinable=1&sort=`).
+- **Rekonesans dla obcych**: `activityLevel` (cisza / spokojny / aktywny / bardzo
+  aktywny z liczby wiadomości z 7 dni — progi 1 / 20 / 100, nigdy treść ani
+  liczba) i gust zbiorczy (`GET …/taste`) — tylko dla klanu z przeglądarki,
+  członka, administratora albo zaproszonego (`ClanService.requireRecon`).
+  Gust nadal wlicza tylko profile `EVERYONE` i wymaga ≥ 2 osób. Dopasowanie do
+  *twojego* gustu (`match`, `sharedGenres`) widzi tylko oglądający.
+- **Wizytówka**: `motto` (80), `city` (60), do 3 gatunków (`clan_genres`,
+  `@ElementCollection` z `@OrderColumn`, małe litery), `joinPolicy`, `listed`;
+  ustawia zarząd (`PUT /api/clans/{id}`, `null` = bez zmiany) albo założyciel
+  przy zakładaniu. Ikona przy zakładaniu: formularz pokazuje podgląd plakietki
+  (`ClanBadge`) z lokalnego pliku, a wgrywa ją po założeniu klanu — gdy się nie
+  uda, klan i tak powstaje, a strona mówi, że ikonę można dodać w ustawieniach.
+- **Tytuły** (`clan_titles`, `clan_member_titles`, `ClanTitleService`,
+  `ClanTitleEngine`): tytuł to ozdoba, **nie zmienia uprawnień**. Definiuje je
+  zarząd (≤ 12 na klan, nazwa 2–24 znaki, kolor z palety klanu). Tryby:
+  `MANUAL` (nadaje zarząd), `SELF` (każdy członek bierze sam, najwyżej 2),
+  `AUTO` (z progu: wiadomości, posty, propozycje utworów, głosy, reakcje albo
+  dni w klanie; liczone z całości, **bez wierszy w `clan_member_titles`** —
+  przeliczają się przy każdym wejściu na stronę klanu). Jedna osoba najwyżej
+  5 nadanych i wziętych. Zmiana trybu na `AUTO` zdejmuje nadane i wzięte.
+  Tytuły widzą tylko członkowie i administrator aplikacji.
+- **Ankiety** (`clan_polls`, `_options`, `_votes`, `ClanPollService`): pytanie
+  ≤ 150, 2–6 odpowiedzi ≤ 80 bez duplikatów, 1/3/7/14 dni, jeden głos na osobę
+  (do zmiany, póki otwarta), najwyżej 2 otwarte na osobę i 5 na klan. Wyniki na
+  bieżąco, bez wskazywania kto na co. Zamyka i kasuje autor albo zarząd.
+- **Ranking** (`ClanActivityCounter`, `ClanActivityService`): punkty — wiadomość 1,
+  post 4, propozycja utworu 3, głos (utwór albo ankieta) 1, reakcja 1. „Tydzień”
+  to ostatnie 7 dni, nie kalendarzowy. **Poziom** (0–4: 0 / 30 / 100 / 300 / 800
+  pkt) liczy się z całego czasu, więc nie spada. Cel tygodnia klanu:
+  max(40, 20 × liczba członków) — wspólny wynik, nie wyścig. Osoby z blokad
+  oglądającego pomijane (administrator widzi wszystkich).
+- **Sprzątanie**: `ClanCleanup` (bez zależności od `ClanService`, żeby nie
+  robić cyklu) kasuje ankiety, głosy, tytuły, prośby i gatunki przy
+  rozwiązaniu klanu (`ofClan`) i usunięciu konta (`ofUser`); przy odejściu
+  (`ofMembership`) znikają tylko tytuły tej osoby — jej ankiety i głosy
+  zostają w klanie, tak jak posty i wiadomości. Gatunki to osobna tabela — przed `ClanRepository.deleteRow`
+  kasuje je natywne zapytanie (`deleteGenres`). `memberTitles.deleteByUserId`
+  w `ofUser` jest „paskiem i szelkami” (członkostwo i tak sprząta tytuły) —
+  mutant, który go wyłącza, przeżywa i jest równoważny.
+- **Eksport i polityka**: `DataExportService` ma prośby, ankiety, głosy
+  i tytuły; regulamin i polityka mówią o przeglądarce, prośbach, gustach
+  zbiorczych dla obcych, ankietach, rankingu i tytułach. `app.legal.version`
+  zostało na 2026-09-30 (nikt jeszcze nie akceptował) — po wypuszczeniu każda
+  zmiana tekstu = nowa data.
+- **Pułapki z tej rundy**: zbiorcze `UPDATE` w JPQL nie przyjmuje złączeń
+  (podzapytanie `IN (SELECT …)`); `MockMvc` koduje `%20` drugi raz — w testach
+  spacja wprost w adresie; mutant, który robi nieużywany parametr nazwany,
+  rozwala kontekst Springa (mutować tak, by parametr został); w Playwrighcie
+  `waitForSelector` **ignoruje** `hasText` — `locator(…, { hasText }).waitFor()`;
+  przyciski szablonów tytułów zawierają te same napisy co wiersze tytułów, więc
+  sprawdzenia „tytuł zniknął” robić na wierszach, nie na `body`.
 
 ## Regulamin i polityka prywatności (V10)
 

@@ -60,7 +60,7 @@ public class NotificationMapper {
             case REPORT -> "/zgloszenia";
             // Zglaszajacy trafia na wlasna liste zgloszen, a nie do panelu admina
             case REPORT_RESOLVED -> "/moje-zgloszenia";
-            case CLAN_INVITE, CLAN_KICKED -> "/klan";
+            case CLAN_INVITE, CLAN_KICKED, CLAN_JOIN_REQUEST, CLAN_REQUEST_ACCEPTED -> "/klan";
             case EVENT_REMINDER -> notification.getEvent() != null
                 ? "/wydarzenia/" + notification.getEvent().getId()
                 : "/wydarzenia?widok=moje";

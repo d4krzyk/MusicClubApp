@@ -15,7 +15,7 @@ import AkceptacjaRegulaminu from './AkceptacjaRegulaminu';
 import ChatLauncher from './ChatLauncher';
 import {
   IconBoard, IconCalendar, IconClan, IconFlag, IconFriends, IconGear, IconLogout, IconPerson,
-  IconShield, IconShieldAlert,
+  IconSearch, IconShield, IconShieldAlert,
 } from './Icons';
 import LanguageSwitch from './LanguageSwitch';
 import LogoMC from './LogoMC';
@@ -258,6 +258,11 @@ export default function Layout({ children }) {
                       {klanNowe > 99 ? '99+' : klanNowe}
                     </span>
                   )}
+                </NavDropdown.Item>
+
+                <NavDropdown.Item as={Link} to="/klany">
+                  <IconSearch className="me-2" />
+                  {t('menu.clans')}
                 </NavDropdown.Item>
 
                 <NavDropdown.Item as={Link} to="/moje-zgloszenia">
