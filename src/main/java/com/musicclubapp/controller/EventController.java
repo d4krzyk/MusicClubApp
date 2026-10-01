@@ -65,6 +65,9 @@ public class EventController {
             @Parameter(description = "Szukany tekst: nazwa, miejsce albo wykonawca")
             @RequestParam(defaultValue = "") String q,
 
+            @Parameter(description = "Tylko w promieniu tylu km od miasta z mojego profilu; 0 - caly kraj")
+            @RequestParam(defaultValue = "0") int radius,
+
             @Parameter(description = "Numer strony, liczony od zera")
             @RequestParam(defaultValue = "0") int page,
 
@@ -73,7 +76,7 @@ public class EventController {
 
             Authentication authentication) {
 
-        return ResponseEntity.ok(eventService.list(view, city, q,
+        return ResponseEntity.ok(eventService.list(view, city, q, radius,
             PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_SIZE)),
             authentication.getName()));
     }

@@ -10,7 +10,9 @@ public record ClanDirectoryResponse(
     int size,
     boolean last,
     /** Gatunki wystepujace w klanach z przegladarki (od najczestszych) - do listy filtra. */
-    List<GenreFacet> genres
+    List<GenreFacet> genres,
+    /** Przy filtrze promienia: ile klanow pominieto, bo nie wiadomo, gdzie sa (bez miasta albo spoza listy). */
+    int withoutLocation
 ) {
 
     public record GenreFacet(String name, int clans) {

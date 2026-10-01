@@ -24,6 +24,7 @@ const pl = {
           lista: [
             'Konto: login, adres e-mail, hasło (zapisujemy wyłącznie jego zaszyfrowany skrót, nigdy samego hasła), data założenia, potwierdzenie adresu, wersja i data akceptacji Regulaminu, ustawienia prywatności i kraj wydarzeń. Po co: założenie i obsługa konta, logowanie, zabezpieczenie konta — podstawa: umowa o świadczenie usługi (art. 6 ust. 1 lit. b RODO).',
             'Profil i muzyka: zdjęcie profilowe, ulubieni wykonawcy i utwory, playlisty, zestawienie najczęściej udostępnianej muzyki, gatunki. Po co: pokazanie profilu, „co nas łączy”, dopasowanie wydarzeń „Dla ciebie” i propozycji znajomych — umowa.',
+            'Miasto (nieobowiązkowe): nazwa miasta, które wpiszesz w Ustawieniach, i — jeśli mamy je na swojej liście — współrzędne jego środka, a także ustawienie, czy miasto widać na profilu. Nie zbieramy dokładnego adresu ani lokalizacji z telefonu. Po co: żeby w propozycjach znajomych, wydarzeniach, klanach i na tablicy wyżej były osoby, koncerty i klany z Twojej okolicy (odległość między miastami liczy nasz serwer) — podstawa: Twoja zgoda (art. 6 ust. 1 lit. a RODO), którą cofniesz, usuwając miasto w Ustawieniach.',
             'Treści: posty (tekst, zdjęcia, linki do utworów wraz z tytułem i miniaturą pobranymi ze Spotify lub YouTube), reakcje, wiadomości na czacie, znajomi i zaproszenia, blokady. Po co: działanie Serwisu — umowa.',
             'Wydarzenia: zapisy „Zainteresowany” i „Biorę udział” (i wybór, czy pokazywać Cię na liście uczestników), posty pod wydarzeniami, przypomnienia. Po co: umowa.',
             'Klany: członkostwo i rola, głos na kolor klanu, zaproszenia (także odrzucone — żeby nikt nie zapraszał w kółko osoby, która odmówiła), Twoje prośby o dołączenie do klanów (z krótką wiadomością do zarządu, jeśli ją wpiszesz), czat i posty klanu, odpowiedzi i reakcje na wiadomości, znacznik „przeczytane do” (z niego liczymy nieprzeczytane wiadomości) i ustawienie wyciszenia czatu, propozycje i głosy w „utworze tygodnia”, ankiety klanu i oddane w nich głosy, tytuły w klanie (nadane, wzięte samodzielnie albo przyznane automatycznie za aktywność), punkty i poziom aktywności w rankingu klanu (liczone z Twoich wiadomości, postów, propozycji, głosów i reakcji w klanie), ogłoszenie, zasady, hasło, miasto, gatunki i ustawienia widoczności klanu wpisane przez jego zarząd. Po co: umowa. O dostępie administratora do klanów — punkt 4.',
@@ -45,6 +46,7 @@ const pl = {
             'Login, zdjęcie profilowe i plakietka klanu są widoczne dla zalogowanych osób. Klan, w którym jesteś, jest widoczny w przeglądarce klanów (jego nazwa, skrót, ikona, hasło, miasto, gatunki, liczba osób i data założenia) — chyba że jego zarząd ukryje go w ustawieniach. Resztę profilu (ulubieni, znajomi, posty, playlisty) możesz ukryć przed osobami spoza znajomych.',
             'Posty ustawiasz jako publiczne albo tylko dla znajomych. Posty klanu, czat, ogłoszenie, zasady, propozycje i głosy w „utworze tygodnia”, ankiety, ranking aktywności i tytuły widzą tylko członkowie klanu (zasady — także osoba zaproszona, przed dołączeniem).',
             'Możesz ukryć, że jesteś aktywny, wyłączyć pojawianie się w propozycjach znajomych i domyślnie ukrywać się na listach uczestników wydarzeń.',
+            'Miasto widać na Twoim profilu (przy pełnym widoku, nie przy profilu tylko dla znajomych) i na Twojej karcie w propozycjach znajomych — chyba że wyłączysz „Pokazuj moje miasto na profilu i w propozycjach znajomych”. W propozycjach pokazujemy innym tylko, czy jesteś z ich miasta albo z okolicy, bez odległości. Miasto wpływa na kolejność proponowanych osób, wydarzeń, klanów i postów także wtedy, gdy ukryjesz je na profilu.',
             'Zablokowana osoba nie widzi Twojego profilu ani postów i nie może Cię zapraszać; nie dowiaduje się o blokadzie.',
             'Wiadomości na czacie widzisz tylko Ty i druga osoba — z wyjątkiem opisanym w punkcie 4 (zgłoszenia).',
           ],
@@ -83,6 +85,7 @@ const pl = {
             'Niepotwierdzone konta — 7 dni. Linki w wiadomościach — 24 godziny (reset hasła: 1 godzina); ich zużyte wpisy techniczne znikają po dobie.',
             'Powiadomienia w dzwonku — do usunięcia przez Ciebie albo konta. Urządzenia push — do wyłączenia powiadomień, wylogowania, zmiany hasła lub usunięcia konta.',
             'Prośby o dołączenie do klanu — oczekująca znika po przyjęciu, cofnięciu albo po 30 dniach; odrzucona — tydzień po odmowie (do tego czasu chroni przed ponawianiem próśb).',
+            'Miasto — do usunięcia przez Ciebie (Ustawienia) albo konta.',
             'Zgłoszenia i decyzje moderacyjne — do usunięcia konta osoby zgłaszającej lub zgłoszonej.',
             'Dzienniki serwera (adres IP, czas i rodzaj zapytań, wpisy o wejściach administratora do klanów) — w rotacji, zwykle do kilku tygodni.',
             'Po usunięciu konta znikają Twój profil, posty, zdjęcia, wiadomości, reakcje na wiadomości w klanie, propozycje i głosy w „utworze tygodnia”, ankiety klanu i Twoje głosy w nich, tytuły, prośby o dołączenie, zapisy na wydarzenia, zaproszenia, blokady, urządzenia push i członkostwo w klanie (założyciela zastępuje inny członek, a klan, w którym nie było nikogo poza Tobą, znika). Usunięte dane mogą przez pewien czas zostać w kopiach zapasowych bazy, o ile są wykonywane; są nadpisywane w normalnej rotacji.',
@@ -110,7 +113,7 @@ const pl = {
       tytul: '8. Pliki cookie i pamięć przeglądarki',
       akapity: [
         'Używamy wyłącznie plików niezbędnych do działania Serwisu, więc nie pytamy o zgodę na nie: ciasteczka sesji (utrzymują zalogowanie), ciasteczko zabezpieczające przed fałszowaniem żądań (CSRF) i — jeśli zaznaczysz „Zapamiętaj mnie” — ciasteczko trwałego logowania. Wszystkie mają ustawienia zabezpieczające (HttpOnly, Secure, SameSite).',
-        'W pamięci przeglądarki zapisujemy język, motyw kolorystyczny, ostatnio wybrane miasto i widok wydarzeń oraz kopię plików aplikacji, dzięki której otwiera się szybciej i bez zasięgu. Kopia nie zawiera Twoich danych z konta. Nie używamy cookie reklamowych ani analitycznych. Spotify i YouTube, których odtwarzacze widzisz w postach, mogą ustawiać własne pliki cookie.',
+        'W pamięci przeglądarki zapisujemy język, motyw kolorystyczny, ostatnio wybrane miasto i widok wydarzeń, wybrany zasięg „w okolicy” oraz kopię plików aplikacji, dzięki której otwiera się szybciej i bez zasięgu. Kopia nie zawiera Twoich danych z konta. Nie używamy cookie reklamowych ani analitycznych. Spotify i YouTube, których odtwarzacze widzisz w postach, mogą ustawiać własne pliki cookie.',
       ],
     },
     {
@@ -151,6 +154,7 @@ const en = {
           lista: [
             'Account: username, e-mail address, password (we store only its hashed form, never the password itself), creation date, address confirmation, the version and date you accepted the Terms, privacy settings and events country. Why: creating and running the account, signing in, securing the account — basis: the contract for the service (Art. 6(1)(b) GDPR).',
             'Profile and music: profile photo, favourite artists and tracks, playlists, most-shared music, genres. Why: showing your profile, “what we have in common”, “For you” event matching and friend suggestions — contract.',
+            'City (optional): the city name you enter in Settings and — if it is on our list — the coordinates of its centre, and the setting for whether the city is shown on your profile. We do not collect an exact address or your phone’s location. Why: to put people, concerts and clans from your area higher in friend suggestions, events, clans and the feed (our server works out the distance between cities) — basis: your consent (Art. 6(1)(a) GDPR), which you can withdraw by removing the city in Settings.',
             'Content: posts (text, photos, track links with the title and thumbnail fetched from Spotify or YouTube), reactions, chat messages, friends and invitations, blocks. Why: running the Service — contract.',
             'Events: “Interested” and “Going” sign-ups (and whether you show on the attendee list), posts under events, reminders. Why: contract.',
             'Clans: membership and role, your vote on the clan colour, invitations (declined ones too, so nobody keeps inviting someone who said no), your requests to join clans (with a short message to the leaders, if you write one), clan chat and posts, replies and reactions to messages, a “read up to” marker (from which we count unread messages) and the chat mute setting, suggestions and votes in the “track of the week”, clan polls and the votes cast in them, titles in the clan (given, self-claimed or awarded automatically for activity), activity points and level in the clan ranking (counted from your messages, posts, suggestions, votes and reactions in the clan), the announcement, rules, motto, city, genres and visibility settings entered by the clan’s leaders. Why: contract. Administrator access to clans — section 4.',
@@ -172,6 +176,7 @@ const en = {
             'Your username, profile photo and clan badge are visible to logged-in users. The clan you are in is visible in the clan browser (its name, tag, icon, motto, city, genres, member count and founding date) — unless its leaders hide it in the settings. You can hide the rest of your profile (favourites, friends, posts, playlists) from non-friends.',
             'You set posts as public or friends-only. Clan posts, chat, announcement, rules, “track of the week” suggestions and votes, polls, the activity ranking and titles are seen only by clan members (the rules also by an invited person, before joining).',
             'You can hide that you are active, opt out of friend suggestions and hide yourself on event attendee lists by default.',
+            'Your city is visible on your profile (in the full view, not on a friends-only profile) and on your card in friend suggestions — unless you turn off “Show my city on my profile and in friend suggestions”. In suggestions we only tell others whether you are from their city or nearby, without a distance. Your city affects the order of suggested people, events, clans and posts even when you hide it on your profile.',
             'A blocked person can’t see your profile or posts and can’t invite you; they are not told about the block.',
             'Only you and the other person see your chat messages — except as described in section 4 (reports).',
           ],
@@ -210,6 +215,7 @@ const en = {
             'Unconfirmed accounts — 7 days. Links in messages — 24 hours (password reset: 1 hour); their used technical entries disappear after a day.',
             'Bell notifications — until you or the account is deleted. Push devices — until you turn notifications off, log out, change your password or delete the account.',
             'Requests to join a clan — a pending one disappears when it is accepted, withdrawn or after 30 days; a declined one a week after the refusal (until then it protects against repeated requests).',
+            'City — until you remove it (Settings) or the account is deleted.',
             'Reports and moderation decisions — until the reporting or the reported account is deleted.',
             'Server logs (IP address, time and kind of requests, entries about administrator visits to clans) — in rotation, usually up to a few weeks.',
             'After you delete your account, your profile, posts, photos, messages, reactions to clan messages, “track of the week” suggestions and votes, clan polls and your votes in them, titles, requests to join, event sign-ups, invitations, blocks, push devices and clan membership disappear (another member takes over as founder, and a clan you were alone in disappears). Deleted data may stay for a while in database backups, if made; they are overwritten in normal rotation.',
@@ -237,7 +243,7 @@ const en = {
       tytul: '8. Cookies and browser storage',
       akapity: [
         'We use only what the Service needs to work, so we don’t ask for consent: session cookies (keep you signed in), a cookie protecting against forged requests (CSRF) and — if you tick “Remember me” — a persistent-login cookie. All are set with protective flags (HttpOnly, Secure, SameSite).',
-        'In your browser storage we keep your language, colour theme, the last events city and view, and a copy of the app files that lets it open faster and without a connection. The copy contains none of your account data. We use no advertising or analytics cookies. Spotify and YouTube, whose players you see in posts, may set their own cookies.',
+        'In your browser storage we keep your language, colour theme, the last events city and view, the chosen “nearby” range, and a copy of the app files that lets it open faster and without a connection. The copy contains none of your account data. We use no advertising or analytics cookies. Spotify and YouTube, whose players you see in posts, may set their own cookies.',
       ],
     },
     {

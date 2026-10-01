@@ -1056,6 +1056,10 @@ a.klan-plakietka:focus-visible {
   align-items: center;
 }
 
+.klany-filtry.ma-zasieg {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.1fr);
+}
+
 .klany-filtry .form-select {
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1072,7 +1076,8 @@ a.klan-plakietka:focus-visible {
 }
 
 @media (max-width: 767.98px) {
-  .klany-filtry {
+  .klany-filtry,
+  .klany-filtry.ma-zasieg {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
@@ -1431,4 +1436,14 @@ a.klan-plakietka:focus-visible {
   .klan-tytul-usun {
     padding: .2rem .55rem;
   }
+}
+
+/* ---- Zasieg i odleglosc w przegladarce klanow ---- */
+.klany-zasieg {
+  max-width: 14rem;
+}
+
+.klan-fakt-odleglosc {
+  color: var(--bs-primary);
+  font-weight: 600;
 }

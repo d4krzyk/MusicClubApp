@@ -20,6 +20,10 @@ public interface EventFeatureRow {
 
     String getCityKey();
 
+    Double getLatitude();
+
+    Double getLongitude();
+
     String getGenre();
 
     String getSubGenre();

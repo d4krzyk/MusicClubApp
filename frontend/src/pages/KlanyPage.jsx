@@ -9,12 +9,17 @@ import { describeError } from '../api/client';
 import * as klany from '../api/klany';
 import ClanBadge from '../components/ClanBadge';
 import DoladujWiecej from '../components/DoladujWiecej';
+import PodpowiedzMiasta from '../components/PodpowiedzMiasta';
+import Zasieg from '../components/Zasieg';
+import ZasiegInfo from '../components/ZasiegInfo';
+import { useAuth } from '../auth/AuthContext';
+import useZasieg from '../hooks/useZasieg';
 import EmptyState from '../components/EmptyState';
 import { IconClan, IconFriends, IconPin, IconSearch } from '../components/Icons';
 import Aktywnosc from '../components/klan/Aktywnosc';
 import { formatDate } from '../utils/dates';
 
-const SORTOWANIA = ['MATCH', 'MEMBERS', 'ACTIVE', 'NEWEST', 'OLDEST', 'NAME'];
+const SORTOWANIA = ['MATCH', 'NEAREST', 'MEMBERS', 'ACTIVE', 'NEWEST', 'OLDEST', 'NAME'];
 const ROZMIAR_STRONY = 12;
 const ZWLOKA_SZUKANIA = 350;
 
@@ -26,6 +31,8 @@ const ZWLOKA_SZUKANIA = 350;
  */
 export default function KlanyPage() {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const { zasieg, ustaw: ustawZasieg, mozna: mozeZasieg } = useZasieg(user?.city);
   const [parametry, setParametry] = useSearchParams();
   const fraza = parametry.get('q') ?? '';
   const gatunek = parametry.get('genre') ?? '';
@@ -54,7 +61,8 @@ export default function KlanyPage() {
     setBlad(null);
     try {
       const dane = await klany.przegladarka({
-        q: fraza, genre: gatunek, city: miasto, joinable: mozna, sort, page: numerStrony, size: ROZMIAR_STRONY,
+        q: fraza, genre: gatunek, city: miasto, joinable: mozna, radius: zasieg, sort,
+        page: numerStrony, size: ROZMIAR_STRONY,
       });
       if (numer !== ostatnie.current) {
         return;
@@ -72,7 +80,7 @@ export default function KlanyPage() {
         setDoladowanie(false);
       }
     }
-  }, [fraza, gatunek, miasto, mozna, sort]);
+  }, [fraza, gatunek, miasto, mozna, zasieg, sort]);
 
   useEffect(() => { wczytaj(0); }, [wczytaj]);
 
@@ -104,6 +112,7 @@ export default function KlanyPage() {
   }, [wpisaneFraza, wpisaneMiasto]);
 
   const filtrowane = Boolean(fraza || gatunek || miasto || mozna);
+  const pominiete = strona?.withoutLocation ?? 0;
 
   function wyczysc() {
     setWpisaneFraza('');
@@ -118,8 +127,9 @@ export default function KlanyPage() {
         <Link to="/klan" className="btn btn-outline-secondary btn-sm">{t('clans.directory.myClan')}</Link>
       </div>
       <p className="text-body-secondary small">{t('clans.directory.intro')}</p>
+      <PodpowiedzMiasta tekst={t('location.clansNudge')} />
 
-      <div className="klany-filtry mb-3">
+      <div className={`klany-filtry mb-3${mozeZasieg ? ' ma-zasieg' : ''}`}>
         <div className="wydarzenia-szukaj klany-szukaj">
           <IconSearch size={14} className="wydarzenia-szukaj-ikona" />
           <Form.Control type="search" value={wpisaneFraza} maxLength={100} enterKeyHint="search"
@@ -138,15 +148,24 @@ export default function KlanyPage() {
         <Form.Control value={wpisaneMiasto} maxLength={60} placeholder={t('clans.directory.cityPlaceholder')}
           aria-label={t('clans.directory.cityLabel')} onChange={(e) => setWpisaneMiasto(e.target.value)} />
 
+        {mozeZasieg && (
+          <Zasieg wartosc={zasieg} onChange={ustawZasieg} miasto={user.city} className="klany-zasieg" />
+        )}
+
         <Form.Select value={sort} className="klany-sortuj" aria-label={t('clans.directory.sortLabel')}
           onChange={(e) => zmien({ sort: e.target.value === 'MATCH' ? '' : e.target.value })}>
-          {SORTOWANIA.map((s) => <option key={s} value={s}>{t(`clans.directory.sort.${s}`)}</option>)}
+          {/* "od najblizszego" ma sens tylko z miastem w profilu */}
+          {SORTOWANIA.filter((s) => s !== 'NEAREST' || mozeZasieg || sort === 'NEAREST').map((s) => (
+            <option key={s} value={s}>{t(`clans.directory.sort.${s}`)}</option>
+          ))}
         </Form.Select>
 
         <Form.Check type="switch" id="klany-do-dolaczenia" className="klany-filtr-prosby"
           label={t('clans.directory.joinable')} checked={mozna}
           onChange={(e) => zmien({ joinable: e.target.checked ? '1' : '' })} />
       </div>
+
+      <ZasiegInfo km={zasieg} miasto={user?.city} />
 
       {blad && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
@@ -161,7 +180,18 @@ export default function KlanyPage() {
         </div>
       )}
 
-      {!ladowanie && !blad && lista.length === 0 && (
+      {!ladowanie && !blad && lista.length === 0 && zasieg > 0 && (
+        <EmptyState
+          icon={IconPin}
+          title={t('clans.directory.nearEmptyTitle', { km: zasieg, city: user.city })}
+          text={t('clans.directory.nearEmptyText')}
+          action={<Button size="sm" variant="outline-primary" onClick={() => ustawZasieg(0)}>
+            {t('location.showWholeCountry')}
+          </Button>}
+        />
+      )}
+
+      {!ladowanie && !blad && lista.length === 0 && zasieg === 0 && (
         <EmptyState
           icon={filtrowane ? IconSearch : IconClan}
           title={filtrowane ? t('clans.directory.emptyFilteredTitle') : t('clans.directory.emptyTitle')}
@@ -185,6 +215,14 @@ export default function KlanyPage() {
             ladowanie={doladowanie}
             onClick={() => wczytaj((strona?.page ?? 0) + 1)}
           />
+          {pominiete > 0 && (
+            <p className="small text-body-secondary text-center mt-3 mb-0">
+              {t('clans.directory.withoutLocation', { count: pominiete })}{' '}
+              <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => ustawZasieg(0)}>
+                {t('location.showWholeCountry')}
+              </button>
+            </p>
+          )}
         </>
       )}
     </div>
@@ -231,6 +269,11 @@ function KartaKlanu({ klan, jezyk }) {
       <ul className="klan-fakty list-unstyled">
         <li><IconFriends size={14} /> {klan.memberCount}/{klan.maxMembers}</li>
         {klan.city && <li><IconPin size={14} /> <span className="klan-fakt-tekst">{klan.city}</span></li>}
+        {klan.distanceKm != null && (
+          <li className="klan-fakt-odleglosc">
+            {klan.distanceKm === 0 ? t('location.inYourCity') : t('location.kmAway', { km: klan.distanceKm })}
+          </li>
+        )}
         {klan.activityLevel && <li><Aktywnosc poziom={klan.activityLevel} /></li>}
         <li className="klan-fakt-data">{t('clans.directory.since', { date: formatDate(klan.createdAt, jezyk) })}</li>
       </ul>

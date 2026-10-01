@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -73,14 +74,16 @@ class EventControllerTest {
 
     @Test
     @WithMockUser(username = "anna", roles = "USER")
-    @DisplayName("lista: rozmiar strony obciety do 50, miasto i fraza przekazane dalej")
+    @DisplayName("lista: rozmiar strony obciety do 50, miasto, fraza i promien przekazane dalej")
     void listPassesFilters() throws Exception {
-        given(eventService.list(any(), any(), any(), any(), any())).willReturn(Page.empty());
+        given(eventService.list(any(), any(), any(), anyInt(), any(), any())).willReturn(Page.empty());
 
         mockMvc.perform(get("/api/events").param("city", "krakow").param("q", "jazz").param("size", "5000"))
             .andExpect(status().isOk());
+        verify(eventService).list(eq(EventView.UPCOMING), eq("krakow"), eq("jazz"), eq(0), eq(PageRequest.of(0, 50)), eq("anna"));
 
-        verify(eventService).list(eq(EventView.UPCOMING), eq("krakow"), eq("jazz"), eq(PageRequest.of(0, 50)), eq("anna"));
+        mockMvc.perform(get("/api/events").param("radius", "100")).andExpect(status().isOk());
+        verify(eventService).list(eq(EventView.UPCOMING), eq(""), eq(""), eq(100), eq(PageRequest.of(0, 20)), eq("anna"));
     }
 
     @Test
@@ -96,7 +99,7 @@ class EventControllerTest {
     @WithMockUser(username = "anna", roles = "USER")
     @DisplayName("zwykly uzytkownik nie dostaje szczegolow importu")
     void infoForUser() throws Exception {
-        given(eventService.info(false, "anna")).willReturn(new EventsInfoResponse(true, "PL", List.of("PL"), false, List.of(), false, 0, false, null));
+        given(eventService.info(false, "anna")).willReturn(new EventsInfoResponse(true, "PL", List.of("PL"), false, List.of(), false, 0, false, null, null, false));
 
         mockMvc.perform(get("/api/events/info")).andExpect(status().isOk());
 
@@ -156,7 +159,7 @@ class EventControllerTest {
     @WithMockUser(username = "szef", roles = "ADMIN")
     @DisplayName("administrator dostaje stan importu")
     void infoForAdmin() throws Exception {
-        given(eventService.info(true, "szef")).willReturn(new EventsInfoResponse(true, "PL", List.of("PL"), false, List.of(), false, 0, false, null));
+        given(eventService.info(true, "szef")).willReturn(new EventsInfoResponse(true, "PL", List.of("PL"), false, List.of(), false, 0, false, null, null, false));
 
         mockMvc.perform(get("/api/events/info")).andExpect(status().isOk());
 
@@ -168,7 +171,7 @@ class EventControllerTest {
     @DisplayName("zmiana kraju idzie do serwisu z zalogowanym; bez kraju - blad walidacji")
     void changeCountry() throws Exception {
         given(eventService.changeCountry("anna", "DE", false))
-            .willReturn(new EventsInfoResponse(true, "DE", List.of("PL", "DE"), true, List.of(), false, 0, false, null));
+            .willReturn(new EventsInfoResponse(true, "DE", List.of("PL", "DE"), true, List.of(), false, 0, false, null, null, false));
 
         mockMvc.perform(put("/api/events/country").with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)

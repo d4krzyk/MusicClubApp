@@ -222,8 +222,8 @@ class ClanFlowTest {
     void invitePolicies() throws Exception {
         long id = zaloz("cl_ala", "Nocne Sowy", "NS");
 
-        bob.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.EVERYONE, ClanInvitePolicy.NOBODY, true, true, false);
-        cyd.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.EVERYONE, ClanInvitePolicy.FRIENDS, true, true, false);
+        bob.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.EVERYONE, ClanInvitePolicy.NOBODY, true, true, false, true);
+        cyd.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.EVERYONE, ClanInvitePolicy.FRIENDS, true, true, false, true);
         em.flush();
         wyslij("POST", "cl_ala", "/api/clans/" + id + "/invitations", Map.of("username", "cl_bob"))
             .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Tej osoby nie można teraz zaprosić"));

@@ -66,6 +66,13 @@ export default function EventCard({ wydarzenie, pokazPowody = false }) {
             <IconPin size={12} />
             {[wydarzenie.venueName, miasto].filter(Boolean).join(' · ')}
           </span>
+          {wydarzenie.distanceKm != null && (
+            <span className="wydarzenie-odleglosc">
+              {wydarzenie.distanceKm === 0
+                ? t('location.inYourCity')
+                : t('location.kmAway', { km: wydarzenie.distanceKm })}
+            </span>
+          )}
         </div>
 
         {sklad.length > 0 && (

@@ -533,7 +533,7 @@ class ClanCommunityFlowTest {
         JsonNode dlaEwy = katalog("co_cyd", "?sort=MATCH");
         assertThat(dlaEwy.get("content").get(0).get("match").asInt()).isZero();
         users.findByUsername("co_bob").orElseThrow().setPrivacy(com.musicclubapp.entity.ProfileVisibility.FRIENDS,
-            com.musicclubapp.entity.InvitePolicy.EVERYONE, com.musicclubapp.entity.ClanInvitePolicy.EVERYONE, true, true, false);
+            com.musicclubapp.entity.InvitePolicy.EVERYONE, com.musicclubapp.entity.ClanInvitePolicy.EVERYONE, true, true, false, true);
         em.flush();
         JsonNode bezBoba = katalog("co_fan", "?sort=NAME");
         for (JsonNode k : bezBoba.get("content")) {

@@ -60,7 +60,8 @@ public class PublicProfileService {
             widok == PrivacyService.ProfileView.BLOCKED_BY_ME,
             widok == PrivacyService.ProfileView.RESTRICTED,
             viewer != null && relacja == FriendshipStatus.NONE && privacy.canInvite(viewer, user),
-            clans.badgeOf(user.getId()));
+            clans.badgeOf(user.getId()),
+            pelny && (user.isShowCity() || user.getUsername().equals(viewerUsername)) ? user.getCity() : null);
     }
 
     /**

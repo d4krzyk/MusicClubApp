@@ -18,6 +18,10 @@ public record UserResponse(
     /** Przy zmianie adresu: czy stara skrzynka juz sie zgodzila. */
     boolean pendingEmailOldApproved,
     /** Przy zmianie adresu: czy nowy adres juz potwierdzony. */
-    boolean pendingEmailNewVerified
+    boolean pendingEmailNewVerified,
+    /** Miasto z profilu albo {@code null}. */
+    String city,
+    /** Czy znamy wspolrzedne tego miasta - bez nich nie ma "w promieniu X km", jest tylko "to samo miasto". */
+    boolean cityLocated
 ) {
 }

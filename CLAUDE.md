@@ -456,6 +456,40 @@ Obcy dostaje wyłącznie „rekonesans” — dane, po których poznaje, co to z
   przyciski szablonów tytułów zawierają te same napisy co wiersze tytułów, więc
   sprawdzenia „tytuł zniknął” robić na wierszach, nie na `body`.
 
+## Lokalizacja (V13)
+
+Miasto w profilu (`users.city`, `city_key`, `city_lat`, `city_lon`, `show_city`) — po nim aplikacja
+stawia wyżej ludzi, koncerty i klany z okolicy, a nie z drugiego końca kraju.
+
+- **Tylko miasto**, nigdy adres ani pozycja z telefonu. Lista miast Polski ze współrzędnymi środka
+  (`resources/geo/miasta.csv`, 256 pozycji, ładuje ją `CityIndex`); nazwy i angielskie odmiany („Warsaw”)
+  sprowadzane tym samym kluczem co import wydarzeń (`EventImportService.cityKey`). Miasta spoza listy zostają
+  tekstem bez współrzędnych — działa wtedy tylko „to samo miasto” (klucz), bez odległości.
+  Test `CityIndexTest` pilnuje, że każde miasto leży w Polsce i ma sąsiada w 60 km (literówka we współrzędnych).
+  Odległości sprawdzane na znanych parach (w linii prostej, nie szosą: Poznań–Wrocław to ~145 km, nie 180).
+- **Jedna skala bliskości** (`LocationScore.level`, 0–5: to samo miasto / ≤30 / ≤60 / ≤120 / ≤250 km / dalej
+  albo nie wiadomo); każde miejsce mnoży ją przez własną wagę: propozycje znajomych ×1 (artysta = 5 pkt),
+  klany ×1 (artysta = 3), koncerty ×8 (artysta = 100). Progi są także w SQL propozycji
+  (`LocationScore.SQL_LEVEL`, złożone ze stałych — adnotacja `@Query` wymaga stałej); test
+  `sqlAndJavaAgree` pilnuje, że baza i Java liczą to samo.
+- **Bliskość tylko przesuwa kolejność, nie dodaje „dopasowania”**: `matched` w propozycjach i „Dla ciebie” w
+  wydarzeniach liczą się z gustu (`score > 0`), a okolica (`nearLevel`) dochodzi do kolejności. Samo miasto nie
+  wciąga na listę „Dla ciebie” koncertów, które nie pasują do gustu.
+- **Promień** (`radius`, km; 0 = cały kraj): wydarzenia (`UPCOMING` i `FOR_YOU`; „Moje” nigdy) i przeglądarka
+  klanów. Bez miasta w profilu promień nic nie robi. Z promieniem lista wydarzeń liczy się w Javie
+  (`EventMatchService.within`), bez — jak dotąd w SQL. Wydarzenie bez współrzędnych bierze położenie z listy
+  miast (po `city_key`); bez żadnego — odpada z promienia. Klan bez miasta/spoza listy odpada z promienia,
+  ale `withoutLocation` w odpowiedzi mówi, ile ich pominięto (UI: „pokaż cały kraj”).
+  Zasięg jest jeden dla wydarzeń i klanów (`hooks/useZasieg`, localStorage `zasieg`, domyślnie 100 km, gdy jest
+  miasto); wybranie konkretnego miasta w filtrze wydarzeń wyłącza promień.
+- **Prywatność**: `show_city` (domyślnie tak) — miasto widać na profilu (tylko przy pełnym widoku) i na karcie
+  w propozycjach; w propozycjach tylko jako „z twojego miasta” / „z okolicy”, **bez odległości**. Ukryte miasto
+  (albo profil tylko dla znajomych) nie ma podpisu, ale **wpływa na kolejność** — polityka mówi to wprost.
+  Odległość w km w odpowiedziach API jest tylko dla własnych list (karty wydarzeń i klanów, liczone od MOJEGO miasta).
+  Miasto jest w eksporcie danych; kasuje się z kontem (kolumna na `users`).
+- Nie zwiększyłem `app.legal.version` (2026-09-30 — nikt jeszcze nie akceptował); po wypuszczeniu każda zmiana
+  tekstu = nowa data.
+
 ## Regulamin i polityka prywatności (V10)
 
 - Treść to **szablon, nie porada prawna**: `frontend/src/legal/regulamin.js` i

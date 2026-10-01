@@ -38,6 +38,8 @@ public record ClanDirectoryEntry(
     /** Moja prosba o dolaczenie do tego klanu (PENDING / DECLINED) albo null. */
     InvitationStatus myRequestStatus,
     /** Mam oczekujace zaproszenie do tego klanu. */
-    boolean invited
+    boolean invited,
+    /** Ile km od mojego miasta (0 = to samo miasto); null - nie wiadomo albo nie mam miasta. */
+    Integer distanceKm
 ) {
 }

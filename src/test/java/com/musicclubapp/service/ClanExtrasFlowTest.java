@@ -577,7 +577,7 @@ class ClanExtrasFlowTest {
         assertThat(gust.get("genres").size()).isEqualTo(2);
 
         // Profil ograniczony (tylko dla znajomych) nie wchodzi do zestawienia
-        cyd.setPrivacy(ProfileVisibility.FRIENDS, InvitePolicy.EVERYONE, com.musicclubapp.entity.ClanInvitePolicy.EVERYONE, true, true, false);
+        cyd.setPrivacy(ProfileVisibility.FRIENDS, InvitePolicy.EVERYONE, com.musicclubapp.entity.ClanInvitePolicy.EVERYONE, true, true, false, true);
         em.flush();
         JsonNode bezCyda = tresc(get_("ce_ala", "/api/clans/" + klan + "/taste"));
         assertThat(bezCyda.get("counted").asInt()).isEqualTo(2);

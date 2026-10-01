@@ -54,16 +54,22 @@ public class EventMatchService {
     static final int ZA_RODZINE = 8;
     static final int ZA_ZNAJOMEGO = 20;
 
+    /** Ile punktow za kazdy poziom bliskosci (0-5, patrz LocationScore): to samo miasto = 40. */
+    static final int ZA_BLISKOSC = 8;
+
     private final UserRepository userRepository;
     private final MusicEventRepository eventRepository;
     private final PerformerTagService performerTags;
+    private final LocationService location;
 
     public EventMatchService(UserRepository userRepository,
                              MusicEventRepository eventRepository,
-                             PerformerTagService performerTags) {
+                             PerformerTagService performerTags,
+                             LocationService location) {
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
         this.performerTags = performerTags;
+        this.location = location;
     }
 
     /** Gust jednej osoby w postaci gotowej do porownywania. */
@@ -91,8 +97,8 @@ public class EventMatchService {
         static final Match NONE = new Match(0, List.of());
     }
 
-    /** Jedna karta "Dla ciebie": wydarzenie, ile ma jeszcze terminow i czemu pasuje. */
-    public record Ranked(Long eventId, long moreDates, Match match) { }
+    /** Jedna karta listy: wydarzenie, ile ma jeszcze terminow, czemu pasuje i jak daleko jest (km, null = nie wiadomo). */
+    public record Ranked(Long eventId, long moreDates, Match match, Double distanceKm) { }
 
     @Transactional(readOnly = true)
     public Taste tasteOf(String username) {
@@ -132,18 +138,88 @@ public class EventMatchService {
      * Wszystkie nadchodzace wydarzenia, ktore do czegos pasuja, od najlepiej
      * pasujacych. Terminy tej samej serii sa zwiniete w jedna pozycje.
      *
+     * <p>Bliskosc miasta ogladajacego ({@code origin}) tylko przesuwa kolejnosc - o samym tym, czy
+     * wydarzenie "pasuje", decyduje gust. Przy {@code radiusKm > 0} wypadaja wydarzenia dalsze niz
+     * promien albo bez znanego polozenia.</p>
+     *
      * @param friendCounts ilu znajomych zapisalo sie na kazde wydarzenie
      */
     @Transactional(readOnly = true)
     public List<Ranked> rank(Taste taste, LocalDate today, String country, String cityKey, String phrase,
-                             Map<Long, Long> friendCounts) {
+                             Map<Long, Long> friendCounts, LocationService.Origin origin, int radiusKm) {
         List<EventFeatureRow> features = eventRepository.upcomingFeatures(today, country);
         Map<Long, List<String>> performers =
             performersByEvent(eventRepository.upcomingPerformers(today, country));
         Map<String, Set<String>> tags = performerTags.tagsOf(allKeys(performers.values()));
-        String szukane = phrase == null ? "" : phrase.strip().toLowerCase(Locale.ROOT);
 
-        /* Najpierw filtry, potem zwijanie serii - jak na zwyklej liscie. */
+        record Candidate(EventFeatureRow first, long moreDates, Match match, Double km, int total) { }
+        List<Candidate> candidates = new ArrayList<>();
+        for (List<EventFeatureRow> dates : seriesOf(features, performers, cityKey, phrase)) {
+            EventFeatureRow first = dates.get(0);
+            Double km = location.distanceKm(origin, first.getLatitude(), first.getLongitude(), first.getCityKey());
+            if (outsideRadius(origin, radiusKm, km)) {
+                continue;
+            }
+            long friends = dates.stream().mapToLong(d -> friendCounts.getOrDefault(d.getId(), 0L)).sum();
+            Match match = match(taste, first, performers.getOrDefault(first.getId(), List.of()), tags, friends);
+            if (match.score() > 0) {
+                candidates.add(new Candidate(first, dates.size() - 1L, match, km,
+                    match.score() + ZA_BLISKOSC * LocationScore.level(km)));
+            }
+        }
+
+        candidates.sort(Comparator.<Candidate>comparingInt(c -> -c.total())
+            .thenComparing(Candidate::first, PO_DACIE));
+
+        return candidates.stream()
+            .map(c -> new Ranked(c.first().getId(), c.moreDates(), c.match(), c.km()))
+            .toList();
+    }
+
+    /**
+     * Wydarzenia w promieniu {@code radiusKm} od miasta ogladajacego, od najblizszego terminu - widok
+     * "Najblizsze" z ograniczeniem do okolicy. Seria jest jedna pozycja, tak jak wszedzie.
+     */
+    @Transactional(readOnly = true)
+    public List<Ranked> within(LocalDate today, String country, String cityKey, String phrase,
+                               LocationService.Origin origin, int radiusKm) {
+        List<EventFeatureRow> features = eventRepository.upcomingFeatures(today, country);
+        Map<Long, List<String>> performers = phrase == null || phrase.isBlank()
+            ? Map.of()
+            : performersByEvent(eventRepository.upcomingPerformers(today, country));
+
+        List<Ranked> result = new ArrayList<>();
+        List<EventFeatureRow> firsts = new ArrayList<>();
+        Map<Long, Ranked> byId = new HashMap<>();
+        for (List<EventFeatureRow> dates : seriesOf(features, performers, cityKey, phrase)) {
+            EventFeatureRow first = dates.get(0);
+            Double km = location.distanceKm(origin, first.getLatitude(), first.getLongitude(), first.getCityKey());
+            if (outsideRadius(origin, radiusKm, km)) {
+                continue;
+            }
+            firsts.add(first);
+            byId.put(first.getId(), new Ranked(first.getId(), dates.size() - 1L, Match.NONE, km));
+        }
+        firsts.sort(PO_DACIE);
+        for (EventFeatureRow f : firsts) {
+            result.add(byId.get(f.getId()));
+        }
+        return result;
+    }
+
+    /** Czy wydarzenie odpada przez promien: tylko gdy promien jest ustawiony i znamy punkt wyjscia. */
+    private static boolean outsideRadius(LocationService.Origin origin, int radiusKm, Double km) {
+        return radiusKm > 0 && origin != null && (km == null || km > radiusKm);
+    }
+
+    /**
+     * Terminy pogrupowane w serie (kazda od najblizszego terminu), po filtrze miasta i szukanego
+     * tekstu. Najpierw filtry, potem zwijanie serii - jak na zwyklej liscie.
+     */
+    private static List<List<EventFeatureRow>> seriesOf(List<EventFeatureRow> features,
+                                                        Map<Long, List<String>> performers,
+                                                        String cityKey, String phrase) {
+        String szukane = phrase == null ? "" : phrase.strip().toLowerCase(Locale.ROOT);
         Map<String, List<EventFeatureRow>> series = new LinkedHashMap<>();
         for (EventFeatureRow f : features) {
             if (!cityKey.isEmpty() && !cityKey.equals(f.getCityKey())) {
@@ -154,25 +230,8 @@ public class EventMatchService {
             }
             series.computeIfAbsent(f.getSeriesKey(), k -> new ArrayList<>()).add(f);
         }
-
-        record Candidate(EventFeatureRow first, long moreDates, Match match) { }
-        List<Candidate> candidates = new ArrayList<>();
-        for (List<EventFeatureRow> dates : series.values()) {
-            dates.sort(PO_DACIE);
-            EventFeatureRow first = dates.get(0);
-            long friends = dates.stream().mapToLong(d -> friendCounts.getOrDefault(d.getId(), 0L)).sum();
-            Match match = match(taste, first, performers.getOrDefault(first.getId(), List.of()), tags, friends);
-            if (match.score() > 0) {
-                candidates.add(new Candidate(first, dates.size() - 1L, match));
-            }
-        }
-
-        candidates.sort(Comparator.<Candidate>comparingInt(c -> -c.match().score())
-            .thenComparing(Candidate::first, PO_DACIE));
-
-        return candidates.stream()
-            .map(c -> new Ranked(c.first().getId(), c.moreDates(), c.match()))
-            .toList();
+        series.values().forEach(dates -> dates.sort(PO_DACIE));
+        return new ArrayList<>(series.values());
     }
 
     /** Dlaczego to jedno wydarzenie pasuje - na strone wydarzenia. */

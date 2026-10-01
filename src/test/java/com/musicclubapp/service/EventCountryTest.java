@@ -51,6 +51,7 @@ class EventCountryTest {
         }]},"page":{"size":200,"totalElements":1,"totalPages":1,"number":0}}
         """;
 
+    @Autowired private LocationService location;
     @Autowired private BlockService blocks;
     @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository repository;
@@ -101,7 +102,7 @@ class EventCountryTest {
             userRepository, importer, zegar, blocks,
             new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         return new EventService(repository, participationRepository, userRepository, importer,
-            matchService, zapisy, performerTagService);
+            matchService, zapisy, performerTagService, location);
     }
 
     private List<String> nazwy(EventService events, String kto) {

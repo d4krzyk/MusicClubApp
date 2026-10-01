@@ -701,7 +701,11 @@
       "placeholder": "Szukasz ekipy? Napisz, skąd jedziesz, gdzie się spotkać przed koncertem…",
       "emptyTitle": "Nikt jeszcze nic nie napisał",
       "emptyText": "Szukasz ekipy na ten koncert? Napisz post — zobaczy go każdy, kto zajrzy na to wydarzenie, a do tego trafi na tablicę."
-    }
+    },
+    "forYouNearHint": "Koncerty z twojej okolicy są wyżej.",
+    "nearEmptyTitle": "Nic w promieniu {{km}} km od: {{city}}",
+    "nearEmptyText": "Spróbuj większego zasięgu albo pokaż koncerty z całego kraju.",
+    "nearEmptyForYou": "W twojej okolicy nic nie pasuje do twojego gustu. Zwiększ zasięg albo pokaż cały kraj."
   },
   "verify": {
     "checkTitle": "Sprawdź skrzynkę",
@@ -792,7 +796,8 @@
     "restrictedText": "Szczegóły profilu {{username}} widzą tylko znajomi tej osoby.",
     "clanInvitesFrom": "Kto może zaprosić mnie do klanu",
     "friendsOnlyInvite": "Tylko znajomi",
-    "clanInvitesHint": "Do klanu wchodzi się z zaproszenia albo przez prośbę, którą klan przyjmie — to ustawienie dotyczy zaproszeń. Możesz je przyjąć albo odrzucić; kto dostał odmowę, przez tydzień nie zaprosi cię ponownie."
+    "clanInvitesHint": "Do klanu wchodzi się z zaproszenia albo przez prośbę, którą klan przyjmie — to ustawienie dotyczy zaproszeń. Możesz je przyjąć albo odrzucić; kto dostał odmowę, przez tydzień nie zaprosi cię ponownie.",
+    "showCity": "Pokazuj moje miasto na profilu i w propozycjach znajomych"
   },
   "push": {
     "title": "Powiadomienia",
@@ -1133,7 +1138,8 @@
         "ACTIVE": "Najaktywniejsze",
         "NEWEST": "Najnowsze",
         "OLDEST": "Najstarsze",
-        "NAME": "Nazwa A–Z"
+        "NAME": "Nazwa A–Z",
+        "NEAREST": "Od najbliższego"
       },
       "joinable": "Tylko takie, do których mogę dołączyć",
       "emptyTitle": "Nie ma jeszcze klanów w przeglądarce",
@@ -1150,7 +1156,13 @@
       "declaredGenre": "Gatunek podany przez klan",
       "tasteGenre": "Gatunek wspólny dla członków klanu",
       "matchGenres": "Pasuje do twojego gustu: {{genres}}",
-      "matchArtists": "Członkowie słuchają artystów, których też lubisz"
+      "matchArtists": "Członkowie słuchają artystów, których też lubisz",
+      "withoutLocation_one": "Pominięto {{count}} klan, bo nie wiadomo, gdzie jest (brak miasta).",
+      "withoutLocation_few": "Pominięto {{count}} klany, bo nie wiadomo, gdzie są (brak miasta).",
+      "withoutLocation_many": "Pominięto {{count}} klanów, bo nie wiadomo, gdzie są (brak miasta).",
+      "withoutLocation_other": "Pominięto {{count}} klanów, bo nie wiadomo, gdzie są (brak miasta).",
+      "nearEmptyTitle": "Brak klanów w promieniu {{km}} km od: {{city}}",
+      "nearEmptyText": "Spróbuj większego zasięgu albo pokaż klany z całego kraju."
     },
     "titles": {
       "title": "Tytuły w klanie",
@@ -1315,5 +1327,31 @@
     "preparing": "Przygotowuję archiwum…",
     "done": "Gotowe — archiwum zostało pobrane.",
     "hint": "Wymagamy hasła, bo archiwum zawiera wrażliwe dane. Możesz je pobrać najwyżej raz na minutę. Wiadomości zawierają słowa obu stron rozmowy; nie ma w nim hasła ani danych innych osób poza loginami."
+  },
+  "location": {
+    "title": "Moje miasto",
+    "intro": "Podaj miasto, a pokażemy wyżej ludzi, koncerty, klany i posty z twojej okolicy, a nie z drugiego końca kraju. Zapisujemy samo miasto — bez dokładnego adresu i bez lokalizacji z telefonu.",
+    "cityLabel": "Miasto",
+    "placeholder": "np. Poznań",
+    "hint": "Wybierz miasto z podpowiedzi, a policzymy odległości. Miasta spoza listy też możesz wpisać — wtedy dopasujemy tylko to, co jest w dokładnie tym samym mieście. Czy miasto widać na twoim profilu, ustawiasz niżej w Prywatności.",
+    "saved": "Zapisano. Od teraz wyżej są ludzie, koncerty i klany z twojej okolicy.",
+    "savedUnknown": "Zapisano. Tego miasta nie ma na naszej liście, więc dopasujemy tylko to, co jest w tym samym mieście, bez odległości.",
+    "removed": "Miasto usunięte. Wszystko wraca do kolejności sprzed ustawienia miasta.",
+    "remove": "Usuń miasto",
+    "unknownCity": "Tego miasta nie ma na naszej liście, więc nie policzymy odległości — dopasujemy tylko ludzi, klany i koncerty z dokładnie tego samego miasta.",
+    "rangeLabel": "Zasięg od miasta: {{city}}",
+    "rangeAll": "Cały kraj",
+    "rangeKm": "Do {{km}} km",
+    "showWholeCountry": "Pokaż cały kraj",
+    "setCity": "Ustaw swoje miasto",
+    "eventsNudge": "Ustaw swoje miasto, a koncerty z twojej okolicy będą na początku.",
+    "clansNudge": "Ustaw swoje miasto, a klany z twojej okolicy będą na początku.",
+    "friendsNudge": "Ustaw swoje miasto, a osoby z twojej okolicy będą na początku propozycji.",
+    "inYourCity": "W twoim mieście",
+    "kmAway": "{{km}} km od ciebie",
+    "sameCity": "Z twojego miasta",
+    "nearby": "Z okolicy: {{city}}",
+    "rangeNote": "W promieniu {{km}} km od: {{city}}.",
+    "changeCity": "Zmień miasto"
   }
 }

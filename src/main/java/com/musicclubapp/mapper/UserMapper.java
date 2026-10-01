@@ -24,7 +24,9 @@ public class UserMapper {
             user.isEmailVerified(),
             user.getPendingEmail(),
             user.getPendingEmailOldApprovedAt() != null,
-            user.getPendingEmailNewVerifiedAt() != null);
+            user.getPendingEmailNewVerifiedAt() != null,
+            user.getCity(),
+            user.getCityLatitude() != null && user.getCityLongitude() != null);
     }
 
     /** Encja -&gt; DTO dla administratora. */

@@ -68,7 +68,7 @@ class UserProfileServiceTest {
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(anna));
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now(), true, null, false, false));
+            new UserResponse(1L, "anna", "nowy@example.com", false, null, LocalDateTime.now(), true, null, false, false, null, false));
 
         given(passwordEncoder.matches("haslo", "$2a$10$stary")).willReturn(true);
         userService.updateProfile("anna", new UpdateProfileRequest("anna", "nowy@example.com", "haslo"));
@@ -112,7 +112,7 @@ class UserProfileServiceTest {
         given(userRepository.existsByEmailIgnoreCase("ania@example.com")).willReturn(false);
         given(userRepository.save(any(User.class))).willAnswer(w -> w.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now(), true, null, false, false));
+            new UserResponse(1L, "ania", "ania@example.com", false, null, LocalDateTime.now(), true, null, false, false, null, false));
 
         given(passwordEncoder.matches("haslo", "$2a$10$stary")).willReturn(true);
         userService.updateProfile("anna", new UpdateProfileRequest("ania", "ania@example.com", "haslo"));

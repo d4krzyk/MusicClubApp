@@ -1,0 +1,260 @@
+# Miasta Polski do ustalania odleglosci: nazwa;szerokosc;dlugosc;inne nazwy po przecinku.
+# Wspolrzedne to srodek miasta (okolo 0,01 stopnia, czyli ~1 km) - wystarcza do pytania "ile stad do koncertu",
+# nie sluza do niczego dokladniejszego. Kolejnosc = mniej wiecej wielkosc miasta: tak podpowiada pole "Miasto".
+# Miast spoza tej listy nie ma - tekst wpisany przez uzytkownika dziala wtedy tylko jako "to samo miasto".
+Warszawa;52.2297;21.0122;Warsaw
+Kraków;50.0647;19.9450;Krakow,Cracow
+Łódź;51.7592;19.4560;Lodz
+Wrocław;51.1079;17.0385;Wroclaw,Breslau
+Poznań;52.4064;16.9252;Poznan,Posen
+Gdańsk;54.3520;18.6466;Gdansk,Danzig
+Szczecin;53.4285;14.5528;Stettin
+Bydgoszcz;53.1235;18.0084;Bromberg
+Lublin;51.2465;22.5684
+Białystok;53.1325;23.1688;Bialystok
+Katowice;50.2649;19.0238;Kattowitz
+Gdynia;54.5189;18.5305
+Częstochowa;50.7966;19.1203;Czestochowa
+Radom;51.4027;21.1471
+Rzeszów;50.0412;21.9991;Rzeszow
+Toruń;53.0138;18.5984;Torun,Thorn
+Sosnowiec;50.2863;19.1041
+Kielce;50.8661;20.6286
+Gliwice;50.2945;18.6714
+Olsztyn;53.7784;20.4801
+Zabrze;50.3249;18.7857
+Bielsko-Biała;49.8224;19.0584;Bielsko-Biala,Bielsko
+Bytom;50.3484;18.9157
+Zielona Góra;51.9356;15.5062;Zielona Gora
+Rybnik;50.0971;18.5463
+Ruda Śląska;50.2558;18.8556;Ruda Slaska
+Opole;50.6751;17.9213
+Tychy;50.1360;18.9966
+Gorzów Wielkopolski;52.7325;15.2369;Gorzow Wielkopolski,Gorzow Wlkp.
+Elbląg;54.1522;19.4088;Elblag
+Płock;52.5463;19.7065;Plock
+Dąbrowa Górnicza;50.3217;19.1949;Dabrowa Gornicza
+Wałbrzych;50.7714;16.2844;Walbrzych
+Włocławek;52.6483;19.0678;Wloclawek
+Tarnów;50.0121;20.9858;Tarnow
+Chorzów;50.2975;18.9546;Chorzow
+Koszalin;54.1943;16.1715
+Kalisz;51.7610;18.0910
+Legnica;51.2070;16.1553
+Grudziądz;53.4837;18.7536;Grudziadz
+Słupsk;54.4641;17.0285;Slupsk
+Jaworzno;50.2050;19.2750
+Jastrzębie-Zdrój;49.9500;18.5900;Jastrzebie-Zdroj,Jastrzebie Zdroj
+Nowy Sącz;49.6246;20.6918;Nowy Sacz
+Jelenia Góra;50.9044;15.7194;Jelenia Gora
+Siedlce;52.1676;22.2901
+Mysłowice;50.2380;19.1660;Myslowice
+Konin;52.2230;18.2511
+Piła;53.1510;16.7378;Pila
+Piotrków Trybunalski;51.4054;19.7030;Piotrkow Trybunalski
+Inowrocław;52.7986;18.2610;Inowroclaw
+Lubin;51.4012;16.2018
+Ostrów Wielkopolski;51.6550;17.8060;Ostrow Wielkopolski
+Siemianowice Śląskie;50.3270;19.0290;Siemianowice Slaskie
+Suwałki;54.1118;22.9309;Suwalki
+Gniezno;52.5348;17.5826
+Głogów;51.6630;16.0840;Glogow
+Chełm;51.1431;23.4716;Chelm
+Pabianice;51.6642;19.3540
+Zamość;50.7231;23.2519;Zamosc
+Tomaszów Mazowiecki;51.5311;20.0087;Tomaszow Mazowiecki
+Leszno;51.8403;16.5749
+Przemyśl;49.7838;22.7678;Przemysl
+Stargard;53.3366;15.0500;Stargard Szczecinski
+Łomża;53.1780;22.0590;Lomza
+Pruszków;52.1704;20.8120;Pruszkow
+Kędzierzyn-Koźle;50.3510;18.2110;Kedzierzyn-Kozle
+Mielec;50.2870;21.4240
+Tarnowskie Góry;50.4450;18.8630;Tarnowskie Gory
+Żory;50.0450;18.7000;Zory
+Zawiercie;50.4880;19.4140
+Racibórz;50.0920;18.2190;Raciborz
+Skarżysko-Kamienna;51.1100;20.8700;Skarzysko-Kamienna
+Ełk;53.8280;22.3640;Elk
+Starachowice;51.0380;21.0710
+Oświęcim;50.0340;19.2400;Oswiecim,Auschwitz
+Wejherowo;54.6050;18.2350
+Sopot;54.4416;18.5601
+Rumia;54.5700;18.3900
+Puck;54.7180;18.4130
+Hel;54.6080;18.8000
+Zakopane;49.2992;19.9496
+Kołobrzeg;54.1760;15.5830;Kolobrzeg
+Świnoujście;53.9100;14.2470;Swinoujscie
+Ostrołęka;53.0840;21.5740;Ostroleka
+Biała Podlaska;52.0320;23.1160;Biala Podlaska
+Krosno;49.6880;21.7706
+Sanok;49.5560;22.2050
+Stalowa Wola;50.5820;22.0530
+Tczew;54.0920;18.7770
+Malbork;54.0360;19.0270
+Kwidzyn;53.7310;18.9310
+Iława;53.5960;19.5680;Ilawa
+Ostróda;53.6960;19.9640;Ostroda
+Giżycko;54.0380;21.7660;Gizycko
+Mrągowo;53.8650;21.3050;Mragowo
+Augustów;53.8430;22.9790;Augustow
+Bełchatów;51.3690;19.3560;Belchatow
+Sieradz;51.5950;18.7300
+Skierniewice;51.9540;20.1510
+Łowicz;52.1060;19.9440;Lowicz
+Kutno;52.2310;19.3610
+Radomsko;51.0670;19.4450
+Wieluń;51.2210;18.5670;Wielun
+Zduńska Wola;51.5990;18.9390;Zdunska Wola
+Rawicz;51.6100;16.8590
+Września;52.3250;17.5660;Wrzesnia
+Swarzędz;52.4120;17.0750;Swarzedz
+Luboń;52.3450;16.8780;Lubon
+Śrem;52.0880;17.0170;Srem
+Kościan;52.0850;16.6430;Koscian
+Wągrowiec;52.8100;17.2000;Wagrowiec
+Szamotuły;52.6100;16.5800;Szamotuly
+Turek;52.0150;18.5000
+Krotoszyn;51.6960;17.4350
+Jarocin;51.9720;17.5030
+Złotów;53.3600;17.0400;Zlotow
+Chodzież;52.9950;16.9210;Chodziez
+Oleśnica;51.2100;17.3800;Olesnica
+Świdnica;50.8430;16.4880;Swidnica
+Dzierżoniów;50.7280;16.6520;Dzierzoniow
+Kłodzko;50.4350;16.6540;Klodzko
+Nysa;50.4740;17.3340
+Brzeg;50.8620;17.4670
+Kluczbork;50.9720;18.2190
+Prudnik;50.3200;17.5770
+Strzelce Opolskie;50.5100;18.3000
+Namysłów;51.0740;17.7220;Namyslow
+Bolesławiec;51.2640;15.5700;Boleslawiec
+Zgorzelec;51.1500;15.0100
+Lubań;51.1190;15.2890;Luban
+Żary;51.6420;15.1390;Zary
+Żagań;51.6190;15.3230;Zagan
+Nowa Sól;51.8040;15.7160;Nowa Sol
+Sulechów;52.0880;15.6240;Sulechow
+Świebodzin;52.2470;15.5340;Swiebodzin
+Międzyrzecz;52.4440;15.5780;Miedzyrzecz
+Kostrzyn nad Odrą;52.5890;14.6480;Kostrzyn nad Odra
+Szczecinek;53.7110;16.6980
+Białogard;54.0070;15.9870;Bialogard
+Wałcz;53.2750;16.4700;Walcz
+Police;53.5530;14.5730
+Goleniów;53.5650;14.8250;Goleniow
+Gryfice;53.9200;15.1980
+Kamień Pomorski;53.9690;14.7730;Kamien Pomorski
+Choszczno;53.1670;15.4100
+Chojnice;53.6950;17.5570
+Starogard Gdański;53.9640;18.5290;Starogard Gdanski
+Człuchów;53.6600;17.3590;Czluchow
+Lębork;54.5390;17.7500;Lebork
+Kartuzy;54.3340;18.2000
+Kościerzyna;54.1200;17.9790;Koscierzyna
+Brodnica;53.2590;19.3990
+Chełmno;53.3490;18.4240;Chelmno
+Świecie;53.4100;18.4500;Swiecie
+Nakło nad Notecią;53.1420;17.6010;Naklo nad Notecia
+Żnin;52.8500;17.7200;Znin
+Mogilno;52.6600;17.9600
+Rypin;53.0700;19.4500
+Lipno;52.8480;19.1790
+Sierpc;52.8600;19.6700
+Ciechanów;52.8810;20.6200;Ciechanow
+Mława;53.1130;20.3830;Mlawa
+Żyrardów;52.0500;20.4400;Zyrardow
+Piaseczno;52.0730;21.0230
+Otwock;52.1050;21.2610
+Legionowo;52.4010;20.9270
+Grodzisk Mazowiecki;52.1070;20.6320
+Ząbki;52.2900;21.1100;Zabki
+Wołomin;52.3460;21.2410;Wolomin
+Mińsk Mazowiecki;52.1790;21.5710;Minsk Mazowiecki
+Garwolin;51.8990;21.6170
+Sochaczew;52.2290;20.2370
+Nowy Dwór Mazowiecki;52.4380;20.7190;Nowy Dwor Mazowiecki
+Ostrów Mazowiecka;52.8010;21.8870;Ostrow Mazowiecka
+Węgrów;52.4000;22.0200;Wegrow
+Wyszków;52.5920;21.4590;Wyszkow
+Pułtusk;52.7040;21.0830;Pultusk
+Płońsk;52.6240;20.3780;Plonsk
+Radzyń Podlaski;51.7830;22.6200;Radzyn Podlaski
+Puławy;51.4160;21.9690;Pulawy
+Kraśnik;50.9240;22.2210;Krasnik
+Świdnik;51.2190;22.7000;Swidnik
+Łuków;51.9280;22.3820;Lukow
+Biłgoraj;50.5410;22.7230;Bilgoraj
+Hrubieszów;50.8100;23.8900;Hrubieszow
+Tomaszów Lubelski;50.4480;23.4160;Tomaszow Lubelski
+Krasnystaw;50.9850;23.1730
+Włodawa;51.5470;23.5460;Wlodawa
+Parczew;51.6410;22.9000
+Lubartów;51.4620;22.6080;Lubartow
+Janów Lubelski;50.7090;22.4140;Janow Lubelski
+Ostrowiec Świętokrzyski;50.9290;21.3860;Ostrowiec Swietokrzyski
+Sandomierz;50.6820;21.7490
+Busko-Zdrój;50.4690;20.7170;Busko-Zdroj
+Jędrzejów;50.6400;20.3010;Jedrzejow
+Końskie;51.1930;20.4070;Konskie
+Pińczów;50.5190;20.5200;Pinczow
+Staszów;50.5630;21.1670;Staszow
+Włoszczowa;50.8530;19.9660;Wloszczowa
+Pionki;51.4890;21.4640
+Kozienice;51.5850;21.5470
+Chrzanów;50.1350;19.4020;Chrzanow
+Olkusz;50.2810;19.5660
+Wadowice;49.8830;19.4940
+Sucha Beskidzka;49.7400;19.5900
+Myślenice;49.8330;19.9390;Myslenice
+Wieliczka;49.9870;20.0650
+Bochnia;49.9690;20.4300
+Brzesko;49.9690;20.6050
+Dąbrowa Tarnowska;50.1730;20.9830;Dabrowa Tarnowska
+Gorlice;49.6560;21.1600
+Limanowa;49.7060;20.4240
+Nowy Targ;49.4780;20.0320
+Cieszyn;49.7480;18.6320
+Pszczyna;49.9790;18.9440
+Czechowice-Dziedzice;49.9120;19.0070
+Żywiec;49.6850;19.1930;Zywiec
+Wodzisław Śląski;50.0040;18.4600;Wodzislaw Slaski
+Knurów;50.2230;18.6670;Knurow
+Mikołów;50.1720;18.9020;Mikolow
+Piekary Śląskie;50.3800;18.9450;Piekary Slaskie
+Świętochłowice;50.2930;18.9170;Swietochlowice
+Lubliniec;50.6700;18.6800
+Bieruń;50.0920;19.0890;Bierun
+Łańcut;50.0680;22.2290;Lancut
+Jasło;49.7450;21.4720;Jaslo
+Dębica;50.0510;21.4120;Debica
+Ropczyce;50.0510;21.6100
+Leżajsk;50.2620;22.4220;Lezajsk
+Jarosław;50.0160;22.6780;Jaroslaw
+Przeworsk;50.0590;22.4930
+Strzyżów;49.8700;21.7900;Strzyzow
+Brzozów;49.6930;22.0390;Brzozow
+Ustrzyki Dolne;49.4310;22.5950
+Lesko;49.4710;22.3410
+Bartoszyce;54.2530;20.8080
+Kętrzyn;54.0790;21.3770;Ketrzyn
+Szczytno;53.5630;20.9910
+Nidzica;53.3610;20.4260
+Działdowo;53.2340;20.1810;Dzialdowo
+Lidzbark Warmiński;54.1250;20.5800;Lidzbark Warminski
+Braniewo;54.3830;19.8200
+Pisz;53.6270;21.8100
+Olecko;54.0340;22.5000
+Gołdap;54.3100;22.3000;Goldap
+Sejny;54.1090;23.3510
+Grajewo;53.6490;22.4570
+Zambrów;52.9840;22.2410;Zambrow
+Wysokie Mazowieckie;52.9170;22.5130
+Sokółka;53.4090;23.5010;Sokolka
+Hajnówka;52.7430;23.5810;Hajnowka
+Bielsk Podlaski;52.7660;23.1890
+Siemiatycze;52.4260;22.8670
+Mońki;53.4030;22.8010;Monki
+Kolno;53.4100;21.9330

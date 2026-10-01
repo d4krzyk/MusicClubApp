@@ -62,6 +62,9 @@ public record EventCardResponse(
     List<EventReasonResponse> reasons,
 
     @Schema(description = "Ticketmaster juz go nie ma - pokazywane tylko zapisanym, w zakladce \"Moje\"")
-    boolean withdrawn
+    boolean withdrawn,
+
+    @Schema(description = "Ile km od miasta z mojego profilu; 0 = to samo miasto, pusty = nie wiadomo albo nie mam miasta")
+    Integer distanceKm
 ) {
 }

@@ -118,6 +118,7 @@ class DataExportFlowTest {
     @BeforeEach
     void setUp() throws Exception {
         ala = users.save(new User("ex_ala", "ex_ala@example.com", encoder.encode(HASLO)));
+        ala.setCity("Poznań", "poznan", 52.4064, 16.9252);
         bob = users.save(new User("ex_bob", "ex_bob@example.com", encoder.encode("inne-haslo-1")));
         cyd = users.save(new User("ex_cyd", "ex_cyd@example.com", encoder.encode("inne-haslo-2")));
         ala.addFriend(bob);
@@ -223,6 +224,10 @@ class DataExportFlowTest {
         assertThat(dane.at("/account/username").asText()).isEqualTo("ex_ala");
         assertThat(dane.at("/account/email").asText()).isEqualTo("ex_ala@example.com");
         assertThat(dane.at("/account/privacy/profileVisibility").asText()).isEqualTo("EVERYONE");
+        // Miasto z profilu i ustawienie jego pokazywania - ale nie wspolrzedne (wynikaja z miasta)
+        assertThat(dane.at("/account/city").asText()).isEqualTo("Poznań");
+        assertThat(dane.at("/account/privacy/showCity").asBoolean()).isTrue();
+        assertThat(tekst).doesNotContain("52.4064");
         assertThat(tekst).contains("moj post do eksportu", "tajny post klanu", "hej bob", "czesc ala",
             "wiadomosc na czacie klanu", "moje zgloszenie na cyda");
         assertThat(dane.at("/posts").size()).isEqualTo(2);

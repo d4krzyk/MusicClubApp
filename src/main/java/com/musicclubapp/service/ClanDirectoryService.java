@@ -63,10 +63,12 @@ public class ClanDirectoryService {
     private final UserRepository users;
     private final BlockService blocks;
     private final Clock clock;
+    private final LocationService location;
 
     public ClanDirectoryService(ClanRepository clans, ClanMemberRepository members, ClanMessageRepository messages,
                                 ClanInvitationRepository invitations, ClanJoinRequestRepository requests,
-                                UserRepository users, BlockService blocks, Clock clock) {
+                                UserRepository users, BlockService blocks, Clock clock, LocationService location) {
+        this.location = location;
         this.clans = clans;
         this.members = members;
         this.messages = messages;
@@ -77,9 +79,21 @@ public class ClanDirectoryService {
         this.clock = clock;
     }
 
+    /** Bez ograniczenia do okolicy. */
     @Transactional(readOnly = true)
     public ClanDirectoryResponse list(String viewerName, String q, String genre, String city, boolean joinableOnly,
                                       ClanDirectorySort sort, int page, int size) {
+        return list(viewerName, q, genre, city, joinableOnly, 0, sort, page, size);
+    }
+
+    /**
+     * @param radiusKm tylko klany w tym promieniu od miasta z mojego profilu; 0 - bez ograniczenia.
+     *                 Bez miasta w profilu nic nie robi. Klan, o ktorym nie wiadomo, gdzie jest, wypada
+     *                 i jest liczony w {@code withoutLocation}.
+     */
+    @Transactional(readOnly = true)
+    public ClanDirectoryResponse list(String viewerName, String q, String genre, String city, boolean joinableOnly,
+                                      int radiusKm, ClanDirectorySort sort, int page, int size) {
         User viewer = users.findByUsername(viewerName)
             .orElseThrow(() -> new NoSuchElementFoundException("user", viewerName));
         LocalDateTime teraz = LocalDateTime.now(clock);
@@ -119,6 +133,8 @@ public class ClanDirectoryService {
         Set<Long> zaproszenia = invitations.pendingFor(viewer.getId()).stream()
             .map(i -> i.getClan().getId()).collect(Collectors.toSet());
         boolean mamKlan = members.findByUserId(viewer.getId()).isPresent();
+        LocationService.Origin origin = location.originOf(viewer);
+        int promien = origin == null ? 0 : Math.max(0, Math.min(radiusKm, EventService.MAX_PROMIEN_KM));
 
         List<Entry> wszystkie = new ArrayList<>();
         for (Clan c : clans.listed()) {
@@ -146,13 +162,15 @@ public class ClanDirectoryService {
                         && prosba.getAnsweredAt().plus(ClanService.PROSBA_PO_ODMOWIE).isAfter(teraz))
                     ? prosba.getStatus() : null;
             long wiadomosci = aktywnosc.getOrDefault(c.getId(), 0L);
+            Double km = location.distanceToCity(origin, c.getCity());
 
             ClanDirectoryEntry wpis = new ClanDirectoryEntry(c.getId(), c.getName(), c.getTag(),
                 c.getColor().name(), c.getColor().hex(), ClanMapper.uploadUrl(c.getIconFileName()),
                 skroc(c.getDescription()), c.getMotto(), c.getCity(), c.getCreatedAt(), osoby, Clan.MAX_MEMBERS,
                 List.copyOf(wlasne), top, ClanActivityLevel.of(wiadomosci), c.getJoinPolicy(),
-                osoby >= Clan.MAX_MEMBERS, dopasowanie, wspolne, statusProsby, zaproszenia.contains(c.getId()));
-            wszystkie.add(new Entry(wpis, wszystkieGatunki, wiadomosci, c.getNameKey()));
+                osoby >= Clan.MAX_MEMBERS, dopasowanie, wspolne, statusProsby, zaproszenia.contains(c.getId()),
+                LocationService.rounded(km));
+            wszystkie.add(new Entry(wpis, wszystkieGatunki, wiadomosci, c.getNameKey(), km));
         }
 
         // Gatunki do filtra - z calej przegladarki, zeby lista nie zmieniala sie po wybraniu gatunku
@@ -167,11 +185,17 @@ public class ClanDirectoryService {
         String szukane = q == null || q.isBlank() ? null : NameKeys.of(q);
         String szukaneMiasto = city == null || city.isBlank() ? null : NameKeys.of(city);
         String szukanyGatunek = genre == null || genre.isBlank() ? null : genre.strip().toLowerCase(Locale.ROOT);
-        List<Entry> wynik = wszystkie.stream()
+        // Klany, o ktorych nie wiadomo, gdzie sa - tylko przy filtrze promienia i tylko takie, ktore bez niego
+        // przeszlyby pozostale filtry (inaczej liczba "pominietych" nie zgadzalaby sie z tym, co ktos widzi)
+        List<Entry> bezPromienia = wszystkie.stream()
             .filter(e -> szukane == null || pasuje(e, szukane, q))
             .filter(e -> szukaneMiasto == null || (e.wpis.city() != null && NameKeys.of(e.wpis.city()).contains(szukaneMiasto)))
             .filter(e -> szukanyGatunek == null || e.gatunki.contains(szukanyGatunek))
             .filter(e -> !joinableOnly || (e.wpis.joinPolicy() == ClanJoinPolicy.REQUESTS && !e.wpis.full() && !mamKlan))
+            .toList();
+        int bezPolozenia = promien > 0 ? (int) bezPromienia.stream().filter(e -> e.km == null).count() : 0;
+        List<Entry> wynik = bezPromienia.stream()
+            .filter(e -> promien == 0 || (e.km != null && e.km <= promien))
             .sorted(porzadek(sort))
             .toList();
 
@@ -180,11 +204,16 @@ public class ClanDirectoryService {
         int od = Math.min(strona * rozmiar, wynik.size());
         int doIndeksu = Math.min(od + rozmiar, wynik.size());
         return new ClanDirectoryResponse(wynik.subList(od, doIndeksu).stream().map(e -> e.wpis).toList(),
-            wynik.size(), strona, rozmiar, doIndeksu >= wynik.size(), gatunkiDoFiltra);
+            wynik.size(), strona, rozmiar, doIndeksu >= wynik.size(), gatunkiDoFiltra, bezPolozenia);
     }
 
     /** Wpis razem z tym, czego potrzeba do filtrowania i sortowania, a czego na zewnatrz nie widac. */
-    private record Entry(ClanDirectoryEntry wpis, Set<String> gatunki, long wiadomosci, String nameKey) {
+    private record Entry(ClanDirectoryEntry wpis, Set<String> gatunki, long wiadomosci, String nameKey, Double km) {
+
+        /** Dopasowanie do gustu plus bliskosc miasta (0-5) - po tym porzadkuje "najlepiej pasujace". */
+        int ranking() {
+            return wpis.match() + LocationScore.level(km);
+        }
     }
 
     private static boolean pasuje(Entry e, String klucz, String surowe) {
@@ -199,8 +228,10 @@ public class ClanDirectoryService {
         Comparator<Entry> nazwa = Comparator.comparing(Entry::nameKey);
         ClanDirectorySort s = sort == null ? ClanDirectorySort.MATCH : sort;
         return switch (s) {
-            case MATCH -> Comparator.<Entry>comparingInt(e -> e.wpis.match()).reversed()
+            case MATCH -> Comparator.<Entry>comparingInt(Entry::ranking).reversed()
                 .thenComparing(Comparator.<Entry>comparingLong(e -> e.wiadomosci).reversed()).thenComparing(nazwa);
+            case NEAREST -> Comparator.<Entry, Double>comparing(e -> e.km == null ? Double.MAX_VALUE : e.km)
+                .thenComparing(Comparator.<Entry>comparingInt(e -> e.wpis.match()).reversed()).thenComparing(nazwa);
             case MEMBERS -> Comparator.<Entry>comparingInt(e -> e.wpis.memberCount()).reversed().thenComparing(nazwa);
             case NEWEST -> Comparator.<Entry, LocalDateTime>comparing(e -> e.wpis.createdAt()).reversed().thenComparing(nazwa);
             case OLDEST -> Comparator.<Entry, LocalDateTime>comparing(e -> e.wpis.createdAt()).thenComparing(nazwa);

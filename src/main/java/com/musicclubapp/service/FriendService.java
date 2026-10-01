@@ -157,7 +157,10 @@ public class FriendService {
                 w.getAlreadyFriend(),
                 // "dopasowany" znaczy: cokolwiek nas laczy. Przy wyniku 0
                 // karta trafia do sekcji "pozostale osoby"
-                w.getScore() > 0))
+                w.getScore() > 0,
+                w.getCityVisible() && LocationScore.Closeness.of(w.getDistanceKm()) != null
+                    ? LocationScore.Closeness.of(w.getDistanceKm()).name() : null,
+                w.getCity()))
             .toList();
     }
 

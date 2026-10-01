@@ -73,7 +73,7 @@ class UserServiceTest {
         given(passwordEncoder.encode("tajneHaslo1")).willReturn("$2a$10$zahashowane");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null, false, false));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null, false, false, null, false));
 
         userService.register(reportViolation());
 
@@ -97,7 +97,7 @@ class UserServiceTest {
         given(passwordEncoder.encode(anyString())).willReturn("hash");
         given(userRepository.save(any(User.class))).willAnswer(wywolanie -> wywolanie.getArgument(0));
         given(userMapper.toResponse(any(User.class))).willReturn(
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null, false, false));
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null, false, false, null, false));
 
         userService.register(reportViolation());
 
@@ -145,7 +145,7 @@ class UserServiceTest {
     void existingUserIsMappedToDto() {
         User user = new User("anna", "anna@example.com", "$2a$10$hash");
         UserResponse oczekiwany =
-            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null, false, false);
+            new UserResponse(1L, "anna", "anna@example.com", false, null, LocalDateTime.now(), true, null, false, false, null, false);
 
         given(userRepository.findByUsername("anna")).willReturn(Optional.of(user));
         given(userMapper.toResponse(user)).willReturn(oczekiwany);

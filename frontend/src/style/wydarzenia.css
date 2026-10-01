@@ -31,9 +31,15 @@
   overflow: hidden;
 }
 
+/* Z zasiegiem od miasta jest czwarte pole - bez tego zawijaloby sie do drugiego wiersza. */
+.wydarzenia-filtry.ma-zasieg {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 10rem) minmax(0, 8.5rem) minmax(0, 12rem);
+}
+
 /* Wezszy ekran: szukanie w calym wierszu, kraj i miasto pod nim - po polowie. */
 @media (max-width: 767.98px) {
-  .wydarzenia-filtry {
+  .wydarzenia-filtry,
+  .wydarzenia-filtry.ma-zasieg {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
@@ -570,4 +576,14 @@
   padding-left: calc(36px + .5rem);
   font-size: .7rem;
   color: var(--bs-secondary-color);
+}
+
+/* ---- Zasieg od mojego miasta ---- */
+.wydarzenie-odleglosc {
+  color: var(--bs-primary);
+  font-weight: 600;
+}
+
+.wydarzenia-zasieg {
+  max-width: 14rem;
 }

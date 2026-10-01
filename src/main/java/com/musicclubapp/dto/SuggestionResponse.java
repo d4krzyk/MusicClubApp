@@ -11,6 +11,10 @@ public record SuggestionResponse(
     long sharedArtists,
     long sharedGenres,
     boolean alreadyFriend,
-    boolean matched
+    boolean matched,
+    /** SAME_CITY / NEARBY (do ok. 60 km) albo null - bez dokladnej odleglosci; tylko dla osob, ktore pokazuja miasto. */
+    String proximity,
+    /** Miasto tej osoby - tylko gdy je pokazuje i ma jawny profil. */
+    String city
 ) {
 }

@@ -254,13 +254,15 @@ public class DataExportService {
             "termsAcceptedAt", u.getTermsAcceptedAt(),
             "eventsCountry", u.getEventsCountry() == null ? "PL" : u.getEventsCountry(),
             "eventReminders", u.isEventReminders(),
+            "city", u.getCity(),
             "privacy", mapa(
                 "profileVisibility", u.getProfileVisibility(),
                 "friendRequestsFrom", u.getFriendRequestsFrom(),
                 "clanInvitesFrom", u.getClanInvitesFrom(),
                 "showOnline", u.isShowOnline(),
                 "showInSuggestions", u.isShowInSuggestions(),
-                "hideOnAttendeeLists", u.isHideOnAttendeeLists()),
+                "hideOnAttendeeLists", u.isHideOnAttendeeLists(),
+                "showCity", u.isShowCity()),
             "postingBannedUntil", u.bannedUntil(BanKind.POSTING),
             "messagingBannedUntil", u.bannedUntil(BanKind.MESSAGING));
     }

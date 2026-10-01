@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import { IconCross } from '../Icons';
+import MiastoInput from '../MiastoInput';
 import {
   MAKS_GATUNEK, MAKS_GATUNKOW, MAKS_HASLO, MAKS_MIASTO, PODPOWIEDZI_GATUNKOW,
 } from '../../utils/klan';
@@ -60,8 +61,8 @@ export default function KlanWizytowka({ wartosc, onZmien, zablokowane = false })
       <div className="row g-2">
         <div className="col-12 col-sm-6">
           <Form.Label htmlFor={`${id}-miasto`}>{t('clans.card.city')}</Form.Label>
-          <Form.Control id={`${id}-miasto`} value={wartosc.city} maxLength={MAKS_MIASTO} disabled={zablokowane}
-            placeholder={t('clans.card.cityPlaceholder')} onChange={(e) => onZmien({ city: e.target.value })} />
+          <MiastoInput id={`${id}-miasto`} wartosc={wartosc.city} maxLength={MAKS_MIASTO} disabled={zablokowane}
+            placeholder={t('clans.card.cityPlaceholder')} onChange={(v) => onZmien({ city: v })} />
         </div>
         <div className="col-12 col-sm-6">
           <Form.Label htmlFor={`${id}-gatunek`}>

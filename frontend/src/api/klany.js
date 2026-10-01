@@ -181,13 +181,16 @@ export async function koncerty(id) {
  * joinable (tylko takie, do ktorych mozna poprosic o dolaczenie); sort: MATCH, MEMBERS,
  * NEWEST, OLDEST, ACTIVE, NAME.
  */
-export async function przegladarka({ q, genre, city, joinable, sort, page, size } = {}) {
+export async function przegladarka({
+  q, genre, city, joinable, radius, sort, page, size,
+} = {}) {
   const { data } = await client.get('/clans/directory', {
     params: {
       q: q || undefined,
       genre: genre || undefined,
       city: city || undefined,
       joinable: joinable || undefined,
+      radius: radius || undefined,
       sort,
       page,
       size,

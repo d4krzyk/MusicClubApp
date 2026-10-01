@@ -702,6 +702,53 @@ Przy społeczności klanów (październik 2026, migracja V12):
   w wierszu członka ściskały nazwę do jednej litery przy 390 px — teraz
   przechodzą pod nazwę.
 
+Przy lokalizacji (październik 2026, migracja V13):
+
+- migracja V13 na **pustej** bazie (V1 → V13, profil `prod`: Flyway + `validate`)
+  i na bazie **po V12 z danymi** (3 konta, klan): konta zostają bez miasta,
+  `show_city = true`;
+- `mvnw clean test` → 599 testów (23 nowe: `CityIndexTest`, `LocationScoreTest`,
+  `LocationFlowTest`); `LocationFlowTest` przechodzi też na PostgreSQL 16 —
+  zapytanie o propozycje liczy odległość w SQL (`ACOS`, `LEAST/GREATEST`), a test
+  `sqlAndJavaAgree` porównuje kolejność z poziomami liczonymi w Javie;
+- lista miast: test pilnuje, że każde z 256 miast leży w Polsce i ma sąsiada
+  w 60 km (literówka we współrzędnych) oraz odległości znanych par. Jedno
+  oczekiwanie w teście było błędne, nie dane: Poznań–Wrocław w linii prostej
+  to ok. 145 km (166 to było z pamięci, bliżej szosy);
+- testy z mutacjami — wyłączenie każdej z poniższych rzeczy czerwieni test
+  (18 z 18): granica „to samo miasto”, próg w SQL, skrót „ten sam klucz miasta”,
+  wydarzenia o nieznanym położeniu w promieniu, bonus za bliskość w „Dla ciebie”,
+  promień na liście „Najbliższe”, filtr promienia klanów, kolejność „najlepiej
+  pasujące” z bliskością i „od najbliższego”, podpis tylko dla osób, które miasto
+  pokazują (w Javie i w SQL), miasto na profilu a `show_city`, zapamiętanie
+  współrzędnych, wzorzec nazwy miasta, odległość na stronie wydarzenia,
+  licznik pominiętych klanów. Pierwszy przebieg zostawił jednego przeżywającego
+  (bonus za bliskość): w teście najbliższe koncerty miały też najwcześniejsze
+  daty, więc nie było widać, czy bonus działa — daty są teraz odwrotne do
+  odległości. Skrypt mutacji musi używać `clean`, inaczej po ostatnim mutancie
+  zostaje w `target/classes` jego skompilowana wersja i zielony test okazuje się
+  czerwony;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V13, `ddl-auto=validate`;
+  47 sprawdzeń, w tym 390, 320 i 1100 px, jasny i ciemny motyw): zachęta
+  „Ustaw swoje miasto” (wydarzenia, klany, znajomi) i przejście do karty
+  w ustawieniach, podpowiedzi miast, zapis miasta z listy i spoza niej, zły
+  znak, zasięg 30/50/100 km/cały kraj (domyślnie 100, pamiętany, wspólny dla
+  wydarzeń i klanów), odległości na kartach, pusty zasięg z „Pokaż cały kraj”,
+  „Dla ciebie” z bliskimi wyżej mimo późniejszych dat, klany „od najbliższego”
+  i liczba pominiętych klanów bez miasta, podpisy w propozycjach („Z twojego
+  miasta”, „Z okolicy: …”), ukrycie miasta na profilu i w propozycjach, filtry
+  w jednym wierszu na szerokim ekranie, brak przelewu strony. Oglądanie
+  zrzutów wyłapało dwie rzeczy, których liczby nie pokazały: opcja zasięgu
+  z nazwą miasta („Do 100 km (Po…”) była ucięta — miasto jest teraz w osobnej
+  linijce pod filtrami — oraz odnośnik „Ustaw swoje miasto” przewijał kartę pod
+  przyklejony pasek (i najpierw w ogóle nie przewijał, bo Layout przewija na
+  górę po efektach dziecka).
+
+**Nie sprawdzone stąd:** czy lista 256 miast wystarcza prawdziwym użytkownikom.
+Miasta spoza listy działają tylko jako „to samo miasto” — jeśli ktoś pisze, że
+jego miejscowości brakuje, dopisuje się ją do `geo/miasta.csv` (współrzędne
+dopisują się do kont po ponownym zapisaniu miasta).
+
 Przy pobieraniu własnych danych (wrzesień 2026):
 
 - test przez całe API: bez hasła, z pustym i błędnym → 422, bez tokenu CSRF

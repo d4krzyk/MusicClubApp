@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("Wydarzenia - lista, szukanie, szczegoly")
 class EventServiceTest {
 
+    @Autowired private LocationService location;
     @Autowired private BlockService blocks;
     @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository repository;
@@ -68,7 +69,7 @@ class EventServiceTest {
             userRepository, importer, zegar, blocks,
             new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         events = new EventService(repository, participationRepository, userRepository, importer,
-            matchService, participations, performerTagService);
+            matchService, participations, performerTagService, location);
 
         importer.runImport();
     }

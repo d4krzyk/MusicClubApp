@@ -211,7 +211,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | POST | `/api/profile/favorites/import/lastfm` | import z Last.fm po nazwie użytkownika |
 | GET | `/api/music/search/artists?q=` | wyszukiwarka artystów (Deezer) |
 | GET | `/api/music/search/tracks?q=` | wyszukiwarka utworów (Deezer) |
-| GET | `/api/friends/suggestions` | proponowani znajomi — od najlepiej dopasowanych |
+| GET | `/api/friends/suggestions` | proponowani znajomi — od najlepiej dopasowanych (gust, wspólni znajomi, a przy ustawionym mieście także okolica) |
 | GET | `/api/friends/requests` | zaproszenia oczekujące (do mnie i ode mnie) |
 | POST | `/api/friends/requests` | zaproszenie do znajomych |
 | POST | `/api/friends/requests/{id}/accept` | przyjęcie zaproszenia |
@@ -233,14 +233,16 @@ z opisami: Swagger (adres niżej).
 
 | Metoda | Ścieżka | Opis |
 |--------|---------|------|
-| GET | `/api/events?view=&city=&q=` | lista wydarzeń (`FOR_YOU`, `UPCOMING`, `MINE`) |
+| GET | `/api/events?view=&city=&q=&radius=` | lista wydarzeń (`FOR_YOU`, `UPCOMING`, `MINE`); `radius` (km) zawęża do okolicy miasta z profilu |
 | GET | `/api/events/{id}` | wydarzenie z uczestnikami i powodami „Dla ciebie” |
 | PUT / DELETE | `/api/events/{id}/participation` | „Zainteresowany” / „Biorę udział” / rezygnacja |
 | GET | `/api/posts?event={id}` | posty pod wydarzeniem („szukam ekipy”) |
 | POST | `/api/auth/verify-email` | potwierdzenie adresu z linku w wiadomości |
 | POST | `/api/auth/password-reset/request` | prośba o reset hasła (zawsze 204) |
 | POST | `/api/auth/password-reset/confirm` | nowe hasło z linku |
-| GET / PUT | `/api/profile/privacy` | ustawienia prywatności (profil, zaproszenia, aktywność, klany) |
+| GET / PUT | `/api/profile/privacy` | ustawienia prywatności (profil, zaproszenia, aktywność, klany, pokazywanie miasta) |
+| PUT | `/api/profile/location` | miasto w profilu (pusty tekst je usuwa) |
+| GET | `/api/cities?q=` | podpowiedzi miast do pola „Miasto” |
 | PUT / DELETE | `/api/blocks/{username}` | blokada osoby / odblokowanie |
 | GET / POST | `/api/profile/terms`, `/api/profile/terms/accept` | wersja regulaminu na koncie i jej akceptacja |
 | POST | `/api/profile/export` | archiwum ZIP z własnymi danymi — wymaga hasła |
@@ -252,7 +254,7 @@ z opisami: Swagger (adres niżej).
 | POST | `/api/clans` | założenie klanu |
 | GET / PUT / DELETE | `/api/clans/{id}` | strona klanu / zmiana / rozwiązanie |
 | POST | `/api/clans/{id}/invitations` | zaproszenie do klanu |
-| GET | `/api/clans/directory` | przeglądarka klanów: `q`, `genre`, `city`, `joinable`, `sort` (MATCH, MEMBERS, ACTIVE, NEWEST, OLDEST, NAME), `page`, `size` |
+| GET | `/api/clans/directory` | przeglądarka klanów: `q`, `genre`, `city`, `joinable`, `radius`, `sort` (MATCH, NEAREST, MEMBERS, ACTIVE, NEWEST, OLDEST, NAME), `page`, `size` |
 | POST / DELETE | `/api/clans/{id}/requests`, `/requests/mine` | prośba o dołączenie (klan musi przyjmować prośby) / jej cofnięcie |
 | POST | `/api/clans/{id}/requests/{requestId}/accept`, `/decline` | rozpatrzenie prośby — zarząd klanu |
 | POST | `/api/clans/invitations/{id}/accept`, `/decline` | przyjęcie / odmowa zaproszenia |

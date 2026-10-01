@@ -295,3 +295,37 @@
     display: none;
   }
 }
+
+/* ---- Skad jest proponowana osoba ---- */
+.suggestion-miasto {
+  font-size: 0.75rem;
+  color: var(--bs-secondary-color);
+  text-align: center;
+  margin-top: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-miasto.is-blisko {
+  color: var(--bs-primary);
+  font-weight: 600;
+}
+
+.profil-miasto svg {
+  vertical-align: -1px;
+}
+
+.ustawienie-miasto-pole {
+  min-width: 12rem;
+}
+
+/* Odnosnik "Ustaw miasto" przewija do karty - bez tego gorna krawedz chowa sie pod przyklejonym paskiem. */
+#miasto {
+  scroll-margin-top: 5rem;
+}
+
+/* "W promieniu X km od: Miasto. Zmien miasto" tuz pod filtrami */
+.zasieg-info {
+  margin: -.25rem 0 1rem;
+}

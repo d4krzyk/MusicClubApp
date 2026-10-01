@@ -11,11 +11,13 @@ export const WIDOKI = {
 
 /** Strona wydarzen w wybranym widoku. Miasto to klucz z info(), np. "krakow". */
 export async function lista({
-  widok = 'najblizsze', miasto = '', fraza = '', strona = 0, rozmiar = 20,
+  widok = 'najblizsze', miasto = '', fraza = '', zasieg = 0, strona = 0, rozmiar = 20,
 } = {}) {
+  /* zasieg to promien w km od mojego miasta; 0 = caly kraj */
   const { data } = await client.get('/events', {
     params: {
-      view: WIDOKI[widok] ?? 'UPCOMING', city: miasto, q: fraza, page: strona, size: rozmiar,
+      view: WIDOKI[widok] ?? 'UPCOMING', city: miasto, q: fraza, radius: zasieg || undefined,
+      page: strona, size: rozmiar,
     },
   });
   return data;

@@ -195,7 +195,7 @@ class BlockPrivacyFlowTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {"profileVisibility":"FRIENDS","friendRequestsFrom":"EVERYONE","clanInvitesFrom":"EVERYONE",
-                     "showOnline":true,"showInSuggestions":true,"hideOnAttendeeLists":false}
+                     "showOnline":true,"showInSuggestions":true,"hideOnAttendeeLists":false,"showCity":true}
                     """))
             .andExpect(status().isOk()).andExpect(jsonPath("$.profileVisibility").value("FRIENDS"));
 
@@ -220,13 +220,13 @@ class BlockPrivacyFlowTest {
     @DisplayName("kto moze zaprosic: nikt / tylko znajomi znajomych")
     void invitePolicies() throws Exception {
         User nowy = users.save(new User("bp_nowy", "bp_nowy@example.com", "x"));
-        nowy.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.NOBODY, ClanInvitePolicy.EVERYONE, true, true, false);
+        nowy.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.NOBODY, ClanInvitePolicy.EVERYONE, true, true, false, true);
         em.flush();
         get_("bp_ewa", "/api/profiles/bp_nowy").andExpect(jsonPath("$.canInvite").value(false));
         zapros("bp_ewa", "bp_nowy").andExpect(status().isConflict());
 
         // Znajomi znajomych: ewa i ola nie maja wspolnych znajomych - zaproszenie odpada
-        ola.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.FRIENDS_OF_FRIENDS, ClanInvitePolicy.EVERYONE, true, true, false);
+        ola.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.FRIENDS_OF_FRIENDS, ClanInvitePolicy.EVERYONE, true, true, false, true);
         em.flush();
         zapros("bp_ewa", "bp_ola").andExpect(status().isConflict());
         ala = users.findByUsername("bp_ala").orElseThrow();
@@ -242,7 +242,7 @@ class BlockPrivacyFlowTest {
     void otherSettings() throws Exception {
         User ukryta = users.save(new User("bp_cicha", "bp_cicha@example.com", "x"));
         ukryta.setLastSeenAt(LocalDateTime.now());
-        ukryta.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.EVERYONE, ClanInvitePolicy.EVERYONE, false, false, true);
+        ukryta.setPrivacy(ProfileVisibility.EVERYONE, InvitePolicy.EVERYONE, ClanInvitePolicy.EVERYONE, false, false, true, true);
         em.flush();
 
         get_("bp_ewa", "/api/profiles/bp_cicha").andExpect(jsonPath("$.presence.online").value(false))

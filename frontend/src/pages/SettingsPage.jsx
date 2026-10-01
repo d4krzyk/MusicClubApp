@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
@@ -22,11 +22,28 @@ import ThemeToggle from '../components/ThemeToggle';
 import { UstawieniaPrywatnosci, Zablokowani } from '../components/UstawieniaPrywatnosci';
 import UstawieniaPowiadomien from '../components/UstawieniaPowiadomien';
 import PobierzDane from '../components/PobierzDane';
+import UstawieniaLokalizacji from '../components/UstawieniaLokalizacji';
 
 /** Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla. */
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { hash } = useLocation();
+
+  /*
+   * Odnosnik "Ustaw miasto" z innych stron prowadzi prosto do tej karty. Z opoznieniem zero: Layout
+   * przy zmianie strony przewija na gore w swoim efekcie, a efekty rodzica odpalaja sie PO efektach
+   * dziecka - bez tego przewiniecie do karty zostaloby od razu cofniete.
+   */
+  useEffect(() => {
+    if (!hash) {
+      return undefined;
+    }
+    const zegar = setTimeout(() => {
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+    }, 0);
+    return () => clearTimeout(zegar);
+  }, [hash]);
 
   return (
     <Row className="justify-content-center">
@@ -38,6 +55,7 @@ export default function SettingsPage() {
 
         {/* key = login. */}
         <ProfileForm key={user.username} />
+        <UstawieniaLokalizacji />
         <PasswordForm />
         <UstawieniaPowiadomien />
         <UstawieniaPrywatnosci />

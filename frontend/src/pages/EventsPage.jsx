@@ -11,10 +11,14 @@ import { describeError } from '../api/client';
 import * as wydarzenia from '../api/wydarzenia';
 import { useAuth } from '../auth/AuthContext';
 import DoladujWiecej from '../components/DoladujWiecej';
+import PodpowiedzMiasta from '../components/PodpowiedzMiasta';
+import Zasieg from '../components/Zasieg';
+import ZasiegInfo from '../components/ZasiegInfo';
+import useZasieg from '../hooks/useZasieg';
 import EmptyState from '../components/EmptyState';
 import EventCard from '../components/EventCard';
 import {
-  IconCalendar, IconCheckCircle, IconNote, IconSearch,
+  IconCalendar, IconCheckCircle, IconNote, IconPin, IconSearch,
 } from '../components/Icons';
 import { formatDateTime } from '../utils/dates';
 import { naglowekDnia, nazwaMiasta } from '../utils/wydarzenia';
@@ -78,6 +82,7 @@ function zapamietajWidok(widok) {
 export default function EventsPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { zasieg: wybranyZasieg, ustaw: ustawZasieg, mozna: mozeZasieg } = useZasieg(user?.city);
 
   /*
    * Miasto i fraza siedza w adresie strony (?miasto=krakow&q=jazz). Dzieki
@@ -89,6 +94,12 @@ export default function EventsPage() {
   const fraza = parametry.get('q') ?? '';
 
   const [info, setInfo] = useState(null);
+
+  /*
+   * Promien od mojego miasta. Gdy wybralem konkretne miasto z listy, promien nie ma sensu (miasto
+   * jest dokladniejsze) - wtedy nie jest wysylany, a lista jest wylaczona.
+   */
+  const zasieg = miasto ? 0 : wybranyZasieg;
 
   /*
    * Widok: z adresu, potem z pamieci przegladarki. Kto wchodzi pierwszy raz,
@@ -144,7 +155,7 @@ export default function EventsPage() {
 
     try {
       const dane = await wydarzenia.lista({
-        widok, miasto, fraza, strona: numerStrony, rozmiar: ROZMIAR_STRONY,
+        widok, miasto, fraza, zasieg, strona: numerStrony, rozmiar: ROZMIAR_STRONY,
       });
       if (numer !== ostatnie.current) {
         return;
@@ -163,7 +174,7 @@ export default function EventsPage() {
     }
     // odswiezenie nie jest uzyte w srodku - jego zmiana ma tylko wczytac liste od nowa
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widok, miasto, fraza, odswiezenie]);
+  }, [widok, miasto, fraza, zasieg, odswiezenie]);
 
   useEffect(() => {
     wczytaj(0);
@@ -327,16 +338,20 @@ export default function EventsPage() {
         ))}
       </div>
 
+      {!moje && (
+        <PodpowiedzMiasta tekst={t('location.eventsNudge')} className="mb-3" />
+      )}
+
       {dlaCiebie && info?.hasTaste && (
         <p className="small text-body-secondary mb-3">
-          {t('events.forYouHint')}
+          {t('events.forYouHint')}{user?.city && ` ${t('events.forYouNearHint')}`}
           {user?.admin && info && !info.genresFromLastFm && ` ${t('events.forYouLastFmHint')}`}
         </p>
       )}
 
       {/* "Moje" nie ma filtrow - to kilka pozycji, ktore sam wybralem */}
       {!moje && (
-        <div className="wydarzenia-filtry mb-3">
+        <div className={`wydarzenia-filtry mb-3${mozeZasieg ? ' ma-zasieg' : ''}`}>
           <div className="wydarzenia-szukaj">
             <IconSearch size={14} className="wydarzenia-szukaj-ikona" />
             <Form.Control
@@ -364,6 +379,16 @@ export default function EventsPage() {
             ))}
           </Form.Select>
 
+          {mozeZasieg && (
+            <Zasieg
+              wartosc={zasieg}
+              onChange={ustawZasieg}
+              miasto={user.city}
+              className="wydarzenia-zasieg"
+              disabled={Boolean(miasto)}
+            />
+          )}
+
           <Form.Select
             value={miasto}
             onChange={(e) => wybierzMiasto(e.target.value)}
@@ -382,6 +407,8 @@ export default function EventsPage() {
           </Form.Select>
         </div>
       )}
+
+      {!moje && <ZasiegInfo km={zasieg} miasto={user?.city} />}
 
       {blad && (
         <Alert variant="danger" className="d-flex align-items-center justify-content-between gap-2">
@@ -421,6 +448,17 @@ export default function EventsPage() {
               <Spinner animation="border" size="sm" role="status">
                 <span className="visually-hidden">{t('common.loading')}</span>
               </Spinner>
+            )}
+          />
+        ) : zasieg > 0 && !(dlaCiebie && info && !info.hasTaste) && !fraza ? (
+          <EmptyState
+            icon={IconPin}
+            title={t('events.nearEmptyTitle', { km: zasieg, city: user.city })}
+            text={dlaCiebie ? t('events.nearEmptyForYou') : t('events.nearEmptyText')}
+            action={(
+              <Button size="sm" variant="outline-primary" onClick={() => ustawZasieg(0)}>
+                {t('location.showWholeCountry')}
+              </Button>
             )}
           />
         ) : dlaCiebie && info && !info.hasTaste ? (

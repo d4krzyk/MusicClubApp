@@ -22,6 +22,8 @@ public record PublicProfileResponse(
     /** Czy ogladajacy moze teraz wyslac zaproszenie (ustawienia tej osoby, blokady). */
     boolean canInvite,
     /** Klan tej osoby - plakietka pod loginem; widoczna takze przy profilu tylko dla znajomych. */
-    ClanBadge clan
+    ClanBadge clan,
+    /** Miasto z profilu - tylko przy pelnym widoku i gdy osoba go nie ukryla. */
+    String city
 ) {
 }

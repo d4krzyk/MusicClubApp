@@ -149,6 +149,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
         SELECT e.id AS id, e.seriesKey AS seriesKey, e.name AS name,
                e.startDate AS startDate, e.startTime AS startTime,
                e.venueName AS venueName, e.cityKey AS cityKey,
+               e.latitude AS latitude, e.longitude AS longitude,
                e.genre AS genre, e.subGenre AS subGenre
           FROM MusicEvent e
          WHERE e.startDate >= :today AND e.withdrawnAt IS NULL AND e.countryCode = :country
@@ -167,6 +168,7 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
         SELECT e.id AS id, e.seriesKey AS seriesKey, e.name AS name,
                e.startDate AS startDate, e.startTime AS startTime,
                e.venueName AS venueName, e.cityKey AS cityKey,
+               e.latitude AS latitude, e.longitude AS longitude,
                e.genre AS genre, e.subGenre AS subGenre
           FROM MusicEvent e
          WHERE e.id = :id

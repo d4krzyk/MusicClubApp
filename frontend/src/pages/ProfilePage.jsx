@@ -27,7 +27,9 @@ import FriendshipButton from '../components/FriendshipButton';
 import BlockButton from '../components/BlockButton';
 import ClanBadge from '../components/ClanBadge';
 import ClanInviteButton from '../components/ClanInviteButton';
-import { IconBan, IconChat, IconInbox, IconLock, IconPlus } from '../components/Icons';
+import {
+  IconBan, IconChat, IconInbox, IconLock, IconPin, IconPlus,
+} from '../components/Icons';
 import { formatDate } from '../utils/dates';
 
 /** Ile postow pobieramy za jednym razem. */
@@ -175,6 +177,13 @@ export default function ProfilePage() {
                 {/* Plakietka klanu - takze przy profilu tylko dla znajomych */}
                 <ClanBadge clan={profile.clan} />
               </div>
+
+              {/* Miasto: tylko przy pelnym widoku i gdy jego wlasciciel go nie ukryl */}
+              {profile.city && (
+                <div className="text-body-secondary small mb-1 profil-miasto">
+                  <IconPin size={13} /> {profile.city}
+                </div>
+              )}
 
               {/* Obecnosc pokazujemy tylko na CUDZYM profilu. */}
               {!profile.self && (

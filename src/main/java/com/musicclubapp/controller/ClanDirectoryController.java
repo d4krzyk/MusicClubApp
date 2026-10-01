@@ -36,11 +36,12 @@ public class ClanDirectoryController {
             @RequestParam(required = false) String genre,
             @RequestParam(required = false) String city,
             @RequestParam(defaultValue = "false") boolean joinable,
+            @RequestParam(defaultValue = "0") int radius,
             @RequestParam(defaultValue = "MATCH") ClanDirectorySort sort,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + ClanDirectoryService.DOMYSLNIE) int size,
             Authentication auth) {
-        return ResponseEntity.ok(directory.list(auth.getName(), q, genre, city, joinable, sort, page, size));
+        return ResponseEntity.ok(directory.list(auth.getName(), q, genre, city, joinable, radius, sort, page, size));
     }
 
     @GetMapping("/{id}/activity")

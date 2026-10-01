@@ -110,57 +110,84 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                        @Param("ukryci") java.util.Collection<Long> hidden,
                                        Pageable pageable);
 
-    /** Proponowani znajomi: WSZYSCY uzytkownicy, posortowani od najlepiej dopasowanych. */
+    /**
+     * Proponowani znajomi: WSZYSCY uzytkownicy, posortowani od najlepiej dopasowanych. Do punktow za
+     * gust (score) dochodzi bliskosc miast (nearLevel, 0-5, patrz {@link com.musicclubapp.service.LocationScore})
+     * - kolejnosc liczy sie z obu, ale "dopasowany" ({@code score > 0}) znaczy tylko, ze cos laczy gustem.
+     */
     @Query(value = """
-           SELECT t.*,
-                  (5 * t.sharedArtists + 3 * t.sharedFriends + t.sharedGenres) AS score
+           SELECT x.username AS username, x.avatarFileName AS avatarFileName,
+                  x.sharedFriends AS sharedFriends, x.sharedArtists AS sharedArtists,
+                  x.sharedGenres AS sharedGenres, x.alreadyFriend AS alreadyFriend,
+                  x.score AS score, x.nearLevel AS nearLevel, x.distance_km AS distanceKm,
+                  x.city AS city, x.cityVisible AS cityVisible
              FROM (
-                   SELECT u.username         AS username,
-                          u.avatar_file_name AS avatarFileName,
+                   SELECT t.*,
+                          (5 * t.sharedArtists + 3 * t.sharedFriends + t.sharedGenres) AS score,
+                          """ + com.musicclubapp.service.LocationScore.SQL_LEVEL + """
+                          \sAS nearLevel
+                     FROM (
+                           SELECT u.username         AS username,
+                                  u.avatar_file_name AS avatarFileName,
 
-                          (SELECT COUNT(*)
-                             FROM user_friends kandydat
-                             JOIN user_friends widz
-                               ON kandydat.friend_id = widz.friend_id
-                            WHERE kandydat.user_id = u.id
-                              AND widz.user_id = ja.id)          AS sharedFriends,
+                                  (SELECT COUNT(*)
+                                     FROM user_friends kandydat
+                                     JOIN user_friends widz
+                                       ON kandydat.friend_id = widz.friend_id
+                                    WHERE kandydat.user_id = u.id
+                                      AND widz.user_id = ja.id)          AS sharedFriends,
 
-                          (SELECT COUNT(*)
-                             FROM user_favorite_artists kandydat
-                             JOIN user_favorite_artists widz
-                               ON kandydat.artist_id = widz.artist_id
-                            WHERE kandydat.user_id = u.id
-                              AND widz.user_id = ja.id)          AS sharedArtists,
+                                  (SELECT COUNT(*)
+                                     FROM user_favorite_artists kandydat
+                                     JOIN user_favorite_artists widz
+                                       ON kandydat.artist_id = widz.artist_id
+                                    WHERE kandydat.user_id = u.id
+                                      AND widz.user_id = ja.id)          AS sharedArtists,
 
-                          (SELECT COUNT(DISTINCT g.genre)
-                             FROM user_favorite_artists kandydat
-                             JOIN artist_genres g ON g.artist_id = kandydat.artist_id
-                            WHERE kandydat.user_id = u.id
-                              AND g.genre IN (SELECT g2.genre
-                                                FROM user_favorite_artists widz
-                                                JOIN artist_genres g2
-                                                  ON g2.artist_id = widz.artist_id
-                                               WHERE widz.user_id = ja.id))
-                                                                 AS sharedGenres,
+                                  (SELECT COUNT(DISTINCT g.genre)
+                                     FROM user_favorite_artists kandydat
+                                     JOIN artist_genres g ON g.artist_id = kandydat.artist_id
+                                    WHERE kandydat.user_id = u.id
+                                      AND g.genre IN (SELECT g2.genre
+                                                        FROM user_favorite_artists widz
+                                                        JOIN artist_genres g2
+                                                          ON g2.artist_id = widz.artist_id
+                                                       WHERE widz.user_id = ja.id))
+                                                                         AS sharedGenres,
 
-                          EXISTS (SELECT 1
-                                    FROM user_friends f
-                                   WHERE f.user_id = ja.id
-                                     AND f.friend_id = u.id)     AS alreadyFriend
-                     FROM users u
-                     CROSS JOIN (SELECT id FROM users WHERE username = :ogladajacy) ja
-                    WHERE u.id <> ja.id
-                      AND u.enabled = true
-                      -- blokady w obie strony
-                      AND NOT EXISTS (SELECT 1 FROM user_blocks b
-                                       WHERE (b.blocker_id = ja.id AND b.blocked_id = u.id)
-                                          OR (b.blocker_id = u.id AND b.blocked_id = ja.id))
-                      -- kto nie chce byc proponowany, nie jest - chyba ze to juz znajomy
-                      AND (u.show_in_suggestions = true
-                           OR EXISTS (SELECT 1 FROM user_friends f2
-                                       WHERE f2.user_id = ja.id AND f2.friend_id = u.id))
-                  ) t
-            ORDER BY score DESC, t.sharedArtists DESC, t.username ASC
+                                  EXISTS (SELECT 1
+                                            FROM user_friends f
+                                           WHERE f.user_id = ja.id
+                                             AND f.friend_id = u.id)     AS alreadyFriend,
+
+                                  -- odleglosc miast: 0 = to samo, NULL = nie wiadomo (ktos nie ma miasta albo go nie znamy)
+                                  CASE WHEN ja.city_key IS NULL OR u.city_key IS NULL THEN NULL
+                                       WHEN ja.city_key = u.city_key THEN 0
+                                       WHEN ja.city_lat IS NULL OR ja.city_lon IS NULL
+                                            OR u.city_lat IS NULL OR u.city_lon IS NULL THEN NULL
+                                       ELSE\s""" + com.musicclubapp.service.LocationScore.SQL_DISTANCE_JA_U + """
+                                       \sEND                               AS distance_km,
+
+                                  -- miasto pokazujemy tylko tym, ktorzy je pokazuja i maja jawny profil
+                                  CASE WHEN u.show_city = true AND u.profile_visibility = 'EVERYONE'
+                                       THEN u.city END                   AS city,
+                                  (u.show_city = true AND u.profile_visibility = 'EVERYONE') AS cityVisible
+                             FROM users u
+                             CROSS JOIN (SELECT id, city_key, city_lat, city_lon
+                                           FROM users WHERE username = :ogladajacy) ja
+                            WHERE u.id <> ja.id
+                              AND u.enabled = true
+                              -- blokady w obie strony
+                              AND NOT EXISTS (SELECT 1 FROM user_blocks b
+                                               WHERE (b.blocker_id = ja.id AND b.blocked_id = u.id)
+                                                  OR (b.blocker_id = u.id AND b.blocked_id = ja.id))
+                              -- kto nie chce byc proponowany, nie jest - chyba ze to juz znajomy
+                              AND (u.show_in_suggestions = true
+                                   OR EXISTS (SELECT 1 FROM user_friends f2
+                                               WHERE f2.user_id = ja.id AND f2.friend_id = u.id))
+                          ) t
+                  ) x
+            ORDER BY (x.score + x.nearLevel) DESC, x.sharedArtists DESC, x.username ASC
            """, nativeQuery = true)
     List<SuggestionRow> friendSuggestions(@Param("ogladajacy") String viewer,
                                             Pageable pageable);

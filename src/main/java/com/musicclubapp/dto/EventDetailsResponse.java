@@ -52,6 +52,9 @@ public record EventDetailsResponse(
     List<EventReasonResponse> reasons,
 
     @Schema(description = "Pierwsze osoby z listy uczestnikow; reszta pod /attendees")
-    List<AttendeeResponse> attendees
+    List<AttendeeResponse> attendees,
+
+    @Schema(description = "Ile km od miasta z mojego profilu; 0 = to samo miasto, pusty = nie wiadomo")
+    Integer distanceKm
 ) {
 }

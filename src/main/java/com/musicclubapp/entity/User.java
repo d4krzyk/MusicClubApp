@@ -144,6 +144,31 @@ public class User {
     @Column(name = "events_country", length = 2)
     private String eventsCountry;
 
+    /*
+     * Miasto z profilu - po nim aplikacja stawia wyzej ludzi, koncerty i klany z okolicy. Tylko miasto,
+     * nigdy dokladny adres ani pozycja z telefonu. Wspolrzedne to srodek miasta z listy ({@code CityIndex}),
+     * puste, gdy wpisane miasto jest spoza listy - wtedy liczy sie tylko "to samo miasto".
+     */
+
+    /** Miasto tak, jak ma byc pokazane (z listy albo wpisane przez uzytkownika). */
+    @Column(name = "city", length = 60)
+    private String city;
+
+    /** Miasto w jednej postaci (male litery, bez polskich znakow) - po nim porownujemy. */
+    @Column(name = "city_key", length = 100)
+    private String cityKey;
+
+    @Column(name = "city_lat")
+    private Double cityLatitude;
+
+    @Column(name = "city_lon")
+    private Double cityLongitude;
+
+    /** Czy miasto widac na profilu. Wylaczone nie wylacza dopasowania po okolicy - ono dzieje sie po stronie serwera. */
+    @org.hibernate.annotations.ColumnDefault("true")
+    @Column(name = "show_city", nullable = false)
+    private boolean showCity = true;
+
     private static final java.security.SecureRandom LOSOWANIE = new java.security.SecureRandom();
 
     /** Termin oznaczajacy zakaz bezterminowy. */
@@ -376,13 +401,43 @@ public class User {
     /** Wszystkie ustawienia prywatnosci naraz - formularz zapisuje je razem. */
     public void setPrivacy(ProfileVisibility profileVisibility, InvitePolicy friendRequestsFrom,
                            ClanInvitePolicy clanInvitesFrom,
-                           boolean showOnline, boolean showInSuggestions, boolean hideOnAttendeeLists) {
+                           boolean showOnline, boolean showInSuggestions, boolean hideOnAttendeeLists,
+                           boolean showCity) {
+        this.showCity = showCity;
         this.clanInvitesFrom = clanInvitesFrom;
         this.profileVisibility = profileVisibility;
         this.friendRequestsFrom = friendRequestsFrom;
         this.showOnline = showOnline;
         this.showInSuggestions = showInSuggestions;
         this.hideOnAttendeeLists = hideOnAttendeeLists;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public String getCityKey() {
+        return cityKey;
+    }
+
+    public Double getCityLatitude() {
+        return cityLatitude;
+    }
+
+    public Double getCityLongitude() {
+        return cityLongitude;
+    }
+
+    public boolean isShowCity() {
+        return showCity;
+    }
+
+    /** Ustawia miasto; wspolrzedne puste, gdy miasta nie ma na liscie. Wszystko puste = bez miasta. */
+    public void setCity(String city, String cityKey, Double latitude, Double longitude) {
+        this.city = city;
+        this.cityKey = cityKey;
+        this.cityLatitude = latitude;
+        this.cityLongitude = longitude;
     }
 
     public String getEventsCountry() {

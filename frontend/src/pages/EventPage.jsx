@@ -181,6 +181,11 @@ function Szczegoly({
                   {[w.address, miasto].filter(Boolean).join(', ')}
                 </span>
               )}
+              {w.distanceKm != null && (
+                <span className="d-block small wydarzenie-odleglosc">
+                  {w.distanceKm === 0 ? t('location.inYourCity') : t('location.kmAway', { km: w.distanceKm })}
+                </span>
+              )}
               <a href={adresMapy(w)} target="_blank" rel="noopener noreferrer" className="small">
                 {t('events.map')} <IconExternal size={11} />
               </a>

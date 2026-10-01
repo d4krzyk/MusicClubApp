@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("Dla ciebie - dopasowanie wydarzen do profilu")
 class EventMatchServiceTest {
 
+    @Autowired private LocationService location;
     @Autowired private BlockService blocks;
     @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository eventRepository;
@@ -73,7 +74,7 @@ class EventMatchServiceTest {
             importer, zegar, blocks,
             new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         events = new EventService(eventRepository, participationRepository, userRepository, importer,
-            matchService, zapisy, performerTagService);
+            matchService, zapisy, performerTagService, location);
 
         /* Gust Ali: dwoch ulubionych artystow z tagami Last.fm i jeden utwor */
         User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));

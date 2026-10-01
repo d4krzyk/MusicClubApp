@@ -33,7 +33,13 @@ public record EventsInfoResponse(
     boolean genresFromLastFm,
 
     @Schema(description = "Ostatni import - TYLKO dla administratora, pozostali dostaja null")
-    ImportInfo lastImport
+    ImportInfo lastImport,
+
+    @Schema(description = "Miasto z mojego profilu albo null - bez niego nie ma \"w promieniu\" ani odleglosci")
+    String myCity,
+
+    @Schema(description = "Czy znamy wspolrzedne mojego miasta - bez nich promien dziala tylko jako \"to samo miasto\"")
+    boolean myCityLocated
 ) {
 
     @Schema(description = "Wynik ostatniego importu")

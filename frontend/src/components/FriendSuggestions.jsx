@@ -10,7 +10,8 @@ import Avatar from './Avatar';
 import CommonGround from './CommonGround';
 import HorizontalStrip from './HorizontalStrip';
 import PeopleSkeleton from './PeopleSkeleton';
-import { IconPersonCheck, IconPersonPlus } from './Icons';
+import PodpowiedzMiasta from './PodpowiedzMiasta';
+import { IconPersonCheck, IconPersonPlus, IconPin } from './Icons';
 
 /** Ile osob pobieramy do paska propozycji. */
 const ILE_PROPOZYCJI = 24;
@@ -71,6 +72,8 @@ export default function FriendSuggestions({ refresh, onChange }) {
     <div>
       {error && <Alert variant="danger" className="py-2">{error}</Alert>}
 
+      <PodpowiedzMiasta tekst={t('location.friendsNudge')} />
+
       {/* Podpowiedz pokazujemy TYLKO wtedy, gdy nikt nie jest dopasowany. */}
       {!anyoneMatched && (
         <Alert variant="info" className="py-2 small">
@@ -93,6 +96,16 @@ export default function FriendSuggestions({ refresh, onChange }) {
                 <Avatar avatarUrl={o.avatarUrl} username={o.username} size={56} />
                 <div className="fw-semibold text-truncate mt-1">{o.username}</div>
               </Link>
+
+              {/* Skad: tylko to, co ta osoba sama pokazuje; bez dokladnej odleglosci */}
+              {(o.proximity || o.city) && (
+                <div className={`suggestion-miasto${o.proximity ? ' is-blisko' : ''}`}>
+                  <IconPin size={11} />{' '}
+                  {o.proximity === 'SAME_CITY' && t('location.sameCity')}
+                  {o.proximity === 'NEARBY' && t('location.nearby', { city: o.city })}
+                  {!o.proximity && o.city}
+                </div>
+              )}
 
               {/* Powody sa PRZYCISKIEM, a nie napisem. */}
               {o.matched ? (

@@ -664,7 +664,11 @@
       "placeholder": "Looking for company? Say where you're coming from or where to meet before the show…",
       "emptyTitle": "No posts yet",
       "emptyText": "Looking for people to go with? Write a post — everyone who opens this event will see it, and it shows up in the feed too."
-    }
+    },
+    "forYouNearHint": "Concerts from your area come first.",
+    "nearEmptyTitle": "Nothing within {{km}} km of {{city}}",
+    "nearEmptyText": "Try a larger range or show concerts from the whole country.",
+    "nearEmptyForYou": "Nothing in your area matches your taste. Increase the range or show the whole country."
   },
   "verify": {
     "checkTitle": "Check your inbox",
@@ -755,7 +759,8 @@
     "restrictedText": "Only {{username}}'s friends can see their profile details.",
     "clanInvitesFrom": "Who can invite me to a clan",
     "friendsOnlyInvite": "Friends only",
-    "clanInvitesHint": "You join a clan by invitation or by a request the clan accepts — this setting is about invitations. You can accept or decline; whoever got a refusal can't invite you again for a week."
+    "clanInvitesHint": "You join a clan by invitation or by a request the clan accepts — this setting is about invitations. You can accept or decline; whoever got a refusal can't invite you again for a week.",
+    "showCity": "Show my city on my profile and in friend suggestions"
   },
   "push": {
     "title": "Notifications",
@@ -1078,7 +1083,8 @@
         "ACTIVE": "Most active",
         "NEWEST": "Newest",
         "OLDEST": "Oldest",
-        "NAME": "Name A–Z"
+        "NAME": "Name A–Z",
+        "NEAREST": "Nearest first"
       },
       "joinable": "Only ones I can join",
       "emptyTitle": "No clans in the browser yet",
@@ -1095,7 +1101,11 @@
       "declaredGenre": "Genre given by the clan",
       "tasteGenre": "Genre shared by the clan's members",
       "matchGenres": "Matches your taste: {{genres}}",
-      "matchArtists": "Members listen to artists you like too"
+      "matchArtists": "Members listen to artists you like too",
+      "withoutLocation_one": "{{count}} clan was left out because we do not know where it is (no city).",
+      "withoutLocation_other": "{{count}} clans were left out because we do not know where they are (no city).",
+      "nearEmptyTitle": "No clans within {{km}} km of {{city}}",
+      "nearEmptyText": "Try a larger range or show clans from the whole country."
     },
     "titles": {
       "title": "Titles in the clan",
@@ -1240,5 +1250,31 @@
     "preparing": "Preparing the archive…",
     "done": "Done — the archive has been downloaded.",
     "hint": "We ask for your password because the archive holds sensitive data. You can download it at most once a minute. Messages contain the words of both sides of a conversation; there is no password or other people's data in it, apart from usernames."
+  },
+  "location": {
+    "title": "My city",
+    "intro": "Tell us your city and we will put people, concerts, clans and posts from your area first, not from the other end of the country. We store the city only — no exact address and no location from your phone.",
+    "cityLabel": "City",
+    "placeholder": "e.g. Poznań",
+    "hint": "Pick a city from the suggestions and we will work out distances. You can type a city that is not on the list too — then only things in exactly the same city will match. Whether your city is shown on your profile is set below in Privacy.",
+    "saved": "Saved. People, concerts and clans from your area now come first.",
+    "savedUnknown": "Saved. We do not have this city on our list, so only things in the same city will match, without distances.",
+    "removed": "City removed. Everything goes back to the order from before you set a city.",
+    "remove": "Remove city",
+    "unknownCity": "We do not have this city on our list, so we cannot work out distances — only people, clans and concerts in exactly the same city will match.",
+    "rangeLabel": "Range from city: {{city}}",
+    "rangeAll": "Whole country",
+    "rangeKm": "Up to {{km}} km",
+    "showWholeCountry": "Show the whole country",
+    "setCity": "Set your city",
+    "eventsNudge": "Set your city and concerts from your area will come first.",
+    "clansNudge": "Set your city and clans from your area will come first.",
+    "friendsNudge": "Set your city and people from your area will come first in the suggestions.",
+    "inYourCity": "In your city",
+    "kmAway": "{{km}} km from you",
+    "sameCity": "From your city",
+    "nearby": "Nearby: {{city}}",
+    "rangeNote": "Within {{km}} km of {{city}}.",
+    "changeCity": "Change city"
   }
 }

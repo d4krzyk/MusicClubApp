@@ -95,6 +95,14 @@ export function UstawieniaPrywatnosci() {
             />
             <Form.Check
               type="switch"
+              id="showCity"
+              className="mb-2"
+              label={t('privacy.showCity')}
+              checked={dane.showCity}
+              onChange={(e) => ustaw('showCity', e.target.checked)}
+            />
+            <Form.Check
+              type="switch"
               id="hideOnAttendeeLists"
               className="mb-3"
               label={t('privacy.hideOnAttendeeLists')}

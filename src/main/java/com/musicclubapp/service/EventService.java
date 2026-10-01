@@ -61,6 +61,7 @@ public class EventService {
     private final EventMatchService matcher;
     private final EventParticipationService participationService;
     private final PerformerTagService performerTags;
+    private final LocationService location;
 
     public EventService(MusicEventRepository repository,
                         EventParticipationRepository participations,
@@ -68,7 +69,9 @@ public class EventService {
                         EventImportService importer,
                         EventMatchService matcher,
                         EventParticipationService participationService,
-                        PerformerTagService performerTags) {
+                        PerformerTagService performerTags,
+                        LocationService location) {
+        this.location = location;
         this.repository = repository;
         this.participations = participations;
         this.users = users;
@@ -78,27 +81,50 @@ public class EventService {
         this.performerTags = performerTags;
     }
 
-    /**
-     * Jedna ze trzech list.
-     *
-     * @param city   klucz miasta albo pusty - wszystkie miasta
-     * @param phrase szukany tekst w nazwie, miejscu albo skladzie; pusty - bez szukania
-     */
+    /** Jedna ze trzech list - bez ograniczenia do okolicy. */
     @Transactional(readOnly = true)
     public Page<EventCardResponse> list(EventView view, String city, String phrase,
                                         Pageable pageable, String viewer) {
+        return list(view, city, phrase, 0, pageable, viewer);
+    }
+
+    /** Wiekszy promien to juz nie "okolica" - i tak przestaje cos odcinac w obrebie jednego kraju. */
+    static final int MAX_PROMIEN_KM = 2000;
+
+    /**
+     * Jedna ze trzech list.
+     *
+     * @param city     klucz miasta albo pusty - wszystkie miasta
+     * @param phrase   szukany tekst w nazwie, miejscu albo skladzie; pusty - bez szukania
+     * @param radiusKm tylko wydarzenia w tym promieniu od miasta z mojego profilu; 0 - bez ograniczenia.
+     *                 Bez miasta w profilu promien nic nie robi. W "Moje" nie dziala nigdy - to
+     *                 wydarzenia, na ktore sam sie zapisalem.
+     */
+    @Transactional(readOnly = true)
+    public Page<EventCardResponse> list(EventView view, String city, String phrase, int radiusKm,
+                                        Pageable pageable, String viewer) {
+        int promien = Math.max(0, Math.min(radiusKm, MAX_PROMIEN_KM));
         return switch (view) {
-            case FOR_YOU -> forYou(city, phrase, pageable, viewer);
+            case FOR_YOU -> forYou(city, phrase, promien, pageable, viewer);
             case MINE -> mine(pageable, viewer);
-            case UPCOMING -> upcoming(city, phrase, pageable, viewer);
+            case UPCOMING -> upcoming(city, phrase, promien, pageable, viewer);
         };
     }
 
     /** Nadchodzace od najblizszego, jedna karta na serie. */
-    private Page<EventCardResponse> upcoming(String city, String phrase, Pageable pageable, String viewer) {
+    private Page<EventCardResponse> upcoming(String city, String phrase, int radiusKm, Pageable pageable,
+                                             String viewer) {
         LocalDate today = importer.today();
         String country = countryOf(viewer);
         String cityKey = cityKey(city);
+
+        /* Z promieniem lista liczy sie w Javie (odleglosc z wspolrzednych), bez - w SQL. */
+        LocationService.Origin origin = radiusKm > 0 ? originOf(viewer) : null;
+        if (origin != null) {
+            List<EventMatchService.Ranked> near = matcher.within(today, country, cityKey, phrase, origin, radiusKm);
+            return pageOf(near, Map.of(), pageable, viewer);
+        }
+
         String pattern = likePattern(phrase);
 
         long total = repository.countSeries(today, country, cityKey, pattern);
@@ -122,7 +148,8 @@ public class EventService {
      * zrodel naraz (sklad, tagi Last.fm, znajomi), a nadchodzacych wydarzen
      * jest kilkaset, nie miliony.
      */
-    private Page<EventCardResponse> forYou(String city, String phrase, Pageable pageable, String viewer) {
+    private Page<EventCardResponse> forYou(String city, String phrase, int radiusKm, Pageable pageable,
+                                           String viewer) {
         LocalDate today = importer.today();
         EventMatchService.Taste taste = matcher.tasteOf(viewer);
 
@@ -134,18 +161,25 @@ public class EventService {
         if (szukane.length() > MAX_FRAZA) {
             szukane = szukane.substring(0, MAX_FRAZA);
         }
-        List<EventMatchService.Ranked> ranked =
-            matcher.rank(taste, today, countryOf(viewer), cityKey(city), szukane, friendCounts);
+        List<EventMatchService.Ranked> ranked = matcher.rank(taste, today, countryOf(viewer), cityKey(city),
+            szukane, friendCounts, originOf(viewer), radiusKm);
 
+        Map<Long, List<EventReasonResponse>> reasons = new HashMap<>();
+        ranked.forEach(r -> reasons.put(r.eventId(), r.match().reasons()));
+        return pageOf(ranked, reasons, pageable, viewer);
+    }
+
+    /** Wycina strone z gotowej, uporzadkowanej listy i sklada z niej karty. */
+    private Page<EventCardResponse> pageOf(List<EventMatchService.Ranked> ranked,
+                                           Map<Long, List<EventReasonResponse>> reasons,
+                                           Pageable pageable, String viewer) {
         int from = (int) Math.min(pageable.getOffset(), ranked.size());
         int to = Math.min(from + pageable.getPageSize(), ranked.size());
         List<EventMatchService.Ranked> page = ranked.subList(from, to);
 
         Map<Long, Long> moreDates = new HashMap<>();
-        Map<Long, List<EventReasonResponse>> reasons = new HashMap<>();
         for (EventMatchService.Ranked r : page) {
             moreDates.put(r.eventId(), r.moreDates());
-            reasons.put(r.eventId(), r.match().reasons());
         }
         List<Long> ids = page.stream().map(EventMatchService.Ranked::eventId).toList();
 
@@ -193,6 +227,7 @@ public class EventService {
         Map<Long, Long> friends = friendIds.isEmpty()
             ? Map.of()
             : toMap(participations.countFriends(ids, friendIds));
+        LocationService.Origin origin = originOf(viewer);
 
         return ids.stream()
             .filter(byId::containsKey)
@@ -220,7 +255,9 @@ public class EventService {
                     c[1],
                     friends.getOrDefault(id, 0L),
                     reasons.getOrDefault(id, List.of()),
-                    e.isWithdrawn());
+                    e.isWithdrawn(),
+                    LocationService.rounded(
+                        location.distanceKm(origin, e.getLatitude(), e.getLongitude(), e.getCityKey())));
             })
             .toList();
     }
@@ -276,7 +313,9 @@ public class EventService {
             participationService.summary(id, viewer),
             friends,
             reasons,
-            attendees);
+            attendees,
+            LocationService.rounded(location.distanceKm(originOf(viewer),
+                event.getLatitude(), event.getLongitude(), event.getCityKey())));
     }
 
     /**
@@ -303,9 +342,12 @@ public class EventService {
         EventMatchService.Taste taste = matcher.tasteOf(viewer);
         boolean hasTaste = !taste.artists().isEmpty() || !taste.trackArtists().isEmpty();
 
+        User me = viewer == null ? null : users.findByUsername(viewer).orElse(null);
         return new EventsInfoResponse(importer.available(), country, EventCountries.OBSLUGIWANE,
             importer.importing(country), cities, hasTaste,
-            participations.countMineUpcoming(viewer, today), performerTags.available(), lastImport);
+            participations.countMineUpcoming(viewer, today), performerTags.available(), lastImport,
+            me == null ? null : me.getCity(),
+            me != null && me.getCityLatitude() != null && me.getCityLongitude() != null);
     }
 
     /**
@@ -326,6 +368,11 @@ public class EventService {
 
         importer.requestCountry(kod);
         return info(admin, viewer);
+    }
+
+    /** Skad ogladajacy liczy odleglosci (jego miasto); null - nie ustawil. */
+    private LocationService.Origin originOf(String viewer) {
+        return viewer == null ? null : location.originOf(users.findByUsername(viewer).orElse(null));
     }
 
     /** Kraj z konta; nic nie wybrano - Polska. */

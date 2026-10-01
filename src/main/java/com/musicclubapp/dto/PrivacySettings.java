@@ -12,6 +12,8 @@ public record PrivacySettings(
     @NotNull ClanInvitePolicy clanInvitesFrom,
     boolean showOnline,
     boolean showInSuggestions,
-    boolean hideOnAttendeeLists
+    boolean hideOnAttendeeLists,
+    /** Czy miasto widac na profilu (do dopasowania po okolicy i tak sluzy). */
+    boolean showCity
 ) {
 }
