@@ -25,6 +25,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     Optional<User> findByUsername(String username);
 
+    /** Konta o podanych loginach (dokladnych) - do oznaczen w komentarzach. */
+    List<User> findByUsernameIn(java.util.Collection<String> usernames);
+
     Optional<User> findByEmail(String email);
 
     /** Przydaje sie przy rejestracji: "czy ten login jest juz zajety?" */
@@ -191,6 +194,30 @@ public interface UserRepository extends JpaRepository<User, Long> {
            """, nativeQuery = true)
     List<SuggestionRow> friendSuggestions(@Param("ogladajacy") String viewer,
                                             Pageable pageable);
+
+    /**
+     * Wspolny gust ogladajacego z podanymi osobami - po jednym wierszu na osobe. Tylko osoby z jawnym
+     * profilem: kto ograniczyl profil do znajomych, ten nie ma "podobnego gustu" w oczach obcych (jego
+     * ulubieni sa ukryci, a po kolejnosci tablicy dalo by sie ich odgadnac).
+     */
+    @Query(value = """
+           SELECT u.id AS userId,
+                  (SELECT COUNT(*)
+                     FROM user_favorite_artists kandydat
+                     JOIN user_favorite_artists widz ON kandydat.artist_id = widz.artist_id
+                    WHERE kandydat.user_id = u.id AND widz.user_id = :widz) AS sharedArtists,
+                  (SELECT COUNT(DISTINCT g.genre)
+                     FROM user_favorite_artists kandydat
+                     JOIN artist_genres g ON g.artist_id = kandydat.artist_id
+                    WHERE kandydat.user_id = u.id
+                      AND g.genre IN (SELECT g2.genre
+                                        FROM user_favorite_artists widz
+                                        JOIN artist_genres g2 ON g2.artist_id = widz.artist_id
+                                       WHERE widz.user_id = :widz)) AS sharedGenres
+             FROM users u
+            WHERE u.id IN (:osoby) AND u.profile_visibility = 'EVERYONE'
+           """, nativeQuery = true)
+    List<TasteOverlapRow> tasteOverlap(@Param("widz") Long viewerId, @Param("osoby") Collection<Long> userIds);
 
     /** Ilu wspolnych znajomych maja dwie osoby - do zasady "tylko znajomi znajomych". */
     @Query(value = """

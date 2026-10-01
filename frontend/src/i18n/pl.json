@@ -291,7 +291,21 @@
       "showAll": "Pokaż wszystkie posty",
       "findFriends": "Znajdź ludzi"
     },
-    "underEvent": "Post pod wydarzeniem: {{name}}"
+    "underEvent": "Post pod wydarzeniem: {{name}}",
+    "order": {
+      "label": "Kolejność postów osób spoza znajomych",
+      "RELEVANT": "Dla ciebie",
+      "NEWEST": "Najnowsze",
+      "RELEVANTHint": "Posty z twojej okolicy, od osób o podobnym guście i takie, pod którymi dużo się dzieje — wyżej; starsze coraz niżej",
+      "NEWESTHint": "Wszystko od najnowszych"
+    },
+    "strangersRelevant": "Dalej: polecane dla ciebie",
+    "reasons": {
+      "label": "Dlaczego widzisz ten post",
+      "NEAR": "Z twojej okolicy",
+      "TASTE": "Podobny gust",
+      "POPULAR": "Popularne"
+    }
   },
   "favorites": {
     "title": "Ulubieni",
@@ -420,7 +434,10 @@
     "clanInvite": "{{username}} zaprasza cię do klanu {{name}}",
     "clanKicked": "Nie jesteś już w klanie {{name}}",
     "clanJoinRequest": "{{username}} prosi o dołączenie do klanu {{name}}",
-    "clanRequestAccepted": "Twoja prośba została przyjęta — jesteś w klanie {{name}}"
+    "clanRequestAccepted": "Twoja prośba została przyjęta — jesteś w klanie {{name}}",
+    "postComment": "{{username}} komentuje Twój post",
+    "commentReply": "{{username}} odpowiada na Twój komentarz",
+    "commentMention": "{{username}} oznacza Cię w komentarzu"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -500,13 +517,15 @@
       "PROFILE": "Profil tej osoby",
       "POST": "Konkretny post",
       "CONVERSATION": "Wasza rozmowa",
-      "CLAN": "Klan (nazwa, skrót, opis, obrazy)"
+      "CLAN": "Klan (nazwa, skrót, opis, obrazy)",
+      "COMMENT": "Konkretny komentarz"
     },
     "contextHints": {
       "PROFILE": "Administrator obejrzy profil — nazwę, zdjęcie i to, co ta osoba o sobie pokazuje.",
       "POST": "Do zgłoszenia dołączymy treść tego posta.",
       "CONVERSATION": "Do zgłoszenia dołączymy kopię ostatnich 20 wiadomości z Waszej rozmowy. Zobaczy je wyłącznie administrator.",
-      "CLAN": "Administrator obejrzy nazwę, skrót, opis i obrazy klanu. Do zgłoszenia dołączymy kopię nazwy i opisu z tej chwili."
+      "CLAN": "Administrator obejrzy nazwę, skrót, opis i obrazy klanu. Do zgłoszenia dołączymy kopię nazwy i opisu z tej chwili.",
+      "COMMENT": "Do zgłoszenia dołączymy treść tego komentarza. Administrator zobaczy go razem z postem, pod którym stoi."
     },
     "description": "Co się stało?",
     "descriptionPlaceholder": "Opisz własnymi słowami, na czym polega problem…",
@@ -557,7 +576,8 @@
       "DELETE_POST": "usuń zgłoszony post",
       "BAN_POSTING": "zakaz publikowania",
       "BAN_MESSAGING": "zakaz wysyłania wiadomości",
-      "DELETE_ACCOUNT": "usuń konto"
+      "DELETE_ACCOUNT": "usuń konto",
+      "DELETE_COMMENT": "usuń zgłoszony komentarz"
     },
     "reopen": "Zmień decyzję",
     "reopenHint": "Otwiera sprawę ponownie. Nie cofa działań, które już zostały wykonane.",
@@ -566,7 +586,8 @@
     "openClan": "Otwórz klan",
     "clanGone": "Klan został już rozwiązany.",
     "reportedFounder": "założyciel klanu",
-    "evidenceHintClan": "Nazwa i opis klanu z chwili zgłoszenia — zachowane także wtedy, gdy klan został zmieniony albo rozwiązany."
+    "evidenceHintClan": "Nazwa i opis klanu z chwili zgłoszenia — zachowane także wtedy, gdy klan został zmieniony albo rozwiązany.",
+    "openComment": "Otwórz komentarz pod postem"
   },
   "myReports": {
     "title": "Moje zgłoszenia",
@@ -1353,5 +1374,31 @@
     "nearby": "Z okolicy: {{city}}",
     "rangeNote": "W promieniu {{km}} km od: {{city}}.",
     "changeCity": "Zmień miasto"
+  },
+  "comments": {
+    "title": "Komentarze",
+    "placeholder": "Napisz komentarz…",
+    "replyPlaceholder": "Napisz odpowiedź…",
+    "send": "Wyślij komentarz",
+    "hint": "Wpisz @, żeby oznaczyć osobę. Ctrl+Enter wysyła.",
+    "mentionList": "Osoby do oznaczenia",
+    "reply": "Odpowiedz",
+    "delete": "Usuń komentarz",
+    "confirmDelete": "Usunąć ten komentarz? Razem z nim znikną odpowiedzi pod nim.",
+    "showReplies_one": "Pokaż {{count}} odpowiedź",
+    "showReplies_few": "Pokaż {{count}} odpowiedzi",
+    "showReplies_many": "Pokaż {{count}} odpowiedzi",
+    "showReplies_other": "Pokaż {{count}} odpowiedzi",
+    "moreReplies": "Pokaż kolejne odpowiedzi",
+    "older": "Pokaż starsze komentarze",
+    "empty": "Nie ma jeszcze komentarzy — napisz pierwszy.",
+    "replyTo": "odpowiedź dla {{username}}",
+    "open0": "Skomentuj",
+    "openN": "Komentarze ({{count}})",
+    "hide": "Ukryj komentarze",
+    "count_one": "{{count}} komentarz",
+    "count_few": "{{count}} komentarze",
+    "count_many": "{{count}} komentarzy",
+    "count_other": "{{count}} komentarzy"
   }
 }

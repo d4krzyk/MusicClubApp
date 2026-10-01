@@ -20,6 +20,8 @@ import com.musicclubapp.repository.ClanPollVoteRepository;
 import com.musicclubapp.repository.ClanMemberRepository;
 import com.musicclubapp.repository.ClanMessageReactionRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
+import com.musicclubapp.repository.CommentMentionRepository;
+import com.musicclubapp.repository.CommentRepository;
 import com.musicclubapp.repository.ClanTrackRepository;
 import com.musicclubapp.repository.ClanTrackVoteRepository;
 import com.musicclubapp.repository.EventParticipationRepository;
@@ -114,6 +116,8 @@ public class DataExportService {
     private final ClanMemberTitleRepository clanTitles;
     private final PushSubscriptionRepository pushSubscriptions;
     private final ReportRepository reports;
+    private final CommentRepository comments;
+    private final CommentMentionRepository commentMentions;
     private final FileStorageService fileStorage;
     private final ObjectMapper mapper;
     private final Clock clock;
@@ -130,7 +134,10 @@ public class DataExportService {
                              ClanPollRepository clanPolls, ClanPollVoteRepository clanPollVotes,
                              ClanMemberTitleRepository clanTitles,
                              PushSubscriptionRepository pushSubscriptions, ReportRepository reports,
+                             CommentRepository comments, CommentMentionRepository commentMentions,
                              FileStorageService fileStorage, ObjectMapper mapper, Clock clock) {
+        this.comments = comments;
+        this.commentMentions = commentMentions;
         this.clanReactions = clanReactions;
         this.clanTracks = clanTracks;
         this.clanTrackVotes = clanTrackVotes;
@@ -181,6 +188,7 @@ public class DataExportService {
         dane.put("profile", profil(user));
         dane.put("posts", posty(id, pliki));
         dane.put("reactions", reakcje(id));
+        dane.put("comments", komentarze(id));
         dane.put("messages", wiadomosci(id));
         dane.put("friends", user.getFriends().stream().map(User::getUsername).sorted().toList());
         dane.put("friendRequests", zaproszenia(id));
@@ -303,6 +311,17 @@ public class DataExportService {
                 "images", zdjecia));
         }
         return wynik;
+    }
+
+    /** Wlasne komentarze: pod ktorym postem, czy to odpowiedz, tresc i kogo oznaczono. */
+    private List<Object> komentarze(Long userId) {
+        return comments.ofUser(userId).stream()
+            .map(c -> mapa("at", c.getCreatedAt(), "postId", c.getPost().getId(),
+                "postAuthor", c.getPost().getAuthor().getUsername(),
+                "replyToCommentId", c.getParent() == null ? null : c.getParent().getId(),
+                "content", c.getContent(),
+                "mentions", commentMentions.usernamesIn(c.getId())))
+            .collect(java.util.stream.Collectors.toList());
     }
 
     private List<Object> reakcje(Long userId) {

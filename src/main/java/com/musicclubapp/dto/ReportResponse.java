@@ -19,6 +19,8 @@ public record ReportResponse(
     Long postId,
     /** Numer klanu (przy zgloszeniu klanu) albo {@code null}; klan moze byc juz rozwiazany. */
     Long clanId,
+    /** Numer komentarza (przy zgloszeniu komentarza) albo {@code null}; komentarz moze byc juz skasowany. */
+    Long commentId,
     String description,
     List<EvidenceLineResponse> evidence,
     ReportStatus status,

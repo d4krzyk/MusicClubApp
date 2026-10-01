@@ -76,6 +76,10 @@ class PostServiceTest {
     @Mock
     private ClanService clans;
 
+    /** Bez komentarzy - mock zwraca puste liczniki. */
+    @Mock
+    private CommentService comments;
+
     @InjectMocks
     private PostService postService;
 
@@ -93,7 +97,7 @@ class PostServiceTest {
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(1L, "anna", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), true, true, ReactionSummary.empty(), PostVisibility.PUBLIC, false, null, null, null));
+                LocalDateTime.now(), true, true, ReactionSummary.empty(), PostVisibility.PUBLIC, false, null, null, null, List.of(), 0L));
     }
 
     /** Serwis oEmbed odpowiada tytulem i miniaturka. */

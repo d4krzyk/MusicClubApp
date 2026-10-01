@@ -780,6 +780,38 @@ Dockera: pełne `docker compose -f docker-compose.prod.yml up`. Obrazy
 i przekazywanie ruchu trzeba potwierdzić przy pierwszym uruchomieniu na
 serwerze.
 
+Przy tablicy „Dla ciebie” i komentarzach (październik 2026, migracja V14):
+
+- migracja V14 na **pustej** bazie (V1 → V14, profil `prod`: Flyway + `validate`)
+  i na bazie **po V13 z danymi** (2 posty, 2 powiadomienia, 2 zgłoszenia): stare
+  wiersze zostają, nowe typy powiadomień (`POST_COMMENT`, `COMMENT_REPLY`,
+  `COMMENT_MENTION`) i kontekst zgłoszenia `COMMENT` przechodzą przez odtworzone
+  CHECK-i, a skasowanie komentarza kasuje jego powiadomienia i zeruje
+  `reports.comment_id`;
+- `mvnw clean test` → 654 testy; klasy tablicy i komentarzy (`FeedRankerTest`,
+  `FeedRankingFlowTest`, `FeedPaginationTest`, `CommentFlowTest`,
+  `CommentMentionsTest`, `DataExportFlowTest`) przechodzą także na PostgreSQL 16;
+- testy z mutacjami. Tablica: 21 mutantów, 20 zabitych, jeden równoważny
+  (rozstrzyganie remisów w ocenie). Komentarze: 40 mutantów — pierwszy przebieg
+  zostawił 9 żywych i wszystkie to były luki w testach, nie w kodzie: kasowanie
+  przez zarząd klanu, trzy filtry podpowiedzi do oznaczania (widoczność posta,
+  blokady, limit 8), blokada autora komentarza nadrzędnego, samooznaczenie, limit
+  rozmiaru strony; dwa kolejne były martwym warunkiem (usunięty) i równoważną
+  gałęzią. Mutanta zmieniającego stałą `NA_MINUTE` nie da się zrobić — test limitu
+  pętli się po tej samej stałej i mieli się bez końca; zmienia się porównanie;
+- znalezione przy sprawdzaniu, z testem, który najpierw czerwieniał: kolejność
+  podpowiedzi osób piszących pod postem była przypadkowa (zapytanie `DISTINCT` bez
+  `ORDER BY`), a przeglądarka nie robiła odnośnika z oznaczenia z kropką na końcu
+  („dzięki @ala.”), choć serwer je zapisywał;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V14, 29 sprawdzeń komentarzy
+  i regresja tablicy i lokalizacji): podpowiedzi po `@`, wstawianie klawiszem,
+  odnośnik do profilu, kropka po oznaczeniu, HTML i adres e-mail jako zwykły tekst
+  (bez elementów w DOM), limit 1000 znaków, 400 znaków bez spacji bez przelewu przy
+  390 i 320 px, powiadomienia (bez rodzaju gramatycznego) i przejście do
+  podświetlonego komentarza, odpowiedzi i odpowiedź na odpowiedź (jeden poziom),
+  zgłoszenie z `comment_id`, kasowanie z kaskadą, ciemny motyw. Skrypt trzeba
+  puszczać na świeżej bazie — konta z poprzedniego skryptu zmieniają listy propozycji.
+
 ---
 
 ## Co dalej, żeby aplikacja trafiła na Google Play

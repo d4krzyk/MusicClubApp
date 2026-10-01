@@ -5,7 +5,7 @@ import client from './client';
 
 /** Strona tablicy - albo postow jednego autora, pod wydarzeniem albo w klanie. */
 export async function tablica({
-  strona, rozmiar, zakres, autor, kolejnosc, wydarzenie, klan,
+  strona, rozmiar, zakres, autor, kolejnosc, wydarzenie, klan, porzadek,
 }) {
   const { data } = await client.get('/posts', {
     params: {
@@ -14,6 +14,8 @@ export async function tablica({
       scope: zakres,
       author: autor,
       direction: kolejnosc,
+      /* RELEVANT = obcy wedlug trafnosci (okolica, gust, reakcje), NEWEST = od najnowszych */
+      sort: porzadek,
       event: wydarzenie,
       clan: klan,
     },

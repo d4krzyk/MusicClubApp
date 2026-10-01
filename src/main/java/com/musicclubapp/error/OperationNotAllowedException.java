@@ -410,6 +410,24 @@ public class OperationNotAllowedException extends RuntimeException {
             "Nie ma rozmowy, ktora mozna by dolaczyc", "error.report.noconversation");
     }
 
+    /** Proba skasowania cudzego komentarza (nie jest sie ani autorem, ani autorem posta, ani moderatorem). */
+    public static OperationNotAllowedException someoneElsesComment() {
+        return new OperationNotAllowedException(
+            "Mozna usuwac tylko wlasne komentarze albo komentarze pod wlasnym postem", "error.comment.notowner");
+    }
+
+    /** Zgloszenie komentarza bez wskazania komentarza. */
+    public static OperationNotAllowedException reportNeedsComment() {
+        return new OperationNotAllowedException(
+            "Wskaz komentarz, ktorego dotyczy zgloszenie", "error.report.needscomment");
+    }
+
+    /** Proba skasowania komentarza przy zgloszeniu, ktore komentarza nie dotyczy. */
+    public static OperationNotAllowedException reportHasNoComment() {
+        return new OperationNotAllowedException(
+            "To zgloszenie nie dotyczy zadnego komentarza", "error.report.action.nocomment");
+    }
+
     /** Proba skasowania posta przy zgloszeniu, ktore posta nie dotyczy. */
     public static OperationNotAllowedException reportHasNoPost() {
         return new OperationNotAllowedException(

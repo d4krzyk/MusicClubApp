@@ -165,7 +165,8 @@ function ReportCard({ report, language, t, me, onResolved }) {
 
   /* Kasowanie posta pokazujemy WYLACZNIE przy zgloszeniu posta. */
   const actions = ['NONE',
-    ...(report.postId ? ['DELETE_POST'] : []),
+    ...(report.postId && !report.commentId ? ['DELETE_POST'] : []),
+    ...(report.commentId ? ['DELETE_COMMENT'] : []),
     ...(aboutMe ? [] : ['BAN_POSTING', 'BAN_MESSAGING', 'DELETE_ACCOUNT'])];
 
   /** Dowody pobieramy dopiero przy rozwinieciu karty. */
@@ -291,8 +292,8 @@ function ReportCard({ report, language, t, me, onResolved }) {
         {/* Post prowadzi wprost do tresci - administrator nie musi go szukac */}
         {report.postId && (
           <div className="mt-2">
-            <Link to={`/post/${report.postId}`} className="small">
-              {t('reports.openPost')}
+            <Link to={`/post/${report.postId}${report.commentId ? `?komentarz=${report.commentId}` : ''}`} className="small">
+              {report.commentId ? t('reports.openComment') : t('reports.openPost')}
             </Link>
           </div>
         )}

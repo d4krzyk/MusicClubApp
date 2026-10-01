@@ -43,6 +43,50 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         @Param("hidden") Collection<Long> hidden,
                         Pageable pageable);
 
+    /*
+     * Tablica "Dla ciebie" sklada sie z dwoch list: posty kregu (od najnowszych) i posty obcych (najpierw
+     * 300 najnowszych porzadkowanych trafnoscia, reszta od najnowszych). Ten sam warunek widocznosci co
+     * w findFeed - rozni sie tylko tym, ze lista jest podzielona na te dwie czesci.
+     */
+
+    /** Ile postow maja osoby z kregu (razem z moimi). */
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.author.id IN :circle AND p.clan IS NULL")
+    long countCircle(@Param("circle") Collection<Long> circle);
+
+    /** Wycinek postow kregu, od najnowszych; remis dat rozstrzyga numer, zeby kolejnosc byla jednoznaczna. */
+    @Query("""
+           SELECT p FROM Post p
+           JOIN FETCH p.author a
+           LEFT JOIN FETCH p.event
+           WHERE a.id IN :circle AND p.clan IS NULL
+           ORDER BY p.createdAt DESC, p.id DESC
+           """)
+    List<Post> circleSlice(@Param("circle") Collection<Long> circle, Pageable pageable);
+
+    /** Ile postow maja osoby spoza kregu, ktore ogladajacy moze zobaczyc (publiczne, bez blokad). */
+    @Query("""
+           SELECT COUNT(p) FROM Post p
+           WHERE p.clan IS NULL
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC OR p.visibility IS NULL)
+             AND p.author.id NOT IN :circle
+             AND p.author.id NOT IN :hidden
+           """)
+    long countStrangers(@Param("circle") Collection<Long> circle, @Param("hidden") Collection<Long> hidden);
+
+    /** Wycinek postow obcych, od najnowszych. */
+    @Query("""
+           SELECT p FROM Post p
+           JOIN FETCH p.author a
+           LEFT JOIN FETCH p.event
+           WHERE p.clan IS NULL
+             AND (p.visibility = com.musicclubapp.entity.PostVisibility.PUBLIC OR p.visibility IS NULL)
+             AND a.id NOT IN :circle
+             AND a.id NOT IN :hidden
+           ORDER BY p.createdAt DESC, p.id DESC
+           """)
+    List<Post> strangersSlice(@Param("circle") Collection<Long> circle,
+                              @Param("hidden") Collection<Long> hidden, Pageable pageable);
+
     /** Tablica zawezona do wlasnego kregu - wybor uzytkownika w przelaczniku nad tablica. */
     @Query(value = """
            SELECT p FROM Post p

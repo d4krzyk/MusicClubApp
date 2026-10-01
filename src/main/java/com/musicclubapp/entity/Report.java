@@ -80,6 +80,15 @@ public class Report {
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private Clan clan;
 
+    /**
+     * Komentarz, ktorego dotyczy zgloszenie - tylko przy ReportContext#COMMENT. Skasowanie komentarza (np. decyzja
+     * administratora) zostawia zgloszenie jako historie - baza czysci odnosnik sama; tresc jest w migawce dowodow.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Comment comment;
+
     /** Co zglaszajacy napisal od siebie. */
     @Column(length = MAX_DESCRIPTION_LENGTH, columnDefinition = "TEXT")
     private String description;
@@ -165,6 +174,14 @@ public class Report {
 
     public void setPost(Post post) {
         this.post = post;
+    }
+
+    public Comment getComment() {
+        return comment;
+    }
+
+    public void setComment(Comment comment) {
+        this.comment = comment;
     }
 
     public Clan getClan() {

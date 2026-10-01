@@ -13,10 +13,24 @@ import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
 import EmptyState from '../components/EmptyState';
 import useLiveReactions from '../hooks/useLiveReactions';
-import { IconCross, IconPlus, IconFriends, IconGlobe, IconInbox } from '../components/Icons';
+import {
+  IconCross, IconPlus, IconFriends, IconGlobe, IconInbox, IconStar,
+} from '../components/Icons';
 
 /** Ile postow pobieramy za jednym razem. */
 const PAGE_SIZE = 10;
+
+/** Pod tym kluczem przegladarka pamieta wybrana kolejnosc obcych postow. */
+const PAMIEC_PORZADKU = 'tablica.porzadek';
+
+function zapamietanyPorzadek() {
+  try {
+    return localStorage.getItem(PAMIEC_PORZADKU) === 'NEWEST' ? 'NEWEST' : 'RELEVANT';
+  } catch {
+    // Tryb prywatny albo zablokowane dane strony - po prostu bez pamieci
+    return 'RELEVANT';
+  }
+}
 
 /** Tablica: przycisk dodawania posta i lista wpisow. */
 export default function FeedPage() {
@@ -32,16 +46,27 @@ export default function FeedPage() {
   const [message, setMessage] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [scope, setScope] = useState('ALL');
+  const [porzadek, setPorzadek] = useState(zapamietanyPorzadek);
 
-  const fetch = useCallback(async (pageNumber, joined, wantedScope) => {
+  const fetch = useCallback(async (pageNumber, joined, wantedScope, wantedOrder) => {
     setLoading(true);
     setListError(null);
     try {
       const data = await posty.tablica({
-        strona: pageNumber, rozmiar: PAGE_SIZE, zakres: wantedScope,
+        strona: pageNumber, rozmiar: PAGE_SIZE, zakres: wantedScope, porzadek: wantedOrder,
       });
 
-      setPosts((previous) => (joined ? [...previous, ...data.content] : data.content));
+      /*
+       * Ranking zmienia sie, gdy ktos doda post, wiec ten sam wpis moze trafic na dwie kolejne strony -
+       * dociagane posty, ktore juz sa na liscie, pomijamy.
+       */
+      setPosts((previous) => {
+        if (!joined) {
+          return data.content;
+        }
+        const znane = new Set(previous.map((p) => p.id));
+        return [...previous, ...data.content.filter((p) => !znane.has(p.id))];
+      });
       setLastPage(data.last);
       setPage(data.number);
     } catch (error) {
@@ -54,14 +79,16 @@ export default function FeedPage() {
   }, [t]);
 
   useEffect(() => {
-    fetch(0, false, scope);
-  }, [fetch, scope]);
+    fetch(0, false, scope, porzadek);
+  }, [fetch, scope, porzadek]);
 
   /* Klikniecie w logo albo w ikone tablicy - takze wtedy, gdy juz tu jestesmy. */
   useEffect(() => {
     if (location.state?.refreshAt) {
-      fetch(0, false, scope);
+      fetch(0, false, scope, porzadek);
     }
+    // porzadek zmienia osobny efekt wyzej - tu ma liczyc sie tylko klikniecie w logo
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state?.refreshAt, fetch, scope]);
 
   /* Odswiezanie licznikow reakcji po powrocie do karty. */
@@ -80,6 +107,20 @@ export default function FeedPage() {
     setPosts([]);
     setFirstLoad(true);
     setScope(next);
+  }
+
+  function changeOrder(next) {
+    if (next === porzadek) {
+      return;
+    }
+    try {
+      localStorage.setItem(PAMIEC_PORZADKU, next);
+    } catch {
+      // jw.
+    }
+    setPosts([]);
+    setFirstLoad(true);
+    setPorzadek(next);
   }
 
   function afterAdd(created) {
@@ -170,6 +211,25 @@ export default function FeedPage() {
           </button>
         </div>
 
+        {/* Kolejnosc ma sens tylko przy "Wszystko" - krag znajomych jest zawsze od najnowszych */}
+        {scope === 'ALL' && (
+          <div className="feed-porzadek mb-3" role="group" aria-label={t('posts.order.label')}>
+            {['RELEVANT', 'NEWEST'].map((o) => (
+              <button
+                key={o}
+                type="button"
+                className={`feed-porzadek-opcja${porzadek === o ? ' is-active' : ''}`}
+                aria-pressed={porzadek === o}
+                title={t(`posts.order.${o}Hint`)}
+                onClick={() => changeOrder(o)}
+              >
+                {o === 'RELEVANT' && <IconStar size={12} />}
+                {t(`posts.order.${o}`)}
+              </button>
+            ))}
+          </div>
+        )}
+
         <Collapse in={formOpen}>
           <div id="formularz-postu">
             <PostForm onAdded={afterAdd} />
@@ -190,7 +250,7 @@ export default function FeedPage() {
           <Fragment key={post.id}>
             {showDivider && i === strangersStartAt && (
               <div className="feed-divider">
-                <span>{t('posts.strangersBelow')}</span>
+                <span>{porzadek === 'RELEVANT' ? t('posts.strangersRelevant') : t('posts.strangersBelow')}</span>
               </div>
             )}
 
@@ -246,7 +306,7 @@ export default function FeedPage() {
 
         {!loading && !lastPage && (
           <div className="text-center">
-            <Button variant="outline-secondary" onClick={() => fetch(page + 1, true, scope)}>
+            <Button variant="outline-secondary" onClick={() => fetch(page + 1, true, scope, porzadek)}>
               {t('posts.loadMore')}
             </Button>
           </div>

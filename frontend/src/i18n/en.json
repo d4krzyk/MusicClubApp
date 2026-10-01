@@ -282,7 +282,21 @@
       "showAll": "Show every post",
       "findFriends": "Find people"
     },
-    "underEvent": "Post about the event: {{name}}"
+    "underEvent": "Post about the event: {{name}}",
+    "order": {
+      "label": "Order of posts from people who are not your friends",
+      "RELEVANT": "For you",
+      "NEWEST": "Newest",
+      "RELEVANTHint": "Posts from your area, from people with a similar taste and ones with a lot going on come first; older ones sink",
+      "NEWESTHint": "Everything, newest first"
+    },
+    "strangersRelevant": "Below: picked for you",
+    "reasons": {
+      "label": "Why you see this post",
+      "NEAR": "From your area",
+      "TASTE": "Similar taste",
+      "POPULAR": "Popular"
+    }
   },
   "favorites": {
     "title": "Favourites",
@@ -397,7 +411,10 @@
     "clanInvite": "{{username}} invites you to the clan {{name}}",
     "clanKicked": "You are no longer in the clan {{name}}",
     "clanJoinRequest": "{{username}} asks to join the clan {{name}}",
-    "clanRequestAccepted": "Your request was accepted — you are now in the clan {{name}}"
+    "clanRequestAccepted": "Your request was accepted — you are now in the clan {{name}}",
+    "postComment": "{{username}} commented on your post",
+    "commentReply": "{{username}} replied to your comment",
+    "commentMention": "{{username}} mentioned you in a comment"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -477,13 +494,15 @@
       "PROFILE": "This person's profile",
       "POST": "A specific post",
       "CONVERSATION": "Your conversation",
-      "CLAN": "Clan (name, tag, description, images)"
+      "CLAN": "Clan (name, tag, description, images)",
+      "COMMENT": "A specific comment"
     },
     "contextHints": {
       "PROFILE": "The administrator will look at the profile — the name, picture and what this person shows about themselves.",
       "POST": "We will attach the content of that post to the report.",
       "CONVERSATION": "We will attach a copy of the last 20 messages from your conversation. Only an administrator will see them.",
-      "CLAN": "The administrator will look at the clan’s name, tag, description and images. We attach a copy of the name and description as they are now."
+      "CLAN": "The administrator will look at the clan’s name, tag, description and images. We attach a copy of the name and description as they are now.",
+      "COMMENT": "We will attach the text of this comment to the report. The administrator will see it together with the post it is under."
     },
     "description": "What happened?",
     "descriptionPlaceholder": "Describe the problem in your own words…",
@@ -532,7 +551,8 @@
       "DELETE_POST": "delete the reported post",
       "BAN_POSTING": "ban from posting",
       "BAN_MESSAGING": "ban from messaging",
-      "DELETE_ACCOUNT": "delete the account"
+      "DELETE_ACCOUNT": "delete the account",
+      "DELETE_COMMENT": "delete the reported comment"
     },
     "reopen": "Change the decision",
     "reopenHint": "Reopens the case. It does not undo actions that were already carried out.",
@@ -541,7 +561,8 @@
     "openClan": "Open clan",
     "clanGone": "The clan has been disbanded.",
     "reportedFounder": "clan founder",
-    "evidenceHintClan": "The clan’s name and description at the time of the report — kept even if the clan is later changed or disbanded."
+    "evidenceHintClan": "The clan’s name and description at the time of the report — kept even if the clan is later changed or disbanded.",
+    "openComment": "Open the comment under the post"
   },
   "myReports": {
     "title": "My reports",
@@ -1276,5 +1297,27 @@
     "nearby": "Nearby: {{city}}",
     "rangeNote": "Within {{km}} km of {{city}}.",
     "changeCity": "Change city"
+  },
+  "comments": {
+    "title": "Comments",
+    "placeholder": "Write a comment…",
+    "replyPlaceholder": "Write a reply…",
+    "send": "Send comment",
+    "hint": "Type @ to mention someone. Ctrl+Enter sends.",
+    "mentionList": "People to mention",
+    "reply": "Reply",
+    "delete": "Delete comment",
+    "confirmDelete": "Delete this comment? Replies under it disappear with it.",
+    "showReplies_one": "Show {{count}} reply",
+    "showReplies_other": "Show {{count}} replies",
+    "moreReplies": "Show more replies",
+    "older": "Show older comments",
+    "empty": "No comments yet — write the first one.",
+    "replyTo": "reply to {{username}}",
+    "open0": "Comment",
+    "openN": "Comments ({{count}})",
+    "hide": "Hide comments",
+    "count_one": "{{count}} comment",
+    "count_other": "{{count}} comments"
   }
 }

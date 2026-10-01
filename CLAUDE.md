@@ -16,7 +16,9 @@ Zrobione: responsywność na telefonie, PWA, logo i napis MusicClub, krój Poppi
 konfiguracja produkcyjna z HTTPS i migracjami (`docs/WDROZENIE.md`),
 zakładka Wydarzenia — etapy 1–2 i wybór kraju (niżej), potwierdzanie adresu
 e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów, klany
-z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12).
+z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12), miasto w profilu
+i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i komentarze
+z oznaczeniami (V14).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -489,6 +491,68 @@ stawia wyżej ludzi, koncerty i klany z okolicy, a nie z drugiego końca kraju.
   Miasto jest w eksporcie danych; kasuje się z kontem (kolumna na `users`).
 - Nie zwiększyłem `app.legal.version` (2026-09-30 — nikt jeszcze nie akceptował); po wypuszczeniu każda zmiana
   tekstu = nowa data.
+
+## Tablica „Dla ciebie” (bez migracji)
+
+`GET /api/posts?scope=ALL&sort=RELEVANT` (domyślnie; `NEWEST` = jak dawniej; zakres `FRIENDS` zawsze od najnowszych).
+Przeglądarka pamięta wybór w `localStorage` (`tablica.porzadek`).
+
+- **Kolejność**: krąg znajomych (i własne) od najnowszych → pula **300 najnowszych publicznych postów obcych**
+  (`app.feed.pool-size`) uszeregowana w Javie przez `FeedRanker` → reszta od najnowszych. Powód, dla którego
+  nie robimy tego w SQL: wspólny gust to dane z kilku tabel; powód, dla którego pula jest stała: stronicowanie
+  musi być stabilne (`OffsetPageable` + `FeedPaginationTest`; `PageImpl` poprawia `total` na ostatniej stronie).
+- `ocena = świeżość × (0,4 + okolica·1,0 + gust·0,7 + popularność·0,6)`. Świeżość (połowa co 72 h) **mnoży**,
+  więc kolejność dwóch postów nie zmienia się z upływem czasu (test `orderIsStableOverTime`).
+  Okolica = `LocationScore` 0–5 / 5; gust = 3 pkt za wspólnego wykonawcę i 1 pkt za gatunek (10 = max);
+  popularność = `log1p(reakcje + 2·komentarze) / log1p(20)`. Stałe są w `FeedRanker`; zmieniasz — sprawdź
+  przykłady w komentarzu klasy i `FeedRankerTest`.
+- **Gust tylko z profili `EVERYONE`** (`UserRepository.tasteOverlap`) — profil „tylko znajomi” nie wchodzi do
+  rankingu, tak jak nie wchodzi do gustu klanu. **Okolica liczy się zawsze**, ale podpis „Z twojej okolicy”
+  (`FeedReason.NEAR`, poziom ≥ 3) tylko gdy autor ma `show_city`. Powody `TASTE` (≥ 1 wspólny wykonawca albo ≥ 2
+  gatunki) i `POPULAR` (zainteresowanie ≥ 5) widać przy poście; znajomi nie mają powodów.
+- Blokady i widoczność: ta sama reguła co zawsze (`hiddenForQuery`, `p.clan IS NULL`, PUBLIC albo NULL).
+  Zapytania puli (`strangersSlice`, `countStrangers`) trzeba pilnować przy każdej zmianie widoczności postów.
+
+## Komentarze (V14)
+
+`comments` (`parent_id` → komentarz nadrzędny, `reply_to_id` → komu odpowiadamy), `comment_mentions`,
+`notifications.comment_id`, `reports.comment_id`; rozszerzone CHECK-i `notifications_type_check` i
+`reports_context_check` (V14 odtwarza je w całości — nowa wartość enuma = nowa migracja z pełną listą).
+
+- **Jeden poziom**: odpowiedź na odpowiedź wisi pod tym samym korzeniem (`parent`), a `reply_to` mówi, do kogo;
+  odpowiedź do własnego komentarza nie ma `reply_to`. `GET …/replies` dla odpowiedzi daje pustą stronę.
+- **Widoczność = widoczność posta** (`CommentService.visiblePost`): post „tylko znajomi” — znajomi autora; post
+  klanu — członkowie i administrator aplikacji, dla obcego **404** (nie 409); blokada w obie strony z autorem posta
+  = 404. Komentarz osoby z blokad oglądającego znika **razem z całym wątkiem pod nim**; liczniki (`countByPosts`,
+  `replyCounts`) liczą to samo co listy. W poście klanu komentują tylko członkowie (administrator czyta, nie pisze).
+- **Oznaczenia**: `CommentMentions.logins` — `@login` (3–50 znaków `A-Za-z0-9_.-`, nie po znaku z tego zbioru ani `@`,
+  więc `ala@example.com` nikogo nie oznacza; końcowa kropka/myślnik to interpunkcja; najwyżej 5 osób). Zapisujemy
+  tylko osoby, które istnieją, są aktywne, widzą post i nie mają blokady z piszącym ani z autorem posta.
+  `TrescKomentarza.jsx` robi odnośniki **tylko** z oznaczeń potwierdzonych przez serwer (ta sama reguła obcinania
+  kropki po obu stronach!). Treść to zwykły tekst — żadnego HTML-a w DOM (test w Chromium: `<img onerror>`).
+  Podpowiedzi (`GET /posts/{id}/mentionable?q=`): autor posta → osoby piszące pod postem → znajomi; nie ma
+  wyszukiwarki obcych kont.
+- **Powiadomienia** (`POST_COMMENT`, `COMMENT_REPLY`, `COMMENT_MENTION`, z push; tag powiadomienia wspólny dla posta/
+  komentarza, więc telefon nie zbiera stosu): **jedno na osobę i komentarz**, priorytet odpowiedź > oznaczenie >
+  komentarz pod postem; autor nie powiadamia siebie; odpowiedź nie powiadamia osoby z blokady. Link:
+  `/post/{id}?komentarz={id}` (serwer składa, `PostPage` podświetla i dociąga wątek).
+- **Kasowanie**: autor, autor posta, administrator, zarząd klanu (post klanu). **Kaskada w bazie** (`@OnDelete`
+  na encjach + `ON DELETE CASCADE` w migracji): odpowiedzi, oznaczenia, powiadomienia; `reports.comment_id` →
+  `SET NULL` (zgłoszenie zostaje z migawką w `report_evidence`). Usunięcie konta: `comments.deleteByAuthorId`
+  zaraz po powiadomieniach (przed reakcjami) — `AccountDeletionServiceTest` pilnuje kolejności.
+- Zgłoszenie: `ReportContext.COMMENT`, w decyzji `DELETE_COMMENT`; zakaz `POSTING` obejmuje komentarze; limit
+  10/min na osobę (`NA_MINUTE`, 429). Eksport danych zawiera komentarze (własne i oznaczenia).
+- **Pułapki z tej rundy**: HQL `c.parent.author.id` robi niejawne *inner* join, które gubi korzenie — w
+  `countByPosts` jest `LEFT JOIN c.parent p`; zapytania stronicowane z `JOIN FETCH` mają jawne `countQuery`; mutant z nieużywanym parametrem nazwanym rozwala kontekst Springa;
+  inicjał awatara wchodzi do `textContent` — w Playwrighcie czytać `.text-truncate`, nie całego `li`; licznik pod
+  postem jest w osobnym `span` (przycisk mówi „Ukryj komentarze”), nie w przycisku.
+- Mutanty komentarzy: 40 sprawdzonych, wszystkie zabite oprócz jednego równoważnego — `if (root.getParent() != null)`
+  w `replies` (odpowiedź nie ma własnych odpowiedzi, więc zapytanie i tak da pustą stronę). Mutantów, w których test
+  sam pętli się po zmienianej stałej (`NA_MINUTE`), nie robić — mielą się bez końca; zmieniać porównanie (`>=` → `>`).
+  Podpowiedzi do oznaczania: piszący pod postem są od ostatnio piszącego (`ORDER BY MAX(id) DESC`) — bez `ORDER BY`
+  kolejność z bazy jest przypadkowa.
+- Polityka i regulamin wspominają o komentarzach, oznaczeniach i rankingu tablicy; `app.legal.version` bez zmian
+  (nikt jeszcze nie akceptował) — po wypuszczeniu każda zmiana tekstu = nowa data.
 
 ## Regulamin i polityka prywatności (V10)
 

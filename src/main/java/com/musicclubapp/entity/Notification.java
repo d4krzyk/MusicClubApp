@@ -76,6 +76,12 @@ public class Notification {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Clan clan;
 
+    /** Komentarz - przy komentarzu pod postem, odpowiedzi i oznaczeniu. Znika razem z komentarzem. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "comment_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Comment comment;
+
     /** Ile dni zostalo do wydarzenia w chwili przypomnienia: 0 = dzis, 1 = jutro. */
     @Column(name = "days_left")
     private Integer daysLeft;
@@ -162,6 +168,14 @@ public class Notification {
         return n;
     }
 
+    /** Komentarz, odpowiedz albo oznaczenie - {@code type} mowi, ktore z trzech. */
+    public static Notification comment(NotificationType type, User recipient, User actor, Post post, Comment comment) {
+        Notification n = new Notification(recipient, actor, type);
+        n.post = post;
+        n.comment = comment;
+        return n;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -212,6 +226,10 @@ public class Notification {
 
     public Clan getClan() {
         return clan;
+    }
+
+    public Comment getComment() {
+        return comment;
     }
 
     public Integer getDaysLeft() {

@@ -3,6 +3,7 @@ package com.musicclubapp.service;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.InvalidCurrentPasswordException;
 import com.musicclubapp.error.NoSuchElementFoundException;
+import com.musicclubapp.repository.CommentRepository;
 import com.musicclubapp.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ public class AccountDeletionService {
     private final UserService users;
     private final PushService push;
     private final ClanService clans;
+    private final CommentRepository comments;
 
     public AccountDeletionService(UserRepository userRepository,
                                   PasswordEncoder passwordEncoder,
@@ -59,7 +61,9 @@ public class AccountDeletionService {
                                   BlockService blocks,
                                   UserService users,
                                   PushService push,
-                                  ClanService clans) {
+                                  ClanService clans,
+                                  CommentRepository comments) {
+        this.comments = comments;
         this.clans = clans;
         this.push = push;
         this.blocks = blocks;
@@ -138,6 +142,9 @@ public class AccountDeletionService {
 
         // 1. Powiadomienia - wskazuja i na konto, i na posty kasowane nizej
         notifications.deleteAllOf(id);
+
+        // 1a. Komentarze tej osoby (odpowiedzi pod nimi, oznaczenia i powiadomienia znikaja razem z nimi)
+        comments.deleteByAuthorId(id);
 
         // 2. Reakcje tej osoby pod CUDZYMI postami - te posty maja zostac
         reactions.deleteAllOf(id);

@@ -81,7 +81,7 @@ class ReactionServiceTest {
         given(postMapper.toResponse(any(Post.class), any(), any())).willReturn(
             new PostResponse(5L, "bartek", null, "tresc", List.of(),
                 null, null, null, null, null, null, null,
-                LocalDateTime.now(), false, false, ReactionSummary.empty(), PostVisibility.PUBLIC, false, null, null, null));
+                LocalDateTime.now(), false, false, ReactionSummary.empty(), PostVisibility.PUBLIC, false, null, null, null, List.of(), 0L));
     }
 
     @Test

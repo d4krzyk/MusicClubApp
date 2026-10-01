@@ -24,11 +24,14 @@ public class ReportDecisionService {
     private final ReportService reports;
     private final UserModerationService moderation;
     private final PostService posts;
+    private final CommentService comments;
 
     public ReportDecisionService(ReportRepository reportRepository,
                                  ReportService reports,
                                  UserModerationService moderation,
-                                 PostService posts) {
+                                 PostService posts,
+                                 CommentService comments) {
+        this.comments = comments;
         this.reportRepository = reportRepository;
         this.reports = reports;
         this.moderation = moderation;
@@ -46,6 +49,11 @@ public class ReportDecisionService {
         /* Kasowanie posta ma sens tylko przy zgloszeniu, ktore posta dotyczy. */
         if (action == ModerationAction.DELETE_POST && report.getPost() == null) {
             throw OperationNotAllowedException.reportHasNoPost();
+        }
+
+        /* ...a kasowanie komentarza - tylko przy zgloszeniu komentarza. */
+        if (action == ModerationAction.DELETE_COMMENT && report.getComment() == null) {
+            throw OperationNotAllowedException.reportHasNoComment();
         }
 
         /* Administrator nie karze SAM SIEBIE. */
@@ -67,6 +75,11 @@ public class ReportDecisionService {
                 posts.delete(postId, adminUsername);
                 log.info("Administrator {} skasowal post {} przy zgloszeniu {}",
                     adminUsername, postId, id);
+            }
+            case DELETE_COMMENT -> {
+                Long commentId = report.getComment().getId();
+                comments.delete(adminUsername, commentId);
+                log.info("Administrator {} skasowal komentarz {} przy zgloszeniu {}", adminUsername, commentId, id);
             }
             case BAN_POSTING, BAN_MESSAGING -> moderation.setBan(adminUsername, target.getId(),
                 action.banKind(), new BanRequest(request.hours(), request.forever()));

@@ -18,10 +18,18 @@ public record CreateReportRequest(
 
     Long postId,
 
+    /** Komentarz, ktorego dotyczy zgloszenie (przy kontekscie COMMENT). */
+    Long commentId,
+
     /** Opis od zglaszajacego. */
     @NotBlank(message = "{validation.report.description.required}")
     @Size(min = 10, max = Report.MAX_DESCRIPTION_LENGTH,
           message = "{validation.report.description.size}")
     String description
 ) {
+
+    /** Zgloszenie bez komentarza - profil, post, rozmowa. */
+    public CreateReportRequest(ReportReason reason, ReportContext context, Long postId, String description) {
+        this(reason, context, postId, null, description);
+    }
 }

@@ -25,13 +25,14 @@ const pl = {
             'Konto: login, adres e-mail, hasło (zapisujemy wyłącznie jego zaszyfrowany skrót, nigdy samego hasła), data założenia, potwierdzenie adresu, wersja i data akceptacji Regulaminu, ustawienia prywatności i kraj wydarzeń. Po co: założenie i obsługa konta, logowanie, zabezpieczenie konta — podstawa: umowa o świadczenie usługi (art. 6 ust. 1 lit. b RODO).',
             'Profil i muzyka: zdjęcie profilowe, ulubieni wykonawcy i utwory, playlisty, zestawienie najczęściej udostępnianej muzyki, gatunki. Po co: pokazanie profilu, „co nas łączy”, dopasowanie wydarzeń „Dla ciebie” i propozycji znajomych — umowa.',
             'Miasto (nieobowiązkowe): nazwa miasta, które wpiszesz w Ustawieniach, i — jeśli mamy je na swojej liście — współrzędne jego środka, a także ustawienie, czy miasto widać na profilu. Nie zbieramy dokładnego adresu ani lokalizacji z telefonu. Po co: żeby w propozycjach znajomych, wydarzeniach, klanach i na tablicy wyżej były osoby, koncerty i klany z Twojej okolicy (odległość między miastami liczy nasz serwer) — podstawa: Twoja zgoda (art. 6 ust. 1 lit. a RODO), którą cofniesz, usuwając miasto w Ustawieniach.',
-            'Treści: posty (tekst, zdjęcia, linki do utworów wraz z tytułem i miniaturą pobranymi ze Spotify lub YouTube), reakcje, wiadomości na czacie, znajomi i zaproszenia, blokady. Po co: działanie Serwisu — umowa.',
+            'Tablica „Dla ciebie”: kolejność postów osób spoza Twoich znajomych (znajomi są zawsze na górze, od najnowszych) liczymy automatycznie ze świeżości posta, odległości między Twoim miastem a miastem autora, wspólnych ulubionych wykonawców i gatunków (tylko z profili widocznych dla wszystkich) oraz liczby reakcji i komentarzy pod postem. Przy poście napisane jest, dlaczego jest wysoko („Z twojej okolicy”, „Podobny gust”, „Popularne”). Po co: podpowiedzi w ramach umowy; kolejność możesz zmienić na „Najnowsze”.',
+            'Treści: posty (tekst, zdjęcia, linki do utworów wraz z tytułem i miniaturą pobranymi ze Spotify lub YouTube), reakcje, komentarze pod postami (także z oznaczeniami osób i odpowiedziami na cudze komentarze), wiadomości na czacie, znajomi i zaproszenia, blokady. Po co: działanie Serwisu — umowa.',
             'Wydarzenia: zapisy „Zainteresowany” i „Biorę udział” (i wybór, czy pokazywać Cię na liście uczestników), posty pod wydarzeniami, przypomnienia. Po co: umowa.',
             'Klany: członkostwo i rola, głos na kolor klanu, zaproszenia (także odrzucone — żeby nikt nie zapraszał w kółko osoby, która odmówiła), Twoje prośby o dołączenie do klanów (z krótką wiadomością do zarządu, jeśli ją wpiszesz), czat i posty klanu, odpowiedzi i reakcje na wiadomości, znacznik „przeczytane do” (z niego liczymy nieprzeczytane wiadomości) i ustawienie wyciszenia czatu, propozycje i głosy w „utworze tygodnia”, ankiety klanu i oddane w nich głosy, tytuły w klanie (nadane, wzięte samodzielnie albo przyznane automatycznie za aktywność), punkty i poziom aktywności w rankingu klanu (liczone z Twoich wiadomości, postów, propozycji, głosów i reakcji w klanie), ogłoszenie, zasady, hasło, miasto, gatunki i ustawienia widoczności klanu wpisane przez jego zarząd. Po co: umowa. O dostępie administratora do klanów — punkt 4.',
             'Gust klanu: wykonawców i gatunki, które ulubiło co najmniej dwóch członków, pokazujemy zbiorczo, bez wskazywania osób — członkom klanu, a jeśli klan jest w przeglądarce klanów, także osobom spoza niego (razem z poziomem aktywności czatu: cisza / spokojny / aktywny / bardzo aktywny, bez treści i liczby wiadomości). Nie wliczamy osób, które ograniczyły profil do znajomych. W przeglądarce klanów porównujemy gust klanu z Twoim, ale wynik widzisz tylko Ty. Po co: umowa.',
             'Powiadomienia: powiadomienia w dzwonku oraz — jeśli je włączysz — powiadomienia push (także o nowej wiadomości na czacie Twojego klanu, z nazwą nadawcy, bez treści; możesz je wyciszyć): adres subskrypcji nadany przez przeglądarkę, klucze szyfrujące, język. Po co: dostarczanie powiadomień — Twoja zgoda (art. 6 ust. 1 lit. a); cofniesz ją w każdej chwili.',
             'Wiadomości e-mail: potwierdzenie adresu, reset hasła, zgoda na zmianę adresu, informacja o zmianie hasła. Po co: umowa i bezpieczeństwo konta. Nie wysyłamy reklam.',
-            'Moderacja: zgłoszenia (kto, kogo i dlaczego; migawka zgłoszonego posta albo — przy zgłoszeniu klanu — jego nazwy i opisu), decyzje, ostrzeżenia i zakazy. Po co: ochrona użytkowników i egzekwowanie Regulaminu — prawnie uzasadniony interes (art. 6 ust. 1 lit. f) oraz obowiązki wynikające z przepisów o usługach elektronicznych.',
+            'Moderacja: zgłoszenia (kto, kogo i dlaczego; migawka zgłoszonego posta lub komentarza albo — przy zgłoszeniu klanu — jego nazwy i opisu), decyzje, ostrzeżenia i zakazy. Po co: ochrona użytkowników i egzekwowanie Regulaminu — prawnie uzasadniony interes (art. 6 ust. 1 lit. f) oraz obowiązki wynikające z przepisów o usługach elektronicznych.',
             'Dane techniczne: czas ostatniej aktywności (możesz go ukryć), adres IP i czas zapytań w dziennikach serwera oraz w ograniczeniach liczby prób (np. wysyłki wiadomości), wpisy o wejściach administratora do klanów. Po co: bezpieczeństwo, zapobieganie nadużyciom, diagnostyka — prawnie uzasadniony interes.',
           ],
         },
@@ -44,7 +45,7 @@ const pl = {
         {
           lista: [
             'Login, zdjęcie profilowe i plakietka klanu są widoczne dla zalogowanych osób. Klan, w którym jesteś, jest widoczny w przeglądarce klanów (jego nazwa, skrót, ikona, hasło, miasto, gatunki, liczba osób i data założenia) — chyba że jego zarząd ukryje go w ustawieniach. Resztę profilu (ulubieni, znajomi, posty, playlisty) możesz ukryć przed osobami spoza znajomych.',
-            'Posty ustawiasz jako publiczne albo tylko dla znajomych. Posty klanu, czat, ogłoszenie, zasady, propozycje i głosy w „utworze tygodnia”, ankiety, ranking aktywności i tytuły widzą tylko członkowie klanu (zasady — także osoba zaproszona, przed dołączeniem).',
+            'Posty ustawiasz jako publiczne albo tylko dla znajomych. Komentarze pod postem widzą te same osoby, które widzą post (pod postem tylko dla znajomych — znajomi autora, pod postem klanu — członkowie klanu); komentarze zablokowanych osób są dla siebie niewidoczne. Osoba oznaczona w komentarzu (@login) dostaje powiadomienie, o ile widzi ten post. Posty klanu, czat, ogłoszenie, zasady, propozycje i głosy w „utworze tygodnia”, ankiety, ranking aktywności i tytuły widzą tylko członkowie klanu (zasady — także osoba zaproszona, przed dołączeniem).',
             'Możesz ukryć, że jesteś aktywny, wyłączyć pojawianie się w propozycjach znajomych i domyślnie ukrywać się na listach uczestników wydarzeń.',
             'Miasto widać na Twoim profilu (przy pełnym widoku, nie przy profilu tylko dla znajomych) i na Twojej karcie w propozycjach znajomych — chyba że wyłączysz „Pokazuj moje miasto na profilu i w propozycjach znajomych”. W propozycjach pokazujemy innym tylko, czy jesteś z ich miasta albo z okolicy, bez odległości. Miasto wpływa na kolejność proponowanych osób, wydarzeń, klanów i postów także wtedy, gdy ukryjesz je na profilu.',
             'Zablokowana osoba nie widzi Twojego profilu ani postów i nie może Cię zapraszać; nie dowiaduje się o blokadzie.',
@@ -56,8 +57,8 @@ const pl = {
     {
       tytul: '4. Klany i dostęp administratora',
       akapity: [
-        'Czat i posty klanu widzą jego członkowie. Administrator Serwisu może je przeglądać — a także rozwiązać klan — wyłącznie wtedy, gdy wpłynęło zgłoszenie, istnieje uzasadnione podejrzenie naruszenia Regulaminu lub prawa (np. treści nielegalnych) albo żąda tego uprawniony organ. Podstawa: prawnie uzasadniony interes Administratora i obowiązki prawne (art. 6 ust. 1 lit. f i c).',
-        'Każde takie wejście zostaje zapisane w dzienniku (kto i który klan), a strona klanu informuje o możliwości takiego dostępu. Administrator może też zobaczyć treść rozmowy lub posta, który został zgłoszony.',
+        'Czat i posty klanu (wraz z komentarzami pod nimi) widzą jego członkowie. Administrator Serwisu może je przeglądać — a także rozwiązać klan — wyłącznie wtedy, gdy wpłynęło zgłoszenie, istnieje uzasadnione podejrzenie naruszenia Regulaminu lub prawa (np. treści nielegalnych) albo żąda tego uprawniony organ. Podstawa: prawnie uzasadniony interes Administratora i obowiązki prawne (art. 6 ust. 1 lit. f i c).',
+        'Każde takie wejście zostaje zapisane w dzienniku (kto i który klan), a strona klanu informuje o możliwości takiego dostępu. Administrator może też zobaczyć treść rozmowy, posta lub komentarza, który został zgłoszony.',
       ],
     },
     {
@@ -83,12 +84,13 @@ const pl = {
           lista: [
             'Konto, profil i treści — do usunięcia konta (możesz to zrobić w każdej chwili w Ustawieniach).',
             'Niepotwierdzone konta — 7 dni. Linki w wiadomościach — 24 godziny (reset hasła: 1 godzina); ich zużyte wpisy techniczne znikają po dobie.',
+            'Komentarze — do skasowania przez ich autora, autora posta, administratora Serwisu albo (pod postem klanu) zarząd klanu, do usunięcia posta lub konta autora. Razem z komentarzem znikają odpowiedzi pod nim, oznaczenia i powiadomienia o nim.',
             'Powiadomienia w dzwonku — do usunięcia przez Ciebie albo konta. Urządzenia push — do wyłączenia powiadomień, wylogowania, zmiany hasła lub usunięcia konta.',
             'Prośby o dołączenie do klanu — oczekująca znika po przyjęciu, cofnięciu albo po 30 dniach; odrzucona — tydzień po odmowie (do tego czasu chroni przed ponawianiem próśb).',
             'Miasto — do usunięcia przez Ciebie (Ustawienia) albo konta.',
             'Zgłoszenia i decyzje moderacyjne — do usunięcia konta osoby zgłaszającej lub zgłoszonej.',
             'Dzienniki serwera (adres IP, czas i rodzaj zapytań, wpisy o wejściach administratora do klanów) — w rotacji, zwykle do kilku tygodni.',
-            'Po usunięciu konta znikają Twój profil, posty, zdjęcia, wiadomości, reakcje na wiadomości w klanie, propozycje i głosy w „utworze tygodnia”, ankiety klanu i Twoje głosy w nich, tytuły, prośby o dołączenie, zapisy na wydarzenia, zaproszenia, blokady, urządzenia push i członkostwo w klanie (założyciela zastępuje inny członek, a klan, w którym nie było nikogo poza Tobą, znika). Usunięte dane mogą przez pewien czas zostać w kopiach zapasowych bazy, o ile są wykonywane; są nadpisywane w normalnej rotacji.',
+            'Po usunięciu konta znikają Twój profil, posty, zdjęcia, komentarze (razem z odpowiedziami pod nimi), wiadomości, reakcje na wiadomości w klanie, propozycje i głosy w „utworze tygodnia”, ankiety klanu i Twoje głosy w nich, tytuły, prośby o dołączenie, zapisy na wydarzenia, zaproszenia, blokady, urządzenia push i członkostwo w klanie (założyciela zastępuje inny członek, a klan, w którym nie było nikogo poza Tobą, znika). Usunięte dane mogą przez pewien czas zostać w kopiach zapasowych bazy, o ile są wykonywane; są nadpisywane w normalnej rotacji.',
           ],
         },
       ],
@@ -106,7 +108,7 @@ const pl = {
             'Skarga do organu nadzorczego: Prezes Urzędu Ochrony Danych Osobowych, ul. Stawki 2, 00-193 Warszawa (uodo.gov.pl).',
           ],
         },
-        'Nie podejmujemy wobec Ciebie decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu, które wywołują skutki prawne. Dopasowanie wydarzeń „Dla ciebie” i propozycje znajomych korzystają z Twoich ulubionych i znajomych, ale służą tylko do podpowiedzi — propozycje możesz wyłączyć w ustawieniach prywatności.',
+        'Nie podejmujemy wobec Ciebie decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu, które wywołują skutki prawne. Dopasowanie wydarzeń „Dla ciebie”, propozycje znajomych i kolejność postów na tablicy „Dla ciebie” korzystają z Twoich ulubionych, znajomych i miasta, ale służą tylko do podpowiedzi — propozycje możesz wyłączyć w ustawieniach prywatności, a kolejność postów zmienić na „Najnowsze”.',
       ],
     },
     {
@@ -155,13 +157,14 @@ const en = {
             'Account: username, e-mail address, password (we store only its hashed form, never the password itself), creation date, address confirmation, the version and date you accepted the Terms, privacy settings and events country. Why: creating and running the account, signing in, securing the account — basis: the contract for the service (Art. 6(1)(b) GDPR).',
             'Profile and music: profile photo, favourite artists and tracks, playlists, most-shared music, genres. Why: showing your profile, “what we have in common”, “For you” event matching and friend suggestions — contract.',
             'City (optional): the city name you enter in Settings and — if it is on our list — the coordinates of its centre, and the setting for whether the city is shown on your profile. We do not collect an exact address or your phone’s location. Why: to put people, concerts and clans from your area higher in friend suggestions, events, clans and the feed (our server works out the distance between cities) — basis: your consent (Art. 6(1)(a) GDPR), which you can withdraw by removing the city in Settings.',
-            'Content: posts (text, photos, track links with the title and thumbnail fetched from Spotify or YouTube), reactions, chat messages, friends and invitations, blocks. Why: running the Service — contract.',
+            '“For you” feed: the order of posts from people who are not your friends (friends always come first, newest first) is computed automatically from how fresh the post is, the distance between your city and the author’s, favourite artists and genres you have in common (only from profiles visible to everyone) and the number of reactions and comments under the post. Each post says why it is high up (“From your area”, “Similar taste”, “Popular”). Why: hints as part of the contract; you can switch the order to “Newest”.',
+            'Content: posts (text, photos, track links with the title and thumbnail fetched from Spotify or YouTube), reactions, comments under posts (including mentions of people and replies to other comments), chat messages, friends and invitations, blocks. Why: running the Service — contract.',
             'Events: “Interested” and “Going” sign-ups (and whether you show on the attendee list), posts under events, reminders. Why: contract.',
             'Clans: membership and role, your vote on the clan colour, invitations (declined ones too, so nobody keeps inviting someone who said no), your requests to join clans (with a short message to the leaders, if you write one), clan chat and posts, replies and reactions to messages, a “read up to” marker (from which we count unread messages) and the chat mute setting, suggestions and votes in the “track of the week”, clan polls and the votes cast in them, titles in the clan (given, self-claimed or awarded automatically for activity), activity points and level in the clan ranking (counted from your messages, posts, suggestions, votes and reactions in the clan), the announcement, rules, motto, city, genres and visibility settings entered by the clan’s leaders. Why: contract. Administrator access to clans — section 4.',
             'Clan taste: artists and genres that at least two members have favourited are shown in aggregate, without naming anyone — to clan members and, if the clan is in the clan browser, to people outside it too (together with the chat activity level: quiet / calm / active / very active, without message content or counts). People who limited their profile to friends are not counted. In the clan browser we compare a clan’s taste with yours, but only you see the result. Why: contract.',
             'Notifications: bell notifications and — if you turn them on — push notifications (including for a new message in your clan chat, with the sender’s name and no message text; you can mute them): the subscription address issued by your browser, encryption keys, language. Why: delivering notifications — your consent (Art. 6(1)(a)); you can withdraw it at any time.',
             'E-mail: address confirmation, password reset, address change approval, password-changed notice. Why: contract and account security. We send no advertising.',
-            'Moderation: reports (who reported whom and why; a snapshot of the reported post or — for a clan report — of its name and description), decisions, warnings and bans. Why: protecting users and enforcing the Terms — legitimate interest (Art. 6(1)(f)) and duties under e-commerce rules.',
+            'Moderation: reports (who reported whom and why; a snapshot of the reported post or comment or — for a clan report — of its name and description), decisions, warnings and bans. Why: protecting users and enforcing the Terms — legitimate interest (Art. 6(1)(f)) and duties under e-commerce rules.',
             'Technical data: last activity time (you can hide it), IP address and time of requests in server logs and in rate limits (e.g. for sending messages), entries about administrator visits to clans. Why: security, preventing abuse, diagnostics — legitimate interest.',
           ],
         },
@@ -174,7 +177,7 @@ const en = {
         {
           lista: [
             'Your username, profile photo and clan badge are visible to logged-in users. The clan you are in is visible in the clan browser (its name, tag, icon, motto, city, genres, member count and founding date) — unless its leaders hide it in the settings. You can hide the rest of your profile (favourites, friends, posts, playlists) from non-friends.',
-            'You set posts as public or friends-only. Clan posts, chat, announcement, rules, “track of the week” suggestions and votes, polls, the activity ranking and titles are seen only by clan members (the rules also by an invited person, before joining).',
+            'You set posts as public or friends-only. Comments under a post are seen by the same people who see the post (under a friends-only post — the author’s friends, under a clan post — clan members); comments by blocked people are invisible to each other. A person mentioned in a comment (@username) gets a notification if they can see that post. Clan posts, chat, announcement, rules, “track of the week” suggestions and votes, polls, the activity ranking and titles are seen only by clan members (the rules also by an invited person, before joining).',
             'You can hide that you are active, opt out of friend suggestions and hide yourself on event attendee lists by default.',
             'Your city is visible on your profile (in the full view, not on a friends-only profile) and on your card in friend suggestions — unless you turn off “Show my city on my profile and in friend suggestions”. In suggestions we only tell others whether you are from their city or nearby, without a distance. Your city affects the order of suggested people, events, clans and posts even when you hide it on your profile.',
             'A blocked person can’t see your profile or posts and can’t invite you; they are not told about the block.',
@@ -186,8 +189,8 @@ const en = {
     {
       tytul: '4. Clans and administrator access',
       akapity: [
-        'A clan’s chat and posts are seen by its members. The Service administrator may view them — and disband the clan — only when a report has been made, there is a reasonable suspicion of a breach of the Terms or the law (e.g. illegal content) or an authorised body requires it. Basis: the Controller’s legitimate interest and legal obligations (Art. 6(1)(f) and (c)).',
-        'Each such visit is written to a log (who and which clan), and the clan page tells members that such access is possible. The administrator can also see the content of a conversation or post that has been reported.',
+        'A clan’s chat and posts (with the comments under them) are seen by its members. The Service administrator may view them — and disband the clan — only when a report has been made, there is a reasonable suspicion of a breach of the Terms or the law (e.g. illegal content) or an authorised body requires it. Basis: the Controller’s legitimate interest and legal obligations (Art. 6(1)(f) and (c)).',
+        'Each such visit is written to a log (who and which clan), and the clan page tells members that such access is possible. The administrator can also see the content of a conversation, post or comment that has been reported.',
       ],
     },
     {
@@ -213,12 +216,13 @@ const en = {
           lista: [
             'Account, profile and content — until you delete the account (you can do it at any time in Settings).',
             'Unconfirmed accounts — 7 days. Links in messages — 24 hours (password reset: 1 hour); their used technical entries disappear after a day.',
+            'Comments — until deleted by their author, the post’s author, the Service administrator or (under a clan post) the clan’s leaders, or until the post or the author’s account is deleted. Replies under a comment, mentions and notifications about it disappear with it.',
             'Bell notifications — until you or the account is deleted. Push devices — until you turn notifications off, log out, change your password or delete the account.',
             'Requests to join a clan — a pending one disappears when it is accepted, withdrawn or after 30 days; a declined one a week after the refusal (until then it protects against repeated requests).',
             'City — until you remove it (Settings) or the account is deleted.',
             'Reports and moderation decisions — until the reporting or the reported account is deleted.',
             'Server logs (IP address, time and kind of requests, entries about administrator visits to clans) — in rotation, usually up to a few weeks.',
-            'After you delete your account, your profile, posts, photos, messages, reactions to clan messages, “track of the week” suggestions and votes, clan polls and your votes in them, titles, requests to join, event sign-ups, invitations, blocks, push devices and clan membership disappear (another member takes over as founder, and a clan you were alone in disappears). Deleted data may stay for a while in database backups, if made; they are overwritten in normal rotation.',
+            'After you delete your account, your profile, posts, photos, comments (with the replies under them), messages, reactions to clan messages, “track of the week” suggestions and votes, clan polls and your votes in them, titles, requests to join, event sign-ups, invitations, blocks, push devices and clan membership disappear (another member takes over as founder, and a clan you were alone in disappears). Deleted data may stay for a while in database backups, if made; they are overwritten in normal rotation.',
           ],
         },
       ],
@@ -236,7 +240,7 @@ const en = {
             'Complaint to the supervisory authority: the President of the Personal Data Protection Office (UODO), ul. Stawki 2, 00-193 Warsaw, Poland (uodo.gov.pl).',
           ],
         },
-        'We take no decisions about you based solely on automated processing that have legal effects. “For you” event matching and friend suggestions use your favourites and friends but are only hints — you can turn suggestions off in your privacy settings.',
+        'We take no decisions about you based solely on automated processing that have legal effects. “For you” event matching, friend suggestions and the order of posts in the “For you” feed use your favourites, friends and city but are only hints — you can turn suggestions off in your privacy settings and switch the order of posts to “Newest”.',
       ],
     },
     {

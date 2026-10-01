@@ -9,6 +9,9 @@ public enum ModerationAction {
     /** Kasuje zglaszany post. */
     DELETE_POST(null),
 
+    /** Kasuje zglaszany komentarz (razem z odpowiedziami pod nim). */
+    DELETE_COMMENT(null),
+
     /** Zakaz publikowania - na podana liczbe godzin albo bezterminowo. */
     BAN_POSTING(BanKind.POSTING),
 

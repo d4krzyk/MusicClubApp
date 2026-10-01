@@ -54,7 +54,9 @@ public class PostMapper {
             fromFriend,
             eventRef(post.getEvent()),
             ClanMapper.badge(post.getClan()),
-            null);
+            null,
+            List.of(),
+            0L);
     }
 
     private PostEventRef eventRef(MusicEvent event) {

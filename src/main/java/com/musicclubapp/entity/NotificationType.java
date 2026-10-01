@@ -32,5 +32,11 @@ public enum NotificationType {
     /** Ktos prosi o dolaczenie do mojego klanu - dla zarzadu klanu. Prowadzi na strone klanu. */
     CLAN_JOIN_REQUEST,
     /** Moja prosba o dolaczenie do klanu zostala przyjeta. Bez sprawcy. */
-    CLAN_REQUEST_ACCEPTED
+    CLAN_REQUEST_ACCEPTED,
+    /** Ktos skomentowal moj post. Prowadzi do komentarza. */
+    POST_COMMENT,
+    /** Ktos odpowiedzial na moj komentarz (albo odpowiedz). */
+    COMMENT_REPLY,
+    /** Ktos oznaczyl mnie w komentarzu (@login). */
+    COMMENT_MENTION
 }

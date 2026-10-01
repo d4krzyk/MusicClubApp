@@ -13,5 +13,8 @@ public enum ReportContext {
     CONVERSATION,
 
     /** Klan: nazwa, skrot, opis i obrazy - to, co klan pokazuje o sobie. */
-    CLAN
+    CLAN,
+
+    /** Konkretny komentarz pod postem - zgloszenie niesie do niego odnosnik i kopie tresci. */
+    COMMENT
 }

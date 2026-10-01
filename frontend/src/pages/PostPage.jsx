@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Row from 'react-bootstrap/Row';
@@ -15,6 +15,9 @@ export default function PostPage() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  /* ?komentarz=ID - tu prowadzi powiadomienie o komentarzu, odpowiedzi albo oznaczeniu */
+  const [parametry] = useSearchParams();
+  const fokus = parametry.get('komentarz');
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,8 @@ export default function PostPage() {
             onDelete={remove}
             onUpdate={setPost}
             onReaction={setPost}
+            komentarzeOtwarte
+            fokusKomentarza={fokus}
           />
         )}
       </Col>

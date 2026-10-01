@@ -19,7 +19,7 @@ const MIN_DESCRIPTION = 10;
  * idzie osobna sciezka, a do zgloszenia serwer dolacza kopie nazwy i opisu klanu.
  */
 export default function ReportButton({
-  username, contexts = ['PROFILE'], postId = null, compact = false, clanId = null, clanName = '',
+  username, contexts = ['PROFILE'], postId = null, commentId = null, compact = false, clanId = null, clanName = '',
 }) {
   const { t } = useTranslation();
 
@@ -54,6 +54,7 @@ export default function ReportButton({
           reason,
           context,
           postId: context === 'POST' ? postId : null,
+          commentId: context === 'COMMENT' ? commentId : null,
           description: description.trim(),
         });
       }

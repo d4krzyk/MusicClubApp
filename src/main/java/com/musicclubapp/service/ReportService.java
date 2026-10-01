@@ -5,6 +5,7 @@ import com.musicclubapp.dto.EvidenceLineResponse;
 import com.musicclubapp.dto.MyReportResponse;
 import com.musicclubapp.dto.ReportResponse;
 import com.musicclubapp.dto.ResolveReportRequest;
+import com.musicclubapp.entity.Comment;
 import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.ClanMember;
 import com.musicclubapp.entity.ClanRole;
@@ -20,6 +21,7 @@ import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.repository.ClanMemberRepository;
+import com.musicclubapp.repository.CommentRepository;
 import com.musicclubapp.repository.ClanRepository;
 import com.musicclubapp.repository.MessageRepository;
 import com.musicclubapp.repository.PostRepository;
@@ -53,6 +55,8 @@ public class ReportService {
     private final MessageRepository messageRepository;
     private final NotificationService notifications;
     private final ClanRepository clanRepository;
+    private final CommentRepository commentRepository;
+    private final BlockService blocks;
     private final ClanMemberRepository clanMembers;
 
     public ReportService(ReportRepository reportRepository,
@@ -61,7 +65,11 @@ public class ReportService {
                          MessageRepository messageRepository,
                          NotificationService notifications,
                          ClanRepository clanRepository,
-                         ClanMemberRepository clanMembers) {
+                         ClanMemberRepository clanMembers,
+                         CommentRepository commentRepository,
+                         BlockService blocks) {
+        this.blocks = blocks;
+        this.commentRepository = commentRepository;
         this.clanRepository = clanRepository;
         this.clanMembers = clanMembers;
         this.reportRepository = reportRepository;
@@ -169,6 +177,7 @@ public class ReportService {
                                 CreateReportRequest request) {
         switch (request.context()) {
             case POST -> attachPost(report, reporter, reported, request.postId());
+            case COMMENT -> attachComment(report, reporter, reported, request.commentId());
             case CONVERSATION -> attachConversation(report, reporter, reported);
             case PROFILE -> { /* dowodem jest sam profil */ }
             // Klan zglasza sie osobna sciezka (createForClan) - tu nie wiadomo, ktorego dotyczy
@@ -199,6 +208,30 @@ public class ReportService {
             post.getAuthor().getUsername(),
             post.getContent(),
             post.getCreatedAt()));
+    }
+
+    private void attachComment(Report report, User reporter, User reported, Long commentId) {
+        if (commentId == null) {
+            throw OperationNotAllowedException.reportNeedsComment();
+        }
+        Comment comment = commentRepository.findWithContext(commentId)
+            .orElseThrow(() -> new NoSuchElementFoundException("comment", commentId));
+
+        /* Komentarz musi nalezec do zglaszanego... */
+        if (!comment.getAuthor().getId().equals(reported.getId())) {
+            throw OperationNotAllowedException.reportWrongAuthor();
+        }
+        /* ...i musi byc widoczny dla zglaszajacego: post (klan, "tylko znajomi") i brak blokady z autorem posta. */
+        if (!comment.getPost().isVisibleTo(reporter)
+            || blocks.eitherWay(reporter.getId(), comment.getPost().getAuthor().getId())) {
+            throw new NoSuchElementFoundException("comment", commentId);
+        }
+
+        report.setComment(comment);
+        report.addEvidence(new ReportEvidence(
+            comment.getAuthor().getUsername(),
+            comment.getContent(),
+            comment.getCreatedAt()));
     }
 
     private void attachConversation(Report report, User reporter, User reported) {
@@ -345,8 +378,10 @@ public class ReportService {
                 : PostMapper.UPLOADS_PATH + reported.getAvatarFileName(),
             report.getReason(),
             report.getContext(),
-            report.getPost() == null ? null : report.getPost().getId(),
+            report.getPost() != null ? report.getPost().getId()
+                : report.getComment() != null ? report.getComment().getPost().getId() : null,
             report.getClan() == null ? null : report.getClan().getId(),
+            report.getComment() == null ? null : report.getComment().getId(),
             report.getDescription(),
             report.getEvidence().stream()
                 .map(line -> new EvidenceLineResponse(

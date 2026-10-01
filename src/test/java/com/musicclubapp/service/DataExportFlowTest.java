@@ -115,6 +115,9 @@ class DataExportFlowTest {
     private User cyd;
     private Path plik;
 
+    @Autowired private com.musicclubapp.repository.CommentRepository comments;
+    @Autowired private com.musicclubapp.repository.CommentMentionRepository commentMentions;
+
     @BeforeEach
     void setUp() throws Exception {
         ala = users.save(new User("ex_ala", "ex_ala@example.com", encoder.encode(HASLO)));
@@ -130,6 +133,11 @@ class DataExportFlowTest {
         posts.save(moj);
         Post cudzy = posts.save(new Post(bob, "post boba - nie mój"));
         reactions.save(new Reaction(cudzy, ala, ReactionType.FIRE));
+        // Komentarz alicji pod postem boba (z oznaczeniem boba) i odpowiedz boba pod nim - ta nie jest alicji
+        com.musicclubapp.entity.Comment komentarz = comments.save(
+            new com.musicclubapp.entity.Comment(cudzy, ala, null, null, "komentarz do eksportu, @ex_bob"));
+        commentMentions.save(new com.musicclubapp.entity.CommentMention(komentarz, bob));
+        comments.save(new com.musicclubapp.entity.Comment(cudzy, bob, komentarz, ala, "odpowiedz boba - nie alicji"));
 
         messages.save(new Message(ala, bob, "hej bob"));
         messages.save(new Message(bob, ala, "czesc ala"));
@@ -228,6 +236,12 @@ class DataExportFlowTest {
         assertThat(dane.at("/account/city").asText()).isEqualTo("Poznań");
         assertThat(dane.at("/account/privacy/showCity").asBoolean()).isTrue();
         assertThat(tekst).doesNotContain("52.4064");
+        // Wlasny komentarz razem z oznaczeniem - ale nie cudza odpowiedz pod nim
+        assertThat(dane.at("/comments").size()).isEqualTo(1);
+        assertThat(dane.at("/comments/0/content").asText()).isEqualTo("komentarz do eksportu, @ex_bob");
+        assertThat(dane.at("/comments/0/postAuthor").asText()).isEqualTo("ex_bob");
+        assertThat(dane.at("/comments/0/mentions/0").asText()).isEqualTo("ex_bob");
+        assertThat(tekst).doesNotContain("odpowiedz boba - nie alicji");
         assertThat(tekst).contains("moj post do eksportu", "tajny post klanu", "hej bob", "czesc ala",
             "wiadomosc na czacie klanu", "moje zgloszenie na cyda");
         assertThat(dane.at("/posts").size()).isEqualTo(2);

@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.InvalidCurrentPasswordException;
+import com.musicclubapp.repository.CommentRepository;
 import com.musicclubapp.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,7 @@ class AccountDeletionServiceTest {
     @Mock private UserService users;
     @Mock private PushService push;
     @Mock private ClanService clans;
+    @Mock private CommentRepository comments;
 
     @InjectMocks private AccountDeletionService deletion;
 
@@ -80,10 +82,11 @@ class AccountDeletionServiceTest {
 
         deletion.erase(target);
 
-        InOrder kolejnosc = inOrder(notifications, reactions, reports, clans, posts, friends,
+        InOrder kolejnosc = inOrder(notifications, comments, reactions, reports, clans, posts, friends,
             messages, network, playlists, eventParticipations, emailVerification, blocks, push, users, userRepository);
 
         kolejnosc.verify(notifications).deleteAllOf(target.getId());
+        kolejnosc.verify(comments).deleteByAuthorId(target.getId());
         kolejnosc.verify(reactions).deleteAllOf(target.getId());
         kolejnosc.verify(reports).deleteAllOf(target.getId());
         kolejnosc.verify(clans).deleteAllOf(target);

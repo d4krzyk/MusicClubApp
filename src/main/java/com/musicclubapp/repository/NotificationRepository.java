@@ -26,6 +26,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
            LEFT JOIN FETCH n.post
            LEFT JOIN FETCH n.event
            LEFT JOIN FETCH n.clan
+           LEFT JOIN FETCH n.comment
            WHERE n.recipient.username = :username
            ORDER BY n.createdAt DESC
            """,

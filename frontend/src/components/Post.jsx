@@ -13,8 +13,9 @@ import MusicPicker from './MusicPicker';
 import VisibilityPicker from './VisibilityPicker';
 import ReportButton from './ReportButton';
 import ClanBadge from './ClanBadge';
+import Komentarze from './komentarze/Komentarze';
 import {
-  IconTrash, IconPencil, IconLock, IconCalendar,
+  IconTrash, IconPencil, IconLock, IconCalendar, IconChat, IconNote, IconPin, IconStar,
 } from './Icons';
 import { describeError } from '../api/client';
 import { zmien } from '../api/posty';
@@ -27,9 +28,12 @@ import { nazwaMiasta, plakietka } from '../utils/wydarzenia';
 /** Pojedynczy post na tablicy: autor, tresc, zdjecia i odtwarzacz Spotify. */
 export default function Post({
   post, onDelete, onUpdate, onReaction, index = 0, bezWydarzenia = false, bezKlanu = false,
+  komentarzeOtwarte = false, fokusKomentarza = null,
 }) {
   const { t, i18n } = useTranslation();
   const [edycja, setEdycja] = useState(false);
+  const [komOtwarte, setKomOtwarte] = useState(komentarzeOtwarte);
+  const [liczbaKom, setLiczbaKom] = useState(post.commentCount ?? 0);
 
   return (
     /* --i steruje opoznieniem wejscia karty (patrz styles.css). */
@@ -100,6 +104,20 @@ export default function Post({
           )}
         </div>
 
+        {/* Czemu ten post jest wysoko: tylko na tablicy "Dla ciebie", przy postach osob spoza kregu */}
+        {post.feedReasons?.length > 0 && (
+          <ul className="post-powody list-unstyled" aria-label={t('posts.reasons.label')}>
+            {post.feedReasons.map((powod) => (
+              <li key={powod} className={`post-powod post-powod-${powod.toLowerCase()}`}>
+                {powod === 'NEAR' && <IconPin size={11} />}
+                {powod === 'TASTE' && <IconNote size={11} />}
+                {powod === 'POPULAR' && <IconStar size={11} />}
+                {t(`posts.reasons.${powod}`)}
+              </li>
+            ))}
+          </ul>
+        )}
+
         {edycja ? (
           <EditForm
             post={post}
@@ -134,6 +152,26 @@ export default function Post({
 
             {/* Reakcja NIE jest edycja posta. */}
             <Reactions post={post} onChange={onReaction ?? onUpdate} />
+
+            <div className="post-komentarze-pasek">
+              <button
+                type="button"
+                className="post-komentarze-przycisk"
+                aria-expanded={komOtwarte}
+                aria-controls={`komentarze-${post.id}`}
+                onClick={() => setKomOtwarte((o) => !o)}
+              >
+                <IconChat size={14} />
+                {komOtwarte
+                  ? t('comments.hide')
+                  : liczbaKom > 0 ? t('comments.openN', { count: liczbaKom }) : t('comments.open0')}
+              </button>
+              {komOtwarte && liczbaKom > 0 && (
+                <span className="small text-body-secondary">{t('comments.count', { count: liczbaKom })}</span>
+              )}
+            </div>
+
+            {komOtwarte && <Komentarze idPosta={post.id} onLiczba={setLiczbaKom} fokus={fokusKomentarza} />}
           </>
         )}
       </Card.Body>

@@ -2,6 +2,7 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.NotificationResponse;
 import com.musicclubapp.entity.Clan;
+import com.musicclubapp.entity.Comment;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
 import com.musicclubapp.entity.NotificationType;
@@ -68,6 +69,12 @@ public class NotificationService {
                 "clan-request-" + n.getClan().getId());
             case CLAN_REQUEST_ACCEPTED -> new PushService.Message("push.clanAccepted.title", null,
                 "push.clanAccepted.body", new Object[] {n.getClan().getName()}, link, "clan-accepted");
+            case POST_COMMENT -> new PushService.Message("push.comment.title", null,
+                "push.comment.body", new Object[] {kto}, link, "comment-post-" + n.getPost().getId());
+            case COMMENT_REPLY -> new PushService.Message("push.commentReply.title", null,
+                "push.commentReply.body", new Object[] {kto}, link, "comment-reply-" + n.getComment().getId());
+            case COMMENT_MENTION -> new PushService.Message("push.commentMention.title", null,
+                "push.commentMention.body", new Object[] {kto}, link, "comment-mention-" + n.getComment().getId());
             case REACTION -> null;
         };
     }
@@ -109,6 +116,24 @@ public class NotificationService {
     public void reactionRemoved(Post post, User actor) {
         notificationRepository.deleteMatching(
             post.getAuthor().getId(), actor.getId(), post.getId(), NotificationType.REACTION);
+    }
+
+    /** Ktos skomentowal post odbiorcy - w dzwonku i na telefonie (jeden baner na post). */
+    @Transactional
+    public void postCommented(User recipient, User actor, Post post, Comment comment) {
+        zapisz(Notification.comment(NotificationType.POST_COMMENT, recipient, actor, post, comment));
+    }
+
+    /** Ktos odpowiedzial na komentarz odbiorcy. */
+    @Transactional
+    public void commentReply(User recipient, User actor, Post post, Comment comment) {
+        zapisz(Notification.comment(NotificationType.COMMENT_REPLY, recipient, actor, post, comment));
+    }
+
+    /** Ktos oznaczyl odbiorce w komentarzu. */
+    @Transactional
+    public void commentMention(User recipient, User actor, Post post, Comment comment) {
+        zapisz(Notification.comment(NotificationType.COMMENT_MENTION, recipient, actor, post, comment));
     }
 
     /** Nowe zgloszenie - powiadamiamy KAZDEGO administratora. */

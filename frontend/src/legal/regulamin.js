@@ -60,6 +60,7 @@ const pl = {
         'Prawa do zdjęć, postów, wiadomości i opisów, które publikujesz, pozostają przy Tobie. Odpowiadasz za ich treść.',
         'Udzielasz Usługodawcy nieodpłatnej, niewyłącznej licencji na przechowywanie i wyświetlanie tych treści w Serwisie — wyłącznie w zakresie potrzebnym do świadczenia usługi i tylko osobom, którym je udostępniasz zgodnie z ustawieniami widoczności. Licencja wygasa wraz z usunięciem treści lub konta.',
         'Post możesz ustawić jako publiczny albo tylko dla znajomych, a profil ukryć przed osobami spoza znajomych. Pamiętaj jednak, że każda osoba, która widzi treść, może zrobić jej zrzut ekranu — Serwis tego nie uniemożliwi.',
+        'Pod postem możesz pisać komentarze, odpowiadać na cudze komentarze i oznaczać osoby znakiem @ przed loginem. Komentarz widzą te same osoby, które widzą post. Skasować go może jego autor, autor posta, administrator Serwisu, a pod postem klanu także zarząd klanu; razem z komentarzem znikają odpowiedzi pod nim. Oznaczanie osób nie służy do nękania ani rozsyłania spamu.',
       ],
     },
     {
@@ -80,7 +81,7 @@ const pl = {
             'W klanie możesz pisać na czacie (odpowiadać na wiadomości i reagować emoji), dodawać posty, proponować „utwór tygodnia”, zakładać ankiety i głosować w nich, zdobywać tytuły i punkty w rankingu aktywności, głosować na propozycje innych osób oraz sprawdzać, na jakie koncerty zapisali się członkowie. Możesz wyciszyć powiadomienia z czatu klanu.',
             'Każdy klan możesz zgłosić administratorowi Serwisu (np. za obraźliwą nazwę, opis albo obraz).',
             'Czat i posty klanu widzą jego członkowie. Administrator Serwisu może je przeglądać wyłącznie wtedy, gdy wpłynie zgłoszenie, istnieje uzasadnione podejrzenie naruszenia Regulaminu lub prawa albo żąda tego uprawniony organ; każde takie wejście jest zapisywane w dzienniku. Klan nie może więc ukryć przed moderacją treści niezgodnych z prawem lub z Regulaminem.',
-            'Po odejściu z klanu lub wyrzuceniu Twoje posty i wiadomości pozostają w klanie. Usuwając konto, usuwasz własne posty i wiadomości.',
+            'Po odejściu z klanu lub wyrzuceniu Twoje posty, komentarze pod postami klanu i wiadomości pozostają w klanie. Usuwając konto, usuwasz własne posty, komentarze i wiadomości.',
             'Nazwa i skrót klanu nie mogą udawać Serwisu ani jego obsługi. Usługodawca może rozwiązać klan naruszający Regulamin.',
           ],
         },
@@ -89,7 +90,7 @@ const pl = {
     {
       tytul: '7. Zgłoszenia i moderacja',
       akapity: [
-        'Profil, post lub rozmowę, które naruszają Regulamin, możesz zgłosić przyciskiem „Zgłoś”. Zgłoszenia rozpatruje administrator: może je odrzucić, usunąć treść, nałożyć czasowy lub stały zakaz publikowania albo pisania wiadomości, a w skrajnych przypadkach usunąć konto.',
+        'Profil, post, komentarz lub rozmowę, które naruszają Regulamin, możesz zgłosić przyciskiem „Zgłoś”. Zgłoszenia rozpatruje administrator: może je odrzucić, usunąć treść, nałożyć czasowy lub stały zakaz publikowania albo pisania wiadomości, a w skrajnych przypadkach usunąć konto.',
         'Osobę zgłaszającą informujemy o rozpatrzeniu zgłoszenia. Jeśli nie zgadzasz się z decyzją dotyczącą Twojego konta lub treści, napisz na {{kontakt}} — sprawę rozpatrzymy ponownie.',
         'O treści bezprawnej możesz też zawiadomić nas wiadomością na {{kontakt}}, podając adres treści i uzasadnienie. Po uzyskaniu wiarygodnej wiadomości o jej bezprawności reagujemy niezwłocznie.',
         'Możesz zablokować dowolną osobę: znika wtedy z Twoich znajomych, nie widzi Twoich postów i profilu i nie może Cię zapraszać.',
@@ -105,7 +106,7 @@ const pl = {
     {
       tytul: '9. Usunięcie konta',
       akapity: [
-        'Konto możesz usunąć w każdej chwili w Ustawieniach. Usunięcie kasuje profil, posty, zdjęcia, wiadomości, zapisy na wydarzenia, zaproszenia, blokady i zapisane urządzenia powiadomień; zasady szczegółowe opisuje Polityka prywatności. Niepotwierdzone konta usuwamy po 7 dniach.',
+        'Konto możesz usunąć w każdej chwili w Ustawieniach. Usunięcie kasuje profil, posty, komentarze, zdjęcia, wiadomości, zapisy na wydarzenia, zaproszenia, blokady i zapisane urządzenia powiadomień; zasady szczegółowe opisuje Polityka prywatności. Niepotwierdzone konta usuwamy po 7 dniach.',
         'Usługodawca może zawiesić lub usunąć konto, które narusza Regulamin — po ostrzeżeniu, a przy poważnych naruszeniach od razu.',
       ],
     },
@@ -186,6 +187,7 @@ const en = {
         'You keep the rights to the photos, posts, messages and descriptions you publish. You are responsible for them.',
         'You grant the Provider a free, non-exclusive licence to store and display this content in the Service — only as far as needed to provide it, and only to the people you share it with under your visibility settings. The licence ends when you delete the content or the account.',
         'You can make a post public or friends-only, and hide your profile from non-friends. Remember that anyone who can see something can take a screenshot — the Service can’t prevent that.',
+        'Under a post you can write comments, reply to other people’s comments and mention people with @ before their username. A comment is seen by the same people who see the post. It can be deleted by its author, the post’s author, the Service administrator and, under a clan post, the clan’s leaders; replies under a comment disappear with it. Mentions are not for harassment or spam.',
       ],
     },
     {
@@ -206,7 +208,7 @@ const en = {
             'In a clan you can chat (reply to messages and react with emoji), add posts, suggest a “track of the week”, create polls and vote in them, earn titles and points in the activity ranking, vote on other people’s suggestions, and see which concerts members have signed up for. You can mute notifications from the clan chat.',
             'You can report any clan to the Service administrator (e.g. for an offensive name, description or image).',
             'A clan’s chat and posts are visible to its members. The Service administrator may view them only when a report has been made, there is a reasonable suspicion of a breach of the Terms or the law, or an authorised body requires it; each such visit is written to a log. A clan therefore cannot hide unlawful or rule-breaking content from moderation.',
-            'After you leave or are removed, your posts and messages stay in the clan. By deleting your account you delete your own posts and messages.',
+            'After you leave or are removed, your posts, comments under clan posts and messages stay in the clan. By deleting your account you delete your own posts, comments and messages.',
             'A clan’s name and tag must not imitate the Service or its staff. The Provider may disband a clan that breaks the Terms.',
           ],
         },
@@ -215,7 +217,7 @@ const en = {
     {
       tytul: '7. Reports and moderation',
       akapity: [
-        'You can report a profile, post or conversation that breaks the Terms with the “Report” button. An administrator reviews reports and may dismiss them, remove content, impose a temporary or permanent ban on posting or messaging and, in extreme cases, delete the account.',
+        'You can report a profile, post, comment or conversation that breaks the Terms with the “Report” button. An administrator reviews reports and may dismiss them, remove content, impose a temporary or permanent ban on posting or messaging and, in extreme cases, delete the account.',
         'We tell the reporter when a report has been decided. If you disagree with a decision about your account or content, write to {{kontakt}} and we will review it again.',
         'You can also notify us of unlawful content by writing to {{kontakt}} with the content’s address and your reasons. Once we receive credible notice that it is unlawful, we act without delay.',
         'You can block anyone: they disappear from your friends, can’t see your posts and profile and can’t invite you.',
@@ -231,7 +233,7 @@ const en = {
     {
       tytul: '9. Deleting your account',
       akapity: [
-        'You can delete your account at any time in Settings. Deletion removes your profile, posts, photos, messages, event sign-ups, invitations, blocks and saved notification devices; the Privacy Policy gives the details. Unconfirmed accounts are deleted after 7 days.',
+        'You can delete your account at any time in Settings. Deletion removes your profile, posts, comments, photos, messages, event sign-ups, invitations, blocks and saved notification devices; the Privacy Policy gives the details. Unconfirmed accounts are deleted after 7 days.',
         'The Provider may suspend or delete an account that breaks the Terms — after a warning, or immediately for serious breaches.',
       ],
     },

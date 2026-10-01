@@ -29,7 +29,8 @@ public class NotificationMapper {
             actor != null ? avatarUrl(actor) : null,
             notification.getReactionType(),
             post != null ? post.getId() : null,
-            excerpt(post),
+            excerpt(notification.getComment() != null ? notification.getComment().getContent()
+                : post != null ? post.getContent() : null),
             link(notification),
             notification.isRead(),
             notification.getCreatedAt(),
@@ -52,6 +53,11 @@ public class NotificationMapper {
             case REACTION -> notification.getPost() != null
                 ? "/post/" + notification.getPost().getId()
                 : "/";
+            // Do komentarza: strona posta otwiera jego komentarze i przewija do tego jednego
+            case POST_COMMENT, COMMENT_REPLY, COMMENT_MENTION -> notification.getPost() != null
+                ? "/post/" + notification.getPost().getId()
+                    + (notification.getComment() != null ? "?komentarz=" + notification.getComment().getId() : "")
+                : "/";
             case FRIEND_REQUEST -> "/znajomi";
             case FRIEND_ACCEPTED -> "/profil/"
                 + URLEncoder.encode(notification.getActor().getUsername(), StandardCharsets.UTF_8);
@@ -67,13 +73,13 @@ public class NotificationMapper {
         };
     }
 
-    /** Poczatek tresci posta. */
-    private String excerpt(Post post) {
-        if (post == null || post.getContent() == null) {
+    /** Poczatek tresci posta albo komentarza. */
+    private String excerpt(String text) {
+        if (text == null) {
             return null;
         }
 
-        String content = post.getContent().strip();
+        String content = text.strip();
         return content.length() <= EXCERPT_LENGTH
             ? content
             : content.substring(0, EXCERPT_LENGTH).stripTrailing() + "…";

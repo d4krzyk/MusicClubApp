@@ -169,6 +169,12 @@ export default function NotificationsBell() {
         return t('notifications.clanJoinRequest', { username: notification.actorUsername, name: notification.clanName });
       case 'CLAN_REQUEST_ACCEPTED':
         return t('notifications.clanRequestAccepted', { name: notification.clanName });
+      case 'POST_COMMENT':
+        return t('notifications.postComment', { username: notification.actorUsername });
+      case 'COMMENT_REPLY':
+        return t('notifications.commentReply', { username: notification.actorUsername });
+      case 'COMMENT_MENTION':
+        return t('notifications.commentMention', { username: notification.actorUsername });
       case 'EVENT_REMINDER':
         if (notification.daysLeft === 0) {
           return t('notifications.reminderToday', { name: notification.eventName });

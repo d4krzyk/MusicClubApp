@@ -2,6 +2,7 @@ package com.musicclubapp.controller;
 
 import com.musicclubapp.dto.CreatePostRequest;
 import com.musicclubapp.dto.FeedScope;
+import com.musicclubapp.dto.FeedSort;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
@@ -74,6 +75,9 @@ public class PostController {
             @Parameter(description = "ALL = znajomi i reszta, FRIENDS = tylko krag znajomych")
             @RequestParam(defaultValue = "ALL") FeedScope scope,
 
+            @Parameter(description = "RELEVANT = posty obcych wedlug trafnosci (okolica, gust, reakcje), NEWEST = od najnowszych")
+            @RequestParam(name = "sort", defaultValue = "RELEVANT") FeedSort feedSort,
+
             @Parameter(description = "Identyfikator wydarzenia - posty pod tym wydarzeniem")
             @RequestParam(required = false) Long event,
 
@@ -99,7 +103,7 @@ public class PostController {
         } else if (event != null) {
             result = postService.byEvent(event, username, pageable);
         } else if (author == null || author.isBlank()) {
-            result = postService.feed(username, scope, pageable);
+            result = postService.feed(username, scope, feedSort, pageable);
         } else {
             result = postService.byAuthor(author, username, pageable);
         }

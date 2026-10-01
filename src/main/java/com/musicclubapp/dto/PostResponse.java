@@ -44,13 +44,31 @@ public record PostResponse(
     /** Klan, w ktorym napisano post (post klanu, widoczny tylko dla jego czlonkow), albo {@code null}. */
     ClanBadge clan,
     /** Klan autora - plakietka obok loginu; {@code null}, gdy autor nie jest w zadnym. */
-    ClanBadge authorClan
+    ClanBadge authorClan,
+    /** Czemu ten post jest wysoko na tablicy "Dla ciebie" (tylko tam; w innych miejscach pusta lista). */
+    List<FeedReason> feedReasons,
+    /** Ile komentarzy (z odpowiedziami) widzi ogladajacy pod tym postem. */
+    long commentCount
 ) {
 
     /** Ta sama odpowiedz z plakietka klanu autora - dolepia ja serwis, ktory ma plakietki calej strony. */
     public PostResponse withAuthorClan(ClanBadge badge) {
         return new PostResponse(id, authorUsername, authorAvatarUrl, content, imageUrls, musicEmbedUrl,
             musicProvider, musicKind, musicTitle, musicThumbnailUrl, musicStartSeconds, musicUrl, createdAt,
-            canDelete, canEdit, reactions, visibility, fromFriend, event, clan, badge);
+            canDelete, canEdit, reactions, visibility, fromFriend, event, clan, badge, feedReasons, commentCount);
+    }
+
+    /** Ta sama odpowiedz z powodami, dla ktorych post trafil wysoko na tablicy. */
+    public PostResponse withFeedReasons(List<FeedReason> reasons) {
+        return new PostResponse(id, authorUsername, authorAvatarUrl, content, imageUrls, musicEmbedUrl,
+            musicProvider, musicKind, musicTitle, musicThumbnailUrl, musicStartSeconds, musicUrl, createdAt,
+            canDelete, canEdit, reactions, visibility, fromFriend, event, clan, authorClan, reasons, commentCount);
+    }
+
+    /** Ta sama odpowiedz z liczba komentarzy - dolepia ja serwis, ktory liczy je dla calej strony naraz. */
+    public PostResponse withCommentCount(long count) {
+        return new PostResponse(id, authorUsername, authorAvatarUrl, content, imageUrls, musicEmbedUrl,
+            musicProvider, musicKind, musicTitle, musicThumbnailUrl, musicStartSeconds, musicUrl, createdAt,
+            canDelete, canEdit, reactions, visibility, fromFriend, event, clan, authorClan, feedReasons, count);
     }
 }

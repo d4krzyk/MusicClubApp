@@ -2,7 +2,9 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.ClanBadge;
 import com.musicclubapp.dto.CreatePostRequest;
+import com.musicclubapp.dto.FeedReason;
 import com.musicclubapp.dto.FeedScope;
+import com.musicclubapp.dto.FeedSort;
 import com.musicclubapp.dto.PostResponse;
 import com.musicclubapp.dto.ReactionSummary;
 import com.musicclubapp.dto.UpdatePostRequest;
@@ -23,6 +25,7 @@ import com.musicclubapp.repository.ReactionRepository;
 import com.musicclubapp.repository.UserRepository;
 import com.musicclubapp.storage.FileStorageService;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -54,6 +57,8 @@ public class PostService {
     private final PrivacyService privacy;
     private final MusicEventRepository events;
     private final ClanService clans;
+    private final FeedService feeds;
+    private final CommentService comments;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
@@ -66,7 +71,11 @@ public class PostService {
                        BlockService blocks,
                        PrivacyService privacy,
                        MusicEventRepository events,
-                       ClanService clans) {
+                       ClanService clans,
+                       FeedService feeds,
+                       CommentService comments) {
+        this.comments = comments;
+        this.feeds = feeds;
         this.privacy = privacy;
         this.events = events;
         this.clans = clans;
@@ -158,7 +167,8 @@ public class PostService {
         /* Post moze juz miec reakcje - edycja tresci ich nie kasuje. */
         ReactionSummary reactions = reactionService.summaries(List.of(id), username).get(id);
 
-        return withAuthorClan(postMapper.toResponse(postRepository.save(post), author, reactions), author);
+        return withAuthorClan(postMapper.toResponse(postRepository.save(post), author, reactions), author)
+            .withCommentCount(comments.countsFor(author.getId(), List.of(id)).getOrDefault(id, 0L));
     }
 
     /** Podpina nagranie do posta - razem z tytulem i miniaturka. */
@@ -175,7 +185,27 @@ public class PostService {
         post.applyMusic(link, startSeconds, metadata.title(), metadata.thumbnailUrl());
     }
 
-    /** Tablica: najpierw znajomi, pod nimi reszta. */
+    /**
+     * Tablica z wyborem kolejnosci. "Dla ciebie" ({@link FeedSort#RELEVANT}) dotyczy tylko postow osob spoza
+     * kregu i tylko przy zakresie ALL - krag i tak jest od najnowszych.
+     */
+    @Transactional(readOnly = true)
+    public Page<PostResponse> feed(String viewerUsername, FeedScope scope, FeedSort sort, Pageable pageable) {
+        if (scope == FeedScope.FRIENDS || sort == FeedSort.NEWEST) {
+            return feed(viewerUsername, scope, pageable);
+        }
+        User viewer = userRepository.findByUsername(viewerUsername)
+            .orElseThrow(() -> new NoSuchElementFoundException("user", viewerUsername));
+        List<Long> circle = userRepository.circleIds(viewerUsername);
+        FeedService.Result result = feeds.relevant(viewer, circle, blocks.hiddenForQuery(viewer.getId()),
+            pageable.getPageNumber(), pageable.getPageSize());
+        Page<Post> page = new PageImpl<>(result.posts(),
+            PageRequest.of(pageable.getPageNumber(), pageable.getPageSize()), result.total());
+        return withReactions(page, viewerUsername, circle)
+            .map(r -> r.withFeedReasons(result.reasons().getOrDefault(r.id(), List.<FeedReason>of())));
+    }
+
+    /** Tablica: najpierw znajomi, pod nimi reszta - wszyscy od najnowszych. */
     @Transactional(readOnly = true)
     public Page<PostResponse> feed(String viewerUsername, FeedScope scope, Pageable pageable) {
         List<Long> circle = userRepository.circleIds(viewerUsername);
@@ -219,7 +249,8 @@ public class PostService {
             .summaries(List.of(id), viewerUsername)
             .getOrDefault(id, ReactionSummary.empty());
 
-        return withAuthorClan(postMapper.toResponse(post, viewer, summary), post.getAuthor());
+        return withAuthorClan(postMapper.toResponse(post, viewer, summary), post.getAuthor())
+            .withCommentCount(viewer == null ? 0 : comments.countsFor(viewer.getId(), List.of(id)).getOrDefault(id, 0L));
     }
 
     /** Posty jednego uzytkownika - do jego profilu. */
@@ -290,12 +321,16 @@ public class PostService {
         Map<Long, ClanBadge> badges = clans.badgesOf(
             page.getContent().stream().map(p -> p.getAuthor().getId()).distinct().toList());
 
+        // Liczby komentarzy calej strony - tez jedno zapytanie
+        Map<Long, Long> commentCounts = viewer == null ? Map.of() : comments.countsFor(viewer.getId(), postIds);
+
         return page.map(post -> postMapper.toResponse(
                 post,
                 viewer,
                 reactions.getOrDefault(post.getId(), ReactionSummary.empty()),
                 circle.contains(post.getAuthor().getId()))
-            .withAuthorClan(badges.get(post.getAuthor().getId())));
+            .withAuthorClan(badges.get(post.getAuthor().getId()))
+            .withCommentCount(commentCounts.getOrDefault(post.getId(), 0L)));
     }
 
     /** Odpowiedz pojedynczego posta z plakietka klanu autora. */

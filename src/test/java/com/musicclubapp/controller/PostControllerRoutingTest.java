@@ -75,13 +75,13 @@ class PostControllerRoutingTest {
     @WithMockUser(username = "anna")
     @DisplayName("bez parametru scope tablica jest pelna (ALL)")
     void defaultScopeIsAll() throws Exception {
-        given(postService.feed(anyString(), any(), any()))
+        given(postService.feed(anyString(), any(), any(), any()))
             .willReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/posts"))
             .andExpect(status().isOk());
 
-        verify(postService).feed(eq("anna"), eq(FeedScope.ALL), any());
+        verify(postService).feed(eq("anna"), eq(FeedScope.ALL), eq(com.musicclubapp.dto.FeedSort.RELEVANT), any());
     }
 
     @Test
@@ -89,12 +89,12 @@ class PostControllerRoutingTest {
     @DisplayName("scope=FRIENDS zaweza tablice do kregu znajomych")
     void friendsScopeIsPassedThrough() throws Exception {
         Page<com.musicclubapp.dto.PostResponse> empty = new PageImpl<>(List.of());
-        given(postService.feed(anyString(), any(), any())).willReturn(empty);
+        given(postService.feed(anyString(), any(), any(), any())).willReturn(empty);
 
         mockMvc.perform(get("/api/posts").param("scope", "FRIENDS"))
             .andExpect(status().isOk());
 
-        verify(postService).feed(eq("anna"), eq(FeedScope.FRIENDS), any());
+        verify(postService).feed(eq("anna"), eq(FeedScope.FRIENDS), eq(com.musicclubapp.dto.FeedSort.RELEVANT), any());
     }
 
     @Test

@@ -157,7 +157,7 @@ frontend/                        # KROK 5: React + Vite (szczegóły w frontend/
 | GET | `/api/auth/me` | dane zalogowanego użytkownika |
 | PUT | `/api/profile` | zmiana własnego loginu i e-maila |
 | PUT | `/api/profile/password` | zmiana własnego hasła (wymaga obecnego) |
-| GET | `/api/posts?scope=ALL\|FRIENDS` | tablica — najpierw znajomi, potem reszta |
+| GET | `/api/posts?scope=ALL\|FRIENDS&sort=RELEVANT\|NEWEST` | tablica — najpierw znajomi, potem reszta: „Dla ciebie” (okolica, gust, popularność; domyślnie) albo od najnowszych |
 | POST | `/api/posts` | dodanie posta (tekst + zdjęcia + muzyka + widoczność) |
 | PUT | `/api/posts/{id}` | edycja posta (treść, nagranie, widoczność) — **tylko autor** |
 | DELETE | `/api/posts/{id}` | usunięcie posta (autor albo admin) |
@@ -237,6 +237,10 @@ z opisami: Swagger (adres niżej).
 | GET | `/api/events/{id}` | wydarzenie z uczestnikami i powodami „Dla ciebie” |
 | PUT / DELETE | `/api/events/{id}/participation` | „Zainteresowany” / „Biorę udział” / rezygnacja |
 | GET | `/api/posts?event={id}` | posty pod wydarzeniem („szukam ekipy”) |
+| GET / POST | `/api/posts/{id}/comments` | komentarze pierwszego poziomu (od najnowszych, `page`, `size`) / dodanie komentarza lub odpowiedzi (`content`, `parentId`) |
+| GET | `/api/comments/{id}` / `/api/comments/{id}/replies` | jeden komentarz (tu prowadzą powiadomienia) / odpowiedzi pod nim, od najstarszej |
+| DELETE | `/api/comments/{id}` | usunięcie komentarza: autor, autor posta, administrator albo — w poście klanu — zarząd klanu |
+| GET | `/api/posts/{id}/mentionable?q=` | podpowiedzi osób do oznaczenia (`@login`) pod tym postem |
 | POST | `/api/auth/verify-email` | potwierdzenie adresu z linku w wiadomości |
 | POST | `/api/auth/password-reset/request` | prośba o reset hasła (zawsze 204) |
 | POST | `/api/auth/password-reset/confirm` | nowe hasło z linku |
@@ -457,7 +461,39 @@ dla znajomych*. **Kolejność** ustala aplikacja: posty z Twojego kręgu
 (znajomi i Ty) idą na górę, publiczne wpisy pozostałych osób pod nie.
 Nad tablicą jest przełącznik, którym można zawęzić ją do samych znajomych.
 
-### Domyślnie szeroko, i to jest decyzja
+### Tablica „Dla ciebie” — kolejność postów obcych
+
+Krąg znajomych jest zawsze na górze i zawsze od najnowszych. Posty osób
+spoza kręgu ma porządkować to, co interesuje *ciebie*, a nie sam zegar —
+inaczej tablica pełna jest świeżych, ale przypadkowych wpisów z drugiego końca
+kraju. `FeedRanker` liczy dla każdego posta:
+
+```
+ocena = świeżość × (0,4 + okolica + gust + popularność)
+```
+
+- **świeżość** maleje o połowę co 72 godziny i *mnoży* resztę, więc kolejność
+  dwóch postów zależy tylko od różnicy ich wieku — nie zmienia się między
+  pobraniem pierwszej a drugiej strony (stronicowanie nie kłamie);
+- **okolica** — poziom bliskości miast autora i oglądającego (0–5, ta sama
+  skala co w propozycjach, wydarzeniach i klanach; waga 1,0);
+- **gust** — wspólni ulubieni wykonawcy (3 pkt) i gatunki (1 pkt), 10 pkt to
+  maksimum (waga 0,7); liczymy tylko z profili widocznych dla wszystkich;
+- **popularność** — reakcje + 2 × komentarze, tłumione logarytmem (waga 0,6).
+
+Przy poście stoi powód, dla którego jest wysoko („Z twojej okolicy”,
+„Podobny gust”, „Popularne”), a przełącznik „Dla ciebie / Najnowsze” zostaje
+zapamiętany w przeglądarce. Okolica zmienia tylko *kolejność* — nikogo nie
+wyklucza; „z twojej okolicy” widać przy poście tylko wtedy, gdy autor pokazuje
+swoje miasto.
+
+Ranking liczy się w Javie na **puli 300 najnowszych publicznych postów obcych**
+(`app.feed.pool-size`); starsze idą za nią od najnowszych, więc tablica się nie
+urywa. Jest to świadomy kompromis wobec zasady z następnego akapitu: zapytanie
+SQL nie umie ocenić wspólnego gustu, a pula jest stała i krótka, więc strony
+nadal się nie powtarzają (zapewnia to `FeedPaginationTest`).
+
+### Kolejność w kręgu liczy baza, nie przeglądarka
 
 Nowe konto nie ma ani jednego znajomego. Aplikacja, która wita takiego
 użytkownika pustą stroną, jest bezużyteczna dokładnie wtedy, kiedy najbardziej
@@ -522,6 +558,7 @@ Powiadomienie, po którym trzeba samemu szukać, co się właściwie stało,
 | reakcja na Twój post | **tego konkretnego posta** (`/post/{id}`) |
 | nowe zaproszenie | strony znajomych, gdzie się je przyjmuje |
 | przyjęte zaproszenie | profilu tej osoby |
+| komentarz pod Twoim postem, odpowiedź na Twój komentarz, oznaczenie w komentarzu | **posta z podświetlonym komentarzem** (`/post/{id}?komentarz={id}`) |
 
 Adres wylicza **serwer** (pole `link`), a nie frontend. Gdyby robił to
 frontend, przy każdym nowym rodzaju powiadomienia trzeba by pamiętać
@@ -564,6 +601,40 @@ pobieramy tablicy od nowa**: doszłyby nowe posty, kolejność by się zmieniła
 i czytający straciłby miejsce, w którym był. Zegar chodzi tylko przy
 widocznej karcie — zapytania wysyłane do zminimalizowanego okna nikomu nic
 nie pokazują, a zużywają baterię.
+
+## Komentarze pod postami
+
+Pod każdym postem jest sekcja komentarzy (otwierana przyciskiem „Skomentuj”).
+Komentarze są jednopoziomowe: odpowiedź na odpowiedź wisi pod tym samym
+komentarzem nadrzędnym, z oznaczeniem osoby, do której jest (`reply_to`) —
+głębokie drzewka są nieczytelne na telefonie.
+
+- **Oznaczanie.** Wpisanie `@` otwiera listę osób, które można oznaczyć pod tym
+  postem: autor posta, osoby, które już tu pisały, i znajomi — tylko takie,
+  które widzą post i nie mają blokady z piszącym ani z autorem posta. Obcych,
+  których piszący nie zna z tej rozmowy, nie podpowiadamy (nie ma wyszukiwarki
+  kont przez komentarze). Serwer sam wyłuskuje `@login` z treści (do 5 osób na
+  komentarz; kropka lub myślnik na końcu to interpunkcja) i zapisuje tylko
+  tych, których faktycznie można oznaczyć — przeglądarka podświetla wyłącznie
+  oznaczenia potwierdzone przez serwer.
+- **Kto co widzi.** Komentarze widzą ci, którzy widzą post; pod postem klanu
+  — członkowie i administrator aplikacji (obcy dostaje 404, tak jak przy samym
+  poście), a w poście klanu piszą tylko członkowie. Komentarze osób z blokad
+  oglądającego znikają razem z odpowiedziami pod nimi.
+- **Powiadomienia** (dzwonek i push): odpowiedź na Twój komentarz, oznaczenie,
+  komentarz pod Twoim postem. Każda osoba dostaje **jedno** powiadomienie o
+  danym komentarzu — to najbardziej osobiste (odpowiedź > oznaczenie > komentarz
+  pod postem); autor nie powiadamia sam siebie. Push z tego samego posta
+  zastępuje poprzedni na ekranie telefonu (wspólny `tag`).
+- **Kasowanie**: autor komentarza, autor posta, administrator aplikacji albo —
+  w poście klanu — zarząd klanu. Kaskada jest w bazie (`ON DELETE CASCADE`):
+  odpowiedzi, oznaczenia i powiadomienia znikają razem z komentarzem, a
+  zgłoszenie zostaje z migawką treści (`reports.comment_id` → `SET NULL`).
+- **Zgłaszanie**: `ReportContext.COMMENT` z migawką tekstu; administrator może
+  w decyzji usunąć komentarz (`DELETE_COMMENT`). Zakaz publikowania obejmuje
+  komentarze, a limit to 10 komentarzy na minutę.
+- **Sprzątanie**: usunięcie konta kasuje komentarze tej osoby (`AccountDeletionService`),
+  eksport danych je zawiera, a polityka prywatności o nich mówi.
 
 ## Gablotka playlist
 
