@@ -1,62 +1,117 @@
-# MusicClubApp
+# MusicClub
 
-Projekt zaliczeniowy — Programowanie w Javie III.
+Aplikacja społecznościowa dla ludzi, którzy kochają muzykę. Poznajesz osoby o podobnym guście — **najpierw z Twojej
+okolicy** — znajdujesz koncerty i klany, piszesz posty, komentujesz (z oznaczaniem osób i odpowiedziami), wysyłasz
+GIF-y i rozmawiasz ze znajomymi. Działa w przeglądarce i jako aplikacja instalowana na telefonie (PWA); wersja na
+Androida (TWA) do Google Play jest w przygotowaniu.
 
-Aplikacja do poznawania ludzi o podobnym guście muzycznym. Użytkownicy mają
-ulubionych artystów i utwory z katalogu Deezera; im więcej wspólnych artystów
-i gatunków, tym wyżej ktoś pojawia się na liście proponowanych znajomych. Do
-tego posty (tekst, zdjęcie, link do podglądu utworu), konta z logowaniem
-i interfejs PL/EN.
+Zaczęło się jako projekt zaliczeniowy z Programowania w Javie III (zaliczony); teraz rośnie w aplikację, którą można
+wypuścić na świat.
 
-**Stack:** Spring Boot 3.3 (REST API) · PostgreSQL 16 · React + Vite · Docker Compose
+**Stack:** Spring Boot 3.3 (REST API, Flyway) · PostgreSQL 16 · React + Vite (PWA) · Docker Compose · nginx / Caddy
 
-## Jak to wygląda
-
-![Tablica](docs/zrzuty/tablica-ciemna.jpg)
-
-Tablica pokazuje **najpierw posty znajomych**, a pod nimi publiczne wpisy
-pozostałych osób — granicę widać wyraźnie:
-
-![Granica między znajomymi a resztą](docs/zrzuty/tablica-jasna.jpg)
+## Co potrafi
 
 | | |
 |---|---|
-| ![Powiadomienia](docs/zrzuty/powiadomienia.jpg) | ![Kto zareagował](docs/zrzuty/kto-zareagowal.jpg) |
-| Dzwonek — każde powiadomienie prowadzi do konkretnego zdarzenia | Okienko „kto zareagował", pogrupowane po rodzaju |
-| ![Profil](docs/zrzuty/profil.jpg) | ![Pusty stan](docs/zrzuty/pusty-stan.jpg) |
-| Profil: ulubieni, gablotka playlist, znajomi, posty | Pusto ≠ awaria — każdy pusty stan mówi, co dalej |
-| ![Czat](docs/zrzuty/czat.jpg) | ![Lista rozmów](docs/zrzuty/czat-lista.jpg) |
-| Czat wysuwa się z prawej — rozmowa toczy się obok tego, co akurat oglądasz | Lista rozmów: kropka „online", podgląd ostatniej wiadomości, licznik nieprzeczytanych |
-| ![Zgłoszenie](docs/zrzuty/zgloszenie.jpg) | ![Panel zgłoszeń](docs/zrzuty/panel-zgloszen.jpg) |
-| Zgłoszenie wymaga opisania problemu własnymi słowami | Panel administratora z migawką rozmowy — jedyną drogą, żeby ją zobaczyć |
+| **Tablica „Dla ciebie”** | znajomi zawsze na górze, pod nimi publiczne posty obcych ułożone według okolicy, wspólnego gustu i reakcji — z podpisem, *dlaczego* dany post jest wysoko |
+| **Okolica** | miasto w profilu (bez adresu i bez lokalizacji z telefonu) podnosi ludzi, koncerty i klany z Twojego regionu; zasięg od 30 km do całego kraju |
+| **Znajomi z gustem** | proponowani znajomi liczeni ze wspólnych artystów, gatunków i znajomych |
+| **Komentarze** | odpowiedzi, oznaczanie osób przez `@login` z podpowiedziami, powiadomienia, zgłaszanie |
+| **GIF-y** | przeglądarka GIF-ów w komentarzach i na czacie; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
+| **Czat** | rozmowy ze znajomymi z linkami muzycznymi, dymkiem „pisze…” i potwierdzeniem przeczytania |
+| **Wydarzenia** | koncerty z Ticketmastera, widok „Dla ciebie”, zapisy i lista uczestników, przypomnienia, posty „szukam ekipy” |
+| **Klany** | przeglądarka klanów, prośby o dołączenie, czat, ankiety, utwór tygodnia, tytuły i ranking aktywności |
+| **Muzyka** | linki ze Spotify, YouTube Music i Apple Music w postach, ulubieni artyści i utwory z Deezera, import z Last.fm, gablotka playlist |
+| **Prywatność** | posty publiczne albo tylko dla znajomych, blokady, ustawienia widoczności, potwierdzanie e-maila, reset hasła, pobranie własnych danych, regulamin i polityka prywatności |
+| **Moderacja** | zgłoszenia z migawką dowodów, zakazy publikowania i wiadomości, wykrywanie multikont |
+| **Telefon** | PWA (instalacja, szybki start bez zasięgu), powiadomienia push |
+| **Wygląd** | polski i angielski, motyw jasny i ciemny |
+
+## Jak to wygląda
+
+<p align="center">
+  <img src="docs/zrzuty/tablica-ciemna.jpg" alt="Tablica „Dla ciebie” w ciemnym motywie" width="680">
+</p>
+
+Tablica pokazuje **najpierw posty znajomych**, a pod nimi publiczne wpisy pozostałych osób — ułożone według tego, co
+dotyczy właśnie Ciebie. Przy poście stoi powód: „Z twojej okolicy”, „Podobny gust” albo „Popularne”.
+
+<p align="center">
+  <img src="docs/zrzuty/tablica-jasna.jpg" alt="Granica między znajomymi a resztą, w jasnym motywie" width="680">
+</p>
+
+### Na telefonie: komentarze i GIF-y
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="docs/zrzuty/tablica-telefon.jpg" alt="Tablica na telefonie" width="250"> | <img src="docs/zrzuty/komentarze-telefon.jpg" alt="Komentarze z oznaczeniem i GIF-em" width="250"> | <img src="docs/zrzuty/gify-telefon.jpg" alt="Przeglądarka GIF-ów w polu komentarza" width="250"> |
+| Tablica jako aplikacja (PWA) | Komentarze: `@oznaczenie`, odpowiedzi, GIF | Przeglądarka GIF-ów z szukaniem |
+
+### Okolica: wydarzenia, klany i znajomi
+
+| | |
+|---|---|
+| ![Wydarzenia](docs/zrzuty/wydarzenia.jpg) | ![Przeglądarka klanów](docs/zrzuty/klany.jpg) |
+| Wydarzenia „Dla ciebie”: pasujące do gustu, z odległością od Twojego miasta | Przeglądarka klanów: szukanie, gatunek, zasięg, dopasowanie do gustu |
+| ![Proponowani znajomi](docs/zrzuty/znajomi.jpg) | ![Ustawienie miasta](docs/zrzuty/ustawienia-miasto.jpg) |
+| Proponowani znajomi — „Z twojego miasta”, wspólni artyści | Miasto w ustawieniach: tylko nazwa miasta, nigdy adres |
+
+### Klan
+
+<p align="center">
+  <img src="docs/zrzuty/klan.jpg" alt="Strona klanu z ogłoszeniem, zasadami i czatem" width="680">
+</p>
+
+Strona klanu: ogłoszenie i zasady od zarządu, a pod nimi czat, posty, muzyka, koncerty, ankiety, ranking i tytuły.
+Zawartość klanu widzą tylko jego członkowie.
+
+### Rozmowy i powiadomienia
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="docs/zrzuty/czat-lista.jpg" alt="Lista rozmów" width="250"> | <img src="docs/zrzuty/czat-gif.jpg" alt="Czat z GIF-em" width="250"> | <img src="docs/zrzuty/powiadomienia.jpg" alt="Powiadomienia" width="250"> |
+| Lista rozmów: kropka „online”, podgląd, licznik nieprzeczytanych | Czat wysuwa się z prawej; GIF-y i linki muzyczne w dymkach | Dzwonek — każde powiadomienie prowadzi do konkretnego komentarza lub posta |
+
+### Moderacja i puste stany
+
+| | |
+|---|---|
+| ![Panel zgłoszeń](docs/zrzuty/panel-zgloszen.jpg) | ![Pusty stan](docs/zrzuty/pusty-stan.jpg) |
+| Panel administratora: zgłoszenie komentarza z migawką dowodu | Nowe konto: pusto ≠ awaria — każdy pusty stan mówi, co dalej |
 
 <details>
 <summary>Skąd te zrzuty i czego na nich nie ma</summary>
 
-Zrobione **prawdziwą przeglądarką** (Chromium sterowany Playwrightem) na
-danych demonstracyjnych zakładanych przez zwykłe API aplikacji — skrypt
-`zrzuty-do-readme.mjs`. Zdjęcia w postach to wygenerowane gradienty, a nie
-czyjeś fotografie: chodzi o pokazanie układu strony, nie o ilustracje.
+Zrobione **prawdziwą przeglądarką** (Chromium sterowany Playwrightem) na prawdziwym backendzie i PostgreSQL, na danych
+demonstracyjnych zakładanych przez zwykłe API aplikacji — skrypt
+[`docs/zrzuty/zrzuty-do-readme.mjs`](docs/zrzuty/zrzuty-do-readme.mjs) (na górze pliku jest instrukcja uruchomienia).
 
-Nie ma na nich **odtwarzaczy muzyki ani okładek playlist**. Środowisko,
-w którym powstawały, nie ma dostępu do Spotify, YouTube ani Deezera, więc
-ramka `<iframe>` zostałaby pusta, a okładki zastąpione są ikoną. U Ciebie,
-z normalnym dostępem do sieci, wczytają się same.
+**Wszystko na nich jest fikcyjne:** osoby, zespoły, kluby i koncerty (nie są to dane z Ticketmastera). Zdjęcia w
+postach, plakaty koncertów i „GIF-y” to obrazki narysowane na płótnie przeglądarki — chodzi o układ strony, a nie o
+ilustracje. Dostawcę GIF-ów udaje mały serwer, który skrypt stawia na czas zrzutów, więc nie widać na nich prawdziwych
+zasobów KLIPY ani GIPHY.
+
+Nie ma na nich **odtwarzaczy muzyki, okładek playlist ani map**. Środowisko, w którym powstawały, nie ma dostępu do
+Spotify, YouTube, Deezera ani OpenStreetMap, więc ramka `<iframe>` zostałaby pusta, a okładki zastąpione są inicjałem.
+U Ciebie, z normalnym dostępem do sieci, wczytają się same.
 </details>
 
 ## Dokumentacja
 
 | Plik | Co zawiera |
 |------|------------|
-| [`docs/PLAN.md`](docs/PLAN.md) | plan pracy krok po kroku + wyjaśnienie, co robi każdy element |
-| [`docs/WYMAGANIA.md`](docs/WYMAGANIA.md) | checklista 28 wymagań z PDF-a i gdzie każde realizujemy |
+| [`docs/WDROZENIE.md`](docs/WDROZENIE.md) | wdrożenie na serwer: HTTPS (tunel albo domena), migracje, poczta, push, GIF-y, klucze, logi, co zostało sprawdzone, a co nie, i droga do Google Play |
+| [`frontend/README.md`](frontend/README.md) | frontend: uruchamianie i zależności (krótka notatka z czasów projektu zaliczeniowego) |
+| [`docs/PLAN.md`](docs/PLAN.md) | historyczny plan pracy z czasów projektu zaliczeniowego |
+| [`docs/WYMAGANIA.md`](docs/WYMAGANIA.md) | historyczna checklista wymagań przedmiotu i lista wpadek, które po drodze wyłapały testy |
 
 ## Jak uruchomić
 
 Potrzebne: **Docker Desktop**. Do pracy nad kodem dodatkowo **JDK 17+**
 i **Node 20+**.
 
-### Wariant A — całość jedną komendą (wymaganie nr 18)
+### Wariant A — całość jedną komendą
 
 ```bash
 cp .env.example .env      # w PowerShellu: copy .env.example .env
@@ -99,51 +154,50 @@ mvn test
 ## Struktura
 
 ```
-docker-compose.yml            # KROK 6: baza + backend + frontend + Adminer
+docker-compose.yml            # lokalnie: baza + backend + frontend + Adminer
+docker-compose.prod.yml       # serwer: backend + nginx + tunel Cloudflare albo Caddy (docs/WDROZENIE.md)
 Dockerfile                    # obraz backendu (Maven -> JRE)
-.env.example                  # wzór pliku z hasłami (skopiuj do .env)
+Caddyfile                     # HTTPS z Let's Encrypt (profil „domena”)
+.env.example                  # wzór pliku z hasłami i kluczami (skopiuj do .env)
 pom.xml                       # zależności Mavena
-docs/                         # plan pracy i checklista wymagań
-docs/zrzuty/                  # zrzuty ekranu do tego pliku
+docs/                         # WDROZENIE.md (+ historyczne PLAN.md i WYMAGANIA.md)
+docs/zrzuty/                  # zrzuty ekranu do tego pliku i skrypt, który je robi
 src/main/java/com/musicclubapp/
 ├── MusicClubAppApplication.java   # punkt wejścia
-├── config/                        # SecurityConfig, I18nConfig
-├── controller/                    # REST API (Auth, Post, Reaction, Profile, Users,
-│                                  #           Favorites, MusicCatalog, Friend)
-├── dto/                           # dane wejściowe/wyjściowe + walidacja
-├── entity/                        # encje JPA (klasa = tabela)
+├── config/                        # SecurityConfig, I18nConfig, pierwszy administrator
+├── controller/                    # REST API: posty, komentarze, GIF-y, czat, wydarzenia, klany,
+│                                  #   znajomi, lokalizacja, powiadomienia, zgłoszenia, ...
+├── dto/ entity/ mapper/           # dane wejściowe/wyjściowe, encje JPA, przepisywanie jednego w drugie
+├── repository/                    # dostęp do bazy (Spring Data, zapytania natywne tam, gdzie trzeba)
+├── service/                       # logika biznesowa: tablica (FeedRanker), komentarze, lokalizacja,
+│                                  #   klany, wydarzenia, moderacja, eksport danych, ...
+├── gif/                           # przeglądarka GIF-ów: dostawcy (KLIPY, GIPHY), podpisy, pamięć podręczna, limity
+├── music/                         # linki ze Spotify / YouTube Music / Apple Music, osadzanie, metadane
+├── push/                          # Web Push bez bibliotek (RFC 8291 i 8292)
+├── security/                      # „zapamiętaj mnie”, znacznik bezpieczeństwa sesji
+├── storage/                       # wgrane pliki (zdjęcia, awatary)
 ├── error/                         # GlobalExceptionHandler i wyjątki
-├── mapper/                        # encja → DTO
-├── repository/                    # dostęp do bazy (interfejsy Spring Data)
-├── security/                      # "zapamiętaj mnie" dla logowania JSON-em
-├── service/                       # logika biznesowa
 └── validation/                    # własne adnotacje walidacyjne
 src/main/resources/
-├── application.properties         # konfiguracja (baza, języki, Security)
+├── application.properties         # konfiguracja do pracy nad kodem
+├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
+├── db/migration/                  # Flyway V1–V15 (tylko na produkcji; lokalnie ddl-auto=update)
+├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
+├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
-src/test/
-├── java/                          # @SpringBootTest, @DataJpaTest, @WebMvcTest, Mockito
-└── resources/application-test.properties  # profil testowy (H2 w pamięci)
+src/test/                          # 695 testów: @SpringBootTest, @WebMvcTest, Mockito; baza H2 w pamięci
 
-frontend/                        # KROK 5: React + Vite (szczegóły w frontend/README.md)
-├── vite.config.js               # proxy /api → localhost:8080 (bez CORS-a)
-├── Dockerfile                   # KROK 6: build Vite -> nginx
-├── nginx.conf                   # to samo proxy, ale w kontenerze
+frontend/                          # React + Vite (PWA)
+├── vite.config.js                 # proxy /api → localhost:8080 (bez CORS-a)
+├── Dockerfile, nginx.conf         # build Vite → nginx; to samo proxy w kontenerze
+├── public/                        # manifest PWA, service worker, ikony, krój Poppins
 └── src/
-    ├── api/client.js            # axios: ciasteczka, CSRF, język, błędy (sam TRANSPORT)
-    ├── api/czat.js, moderacja.js, posty.js, profil.js, znajomi.js,
-    │       powiadomienia.js, konto.js, muzyka.js
-    │                            # nazwane operacje serwera - oddają gotowe dane
-    ├── auth/                    # kto zalogowany + ochrona tras
-    ├── theme/                   # motyw jasny/ciemny
-    ├── i18n/                    # pl.json i en.json
-    ├── hooks/                   # useOdswiezanie - jeden puls dla całej aplikacji
-    │                            # useLiveReactions - liczniki reakcji
-    ├── components/              # Layout, Post, Reactions, Favorites, Playlists,
-    │                            #   CommonGround, EmptyState, PostSkeleton, …
-    │                            # Icons.jsx: ikony z Bootstrap Icons (MIT)
-    └── pages/                   # Login, Register, Feed (strona główna), Post, Profile,
-                                 #   Friends, Settings
+    ├── api/                       # nazwane operacje serwera (client.js to sam transport)
+    ├── auth/ theme/ i18n/ legal/  # kto zalogowany, motyw, teksty PL/EN, regulamin i polityka prywatności
+    ├── hooks/                     # useOdswiezanie (jeden puls), useLiveReactions, useZasieg, useGify, ...
+    ├── components/                # Layout, Post, Reactions, komentarze/, gif/, klan/, EventCard, ...
+    ├── pages/                     # Feed, Post, Profile, Friends, Events, Klany, Clan, Settings, Reports, ...
+    └── style/                     # CSS podzielony tematycznie (czat, klany, wydarzenia, gify, ...)
 ```
 
 ## API
@@ -294,9 +348,10 @@ każdy mógłby zrobić sobie konto administratora. Pierwszego admina zakłada w
 sama aplikacja przy pierwszym starcie (`config/AdminInitializer`), o ile w bazie
 nie ma jeszcze żadnego.
 
-Domyślne dane logowania: **`admin` / `admin12345`** — do nauki. Przed oddaniem
-projektu ustaw własne przez zmienne środowiskowe `ADMIN_USERNAME`,
-`ADMIN_EMAIL`, `ADMIN_PASSWORD` albo po prostu zmień hasło w ustawieniach konta.
+Domyślne dane logowania w pracy nad kodem: **`admin` / `admin12345`** (z `.env.example` przez Docker Compose
+hasło to wpisane tam `ADMIN_PASSWORD`). To wartości wyłącznie do rozwoju: **na serwerze** ustaw własne przez zmienne
+środowiskowe `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` — profil produkcyjny nie ma domyślnego hasła i bez
+`ADMIN_PASSWORD` nie wystartuje.
 
 | Kto | Widzi |
 |-----|-------|
@@ -1287,19 +1342,31 @@ załadowaniem.
 
 ## Klucze i konfiguracja zewnętrznych serwisów
 
+Wszystko poniżej jest **opcjonalne** — bez klucza dana funkcja po prostu się nie pokazuje, a reszta działa.
+Wzór pliku `.env` z komentarzami przy każdej zmiennej to [`.env.example`](.env.example); kroki zakładania kont u
+dostawców opisuje [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
+
 | Zmienna | Potrzebna do | Bez niej |
 |---|---|---|
-| `LASTFM_API_KEY` | import historii słuchania z Last.fm | przycisk importu się nie pokazuje, reszta działa |
+| `LASTFM_API_KEY` | import historii słuchania z Last.fm i gatunki artystów | przycisk importu się nie pokazuje, gatunki z ogólnych etykiet Ticketmastera |
+| `TICKETMASTER_API_KEY` | koncerty w zakładce Wydarzenia | zakładka jest pusta |
+| `GIF_API_KEY`, `GIF_PROVIDER` | przeglądarka GIF-ów (KLIPY albo GIPHY) | przycisk GIF się nie pokazuje |
+| `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `APP_PUBLIC_URL` | potwierdzanie adresu e-mail, reset hasła, zmiana adresu | konta działają od razu, bez resetu hasła |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | powiadomienia push | push wyłączony, powiadomienia tylko w dzwonku |
+| `LEGAL_CONTROLLER`, `LEGAL_CONTACT_EMAIL`, `LEGAL_HOSTING`, `LEGAL_MAIL_PROVIDER` | dane administratora w polityce prywatności | w tekście widać „[do uzupełnienia…]” i baner ostrzegawczy |
 | — (Deezer) | wyszukiwarka artystów i utworów | — Deezer nie wymaga żadnego klucza |
 | — (oEmbed) | tytuły postów ze Spotify / YT Music | tytuł zostaje pusty, odtwarzacz działa |
 
-Klucz Last.fm zakłada się w minutę na
-<https://www.last.fm/api/account/create> — wystarczy sam „API key", bez
-„shared secret" i bez OAuth, bo czytamy wyłącznie publiczne dane.
+Na serwerze obowiązkowe są dwie wartości: `REMEMBER_ME_KEY` (podpis ciasteczka „zapamiętaj mnie” — kto go zna,
+zaloguje się jako ktokolwiek) i `ADMIN_PASSWORD`. Profil produkcyjny nie ma dla nich domyślnych wartości i bez nich nie
+wystartuje.
 
-Adresy obu serwisów da się podmienić (`app.music.deezer.base-url`,
-`app.lastfm.base-url`) — z tego korzystają testy, żeby nie zależeć od cudzej
-dostępności.
+Klucz Last.fm zakłada się w minutę na <https://www.last.fm/api/account/create> — wystarczy sam „API key”, bez
+„shared secret” i bez OAuth, bo czytamy wyłącznie publiczne dane.
+
+Adresy zewnętrznych serwisów da się podmienić (`app.music.deezer.base-url`, `app.lastfm.base-url`,
+`app.ticketmaster.base-url`, `app.gifs.klipy.base-url`) — z tego korzystają testy i skrypt ze zrzutami ekranu, żeby nie
+zależeć od cudzej dostępności.
 
 ## Jak zbudowany jest kod
 
@@ -1407,33 +1474,22 @@ java -jar target/musicclubapp-0.0.1-SNAPSHOT.jar --app.security.behind-proxy=fal
 
 ## Stan projektu
 
-Kroki 0–6 gotowe: repo posprzątane, baza na Dockerze, JPA, Spring Security
-(rejestracja, logowanie sesyjne, „zapamiętaj mnie"), walidacja PL/EN,
-obsługa błędów, Swagger oraz frontend w React. Do tego posty z reakcjami
-(🔥 / 😐 / 🥱), publiczne profile, znajomi z zaproszeniami, **muzyka ze Spotify,
-YouTube Music i Apple Music** (utwory, albumy, artyści, playlisty),
-zestawienie najczęściej wrzucanych utworów, **ulubieni artyści i utwory
-z katalogu Deezera z importem z Last.fm**, **proponowani znajomi po wspólnym
-guście**, **posty publiczne albo tylko dla znajomych**, **tablica ze znajomymi
-na górze**, **gablotka pięciu playlist na profilu**, **sekcja „co Was łączy"
-z konkretnymi artystami, utworami i gatunkami**, **moderacja kont (zakaz
-publikowania, usuwanie)**, **czat ze znajomymi z linkami muzycznymi, dymkiem
-„pisze" i potwierdzeniem przeczytania**, **znacznik online / ostatnio
-aktywny**, **zgłoszenia użytkowników z panelem administratora, migawką dowodów
-i limitami**, **osobny zakaz wysyłania wiadomości**, **wykrywanie multikont po
-adresie IP i blokada adresu**, motyw jasny/ciemny oraz cała aplikacja
-na Docker Compose. Nazwy w kodzie są konsekwentnie angielskie, komentarze — polskie.
+**Gotowe** jest wszystko z tabeli „Co potrafi” na górze oraz konfiguracja produkcyjna: HTTPS (tunel Cloudflare albo
+Caddy z Let's Encrypt), migracje Flyway (15), ciasteczka `Secure`/`HttpOnly`/`SameSite`, ciche logi z rotacją, wyłączony
+Swagger, regulamin i polityka prywatności z akceptacją przy rejestracji oraz pobranie własnych danych. Nazwy w kodzie są
+konsekwentnie angielskie, komentarze — polskie.
 
-**347 testów backendu przechodzi**, a przepływy frontendu sprawdzamy
-w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność
-postów i kolejność tablicy, powiadomienia, linki muzyczne, moderacja,
-układ strony i pasek przewijania, a czat i moderację — **dwiema i trzema
-równoległymi sesjami naraz**, bo inaczej nie da się sprawdzić, czy wiadomość
-faktycznie dolatuje do drugiej przeglądarki ani czy administrator widzi
-zgłoszenie złożone przez kogoś innego.
+**Jak to jest sprawdzane.** 695 testów backendu przechodzi na bazie H2 w pamięci. Każdą zmianę sprawdzamy dodatkowo na
+prawdziwym PostgreSQL 16 i w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność postów i kolejność
+tablicy, komentarze i GIF-y, wydarzenia, klany, powiadomienia, czat i moderację — także **kilkoma sesjami naraz**, bo
+inaczej nie da się sprawdzić, czy wiadomość faktycznie dolatuje do drugiej przeglądarki ani czy administrator widzi
+zgłoszenie złożone przez kogoś innego. Zabezpieczenia sprawdzamy też od drugiej strony: wyłączenie każdego z nich w
+kodzie (mutacja) ma zaczerwienić jakiś test.
 
-Zaliczone **20 wymagań** przy progu 17 na piątkę, w tym wszystkie 7 czerwonych.
-Szczegóły w `docs/WYMAGANIA.md`.
+**Czego stąd nie widać** (i co trzeba zobaczyć po wdrożeniu): prawdziwe usługi push (Google, Apple), prawdziwy KLIPY lub
+GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie. Szczegóły i kroki
+kontrolne są w [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
 
-Przed oddaniem: ustaw własny `REMEMBER_ME_KEY` i własne hasło administratora
-(`ADMIN_PASSWORD`) — domyślne wartości są wyłącznie do nauki.
+**Co dalej:** stały adres → sprawdzenie PWA na telefonie → aplikacja na Androida jako TWA (Bubblewrap) → Google Play.
+Przed wpuszczeniem prawdziwych użytkowników trzeba jeszcze uzupełnić dane administratora (`LEGAL_*`), dać regulamin i
+politykę prywatności do przeczytania prawnikowi oraz ustawić własne `REMEMBER_ME_KEY` i `ADMIN_PASSWORD`.
