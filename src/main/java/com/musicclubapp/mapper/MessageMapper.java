@@ -18,6 +18,7 @@ public class MessageMapper {
             sender.getUsername(),
             avatarUrl(sender),
             message.getContent(),
+            message.getGif() == null ? null : message.getGif().toView(),
             playerUrl(message),
             message.getMusicProvider(),
             message.getMusicKind(),

@@ -9,7 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Wiadomosc musi niesc cokolwiek: tekst albo nagranie. */
+/** Wiadomosc musi niesc cokolwiek: tekst, nagranie albo GIF. */
 @Documented
 @Constraint(validatedBy = MessageHasContentValidator.class)
 @Target(ElementType.TYPE)

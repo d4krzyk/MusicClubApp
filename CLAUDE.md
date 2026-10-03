@@ -18,7 +18,7 @@ zakładka Wydarzenia — etapy 1–2 i wybór kraju (niżej), potwierdzanie adre
 e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów, klany
 z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12), miasto w profilu
 i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i komentarze
-z oznaczeniami (V14).
+z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -116,6 +116,8 @@ Opisana w `docs/WDROZENIE.md`. W skrócie:
   `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM` i przy własnej domenie
   `APP_PUBLIC_URL`. Gmail z hasłem aplikacji albo Brevo — `docs/WDROZENIE.md`.
   `MAIL_HOST` bez poprawnego nadawcy = backend nie wstaje (celowo).
+- GIF-y (opcjonalne): `GIF_API_KEY` (+ `GIF_PROVIDER` klipy/giphy). **Odpowiedź KLIPY jest sparsowana wg dokumentacji,
+  a nie sprawdzona na żywym serwisie** — po wpisaniu klucza zrobić próbę z `docs/WDROZENIE.md` („GIF-y”).
 
 ## Wydarzenia
 
@@ -553,6 +555,47 @@ Przeglądarka pamięta wybór w `localStorage` (`tablica.porzadek`).
   kolejność z bazy jest przypadkowa.
 - Polityka i regulamin wspominają o komentarzach, oznaczeniach i rankingu tablicy; `app.legal.version` bez zmian
   (nikt jeszcze nie akceptował) — po wypuszczeniu każda zmiana tekstu = nowa data.
+
+## GIF-y (V15)
+
+Przeglądarka GIF-ów w komentarzach i wiadomościach między znajomymi (czatu klanu nie ruszaliśmy). Pakiet `gif/`:
+`GifProvider` (interfejs; `KlipyProvider`, `GiphyProvider`), `GifHttp`, `GifSigner`, `GifService`, `TtlCache`,
+`SlidingLimiter`; `GifController` (`/api/gifs/status`, `/search`); `entity/GifAttachment` (`@Embeddable`, pięć
+kolumn `gif_*` w `comments` i `messages`).
+
+- **Dostawca**: Tenor wyłączył API 30.06.2026; domyślnie **KLIPY** (`GIF_PROVIDER=klipy`, Tenor-podobny, darmowy),
+  alternatywa **GIPHY**. Bez `GIF_API_KEY` `GifService.enabled()` = false: `/status` mówi `enabled:false`,
+  `/search` i dołączenie tokenu dają 503, a przycisk GIF się nie pokazuje (`hooks/useGify`).
+- **Nie sprawdzone na żywo**: z tego środowiska `docs.klipy.com` i `api.klipy.com` są zablokowane przez proxy,
+  więc kształt odpowiedzi KLIPY (`data.data[].file.{hd,md,sm,xs}.{gif,webp}.url`, `has_next`, `current_page`)
+  jest odtworzony z dokumentacji, a GIPHY z pamięci — oba przetestowane tylko na udawanym serwerze
+  (`GifProvidersTest`, `TestHttpServer`). Parser nie rzuca przy nieznanym kształcie, tylko zwraca pustą listę i
+  loguje WARN „nie rozpoznano odpowiedzi” — to znak, że trzeba poprawić nazwy pól w `KlipyProvider.read/item`.
+- **Token zamiast adresu**: klient wysyła `gif` = `token` z wyszukiwania (`base64url(json).hmac`). Serwer
+  weryfikuje podpis (`MessageDigest.isEqual`), a potem **jeszcze raz** sprawdza adresy (`GifHttp.safeUrl`:
+  https albo pętla zwrotna, ≤ 500 znaków — długość kolumny). Zły token = `InvalidGifException` → 422 z polem `gif`.
+  Klucz podpisu: SHA-256 z `"musicclub-gifs|" + app.remember-me.key` — zmiana klucza unieważnia tokeny otwartych kart,
+  nie zapisane GIF-y.
+- **Prywatność**: dostawca dostaje frazę, język i pseudonim (`GifSigner.pseudonym(userId)` — HMAC, 16 znaków; KLIPY
+  `customer_id`, GIPHY `random_id`). Pliki GIF ładują się z jego CDN wprost do przeglądarki (IP widoczne dla CDN;
+  `referrerPolicy="no-referrer"` na obrazkach). Polityka to mówi (sekcje 2, 5, 6, 8). Frazy nie są zapisywane,
+  ale trafiają do logów dostępu serwera (adres zapytania) — polityka też.
+- **Limity i pamięć**: 30 wyszukiwań/min/osobę (`app.gifs.searches-per-minute`, 429 z `Retry-After`; liczy też
+  trafienia w pamięć podręczną), pamięć 5 min, 200 wpisów (`TtlCache`), klucz = dostawca|fraza|pozycja|limit|język.
+  Błędy dostawcy nie są zapamiętywane. `limit` w kontrolerze 1–30, KLIPY dodatkowo podnosi do 8 (jego minimum).
+- **Treść**: komentarz może być samym GIF-em (`content` = `""`, bo kolumna jest NOT NULL); `@CommentHasContent` /
+  `MessageHasContentValidator` przepuszczają tekst, GIF albo nagranie. Zgłoszenie komentarza/rozmowy ma w dowodzie
+  `[GIF] adres (opis)` (`ReportService.withGif`), eksport danych ma `gif.url/title`.
+- **Frontend**: `components/gif/GifPicker` (szukanie z 400 ms zwłoki, „Pokaż więcej”, Esc, podpis „Powered by …”;
+  **Enter w polu szukania jest przechwytywany**, bo pole siedzi w formularzu komentarza/czatu) i `GifObrazek`
+  (wymiary z serwera rezerwują miejsce, `onError` → „GIF jest już niedostępny”). Dwa panele w czacie wykluczają
+  się (muzyka / GIF). Test w Chromium: `window` o stałej szerokości, nie `isMobile`.
+- **Pułapki z tej rundy**: metoda testu o nazwie `status()` zasłania statyczny import `status()` z MockMvc;
+  `TestHttpServer` daje pierwszeństwo handlerowi — druga `odpowiadaj` na ten sam adres go nie zastąpi;
+  w klasie z `LinkedHashMap` anonimowej `Entry` to `Map.Entry` (nazwać własny rekord inaczej); skrypt e2e
+  rejestruje konta, więc wymaga świeżej bazy (`backend-*.sh` odtwarza ją z wzorca).
+- Mutanty GIF-ów: 34, wszystkie zabite (lista w `docs/WDROZENIE.md`). Mutantem nie jest zmiana stałej, po której
+  pętli się test.
 
 ## Regulamin i polityka prywatności (V10)
 

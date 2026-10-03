@@ -272,6 +272,16 @@ export function IconSend(props) {
   );
 }
 
+/** Ramka z napisem GIF - przycisk przegladarki GIF-ow. */
+export function IconGif(props) {
+  return (
+    <Svg {...props}>
+      <rect x="0.75" y="3" width="14.5" height="10" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+      <text x="8" y="10.6" textAnchor="middle" fontSize="6.6" fontWeight="700" fontFamily="inherit">GIF</text>
+    </Svg>
+  );
+}
+
 /** Flaga - zgloszenie uzytkownika do administratora. */
 export function IconFlag(props) {
   return (

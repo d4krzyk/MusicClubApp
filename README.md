@@ -241,6 +241,8 @@ z opisami: Swagger (adres niżej).
 | GET | `/api/comments/{id}` / `/api/comments/{id}/replies` | jeden komentarz (tu prowadzą powiadomienia) / odpowiedzi pod nim, od najstarszej |
 | DELETE | `/api/comments/{id}` | usunięcie komentarza: autor, autor posta, administrator albo — w poście klanu — zarząd klanu |
 | GET | `/api/posts/{id}/mentionable?q=` | podpowiedzi osób do oznaczenia (`@login`) pod tym postem |
+| GET | `/api/gifs/status` | czy GIF-y są włączone i czyim logiem je podpisać („Powered by …”) |
+| GET | `/api/gifs/search?q=&pos=&limit=` | przeglądarka GIF-ów: szuka u dostawcy (pusta fraza = popularne); wyniki mają podpisany `token`, który wysyła się w polu `gif` komentarza (`POST /api/posts/{id}/comments`) albo wiadomości (`POST /api/messages/with/{login}`) |
 | POST | `/api/auth/verify-email` | potwierdzenie adresu z linku w wiadomości |
 | POST | `/api/auth/password-reset/request` | prośba o reset hasła (zawsze 204) |
 | POST | `/api/auth/password-reset/confirm` | nowe hasło z linku |
@@ -635,6 +637,31 @@ głębokie drzewka są nieczytelne na telefonie.
   komentarze, a limit to 10 komentarzy na minutę.
 - **Sprzątanie**: usunięcie konta kasuje komentarze tej osoby (`AccountDeletionService`),
   eksport danych je zawiera, a polityka prywatności o nich mówi.
+
+## GIF-y w komentarzach i na czacie
+
+Pole komentarza i pole wiadomości mają przycisk **GIF**: przeglądarka z szukaniem
+(popularne na start, „Pokaż więcej”, podpis „Powered by …”). GIF można wysłać
+samodzielnie albo razem z tekstem, także jako odpowiedź na cudzy komentarz.
+
+- **Serwer pośredniczy** (`gif/GifService`). Przeglądarka pyta nasz serwer, a ten dostawcę:
+  klucz API nie trafia do przeglądarki, dostawca nie widzi adresów IP ani kont (dostaje frazę,
+  język i pseudonim — skrót z `HMAC`, z którego nie da się odczytać konta), a wyniki idą
+  z krótkiej pamięci podręcznej (5 min) i z limitem 30 wyszukiwań na minutę na osobę. Same pliki GIF
+  przeglądarka pobiera już wprost z serwera dostawcy.
+- **Wyniki są podpisane** (`GifSigner`, HMAC-SHA256). Do komentarza albo wiadomości dołącza się nie adres,
+  tylko `token` z wyszukiwania; serwer sprawdza podpis i dopiero z niego odczytuje adres. Dzięki temu nikt
+  nie podstawi własnego obrazka (np. śledzącego piksela), a serwer nie musi znać listy serwerów CDN dostawcy.
+  Klucz podpisu wywodzi się z `REMEMBER_ME_KEY`, więc nie ma dodatkowego sekretu do ustawienia. Adres musi
+  być `https` (wyjątek: pętla zwrotna, dla testów).
+- **Dostawca**: `GIF_PROVIDER=klipy` (domyślnie; następca Tenora, darmowy) albo `giphy`; `GIF_API_KEY` włącza
+  funkcję — bez klucza przycisk GIF w ogóle się nie pokazuje, a reszta aplikacji działa jak dotąd.
+  Tenor wyłączył swoje API 30.06.2026. Dodanie trzeciego dostawcy to jedna klasa implementująca `GifProvider`.
+- **W bazie** (migracja V15) siedzą tylko adresy, wymiary i opis (`gif_url`, `gif_preview_url`, `gif_width`,
+  `gif_height`, `gif_title` w `comments` i `messages`) — plik zostaje u dostawcy. GIF znika razem z komentarzem
+  albo wiadomością, trafia do dowodu w zgłoszeniu (`[GIF] adres (opis)`, bo plik może zniknąć u dostawcy)
+  i do pobrania własnych danych.
+- Czat klanu na razie GIF-ów nie ma.
 
 ## Gablotka playlist
 

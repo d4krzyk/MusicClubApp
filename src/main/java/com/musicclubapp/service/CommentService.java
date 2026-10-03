@@ -8,12 +8,14 @@ import com.musicclubapp.dto.MentionHint;
 import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.Comment;
 import com.musicclubapp.entity.CommentMention;
+import com.musicclubapp.entity.GifAttachment;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.error.TooManyRequestsException;
+import com.musicclubapp.gif.GifService;
 import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.repository.CommentCountRow;
 import com.musicclubapp.repository.CommentMentionRepository;
@@ -66,11 +68,13 @@ public class CommentService {
     private final BlockService blocks;
     private final ClanService clans;
     private final NotificationService notifications;
+    private final GifService gifs;
     private final Clock clock;
 
     public CommentService(CommentRepository comments, CommentMentionRepository mentions, PostRepository posts,
                           UserRepository users, BlockService blocks, ClanService clans,
-                          NotificationService notifications, Clock clock) {
+                          NotificationService notifications, GifService gifs, Clock clock) {
+        this.gifs = gifs;
         this.comments = comments;
         this.mentions = mentions;
         this.posts = posts;
@@ -168,8 +172,10 @@ public class CommentService {
             replyTo = target.getAuthor().getId().equals(author.getId()) ? null : target.getAuthor();
         }
 
-        String tresc = request.content().strip();
-        Comment saved = comments.save(new Comment(post, author, parent, replyTo, tresc));
+        // GIF sprawdzamy dopiero po wszystkich kontrolach dostepu - zly token nie ma byc sposobem na zgadywanie, co widac
+        GifAttachment gif = gifs.attach(request.gif());
+        String tresc = request.content() == null ? "" : request.content().strip();
+        Comment saved = comments.save(new Comment(post, author, parent, replyTo, tresc, gif));
 
         List<User> oznaczeni = mentionable(tresc, post, author);
         for (User u : oznaczeni) {
@@ -375,6 +381,7 @@ public class CommentService {
                 avatarUrl(c.getAuthor()),
                 odznaki.get(c.getAuthor().getId()),
                 c.getContent(),
+                c.getGif() == null ? null : c.getGif().toView(),
                 oznaczeni.getOrDefault(c.getId(), List.of()),
                 c.getReplyTo() == null ? null : c.getReplyTo().getUsername(),
                 c.getCreatedAt(),

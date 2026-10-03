@@ -357,6 +357,39 @@ wtedy każdy zalogowany dostanie prośbę o ponowną akceptację. Logi kontener�
 mają rotację (3 pliki po 10 MB na usługę), bo zawierają adresy IP, a polityka
 obiecuje krótkie przechowywanie.
 
+### GIF-y w komentarzach i na czacie (KLIPY albo GIPHY)
+
+Opcjonalne: bez klucza przycisk **GIF** w ogóle się nie pokazuje, a reszta aplikacji działa jak dotąd.
+
+1. **Klucz.** Tenor wyłączył swoje API 30.06.2026, więc domyślnym dostawcą jest **KLIPY** (darmowy, zgodny
+   z Tenorem): konto na `partner.klipy.com` → *API Keys* → *Add Platform* → klucz. Alternatywa to **GIPHY**
+   (`developers.giphy.com` → *Create an App* → klucz; do publicznej aplikacji dostawca wymaga zatwierdzenia
+   klucza produkcyjnego — sprawdź jego aktualne warunki).
+2. **`.env`:**
+   ```
+   GIF_PROVIDER=klipy     # albo giphy
+   GIF_API_KEY=twoj-klucz
+   ```
+   i uruchom backend ponownie. W logu przy starcie nie ma już linijki „GIF-y wyłączone”.
+3. **Sprawdź na żywo, zanim ktoś tego użyje.** Kształt odpowiedzi KLIPY jest w kodzie odtworzony z dokumentacji, a nie
+   sprawdzony na prawdziwym serwisie (z środowiska, w którym to powstało, dostawcy są zablokowani). Próba:
+   ```bash
+   curl -s "https://api.klipy.com/api/v1/$GIF_API_KEY/gifs/search?q=kot&per_page=8&customer_id=test" | head -c 1500
+   ```
+   W odpowiedzi szukaj `data.data[]`, a w nich `file.md.gif.url` (albo `sm`, `hd`, `xs`). Potem w aplikacji: komentarz →
+   przycisk **GIF** → powinny pojawić się kafelki. Pusta lista i w logu backendu ostrzeżenie
+   `KLIPY: nie rozpoznano odpowiedzi` albo `wyników bez użytecznego pliku GIF` znaczy, że nazwy pól się
+   różnią — poprawka to kilka linijek w `KlipyProvider.read` / `item` (test `GifProvidersTest` ma przykładową
+   odpowiedź do podmiany na prawdziwą).
+4. **Podpis dostawcy.** Pod przeglądarką GIF-ów stoi tekst „Powered by KLIPY” (albo GIPHY). Regulaminy obu dostawców
+   wymagają wskazania ich marki; przed publikacją w Google Play warto podmienić tekst na oficjalne logo
+   (materiały do pobrania u dostawcy).
+5. **Prywatność i Google Play.** Dostawca dostaje wpisane frazy i pseudonimowy identyfikator (przez nasz serwer) oraz
+   adres IP przeglądarki przy pobieraniu plików GIF. Polityka prywatności to opisuje (sekcje 2, 5, 6, 8); w formularzu
+   *Data safety* trzeba to samo wpisać jako dane przekazywane stronie trzeciej.
+6. **Koszt i limity.** Wyszukiwanie ma limit 30 na minutę na osobę i pamięć podręczną na 5 minut
+   (`app.gifs.searches-per-minute`, `app.gifs.cache-seconds`), więc jeden użytkownik nie wyczerpie limitu klucza.
+
 ### Powiadomienia push i przypomnienia o wydarzeniach
 
 Przypomnienia („za 3 dni”, „jutro”) działają zawsze — w dzwonku. Żeby
@@ -811,6 +844,28 @@ Przy tablicy „Dla ciebie” i komentarzach (październik 2026, migracja V14):
   podświetlonego komentarza, odpowiedzi i odpowiedź na odpowiedź (jeden poziom),
   zgłoszenie z `comment_id`, kasowanie z kaskadą, ciemny motyw. Skrypt trzeba
   puszczać na świeżej bazie — konta z poprzedniego skryptu zmieniają listy propozycji.
+
+Przy GIF-ach w komentarzach i na czacie (październik 2026, migracja V15):
+
+- migracja V15 na **pustej** bazie (V1 → V15, profil `prod`: Flyway + `validate`) i na bazie **po V14 z danymi**:
+  dodaje po pięć opcjonalnych kolumn `gif_*` do `comments` i `messages`; schemat po migracjach zgadza się
+  z tym, co buduje Hibernate (jedyne różnice to te dziesięć kolumn);
+- `mvnw clean test` → 695 testów; klasy GIF-ów, komentarzy, eksportu i raportów przechodzą także na PostgreSQL 16;
+- **czego nie sprawdzono:** żadnego prawdziwego dostawcy GIF-ów (z tego środowiska KLIPY i GIPHY są zablokowane).
+  Oba adaptery działają na udawanym serwerze z odpowiedzią odtworzoną z dokumentacji (KLIPY) i z pamięci (GIPHY);
+  próba na żywo jest w sekcji „GIF-y” wyżej i trzeba ją zrobić po wpisaniu klucza;
+- testy z mutacjami: 34 mutanty (podpis nieprzyjmowany, adres z podglądu zamiast z pliku, dowolny schemat adresu,
+  pamięć podręczna, limity, klucze pamięci, kolejność rozmiarów KLIPY, paginacja KLIPY i GIPHY, GIF pomijany w komentarzu,
+  wiadomości, walidatorze, dowodzie, eksporcie i odpowiedzi, kod błędu, limit rozmiaru strony, wyłączenie) — wszystkie
+  zabite. Pierwszy przebieg zostawił jednego żywego: obcinanie białych znaków wokół tokenu nie było w ogóle testowane;
+- znalezione przy sprawdzaniu: test wyszukiwania z `%20` w adresie przechodził przez MockMvc jako `%2520` (znana pułapka),
+  a pomocnik `TestHttpServer` nie pozwalał podmienić odpowiedzi ustawionej wcześniej funkcją;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V15, udawany KLIPY na `:9099` z prawdziwymi plikami GIF):
+  przycisk GIF tylko przy włączonej usłudze, popularne, „Pokaż więcej”, szukanie z opóźnieniem, brak wyników,
+  awaria dostawcy z „Spróbuj ponownie”, Enter w szukaniu nie wysyła komentarza, wybór i usunięcie GIF-a z pola,
+  komentarz z samym GIF-em, z tekstem i odpowiedź GIF-em (obrazek faktycznie się ładuje, `naturalWidth > 1`), czat
+  (GIF sam i z tekstem, drugi użytkownik widzi oba, podgląd „GIF” na liście rozmów), brak przelewu strony przy 390 i
+  320 px, 3 kolumny kafelków na szerokim ekranie, Esc, ciemny motyw. Skrypt trzeba puszczać na świeżej bazie.
 
 ---
 

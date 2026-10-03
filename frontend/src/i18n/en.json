@@ -475,7 +475,9 @@
     "deleteConversationTitle": "Delete this conversation?",
     "deleteConversationText": "It disappears only for you. {{username}} keeps their copy.",
     "conversationDeleted": "Conversation deleted",
-    "deleteConversationFailed": "Could not delete the conversation"
+    "deleteConversationFailed": "Could not delete the conversation",
+    "attachGif": "Add a GIF",
+    "gifPreview": "GIF"
   },
   "reports": {
     "report": "Report",
@@ -1319,5 +1321,22 @@
     "hide": "Hide comments",
     "count_one": "{{count}} comment",
     "count_other": "{{count}} comments"
+  },
+  "gifs": {
+    "title": "GIF browser",
+    "search": "Search GIFs…",
+    "close": "Close the GIF browser",
+    "trending": "Trending",
+    "results": "Results",
+    "more": "Show more",
+    "retry": "Try again",
+    "empty": "No GIFs to show.",
+    "nothing": "Nothing found for “{{query}}”.",
+    "powered": "Powered by {{name}}",
+    "alt": "GIF",
+    "gone": "This GIF is no longer available",
+    "add": "Add a GIF",
+    "remove": "Remove the GIF",
+    "selected": "Selected GIF"
   }
 }

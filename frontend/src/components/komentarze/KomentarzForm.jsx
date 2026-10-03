@@ -7,8 +7,10 @@ import Form from 'react-bootstrap/Form';
 import { describeError } from '../../api/client';
 import * as komentarze from '../../api/komentarze';
 import { useAuth } from '../../auth/AuthContext';
+import useGify from '../../hooks/useGify';
 import Avatar from '../Avatar';
-import { IconSend } from '../Icons';
+import GifPicker from '../gif/GifPicker';
+import { IconCross, IconGif, IconSend } from '../Icons';
 
 /** To samo, czego pilnuje serwer. */
 export const MAKS_DLUGOSC = 1000;
@@ -29,6 +31,7 @@ export default function KomentarzForm({
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const gify = useGify();
   const id = useId();
   const pole = useRef(null);
   const [tekst, setTekst] = useState(poczatek);
@@ -37,6 +40,9 @@ export default function KomentarzForm({
   const [podpowiedzi, setPodpowiedzi] = useState([]);
   const [aktywna, setAktywna] = useState(0);
   const [fragment, setFragment] = useState(null);
+  /* GIF wybrany z przegladarki (caly wynik z tokenem) i czy przegladarka jest otwarta */
+  const [gif, setGif] = useState(null);
+  const [gifOtwarty, setGifOtwarty] = useState(false);
 
   useEffect(() => {
     if (autoFocus && pole.current) {
@@ -137,19 +143,21 @@ export default function KomentarzForm({
   async function wyslij(e) {
     e.preventDefault();
     const tresc = tekst.trim();
-    if (!tresc || wysylanie) {
+    if ((!tresc && !gif) || wysylanie) {
       return;
     }
     setWysylanie(true);
     setBlad(null);
     try {
-      const dodany = await komentarze.dodaj(idPosta, { tresc, idRodzica });
+      const dodany = await komentarze.dodaj(idPosta, { tresc, idRodzica, gif: gif?.token ?? null });
       setTekst('');
       setFragment(null);
+      setGif(null);
+      setGifOtwarty(false);
       onDodano?.(dodany);
     } catch (problem) {
       const szczegoly = describeError(problem);
-      setBlad(szczegoly.fieldErrors.content ?? szczegoly.message);
+      setBlad(szczegoly.fieldErrors.content ?? szczegoly.fieldErrors.gif ?? szczegoly.message);
     } finally {
       setWysylanie(false);
     }
@@ -198,11 +206,36 @@ export default function KomentarzForm({
             </ul>
           )}
         </div>
-        <Button type="submit" size="sm" disabled={wysylanie || !tekst.trim() || zaDlugi}
+        {gify.wlaczone && (
+          <Button type="button" size="sm" variant={gifOtwarty ? 'primary' : 'outline-secondary'}
+            className="komentarz-gif-przycisk" onClick={() => setGifOtwarty((o) => !o)}
+            aria-pressed={gifOtwarty} aria-label={t('gifs.add')} title={t('gifs.add')}>
+            <IconGif size={20} />
+          </Button>
+        )}
+        <Button type="submit" size="sm" disabled={wysylanie || (!tekst.trim() && !gif) || zaDlugi}
           aria-label={t('comments.send')} title={t('comments.send')}>
           <IconSend size={14} />
         </Button>
       </div>
+
+      {gif && (
+        <div className="gif-wybrany komentarz-gif-wybrany">
+          <img src={gif.previewUrl} alt={gif.title || t('gifs.selected')} referrerPolicy="no-referrer" />
+          <button type="button" onClick={() => setGif(null)} aria-label={t('gifs.remove')} title={t('gifs.remove')}>
+            <IconCross size={12} />
+          </button>
+        </div>
+      )}
+
+      {gifOtwarty && (
+        <GifPicker
+          idPrefix={`${id}-gif`}
+          podpis={gify.podpis}
+          onWybierz={(wybrany) => { setGif(wybrany); setGifOtwarty(false); }}
+          onZamknij={() => setGifOtwarty(false)}
+        />
+      )}
 
       <div className="d-flex justify-content-between align-items-center komentarz-pod">
         <span className="small text-body-secondary">{t('comments.hint')}</span>

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
 import Avatar from '../Avatar';
 import ClanBadge from '../ClanBadge';
+import GifObrazek from '../gif/GifObrazek';
 import { IconReply, IconTrash } from '../Icons';
 import ReportButton from '../ReportButton';
 import { timeAgo } from '../../utils/dates';
@@ -40,9 +41,12 @@ export default function Komentarz({
               <IconReply size={11} /> {t('comments.replyTo', { username: komentarz.replyToUsername })}
             </div>
           )}
-          <div className="komentarz-tekst">
-            <TrescKomentarza tresc={komentarz.content} oznaczeni={komentarz.mentions} />
-          </div>
+          {komentarz.content && (
+            <div className="komentarz-tekst">
+              <TrescKomentarza tresc={komentarz.content} oznaczeni={komentarz.mentions} />
+            </div>
+          )}
+          <GifObrazek gif={komentarz.gif} />
         </div>
 
         <div className="komentarz-akcje small">

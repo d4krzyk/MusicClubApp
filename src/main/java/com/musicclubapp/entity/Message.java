@@ -4,6 +4,7 @@ import com.musicclubapp.music.MusicKind;
 import com.musicclubapp.music.MusicProvider;
 import com.musicclubapp.music.ParsedMusicLink;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -72,6 +73,10 @@ public class Message {
     @Column(name = "music_start_seconds")
     private Integer musicStartSeconds;
 
+    /** GIF z przegladarki GIF-ow - albo {@code null}. */
+    @Embedded
+    private GifAttachment gif;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -132,6 +137,14 @@ public class Message {
         this.musicThumbnailUrl = thumbnailUrl;
         // Moment startu ma sens tylko przy pojedynczym utworze
         this.musicStartSeconds = link.kind().supportsStartSeconds() ? startSeconds : null;
+    }
+
+    public GifAttachment getGif() {
+        return gif;
+    }
+
+    public void attachGif(GifAttachment gif) {
+        this.gif = gif;
     }
 
     /** Czy wiadomosc ma podpiete jakiekolwiek nagranie. */

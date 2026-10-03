@@ -135,11 +135,16 @@ class DataExportFlowTest {
         reactions.save(new Reaction(cudzy, ala, ReactionType.FIRE));
         // Komentarz alicji pod postem boba (z oznaczeniem boba) i odpowiedz boba pod nim - ta nie jest alicji
         com.musicclubapp.entity.Comment komentarz = comments.save(
-            new com.musicclubapp.entity.Comment(cudzy, ala, null, null, "komentarz do eksportu, @ex_bob"));
+            new com.musicclubapp.entity.Comment(cudzy, ala, null, null, "komentarz do eksportu, @ex_bob",
+                new com.musicclubapp.entity.GifAttachment("https://cdn.example/komentarz.gif",
+                    "https://cdn.example/komentarz-m.gif", 320, 180, "kot na pianinie")));
         commentMentions.save(new com.musicclubapp.entity.CommentMention(komentarz, bob));
         comments.save(new com.musicclubapp.entity.Comment(cudzy, bob, komentarz, ala, "odpowiedz boba - nie alicji"));
 
-        messages.save(new Message(ala, bob, "hej bob"));
+        Message zGifem = new Message(ala, bob, "hej bob");
+        zGifem.attachGif(new com.musicclubapp.entity.GifAttachment("https://cdn.example/wiadomosc.gif",
+            "https://cdn.example/wiadomosc-m.gif", 200, 200, null));
+        messages.save(zGifem);
         messages.save(new Message(bob, ala, "czesc ala"));
         messages.save(new Message(ala, cyd, "sekret z rozmowy, ktora skasowalam"));
         em.flush();
@@ -240,6 +245,16 @@ class DataExportFlowTest {
         assertThat(dane.at("/comments").size()).isEqualTo(1);
         assertThat(dane.at("/comments/0/content").asText()).isEqualTo("komentarz do eksportu, @ex_bob");
         assertThat(dane.at("/comments/0/postAuthor").asText()).isEqualTo("ex_bob");
+        // GIF to adres i opis - samego pliku w archiwum nie ma
+        assertThat(dane.at("/comments/0/gif/url").asText()).isEqualTo("https://cdn.example/komentarz.gif");
+        assertThat(dane.at("/comments/0/gif/title").asText()).isEqualTo("kot na pianinie");
+        boolean wiadomoscZGifem = false;
+        for (JsonNode m : dane.at("/messages")) {
+            if ("https://cdn.example/wiadomosc.gif".equals(m.at("/gif/url").asText())) {
+                wiadomoscZGifem = true;
+            }
+        }
+        assertThat(wiadomoscZGifem).isTrue();
         assertThat(dane.at("/comments/0/mentions/0").asText()).isEqualTo("ex_bob");
         assertThat(tekst).doesNotContain("odpowiedz boba - nie alicji");
         assertThat(tekst).contains("moj post do eksportu", "tajny post klanu", "hej bob", "czesc ala",

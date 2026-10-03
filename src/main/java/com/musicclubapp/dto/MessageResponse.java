@@ -12,6 +12,8 @@ public record MessageResponse(
     String senderAvatarUrl,
     /** Tresc; {@code null} albo pusta, gdy wyslano sam utwor. */
     String content,
+    /** GIF dolaczony do wiadomosci albo {@code null}. */
+    GifView gif,
     /** Gotowy adres odtwarzacza do {@code <iframe>} albo {@code null}. */
     String musicEmbedUrl,
     MusicProvider musicProvider,

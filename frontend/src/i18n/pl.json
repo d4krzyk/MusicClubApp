@@ -498,7 +498,9 @@
     "deleteConversationTitle": "Usunąć tę rozmowę?",
     "deleteConversationText": "Rozmowa zniknie tylko u Ciebie. {{username}} zachowa swoją kopię.",
     "conversationDeleted": "Rozmowa usunięta",
-    "deleteConversationFailed": "Nie udało się usunąć rozmowy"
+    "deleteConversationFailed": "Nie udało się usunąć rozmowy",
+    "attachGif": "Dodaj GIF",
+    "gifPreview": "GIF"
   },
   "reports": {
     "report": "Zgłoś",
@@ -1400,5 +1402,22 @@
     "count_few": "{{count}} komentarze",
     "count_many": "{{count}} komentarzy",
     "count_other": "{{count}} komentarzy"
+  },
+  "gifs": {
+    "title": "Przeglądarka GIF-ów",
+    "search": "Szukaj GIF-ów…",
+    "close": "Zamknij przeglądarkę GIF-ów",
+    "trending": "Popularne",
+    "results": "Wyniki",
+    "more": "Pokaż więcej",
+    "retry": "Spróbuj ponownie",
+    "empty": "Brak GIF-ów do pokazania.",
+    "nothing": "Nic nie znaleziono dla „{{query}}”.",
+    "powered": "Powered by {{name}}",
+    "alt": "GIF",
+    "gone": "GIF jest już niedostępny",
+    "add": "Dodaj GIF",
+    "remove": "Usuń GIF",
+    "selected": "Wybrany GIF"
   }
 }

@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /** Maly serwer HTTP udajacy Deezera i Last.fm - na potrzeby testow. */
-class TestHttpServer implements AutoCloseable {
+public class TestHttpServer implements AutoCloseable {
 
     private final HttpServer server;
 
@@ -29,9 +29,9 @@ class TestHttpServer implements AutoCloseable {
     private final Map<String, Function<String, Odpowiedz>> handlers = new LinkedHashMap<>();
 
     /** Kod HTTP i tresc - do odpowiedzi innych niz 200. */
-    record Odpowiedz(int status, String body) {
+    public record Odpowiedz(int status, String body) {
 
-        static Odpowiedz ok(String body) {
+        public static Odpowiedz ok(String body) {
             return new Odpowiedz(200, body);
         }
     }
@@ -39,7 +39,7 @@ class TestHttpServer implements AutoCloseable {
     /** Wszystkie adresy, o ktore ktos zapytal - do sprawdzenia w tescie. */
     private final List<String> requests = new ArrayList<>();
 
-    TestHttpServer() throws IOException {
+    public TestHttpServer() throws IOException {
         // Port 0 = system przydziela wolny sam. Dzieki temu testy nie
         // wywalaja sie, gdy ktos akurat uzywa "naszego" portu
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -79,20 +79,20 @@ class TestHttpServer implements AutoCloseable {
     }
 
     /** Ustawia odpowiedz dla danej sciezki (np. {@code /search/artist}). */
-    void odpowiadaj(String path, String jsonOdpowiedzi) {
+    public void odpowiadaj(String path, String jsonOdpowiedzi) {
         responses.put(path, jsonOdpowiedzi);
     }
 
     /** Odpowiedz wyliczana z parametrow zapytania (np. inna dla kazdej strony). */
-    void odpowiadaj(String path, Function<String, Odpowiedz> handler) {
+    public void odpowiadaj(String path, Function<String, Odpowiedz> handler) {
         handlers.put(path, handler);
     }
 
-    String url() {
+    public String url() {
         return "http://127.0.0.1:" + server.getAddress().getPort();
     }
 
-    List<String> requests() {
+    public List<String> requests() {
         return requests;
     }
 

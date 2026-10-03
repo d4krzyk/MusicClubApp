@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.musicclubapp.entity.Artist;
 import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.ClanMember;
+import com.musicclubapp.entity.GifAttachment;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.PostImage;
 import com.musicclubapp.entity.User;
@@ -320,8 +321,14 @@ public class DataExportService {
                 "postAuthor", c.getPost().getAuthor().getUsername(),
                 "replyToCommentId", c.getParent() == null ? null : c.getParent().getId(),
                 "content", c.getContent(),
+                "gif", gif(c.getGif()),
                 "mentions", commentMentions.usernamesIn(c.getId())))
             .collect(java.util.stream.Collectors.toList());
+    }
+
+    /** GIF w eksporcie: adres i opis (plik jest u dostawcy, nie u nas). */
+    private static Object gif(GifAttachment gif) {
+        return gif == null ? null : mapa("url", gif.getUrl(), "title", gif.getTitle());
     }
 
     private List<Object> reakcje(Long userId) {
@@ -339,6 +346,7 @@ public class DataExportService {
                 "from", m.getSender().getUsername(),
                 "to", m.getRecipient().getUsername(),
                 "content", m.getContent(),
+                "gif", gif(m.getGif()),
                 "music", m.getMusicExternalId() == null ? null : mapa("provider", m.getMusicProvider(),
                     "title", m.getMusicTitle()),
                 "readAt", m.getReadAt()))

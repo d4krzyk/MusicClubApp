@@ -5,10 +5,15 @@ import {
   historia, nowsze, oznaczPrzeczytane, pisze, wyslij,
 } from '../api/czat';
 import { useChat } from '../chat/ChatContext';
+import useGify from '../hooks/useGify';
 import Avatar from './Avatar';
+import GifObrazek from './gif/GifObrazek';
+import GifPicker from './gif/GifPicker';
 import MusicCard from './MusicCard';
 import MusicPicker from './MusicPicker';
-import { IconNote, IconSend } from './Icons';
+import {
+  IconCross, IconGif, IconNote, IconSend,
+} from './Icons';
 import { timeAgo } from '../utils/dates';
 import { linkError } from '../utils/musicLinks';
 import { toSeconds } from '../utils/time';
@@ -30,6 +35,7 @@ const STICK_TO_BOTTOM_PX = 80;
 export default function ChatThread({ username, avatarUrl, friend = true, onPresence, onRead }) {
   const { t, i18n } = useTranslation();
   const { setUnread } = useChat();
+  const gify = useGify();
 
   /** Wiadomosci ROSNACO - tak jak leza na ekranie. */
   const [messages, setMessages] = useState([]);
@@ -46,6 +52,10 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   const [musicUrl, setMusicUrl] = useState('');
   const [musicKind, setMusicKind] = useState('TRACK');
   const [startAt, setStartAt] = useState('');
+
+  /* GIF wybrany z przegladarki (caly wynik z tokenem) i czy przegladarka jest otwarta */
+  const [gif, setGif] = useState(null);
+  const [gifOpen, setGifOpen] = useState(false);
 
   const [partnerTyping, setPartnerTyping] = useState(false);
 
@@ -211,7 +221,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   }
 
   const musicProblem = musicOpen ? linkError(musicUrl, musicKind) : null;
-  const nothingToSend = !text.trim() && !musicUrl.trim();
+  const nothingToSend = !text.trim() && !musicUrl.trim() && !gif;
 
   async function send(event) {
     event.preventDefault();
@@ -229,6 +239,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
         musicUrl: musicUrl.trim() || null,
         musicKind: musicUrl.trim() ? musicKind : null,
         musicStartSeconds: musicKind === 'TRACK' ? toSeconds(startAt) : null,
+        gif: gif?.token ?? null,
       });
 
       /* Dopisujemy odpowiedz serwera, a nie to, co wpisal uzytkownik. */
@@ -239,6 +250,8 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
       setMusicUrl('');
       setStartAt('');
       setMusicOpen(false);
+      setGif(null);
+      setGifOpen(false);
       input.current?.focus();
     } catch (problem) {
       const body = problem.response?.data;
@@ -304,6 +317,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 
             <div className="bubble">
               {message.content && <p className="bubble-text">{message.content}</p>}
+              <GifObrazek gif={message.gif} />
               {message.musicEmbedUrl && <MusicCard message={message} />}
 
               <span className="bubble-time">
@@ -357,17 +371,48 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
           </div>
         )}
 
+        {gif && (
+          <div className="gif-wybrany chat-gif-wybrany">
+            <img src={gif.previewUrl} alt={gif.title || t('gifs.selected')} referrerPolicy="no-referrer" />
+            <button type="button" onClick={() => setGif(null)} aria-label={t('gifs.remove')} title={t('gifs.remove')}>
+              <IconCross size={12} />
+            </button>
+          </div>
+        )}
+
+        {gifOpen && (
+          <GifPicker
+            idPrefix="chat-gif"
+            podpis={gify.podpis}
+            onWybierz={(wybrany) => { setGif(wybrany); setGifOpen(false); input.current?.focus(); }}
+            onZamknij={() => setGifOpen(false)}
+          />
+        )}
+
         <div className="chat-composer-row">
           <button
             type="button"
             className={`chat-music-toggle${musicOpen ? ' is-open' : ''}`}
-            onClick={() => setMusicOpen((was) => !was)}
+            onClick={() => { setMusicOpen((was) => !was); setGifOpen(false); }}
             aria-pressed={musicOpen}
             aria-label={t('chat.attachMusic')}
             title={t('chat.attachMusic')}
           >
             <IconNote size={16} />
           </button>
+
+          {gify.wlaczone && (
+            <button
+              type="button"
+              className={`chat-music-toggle chat-gif-toggle${gifOpen ? ' is-open' : ''}`}
+              onClick={() => { setGifOpen((was) => !was); setMusicOpen(false); }}
+              aria-pressed={gifOpen}
+              aria-label={t('chat.attachGif')}
+              title={t('chat.attachGif')}
+            >
+              <IconGif size={18} />
+            </button>
+          )}
 
           <textarea
             ref={input}

@@ -9,6 +9,7 @@ import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
+import com.musicclubapp.gif.GifService;
 import com.musicclubapp.mapper.MessageMapper;
 import com.musicclubapp.mapper.PostMapper;
 import com.musicclubapp.music.MusicLinkParser;
@@ -47,6 +48,7 @@ public class MessageService {
     private final PresenceService presence;
     private final TypingRegistry typing;
     private final BlockService blocks;
+    private final GifService gifs;
 
     public MessageService(MessageRepository messageRepository,
                           UserRepository userRepository,
@@ -54,8 +56,10 @@ public class MessageService {
                           MusicMetadataService musicMetadata,
                           PresenceService presence,
                           TypingRegistry typing,
-                          BlockService blocks) {
+                          BlockService blocks,
+                          GifService gifs) {
         this.blocks = blocks;
+        this.gifs = gifs;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
         this.messageMapper = messageMapper;
@@ -88,6 +92,7 @@ public class MessageService {
 
         Message message = new Message(sender, recipient, content);
         applyMusic(message, request.musicUrl(), request.musicStartSeconds());
+        message.attachGif(gifs.attach(request.gif()));
 
         Message saved = messageRepository.save(message);
 

@@ -1,6 +1,7 @@
 package com.musicclubapp.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -65,8 +66,12 @@ public class Comment {
     @OnDelete(action = OnDeleteAction.SET_NULL)
     private User replyTo;
 
+    /** Tresc; przy samym GIF-ie pusta (kolumna jest NOT NULL). */
     @Column(nullable = false, length = MAX_LENGTH)
     private String content;
+
+    @Embedded
+    private GifAttachment gif;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -80,6 +85,11 @@ public class Comment {
         this.parent = parent;
         this.replyTo = replyTo;
         this.content = content;
+    }
+
+    public Comment(Post post, User author, Comment parent, User replyTo, String content, GifAttachment gif) {
+        this(post, author, parent, replyTo, content);
+        this.gif = gif;
     }
 
     @PrePersist
@@ -111,6 +121,11 @@ public class Comment {
 
     public String getContent() {
         return content;
+    }
+
+    /** GIF dolaczony do komentarza albo {@code null}. */
+    public GifAttachment getGif() {
+        return gif;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -14,6 +14,8 @@ public record CommentResponse(
     /** Klan autora - plakietka obok loginu albo {@code null}. */
     ClanBadge authorClan,
     String content,
+    /** GIF dolaczony do komentarza albo {@code null}. */
+    GifView gif,
     /** Loginy osob oznaczonych w tresci - tylko te zamieniaja sie w odnosniki. */
     List<String> mentions,
     /** Do kogo jest odpowiedz (przy odpowiedziach) albo {@code null}. */

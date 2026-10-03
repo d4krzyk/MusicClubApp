@@ -6,4 +6,6 @@ public interface MessageToValidate {
     String content();
 
     String musicUrl();
+
+    String gif();
 }

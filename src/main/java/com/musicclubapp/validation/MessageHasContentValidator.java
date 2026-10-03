@@ -3,7 +3,7 @@ package com.musicclubapp.validation;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-/** Walidator dla MessageHasContent: odrzuca wiadomosc bez tresci i bez nagrania. */
+/** Walidator dla MessageHasContent: odrzuca wiadomosc bez tresci, bez nagrania i bez GIF-a. */
 public class MessageHasContentValidator
     implements ConstraintValidator<MessageHasContent, MessageToValidate> {
 
@@ -16,7 +16,9 @@ public class MessageHasContentValidator
         boolean hasText = data.content() != null && !data.content().isBlank();
         boolean hasMusic = data.musicUrl() != null && !data.musicUrl().isBlank();
 
-        if (hasText || hasMusic) {
+        boolean hasGif = data.gif() != null && !data.gif().isBlank();
+
+        if (hasText || hasMusic || hasGif) {
             return true;
         }
 

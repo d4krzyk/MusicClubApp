@@ -361,7 +361,10 @@ function preview(message, t) {
   if (message.content) {
     return `${prefix}${message.content}`;
   }
-  // Wiadomosc bez tekstu to sam utwor - pokazujemy jego tytul
+  if (message.gif) {
+    return `${prefix}${t('chat.gifPreview')}`;
+  }
+  // Wiadomosc bez tekstu i bez GIF-a to sam utwor - pokazujemy jego tytul
   return `${prefix}♪ ${message.musicTitle ?? t(`posts.musicKinds.${message.musicKind}`)}`;
 }
 

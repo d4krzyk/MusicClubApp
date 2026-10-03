@@ -224,6 +224,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             .body(new ErrorResponse(HttpStatus.TOO_MANY_REQUESTS.value(), komunikat));
     }
 
+    /** GIF spoza naszego wyszukiwania (zly podpis) - blad pola "gif", jak przy zwyklej walidacji. */
+    @ExceptionHandler(InvalidGifException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidGif(InvalidGifException ex, WebRequest request) {
+        logger.warn("Odrzucony GIF: " + ex.getMessage());
+
+        ErrorResponse odpowiedz = new ErrorResponse(
+            HttpStatus.UNPROCESSABLE_ENTITY.value(), translate("error.validation"));
+        odpowiedz.addValidationError("gif", translate("validation.gif.invalid"));
+        return ResponseEntity.unprocessableEntity().body(odpowiedz);
+    }
+
+    /** Wylaczone GIF-y albo dostawca nie odpowiada: 503, bez szczegolow dla klienta. */
+    @ExceptionHandler(GifUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleGifUnavailable(GifUnavailableException ex, WebRequest request) {
+        logger.warn(ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+            new ErrorResponse(HttpStatus.SERVICE_UNAVAILABLE.value(), translate(ex.getMessageKey())));
+    }
+
     /** Siatka bezpieczenstwa na wszystko, czego nie przewidzielismy (wyklad 3, slajd 72). */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

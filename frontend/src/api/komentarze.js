@@ -22,10 +22,11 @@ export async function jeden(idKomentarza) {
 
 /**
  * Dodaje komentarz. Z idRodzica to odpowiedz (na komentarz albo na odpowiedz - serwer zawsze wiesza ja
- * pod komentarzem nadrzednym i zapamietuje, do kogo jest).
+ * pod komentarzem nadrzednym i zapamietuje, do kogo jest). `gif` to token z przegladarki GIF-ow (komentarz moze
+ * byc samym GIF-em).
  */
-export async function dodaj(idPosta, { tresc, idRodzica = null }) {
-  const { data } = await client.post(`/posts/${idPosta}/comments`, { content: tresc, parentId: idRodzica });
+export async function dodaj(idPosta, { tresc, idRodzica = null, gif = null }) {
+  const { data } = await client.post(`/posts/${idPosta}/comments`, { content: tresc, parentId: idRodzica, gif });
   return data;
 }
 

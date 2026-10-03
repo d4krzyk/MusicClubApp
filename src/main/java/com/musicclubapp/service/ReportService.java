@@ -9,6 +9,7 @@ import com.musicclubapp.entity.Comment;
 import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.ClanMember;
 import com.musicclubapp.entity.ClanRole;
+import com.musicclubapp.entity.GifAttachment;
 import com.musicclubapp.entity.Message;
 import com.musicclubapp.entity.Post;
 import com.musicclubapp.entity.Report;
@@ -230,7 +231,7 @@ public class ReportService {
         report.setComment(comment);
         report.addEvidence(new ReportEvidence(
             comment.getAuthor().getUsername(),
-            comment.getContent(),
+            withGif(comment.getContent(), comment.getGif()),
             comment.getCreatedAt()));
     }
 
@@ -251,10 +252,17 @@ public class ReportService {
             report.addEvidence(new ReportEvidence(
                 message.getSender().getUsername(),
                 // Wiadomosc bywa samym nagraniem - wtedy dowodem jest jego tytul
-                message.getContent() != null ? message.getContent()
-                    : musicLabel(message),
+                withGif(message.getContent() != null ? message.getContent() : musicLabel(message), message.getGif()),
                 message.getCreatedAt()));
         }
+    }
+
+    /** Dowod ma pokazac tez GIF - sam adres i opis, bo pliku nie przechowujemy. */
+    private static String withGif(String text, GifAttachment gif) {
+        if (gif == null) {
+            return text;
+        }
+        return text == null || text.isBlank() ? gif.describe() : text + "\n" + gif.describe();
     }
 
     private String musicLabel(Message message) {

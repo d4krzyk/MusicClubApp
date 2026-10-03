@@ -29,7 +29,15 @@ public record SendMessageRequest(
     /** Sekunda, od ktorej ma zagrac utwor. */
     @Min(value = 0, message = "{validation.post.start.range}")
     @Max(value = Post.MAX_SEKUNDA_STARTU, message = "{validation.post.start.range}")
-    Integer musicStartSeconds
+    Integer musicStartSeconds,
+
+    /** Podpisany token GIF-a z przegladarki GIF-ow ({@code GET /api/gifs/search}); pusty = bez GIF-a. */
+    @Size(max = 2000, message = "{validation.gif.invalid}")
+    String gif
 
 ) implements MusicLinkToValidate, MessageToValidate {
+
+    public SendMessageRequest(String content, String musicUrl, MusicKind musicKind, Integer musicStartSeconds) {
+        this(content, musicUrl, musicKind, musicStartSeconds, null);
+    }
 }
