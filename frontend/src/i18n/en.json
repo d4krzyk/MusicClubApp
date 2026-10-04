@@ -194,7 +194,9 @@
     "remove": "Remove picture",
     "saved": "Your profile picture has been saved.",
     "removed": "Your profile picture has been removed.",
-    "hint": "JPG, PNG, WEBP or GIF, at most 5 MB"
+    "hint": "JPG, PNG, WEBP or GIF, at most 5 MB. After choosing you can crop and rotate it.",
+    "preview": "Preview of the new profile picture",
+    "previewHint": "This is how your avatar will look. Save it or adjust the crop."
   },
   "posts": {
     "title": "Feed",
@@ -202,7 +204,7 @@
     "content": "What's going on?",
     "contentPlaceholder": "Write something about the music you are listening to…",
     "images": "Images",
-    "imagesHint": "You can add images in batches — at most {{max}}, each up to 5 MB",
+    "imagesHint": "You can add images in batches — at most {{max}}, each up to 5 MB. The button in the thumbnail corner crops and rotates the image.",
     "tooLargeHint": "{{count}} photo is over {{limit}}. Tap it to shrink it — or leave it and we will shrink it when posting.",
     "tooLargeHint_other": "{{count}} photos are over {{limit}}. Tap them to shrink them — or leave them and we will shrink them when posting.",
     "compressAction": "Tap to shrink",
@@ -855,8 +857,10 @@
       "description": "Description (optional)",
       "submit": "Start the clan",
       "icon": "Clan icon (optional)",
-      "iconHint": "A small image next to the tag — shown next to every member's username. Square works best.",
+      "iconHint": "A small image next to the tag — shown next to every member's username. After choosing, you can crop it to a square and rotate it.",
       "iconNotImage": "That isn't an image.",
+      "iconChoose": "Choose an icon",
+      "iconChange": "Change icon",
       "iconFailed": "The clan was created, but the icon couldn't be uploaded: {{reason}} You can add it in the clan settings.",
       "preview": "This is how it will look next to a username:",
       "previewUser": "your_username",
@@ -930,7 +934,7 @@
       "images": "Icon and photo",
       "icon": "Icon (small image next to the tag)",
       "photo": "Clan photo (top of the page)",
-      "imagesHint": "The icon and photo are visible to everyone — they show on the badge and on the clan page.",
+      "imagesHint": "The icon and photo are visible to everyone — they show on the badge and on the clan page. Before uploading, you can crop and rotate the image.",
       "remove": "Remove",
       "imageSaved": "Image saved.",
       "imageRemoved": "Image removed.",
@@ -1345,7 +1349,7 @@
     "title": "Your card",
     "subtitle": "Photos, a few words about you and music questions. They show on your profile and — if you turn it on — in Discover.",
     "photos": "Photos",
-    "photosHint": "Up to {{max}} photos (JPG, PNG or WebP). The first one is the card cover — reorder with the arrows or by dragging. We remove camera data from photos, including where they were taken (GPS).",
+    "photosHint": "Up to {{max}} photos (JPG, PNG or WebP). The first one is the card cover — reorder with the arrows or by dragging. Before adding, you can crop each one (cards are 3:4) and rotate it. We remove camera data from photos, including where they were taken (GPS).",
     "addPhoto": "Add a photo",
     "removePhoto": "Remove photo {{n}}",
     "moveEarlier": "Move photo {{n}} earlier",
@@ -1427,7 +1431,7 @@
       "FAR": "over 250 km"
     },
     "stampYes": "YES",
-    "stampNo": "NOPE",
+    "stampNo": "SKIP",
     "range": "Range",
     "swipesLeft_one": "Today: {{count}} card left",
     "swipesLeft_other": "Today: {{count}} cards left",
@@ -1451,7 +1455,7 @@
       "improveCard": "Improve your card"
     },
     "match": {
-      "title": "It's a match!",
+      "title": "New friend!",
       "text": "You and {{username}} — a mutual “yes”. You're friends now.",
       "write": "Send a message",
       "profile": "See profile",
@@ -1481,5 +1485,38 @@
       "toggle": "Show my card in Discover",
       "toggleHint": "Only people who also turned this on see your card. A friendship forms only after a mutual “yes”."
     }
+  },
+  "imageEditor": {
+    "title": "Edit image",
+    "titleOf": "Image {{n}} of {{count}}",
+    "crop": "crop area",
+    "cropLabel": "Crop {{w}} × {{h}} px",
+    "hint": "Drag the crop area or its handles. Keyboard: arrows move it, Shift + arrows resize it.",
+    "rotate": "Rotate",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "reset": "Reset",
+    "aspect": "Aspect ratio",
+    "free": "Free",
+    "fixed": {
+      "post": "",
+      "awatar": "Avatars are round — what's inside the circle is what people see.",
+      "karta": "Card photos are 3:4.",
+      "ikonaKlanu": "Clan icons are square.",
+      "zdjecieKlanu": ""
+    },
+    "result": "Result: {{w}} × {{h}} px",
+    "small": "small area, may look blurry",
+    "loading": "Loading image…",
+    "loadFailed": "This file can't be opened in the editor — the browser doesn't know its format or the file is damaged. You can still try adding it without editing.",
+    "animated": "This is an animated GIF. Cropping or rotating leaves a single still frame. To keep the animation, click “Done” without changes.",
+    "saveFailed": "Couldn't save the changes (e.g. not enough memory). Try again or use the image without editing.",
+    "useOriginal": "Use without editing",
+    "skip": "Skip",
+    "done": "Done",
+    "saving": "Saving…",
+    "edit": "Edit",
+    "editNamed": "Crop and rotate: {{name}}",
+    "notImage": "That's not an image — choose a photo or a picture."
   }
 }

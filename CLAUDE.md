@@ -19,7 +19,8 @@ e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów, klan
 z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12), miasto w profilu
 i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i komentarze
 z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie klanu (V16), karta profilu
-(galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17).
+(galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i 🫂 zamiast
+serduszek oraz wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie (bez migracji).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -647,6 +648,32 @@ Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z ta
   ją zmieni. `user("x")` w MockMvc nie ma roli ADMIN — do `/api/reports/admin/**` trzeba `.roles("ADMIN")`.
 - Polityka i regulamin opisują kartę, EXIF, Poznawaj, retencję decyzji i `CLEAR_CARD`; `app.legal.version` bez zmian
   (nikt jeszcze nie akceptował).
+
+## Edytor zdjęć i „nie randka” (bez migracji)
+
+- **Bez serduszek** — to aplikacja do poznawania ludzi. Przycisk „tak” w Poznawaj i krok na ekranie startowym to
+  `IconPlus`; przy wzajemnym „tak” tytuł „Nowa znajomość!” i 🫂 (U+1FAC2) na białym kole. `utils/emoji.js` rysuje znak
+  na płótnie i sprawdza kolorowe piksele — gdzie systemu nie ma emotikonu (Windows 10, stare Androidy), jest
+  `IconFriends`. `IconHeart` usunięty; po angielsku pieczątka „NOPE” → „SKIP”.
+- **Edytor** (`components/obraz/EdytorZdjecia.jsx`, proporcje w `rodzajeKadru.js`): awatar 1:1 w kółku (otwiera się
+  od razu), post — przycisk na miniaturze, proporcje do wyboru; karta 3:4 — kolejka po wybraniu kilku plików („Pomiń”,
+  zamknięcie = koniec kolejki; wgrywanie w tle po kolei); ikona klanu 1:1; zdjęcie klanu 3:1 / 16:9 / dowolne.
+  Nowe miejsce z obrazem = ten sam edytor z `rodzaj`.
+- **Geometria** w `utils/kadr.js` — czyste funkcje, kadr w pikselach obrazu **po obrocie**; przeciąganie liczone od stanu
+  z chwili naciśnięcia (bez pełzania). Testy: `cd frontend && npm test` (`node --test`, bez bibliotek). Zmiana
+  proporcji z listy = `najwiekszyKadr` (największy wokół środka); obrót przy stałych proporcjach = `dopasujProporcje`
+  (ta sama powierzchnia). Zachowywanie powierzchni przy przełączaniu proporcji zmniejszało kadr przy każdym kliknięciu.
+- **Zapis**: `utils/obrazy.js: zapiszEdycje` — dłuższy bok ≤ 2048, JPEG (alfa → WebP), pętla jakości/wymiarów do 5 MB.
+  **Bez zmian = oryginał** (animowany GIF zostaje animowany; ostrzeżenie z `utils/gifKlatki.js`). Wynik → WeakMap
+  `edycjaPliku` → ponowna edycja od oryginału z poprzednim kadrem.
+- **Pułapki z tej rundy**: przeglądarki sprzed zmiany specyfikacji rzucają TypeError na `imageOrientation: 'from-image'`
+  — `wczytaj` łapie i idzie przez `<img>`; stare Safari na `toBlob('image/webp')` daje PNG — typ pliku z `blob.type`;
+  podwójne stuknięcie w kolejce trafia drugim kliknięciem w przycisk **następnego** obrazu (nowy komponent, ten sam
+  punkt) — `oddane` w refie nie wystarcza, potrzebna blokada 400 ms po zmianie obrazu; Playwrightowy `dblclick` jest za
+  szybki, żeby to odtworzyć — dwa `mouse.click` co 120 ms; `URL.createObjectURL` w renderze = wyciek (hook
+  `useAdresPodgladu`); okno Bootstrapa znika z animacją — w testach `waitFor({ state: 'detached' })`, nie `count() === 0`;
+  `backdrop="static"`, bo przeciąganie uchwytu kończące się poza oknem nie może go zamykać. Formularz posta na tablicy
+  jest zwinięty (`aria-controls="formularz-postu"`).
 
 ## Regulamin i polityka prywatności (V10)
 

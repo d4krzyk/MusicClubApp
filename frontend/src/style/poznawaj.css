@@ -742,22 +742,30 @@
   from { transform: rotate(20deg) translateX(60px); opacity: 0; }
 }
 
-.pz-dopasowanie-serce {
+.pz-dopasowanie-znak {
   position: absolute;
   z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 3.25rem;
+  height: 3.25rem;
   border-radius: 50%;
   color: #fff;
   background: var(--mc-gradient);
   box-shadow: 0 0 0 4px #1c1530, var(--mc-glow);
-  animation: pz-serce .6s .2s var(--mc-ease) backwards;
+  animation: pz-znak .6s .2s var(--mc-ease) backwards;
 }
 
-@keyframes pz-serce {
+/* Kolorowy emotikon na jasnym kole - na gradiencie jego szaroniebieskie ludziki ginely */
+.pz-dopasowanie-znak.is-emoji {
+  background: #fff;
+  font-size: 1.85rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+@keyframes pz-znak {
   from { transform: scale(0); }
   70% { transform: scale(1.2); }
   to { transform: scale(1); }
@@ -1199,7 +1207,7 @@ legend.karta-podtytul {
   .pz-dopasowanie,
   .pz-dopasowanie-okno,
   .pz-dopasowanie-awatar,
-  .pz-dopasowanie-serce,
+  .pz-dopasowanie-znak,
   .pz-start-kartka.is-przod,
   .pz-karta-szkielet {
     animation: none !important;

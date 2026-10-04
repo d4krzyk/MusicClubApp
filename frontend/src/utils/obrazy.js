@@ -8,7 +8,13 @@
  * Za duze zdjecie widac w formularzu i mozna je zmniejszyc jednym klikaniem.
  * Kto tego nie zrobi, nie dostanie bledu: to samo dzieje sie automatycznie
  * przy wysylaniu (patrz api/posty.js i api/konto.js).
+ *
+ * Tu jest tez zapis z edytora zdjec (kadr i obrot - components/obraz/EdytorZdjecia.jsx):
+ * ta sama droga przez plotno i ten sam limit.
  */
+
+import { macierzObrotu, obroconeWymiary, wPikselach } from './kadr';
+import { liczKlatkiGif } from './gifKlatki';
 
 /** Powyzej tego rozmiaru zdjecie trzeba zmniejszyc. Tyle samo przyjmuje serwer. */
 export const LIMIT_BAJTOW = 5 * 1024 * 1024;
@@ -18,6 +24,9 @@ const MAKS_BOK = 2048;
 
 /** Kolejne proby jakosci, od najlepszej. */
 const JAKOSCI = [0.85, 0.75, 0.65, 0.55];
+
+/** Po edycji zaczynamy od lepszej jakosci - zdjecie i tak jest juz przyciete do potrzebnego fragmentu. */
+const JAKOSCI_EDYCJI = [0.9, 0.82, 0.72, 0.62];
 
 /** Ile razy wolno jeszcze zmniejszyc wymiary, gdy sama jakosc nie wystarczy. */
 const PROBY_WYMIAROW = 4;
@@ -76,9 +85,14 @@ export function czyDaSieZmniejszyc(plik) {
  * tak samo z opcja, jak i bez niej). Starsze potrafily go zignorowac,
  * a napisanie tego wprost nic nie kosztuje.
  */
-async function wczytaj(plik) {
+export async function wczytaj(plik) {
   if (typeof createImageBitmap === 'function') {
-    return createImageBitmap(plik, { imageOrientation: 'from-image' });
+    try {
+      return await createImageBitmap(plik, { imageOrientation: 'from-image' });
+    } catch {
+      /* Przegladarki sprzed zmiany specyfikacji znaja tylko 'none' i 'flipY' - na 'from-image' rzucaja
+         TypeError. Bez opcji obrot z EXIF moglby przepasc, wiec idziemy droga przez <img>. */
+    }
   }
 
   /* Starsze przegladarki: zwykly <img>. Obrot z EXIF przezywa tez ta droge -
@@ -96,8 +110,8 @@ async function wczytaj(plik) {
   }
 }
 
-const szerokoscObrazu = (obraz) => obraz.width || obraz.naturalWidth;
-const wysokoscObrazu = (obraz) => obraz.height || obraz.naturalHeight;
+export const szerokoscObrazu = (obraz) => obraz.width || obraz.naturalWidth;
+export const wysokoscObrazu = (obraz) => obraz.height || obraz.naturalHeight;
 
 /**
  * Czy obraz ma gdziekolwiek przezroczystosc.
@@ -147,14 +161,26 @@ function wybierzFormat(obraz) {
   return 'image/jpeg';
 }
 
-function narysuj(obraz, skala, typ, jakosc) {
-  const szerokosc = Math.max(1, Math.round(szerokoscObrazu(obraz) * skala));
-  const wysokosc = Math.max(1, Math.round(wysokoscObrazu(obraz) * skala));
+/**
+ * Rysuje obraz na nowym plotnie i zapisuje. Z edycja: najpierw obrot (co 90 stopni),
+ * potem wyciecie kadru - kadr jest w pikselach obrazu juz obroconego (patrz kadr.js).
+ */
+function narysuj(obraz, skala, typ, jakosc, edycja = null) {
+  const W0 = szerokoscObrazu(obraz);
+  const H0 = wysokoscObrazu(obraz);
+  const obrot = edycja?.obrot ?? 0;
+  const { w: W, h: H } = obroconeWymiary(W0, H0, obrot);
+  const kadr = edycja?.kadr ? wPikselach(edycja.kadr, W, H) : { x: 0, y: 0, w: W, h: H };
+  const szerokosc = Math.max(1, Math.round(kadr.w * skala));
+  const wysokosc = Math.max(1, Math.round(kadr.h * skala));
 
   const plotno = document.createElement('canvas');
   plotno.width = szerokosc;
   plotno.height = wysokosc;
   const kontekst = plotno.getContext('2d');
+  if (!kontekst) {
+    return Promise.resolve(null);
+  }
 
   /* JPEG nie zna przezroczystosci - bez tego przezroczyste tlo wyszloby czarne. */
   if (typ === 'image/jpeg') {
@@ -162,12 +188,39 @@ function narysuj(obraz, skala, typ, jakosc) {
     kontekst.fillRect(0, 0, szerokosc, wysokosc);
   }
 
-  kontekst.drawImage(obraz, 0, 0, szerokosc, wysokosc);
+  kontekst.imageSmoothingQuality = 'high';
+  kontekst.scale(szerokosc / kadr.w, wysokosc / kadr.h);
+  kontekst.translate(-kadr.x, -kadr.y);
+  kontekst.transform(...macierzObrotu(obrot, W0, H0));
+  kontekst.drawImage(obraz, 0, 0, W0, H0);
   return new Promise((gotowe) => plotno.toBlob(gotowe, typ, jakosc));
 }
 
-function zbudujPlik(blob, oryginal, typ) {
-  const rozszerzenie = typ === 'image/webp' ? '.webp' : '.jpg';
+/**
+ * Wspolna petla: najpierw coraz nizsza jakosc, potem coraz mniejsze wymiary, az plik zmiesci sie
+ * w limicie. toBlob potrafi oddac null (brak pamieci na telefonie) - wtedy probujemy mniejszego.
+ */
+async function zapiszWLimicie(obraz, plik, skalaStartowa, jakosci, edycja = null) {
+  const typ = wybierzFormat(obraz);
+  let skala = skalaStartowa;
+  for (let proba = 0; proba < PROBY_WYMIAROW; proba++) {
+    for (const jakosc of jakosci) {
+      const blob = await narysuj(obraz, skala, typ, jakosc, edycja);
+      if (blob && blob.size <= LIMIT_BAJTOW) {
+        return zbudujPlik(blob, plik, typ);
+      }
+    }
+    /* Sama jakosc nie wystarczyla - schodzimy z wymiarami i probujemy od nowa. */
+    skala *= 0.8;
+  }
+
+  throw new Error('Nie udalo sie zmiescic zdjecia w limicie');
+}
+
+function zbudujPlik(blob, oryginal, zadany) {
+  /* Stare Safari na prosbe o WebP po cichu oddaje PNG - plik ma miec typ i rozszerzenie tego, co naprawde jest w srodku */
+  const typ = blob.type || zadany;
+  const rozszerzenie = { 'image/webp': '.webp', 'image/png': '.png' }[typ] ?? '.jpg';
   const nazwa = (oryginal.name || 'zdjecie').replace(/\.[^.]+$/, '') + rozszerzenie;
   return new File([blob], nazwa, { type: typ, lastModified: Date.now() });
 }
@@ -180,22 +233,64 @@ function zbudujPlik(blob, oryginal, typ) {
  */
 export async function zmniejsz(plik) {
   const obraz = await wczytaj(plik);
-  const typ = wybierzFormat(obraz);
-  const dluzszyBok = Math.max(szerokoscObrazu(obraz), wysokoscObrazu(obraz));
-  let skala = Math.min(1, MAKS_BOK / dluzszyBok);
-
-  for (let proba = 0; proba < PROBY_WYMIAROW; proba++) {
-    for (const jakosc of JAKOSCI) {
-      const blob = await narysuj(obraz, skala, typ, jakosc);
-      if (blob && blob.size <= LIMIT_BAJTOW) {
-        return zbudujPlik(blob, plik, typ);
-      }
-    }
-    /* Sama jakosc nie wystarczyla - schodzimy z wymiarami i probujemy od nowa. */
-    skala *= 0.8;
+  try {
+    const dluzszyBok = Math.max(szerokoscObrazu(obraz), wysokoscObrazu(obraz));
+    return await zapiszWLimicie(obraz, plik, Math.min(1, MAKS_BOK / dluzszyBok), JAKOSCI);
+  } finally {
+    zwolnij(obraz);
   }
+}
 
-  throw new Error('Nie udalo sie zmiescic zdjecia w limicie');
+/** ImageBitmap trzyma odkodowane piksele poza pamiecia JavaScriptu - oddajemy je od razu. */
+export function zwolnij(obraz) {
+  if (obraz && typeof obraz.close === 'function') {
+    obraz.close();
+  }
+}
+
+/**
+ * Zapis z edytora: obraz juz wczytany (edytor go pokazuje), obrot i kadr. Dluzszy bok wyniku najwyzej
+ * MAKS_BOK, plik w limicie, format jak przy zmniejszaniu (JPEG, a przy przezroczystosci WebP).
+ */
+export async function zapiszEdycje(obraz, edycja, oryginal) {
+  const W0 = szerokoscObrazu(obraz);
+  const H0 = wysokoscObrazu(obraz);
+  const { w: W, h: H } = obroconeWymiary(W0, H0, edycja.obrot);
+  const kadr = wPikselach(edycja.kadr, W, H);
+  const skala = Math.min(1, MAKS_BOK / Math.max(kadr.w, kadr.h));
+  return zapiszWLimicie(obraz, oryginal, skala, JAKOSCI_EDYCJI, { obrot: edycja.obrot, kadr });
+}
+
+/**
+ * Pamiec edycji: plik wynikowy -> oryginal i ustawienia. Ponowna edycja zaczyna od oryginalu
+ * z poprzednim kadrem, a nie od juz przycietej i drugi raz skompresowanej kopii.
+ * WeakMap - gdy plik wypada z formularza, wpis znika razem z nim.
+ */
+const edycje = new WeakMap();
+
+export function zapamietajEdycje(wynik, dane) {
+  if (wynik && dane?.oryginal && wynik !== dane.oryginal) {
+    edycje.set(wynik, dane);
+  }
+}
+
+export function edycjaPliku(plik) {
+  return (plik && edycje.get(plik)) ?? null;
+}
+
+/**
+ * Czy GIF ma wiecej niz jedna klatke. Edycja zapisuje jedna klatke, wiec animacja by przepadla -
+ * edytor o tym uprzedza. Kiedy nie da sie tego stwierdzic, odpowiadamy "tak": ostrzezenie nic nie psuje.
+ */
+export async function czyAnimowanyGif(plik) {
+  if (!(plik instanceof Blob) || plik.type !== 'image/gif') {
+    return false;
+  }
+  try {
+    return liczKlatkiGif(new Uint8Array(await plik.arrayBuffer())) > 1;
+  } catch {
+    return true;
+  }
 }
 
 /**

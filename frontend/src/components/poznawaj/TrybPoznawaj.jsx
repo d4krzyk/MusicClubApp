@@ -5,7 +5,7 @@ import Alert from 'react-bootstrap/Alert';
 import { describeError } from '../../api/client';
 import * as poznawaj from '../../api/poznawaj';
 import Zasieg from '../Zasieg';
-import { IconCheckCircle, IconCross, IconHeart, IconLock, IconCards } from '../Icons';
+import { IconCheckCircle, IconCross, IconPlus, IconLock, IconCards } from '../Icons';
 import KartaPoznawaj from './KartaPoznawaj';
 import Talia from './Talia';
 
@@ -75,7 +75,7 @@ function PoznawajStart({ stan, onStan }) {
 
       <ol className="pz-start-kroki list-unstyled">
         <li>
-          <span className="pz-start-ikona is-tak"><IconHeart size={16} /></span>
+          <span className="pz-start-ikona is-tak"><IconPlus size={16} /></span>
           <span>{t('discover.start.stepRight')}</span>
         </li>
         <li>

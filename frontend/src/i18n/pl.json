@@ -200,7 +200,9 @@
     "remove": "Usuń zdjęcie",
     "saved": "Zdjęcie profilowe zostało zapisane.",
     "removed": "Zdjęcie profilowe zostało usunięte.",
-    "hint": "JPG, PNG, WEBP lub GIF, maksymalnie 5 MB"
+    "hint": "JPG, PNG, WEBP lub GIF, maksymalnie 5 MB. Po wybraniu możesz je przyciąć i obrócić.",
+    "preview": "Podgląd nowego zdjęcia profilowego",
+    "previewHint": "Tak będzie wyglądać Twój awatar. Zapisz go albo popraw kadr."
   },
   "posts": {
     "title": "Tablica",
@@ -208,7 +210,7 @@
     "content": "Co słychać?",
     "contentPlaceholder": "Napisz coś o muzyce, której teraz słuchasz…",
     "images": "Zdjęcia",
-    "imagesHint": "Możesz dodawać zdjęcia partiami — maksymalnie {{max}}, każde do 5 MB",
+    "imagesHint": "Możesz dodawać zdjęcia partiami — maksymalnie {{max}}, każde do 5 MB. Przycisk w rogu miniatury przycina i obraca zdjęcie.",
     "tooLargeHint": "{{count}} zdjęcie przekracza {{limit}}. Kliknij w nie, żeby je zmniejszyć — albo zostaw, a zmniejszymy je przy wysyłaniu.",
     "tooLargeHint_few": "{{count}} zdjęcia przekraczają {{limit}}. Kliknij w nie, żeby je zmniejszyć — albo zostaw, a zmniejszymy je przy wysyłaniu.",
     "tooLargeHint_many": "{{count}} zdjęć przekracza {{limit}}. Kliknij w nie, żeby je zmniejszyć — albo zostaw, a zmniejszymy je przy wysyłaniu.",
@@ -898,8 +900,10 @@
       "description": "Opis (niewymagany)",
       "submit": "Załóż klan",
       "icon": "Ikona klanu (niewymagana)",
-      "iconHint": "Mały obraz obok skrótu — widać go przy loginie każdego członka. Najlepiej kwadratowy.",
+      "iconHint": "Mały obraz obok skrótu — widać go przy loginie każdego członka. Po wybraniu przytniesz go do kwadratu i obrócisz.",
       "iconNotImage": "To nie jest obraz.",
+      "iconChoose": "Wybierz ikonę",
+      "iconChange": "Zmień ikonę",
       "iconFailed": "Klan został założony, ale nie udało się wgrać ikony: {{reason}} Możesz dodać ją w ustawieniach klanu.",
       "preview": "Tak będzie wyglądać obok loginu:",
       "previewUser": "twój_login",
@@ -973,7 +977,7 @@
       "images": "Ikona i zdjęcie",
       "icon": "Ikona (mały obraz przy skrócie)",
       "photo": "Zdjęcie klanu (u góry strony)",
-      "imagesHint": "Ikona i zdjęcie są widoczne dla wszystkich — pokazują się na plakietce i na stronie klanu.",
+      "imagesHint": "Ikona i zdjęcie są widoczne dla wszystkich — pokazują się na plakietce i na stronie klanu. Przed wgraniem przytniesz i obrócisz obraz.",
       "remove": "Usuń",
       "imageSaved": "Obraz zapisany.",
       "imageRemoved": "Obraz usunięty.",
@@ -1426,7 +1430,7 @@
     "title": "Twoja karta",
     "subtitle": "Zdjęcia, kilka słów o sobie i muzyczne pytania. Widać je na Twoim profilu i — jeśli go włączysz — w trybie Poznawaj.",
     "photos": "Zdjęcia",
-    "photosHint": "Do {{max}} zdjęć (JPG, PNG albo WebP). Pierwsze to okładka karty — kolejność zmienisz strzałkami albo przeciągając. Ze zdjęć usuwamy dane z aparatu, w tym miejsce zrobienia (GPS).",
+    "photosHint": "Do {{max}} zdjęć (JPG, PNG albo WebP). Pierwsze to okładka karty — kolejność zmienisz strzałkami albo przeciągając. Przed dodaniem każde przytniesz (karta ma proporcje 3:4) i obrócisz. Ze zdjęć usuwamy dane z aparatu, w tym miejsce zrobienia (GPS).",
     "addPhoto": "Dodaj zdjęcie",
     "removePhoto": "Usuń zdjęcie {{n}}",
     "moveEarlier": "Przesuń zdjęcie {{n}} wcześniej",
@@ -1536,7 +1540,7 @@
       "improveCard": "Popraw swoją kartę"
     },
     "match": {
-      "title": "To jest to!",
+      "title": "Nowa znajomość!",
       "text": "Ty i {{username}} — wzajemne „tak”. Jesteście znajomymi.",
       "write": "Napisz wiadomość",
       "profile": "Zobacz profil",
@@ -1566,5 +1570,38 @@
       "toggle": "Pokazuj moją kartę w Poznawaj",
       "toggleHint": "Twoją kartę widzą tylko osoby, które też włączyły ten tryb. Znajomość powstaje wyłącznie po wzajemnym „tak”."
     }
+  },
+  "imageEditor": {
+    "title": "Edytuj obraz",
+    "titleOf": "Obraz {{n}} z {{count}}",
+    "crop": "kadr",
+    "cropLabel": "Kadr {{w}} × {{h}} px",
+    "hint": "Przeciągnij kadr albo jego uchwyty. Z klawiatury: strzałki przesuwają, Shift + strzałki zmieniają rozmiar.",
+    "rotate": "Obrót",
+    "rotateLeft": "Obróć w lewo",
+    "rotateRight": "Obróć w prawo",
+    "reset": "Od nowa",
+    "aspect": "Proporcje",
+    "free": "Dowolne",
+    "fixed": {
+      "post": "",
+      "awatar": "Awatar jest okrągły — widać to, co w kółku.",
+      "karta": "Zdjęcia karty mają proporcje 3:4.",
+      "ikonaKlanu": "Ikona klanu jest kwadratowa.",
+      "zdjecieKlanu": ""
+    },
+    "result": "Wynik: {{w}} × {{h}} px",
+    "small": "mały fragment, może wyjść nieostry",
+    "loading": "Wczytywanie obrazu…",
+    "loadFailed": "Tego pliku nie da się otworzyć w edytorze — przeglądarka nie zna jego formatu albo plik jest uszkodzony. Możesz spróbować dodać go bez edycji.",
+    "animated": "To animowany GIF. Po przycięciu albo obróceniu zostanie z niego jedna nieruchoma klatka. Żeby zachować animację, kliknij „Gotowe” bez zmian.",
+    "saveFailed": "Nie udało się zapisać zmian (np. zabrakło pamięci). Spróbuj jeszcze raz albo użyj obrazu bez edycji.",
+    "useOriginal": "Użyj bez edycji",
+    "skip": "Pomiń",
+    "done": "Gotowe",
+    "saving": "Zapisywanie…",
+    "edit": "Edytuj",
+    "editNamed": "Kadruj i obróć: {{name}}",
+    "notImage": "To nie jest obraz — wybierz zdjęcie albo grafikę."
   }
 }

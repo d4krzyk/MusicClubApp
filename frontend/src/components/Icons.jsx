@@ -416,11 +416,31 @@ export function IconSmile(props) {
   );
 }
 
-/** Serce - "tak" w trybie Poznawaj. */
-export function IconHeart(props) {
+/** Kadrowanie - edycja zalaczonego zdjecia. */
+export function IconCrop(props) {
   return (
     <Svg {...props}>
-      <path fillRule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314" />
+      <path d="M4 .5a.5.5 0 0 1 .5.5v10.5H15a.5.5 0 0 1 0 1h-2.5V15a.5.5 0 0 1-1 0v-2.5H4a.5.5 0 0 1-.5-.5V4.5H1a.5.5 0 0 1 0-1h2.5V1A.5.5 0 0 1 4 .5M6 3.5h6a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V4.5H6a.5.5 0 0 1 0-1" />
+    </Svg>
+  );
+}
+
+/** Obrot w lewo (przeciwnie do wskazowek zegara). */
+export function IconRotateLeft(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z" />
+      <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466" />
+    </Svg>
+  );
+}
+
+/** Obrot w prawo. */
+export function IconRotateRight(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z" />
+      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466" />
     </Svg>
   );
 }

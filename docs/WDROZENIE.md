@@ -408,6 +408,10 @@ Nic do ustawiania — działa od razu. Kilka rzeczy, o których warto wiedzieć 
 4. **Google Play.** Galeria zdjęć i tryb poznawania ludzi to w formularzu *Data safety* „zdjęcia” i „treści tworzone
    przez użytkownika” widoczne dla innych; w ankiecie treści (IARC) zaznacza się kontakt między użytkownikami.
    Aplikacja do poznawania ludzi musi mieć zgłaszanie i blokowanie z poziomu karty — są (pod opisem na karcie).
+   Przy kategorii w sklepie: to aplikacja społecznościowa do poznawania ludzi, **nie randkowa** — w interfejsie nie ma
+   serduszek (przycisk „tak” to plusik, przy nowej znajomości są przytulające się ludziki 🫂).
+5. **Edytor zdjęć** (kadr i obrót) działa w całości w przeglądarce — serwer dostaje zwykły plik JPEG/WebP/PNG/GIF jak
+   wcześniej i niczego nie trzeba ustawiać. Po przycięciu dłuższy bok ma najwyżej 2048 px.
 
 ### Powiadomienia push i przypomnienia o wydarzeniach
 
@@ -916,6 +920,33 @@ Przy karcie profilu, trybie Poznawaj i GIF-ach w czacie klanu (październik 2026
   „GIF”; ciemny motyw; zero błędów w konsoli. Skrypt trzeba puszczać na świeżej bazie;
 - **czego nie sprawdzono:** prawdziwego telefonu (dotyk był udawany przez Chromium) i zdjęć z prawdziwych aparatów
   (EXIF z telefonów sprawdzony na plikach zbudowanych w teście — także z obrotem w obu kolejnościach bajtów).
+
+Przy edytorze zdjęć i plusiku zamiast serca (październik 2026, bez migracji, bez zmian w backendzie):
+
+- `npm test` (wbudowany test runner Node'a, bez bibliotek) → 16 testów: geometria kadru (obroty, uchwyty, proporcje,
+  granice; 20 000 losowych przypadków, puszczone też z czterema innymi ziarnami), macierz obrotu płótna zgodna
+  z obrotem kadru, liczenie klatek GIF-a (także na prawdziwych plikach z PIL); `mvnw clean test` → 725 testów;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V17, 94 + 6 sprawdzeń): plusik w przycisku „tak” i na ekranie
+  startowym, nigdzie ścieżki serca; „Nowa znajomość!” z 🫂, a przy udawanym braku emotikonu — ikona dwóch osób;
+  awatar (kadr 1:1 w kółku, obrót, wynik na serwerze sprawdzony **po pikselach** — ćwiartki w dobrych miejscach,
+  ponowna edycja od oryginału, Esc, zepsuty plik → „Użyj bez edycji”, plik tekstowy → komunikat bez edytora); post
+  (zdjęcie z EXIF-em obrotu, „bez zmian” = ten sam plik, proporcje, uchwyty myszą do krawędzi i za przeciwległy róg,
+  klawiatura, obrót wolnego kadru, plik 16 MB → ≤ 5 MB i 2048 px, PNG z przezroczystością → WebP z kanałem alfa,
+  animowany GIF z ostrzeżeniem i nietknięty, publikacja); galeria karty (kolejka „Obraz n z 3”, „Pomiń”, zamknięcie
+  przerywa kolejkę, 3:4 na serwerze w kolejności wyboru); ikona i zdjęcie klanu (kwadrat, 3:1); telefon 320/360/390
+  (okno na cały ekran, nic nie wystaje, „Gotowe” bez przewijania, kadr palcem przez CDP bez przewijania strony),
+  ciemny motyw, zero błędów w konsoli;
+- znalezione przy sprawdzaniu: przełączanie proporcji tam i z powrotem (1:1 → 16:9 → 1:1) zmniejszało kadr za każdym
+  razem (zachowywał powierzchnię) — teraz wybór proporcji daje największy kadr wokół środka; podwójne stuknięcie
+  „Gotowe”/„Pomiń” w kolejce karty przeskakiwało zdjęcie (drugie kliknięcie trafiało w przycisk następnego obrazu) —
+  wynik oddawany raz i 0,4 s blokady po zmianie obrazu (próba czerwona na wersji bez poprawki, zielona 3× z rzędu);
+  przeglądarki sprzed zmiany specyfikacji rzucają na `imageOrientation: 'from-image'` — teraz zostaje droga przez
+  `<img>` (sprawdzone na udawanej starej przeglądarce, obrót z EXIF zachowany); stare Safari na prośbę o WebP
+  oddaje PNG — plik dostaje typ tego, co naprawdę jest w środku; miniatury w formularzu posta robiły nowy adres
+  `blob:` przy każdym odświeżeniu i żadnego nie zwalniały;
+- **czego nie sprawdzono:** prawdziwego telefonu (dotyk udawany przez Chromium), Safari/iOS (tylko udawane braki
+  Chromium) i zdjęć HEIC — przeglądarka bez obsługi HEIC pokaże „Użyj bez edycji”, a serwer i tak przyjmuje tylko
+  JPEG/PNG/WebP/GIF.
 
 ---
 

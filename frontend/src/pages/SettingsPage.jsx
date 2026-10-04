@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
@@ -15,7 +15,10 @@ import {
   usunAwatar, usunKonto, usunWszystkiePosty, ustawAwatar,
 } from '../api/konto';
 import Field from '../components/Field';
-import { IconCheckCircle, IconClock, IconMail } from '../components/Icons';
+import { IconCheckCircle, IconClock, IconCrop, IconMail } from '../components/Icons';
+import EdytorZdjecia from '../components/obraz/EdytorZdjecia';
+import { czyObraz } from '../components/obraz/rodzajeKadru';
+import useAdresPodgladu from '../hooks/useAdresPodgladu';
 import Avatar from '../components/Avatar';
 import LanguageSwitch from '../components/LanguageSwitch';
 import ThemeToggle from '../components/ThemeToggle';
@@ -107,15 +110,37 @@ function WygladIJezyk() {
   );
 }
 
-/** Wgranie i usuwanie zdjecia profilowego. */
+/**
+ * Wgranie i usuwanie zdjecia profilowego. Wybrane zdjecie od razu otwiera sie w edytorze (kadr 1:1
+ * w kolku, obrot); do wgrania widac podglad i mozna wrocic do edycji.
+ */
 function AvatarForm() {
   const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
 
   const [file, setFile] = useState(null);
+  const [doEdycji, setDoEdycji] = useState(null);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [wysylanie, setWysylanie] = useState(false);
+  const pole = useRef(null);
+  const podglad = useAdresPodgladu(file);
+
+  function wybierz(e) {
+    const wybrany = e.target.files?.[0] ?? null;
+    // Czyscimy pole od razu - ponowny wybor tego samego pliku tez ma otworzyc edytor
+    e.target.value = '';
+    if (!wybrany) {
+      return;
+    }
+    setMessage(null);
+    if (!czyObraz(wybrany)) {
+      setError(t('imageEditor.notImage'));
+      return;
+    }
+    setError(null);
+    setDoEdycji(wybrany);
+  }
 
   async function wgraj(e) {
     e.preventDefault();
@@ -128,9 +153,7 @@ function AvatarForm() {
 
     try {
       refreshUser(await ustawAwatar(file));
-
       setFile(null);
-      e.target.reset();
       setMessage(t('avatar.saved'));
     } catch (error) {
       const details = describeError(error);
@@ -164,31 +187,60 @@ function AvatarForm() {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <div className="d-flex align-items-center gap-3 flex-wrap">
-          <Avatar avatarUrl={user.avatarUrl} username={user.username} size={80} />
+          {podglad ? (
+            <img src={podglad} alt={t('avatar.preview')} width={80} height={80} className="avatar awatar-podglad" />
+          ) : (
+            <Avatar avatarUrl={user.avatarUrl} username={user.username} size={80} />
+          )}
 
           <Form onSubmit={wgraj} className="flex-grow-1">
-            <Form.Group controlId="avatar" className="mb-2">
-              <Form.Control
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files[0] ?? null)}
-              />
-              <Form.Text muted>{t('avatar.hint')}</Form.Text>
-            </Form.Group>
+            <input
+              ref={pole}
+              id="avatar"
+              type="file"
+              accept="image/*"
+              className="d-none"
+              onChange={wybierz}
+            />
 
-            <div className="d-flex gap-2">
-              <Button type="submit" size="sm" disabled={!file || wysylanie}>
-                {wysylanie ? t('avatar.uploading') : t('avatar.upload')}
-              </Button>
-
-              {user.avatarUrl && (
-                <Button type="button" size="sm" variant="outline-danger" onClick={remove}>
-                  {t('avatar.remove')}
-                </Button>
+            <div className="d-flex gap-2 flex-wrap mb-2">
+              {file ? (
+                <>
+                  <Button type="submit" size="sm" disabled={wysylanie}>
+                    {wysylanie ? t('avatar.uploading') : t('avatar.upload')}
+                  </Button>
+                  <Button type="button" size="sm" variant="outline-secondary" disabled={wysylanie}
+                    onClick={() => setDoEdycji(file)}>
+                    <IconCrop className="me-1" />{t('imageEditor.edit')}
+                  </Button>
+                  <Button type="button" size="sm" variant="link" className="text-body-secondary" disabled={wysylanie}
+                    onClick={() => setFile(null)}>
+                    {t('common.cancel')}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button type="button" size="sm" variant="outline-primary" onClick={() => pole.current?.click()}>
+                    {t('avatar.choose')}
+                  </Button>
+                  {user.avatarUrl && (
+                    <Button type="button" size="sm" variant="outline-danger" onClick={remove}>
+                      {t('avatar.remove')}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
+            <Form.Text muted>{file ? t('avatar.previewHint') : t('avatar.hint')}</Form.Text>
           </Form>
         </div>
+
+        <EdytorZdjecia
+          plik={doEdycji}
+          rodzaj="awatar"
+          onGotowe={(gotowy) => { setDoEdycji(null); setFile(gotowy); }}
+          onAnuluj={() => setDoEdycji(null)}
+        />
       </Card.Body>
     </Card>
   );

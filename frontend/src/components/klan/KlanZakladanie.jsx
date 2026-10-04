@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
@@ -8,7 +8,10 @@ import { describeError } from '../../api/client';
 import * as klany from '../../api/klany';
 import { DOMYSLNY_KOLOR_KLANU } from '../../utils/klan';
 import ClanBadge from '../ClanBadge';
-import { IconClan } from '../Icons';
+import { IconClan, IconCrop } from '../Icons';
+import EdytorZdjecia from '../obraz/EdytorZdjecia';
+import { czyObraz } from '../obraz/rodzajeKadru';
+import useAdresPodgladu from '../../hooks/useAdresPodgladu';
 import KlanWizytowka, { PUSTA_WIZYTOWKA } from './KlanWizytowka';
 
 /**
@@ -25,38 +28,26 @@ export default function KlanZakladanie({ onZalozony }) {
   const [opis, setOpis] = useState('');
   const [wizytowka, setWizytowka] = useState(PUSTA_WIZYTOWKA);
   const [ikona, setIkona] = useState(null);
-  const [podglad, setPodglad] = useState(null);
+  const [doEdycji, setDoEdycji] = useState(null);
   const [zajety, setZajety] = useState(false);
   const [blad, setBlad] = useState(null);
   const pole = useRef(null);
+  // Adres podgladu zwalnia sie sam, gdy plik sie zmienia albo formularz znika
+  const podglad = useAdresPodgladu(ikona);
 
-  // Adres podgladu trzeba zwolnic, gdy plik sie zmienia albo formularz znika
-  useEffect(() => {
-    if (!ikona) {
-      setPodglad(null);
-      return undefined;
-    }
-    const adres = URL.createObjectURL(ikona);
-    setPodglad(adres);
-    return () => URL.revokeObjectURL(adres);
-  }, [ikona]);
-
+  /** Wybrana ikona od razu idzie do edytora (kwadrat, obrot); do formularza trafia wynik. */
   function wybierz(e) {
     const plik = e.target.files?.[0] ?? null;
-    if (plik && !plik.type.startsWith('image/')) {
+    e.target.value = '';
+    if (!plik) {
+      return;
+    }
+    if (!czyObraz(plik)) {
       setBlad(t('clans.create.iconNotImage'));
-      e.target.value = '';
       return;
     }
     setBlad(null);
-    setIkona(plik);
-  }
-
-  function zdejmij() {
-    setIkona(null);
-    if (pole.current) {
-      pole.current.value = '';
-    }
+    setDoEdycji(plik);
   }
 
   async function zaloz(e) {
@@ -121,15 +112,26 @@ export default function KlanZakladanie({ onZalozony }) {
               {podglad ? <img src={podglad} alt="" /> : <IconClan size={28} />}
             </div>
             <div className="klan-zakladanie-ikona-pola">
-              <Form.Label htmlFor="nowy-klan-ikona" className="mb-1">{t('clans.create.icon')}</Form.Label>
-              <Form.Control id="nowy-klan-ikona" type="file" accept="image/*" size="sm" ref={pole} onChange={wybierz}
-                aria-describedby="nowy-klan-ikona-podp" />
-              <Form.Text id="nowy-klan-ikona-podp" className="d-block">{t('clans.create.iconHint')}</Form.Text>
-              {ikona && (
-                <Button variant="link" size="sm" className="px-0 text-danger" onClick={zdejmij}>
-                  {t('clans.settings.remove')}
+              <span className="form-label d-block mb-1">{t('clans.create.icon')}</span>
+              <input id="nowy-klan-ikona" type="file" accept="image/*" className="d-none" ref={pole} onChange={wybierz}
+                aria-label={t('clans.create.icon')} />
+              <div className="d-flex flex-wrap gap-2 align-items-center">
+                <Button variant="outline-secondary" size="sm" onClick={() => pole.current?.click()}
+                  aria-describedby="nowy-klan-ikona-podp">
+                  {ikona ? t('clans.create.iconChange') : t('clans.create.iconChoose')}
                 </Button>
-              )}
+                {ikona && (
+                  <>
+                    <Button variant="outline-secondary" size="sm" onClick={() => setDoEdycji(ikona)}>
+                      <IconCrop className="me-1" />{t('imageEditor.edit')}
+                    </Button>
+                    <Button variant="link" size="sm" className="px-0 text-danger" onClick={() => setIkona(null)}>
+                      {t('clans.settings.remove')}
+                    </Button>
+                  </>
+                )}
+              </div>
+              <Form.Text id="nowy-klan-ikona-podp" className="d-block">{t('clans.create.iconHint')}</Form.Text>
             </div>
             <div className="klan-podglad-plakietki" aria-live="polite">
               <span className="small text-body-secondary d-block mb-1">{t('clans.create.preview')}</span>
@@ -154,6 +156,12 @@ export default function KlanZakladanie({ onZalozony }) {
 
           <Button type="submit" disabled={zajety || !nazwa.trim() || !skrot.trim()}>{t('clans.create.submit')}</Button>
         </Form>
+        <EdytorZdjecia
+          plik={doEdycji}
+          rodzaj="ikonaKlanu"
+          onGotowe={(gotowa) => { setDoEdycji(null); setIkona(gotowa); }}
+          onAnuluj={() => setDoEdycji(null)}
+        />
       </Card.Body>
     </Card>
   );

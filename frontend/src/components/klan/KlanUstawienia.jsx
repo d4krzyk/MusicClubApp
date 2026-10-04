@@ -7,6 +7,8 @@ import Form from 'react-bootstrap/Form';
 import { describeError } from '../../api/client';
 import * as klany from '../../api/klany';
 import { IconClan } from '../Icons';
+import EdytorZdjecia from '../obraz/EdytorZdjecia';
+import { czyObraz } from '../obraz/rodzajeKadru';
 import KlanWizytowka, { wizytowkaKlanu } from './KlanWizytowka';
 
 /**
@@ -27,6 +29,8 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
   const [info, setInfo] = useState(null);
   const ikona = useRef(null);
   const zdjecie = useRef(null);
+  /* Obraz w edytorze przed wgraniem: { rodzaj: 'icon' | 'photo', plik } */
+  const [doEdycji, setDoEdycji] = useState(null);
 
   async function wykonaj(akcja, komunikat) {
     setZajety(true);
@@ -66,12 +70,27 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
     }), t('clans.settings.saved'));
   }
 
-  function wgraj(rodzaj, pole) {
+  /** Wybrany obraz najpierw idzie do edytora (ikona - kwadrat, zdjecie - szeroki pas), dopiero wynik sie wgrywa. */
+  function wybierz(rodzaj, pole) {
     const plik = pole.current?.files?.[0];
-    if (plik) {
-      wykonaj(() => klany.wgrajObraz(klan.id, rodzaj, plik), t('clans.settings.imageSaved'));
+    if (pole.current) {
       pole.current.value = '';
     }
+    if (!plik) {
+      return;
+    }
+    if (!czyObraz(plik)) {
+      setInfo(null);
+      setBlad(t('clans.create.iconNotImage'));
+      return;
+    }
+    setDoEdycji({ rodzaj, plik });
+  }
+
+  function wgrajPoEdycji(gotowy) {
+    const { rodzaj } = doEdycji;
+    setDoEdycji(null);
+    wykonaj(() => klany.wgrajObraz(klan.id, rodzaj, gotowy), t('clans.settings.imageSaved'));
   }
 
   async function rozwiaz() {
@@ -103,7 +122,7 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
               </div>
               <Form.Label htmlFor="klan-ikona" className="small mb-1">{t('clans.settings.icon')}</Form.Label>
               <Form.Control id="klan-ikona" type="file" accept="image/*" ref={ikona} size="sm" disabled={zajety}
-                onChange={() => wgraj('icon', ikona)} />
+                onChange={() => wybierz('icon', ikona)} />
               {klan.iconUrl && (
                 <Button variant="link" size="sm" className="px-0 text-danger" disabled={zajety}
                   onClick={() => wykonaj(() => klany.usunObraz(klan.id, 'icon'), t('clans.settings.imageRemoved'))}>
@@ -117,7 +136,7 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
               </div>
               <Form.Label htmlFor="klan-zdjecie" className="small mb-1">{t('clans.settings.photo')}</Form.Label>
               <Form.Control id="klan-zdjecie" type="file" accept="image/*" ref={zdjecie} size="sm" disabled={zajety}
-                onChange={() => wgraj('photo', zdjecie)} />
+                onChange={() => wybierz('photo', zdjecie)} />
               {klan.photoUrl && (
                 <Button variant="link" size="sm" className="px-0 text-danger" disabled={zajety}
                   onClick={() => wykonaj(() => klany.usunObraz(klan.id, 'photo'), t('clans.settings.imageRemoved'))}>
@@ -127,6 +146,12 @@ export default function KlanUstawienia({ klan, onZmiana, onRozwiazany }) {
             </div>
           </div>
           <p className="small text-body-secondary mb-0 mt-2">{t('clans.settings.imagesHint')}</p>
+          <EdytorZdjecia
+            plik={doEdycji?.plik ?? null}
+            rodzaj={doEdycji?.rodzaj === 'icon' ? 'ikonaKlanu' : 'zdjecieKlanu'}
+            onGotowe={wgrajPoEdycji}
+            onAnuluj={() => setDoEdycji(null)}
+          />
         </Card.Body>
       </Card>
 

@@ -10,6 +10,7 @@ import * as karta from '../../api/karta';
 import * as poznawaj from '../../api/poznawaj';
 import { IconArrowLeft, IconArrowRight, IconCamera, IconCross, IconPlus, IconTrash } from '../Icons';
 import Zasieg from '../Zasieg';
+import EdytorZdjecia from '../obraz/EdytorZdjecia';
 import KartaPoznawaj from '../poznawaj/KartaPoznawaj';
 
 export const MAKS_ZDJEC = 6;
@@ -27,6 +28,9 @@ const TYPY_ZDJEC = 'image/jpeg,image/png,image/webp';
  * Ustawienia: "Twoja karta" - galeria zdjec (do 6, pierwsze = okladka, kolejnosc strzalkami albo
  * przeciaganiem), "o mnie", "szukam", pytania muzyczne, tryb Poznawaj z zasiegiem i podglad karty tak, jak
  * widza ja inni. Zdjecia zapisuja sie od razu; tekst - przyciskiem "Zapisz karte".
+ *
+ * Kazde wybrane zdjecie przechodzi przez edytor (kadr 3:4 - tak je widac na karcie - i obrot), po kolei;
+ * "Pomin" odpuszcza jedno zdjecie, zamkniecie okna - reszte. Gotowe wgrywaja sie w tle w kolejnosci wyboru.
  */
 export default function TwojaKarta() {
   const { t } = useTranslation();
@@ -40,7 +44,9 @@ export default function TwojaKarta() {
   const [wgrywane, setWgrywane] = useState(0);
   const [podglad, setPodglad] = useState(false);
   const [przeciagane, setPrzeciagane] = useState(null);
+  const [kolejka, setKolejka] = useState({ pliki: [], n: 0 });
   const plik = useRef(null);
+  const wgrywanie = useRef(Promise.resolve());
 
   useEffect(() => {
     Promise.all([karta.moja(), poznawaj.stan()])
@@ -75,17 +81,29 @@ export default function TwojaKarta() {
     }
   }
 
-  async function dodajZdjecia(e) {
-    const wolne = MAKS_ZDJEC - dane.photos.length;
+  function dodajZdjecia(e) {
+    const wolne = MAKS_ZDJEC - dane.photos.length - wgrywane;
     const pliki = Array.from(e.target.files ?? []).slice(0, Math.max(0, wolne));
     e.target.value = '';
-    for (const p of pliki) {
-      setWgrywane((n) => n + 1);
-      // Po kolei - serwer dopisuje kazde na koniec, wiec kolejnosc zostaje taka, jak w wyborze
-      // eslint-disable-next-line no-await-in-loop
-      await wykonaj(() => karta.dodajZdjecie(p));
-      setWgrywane((n) => n - 1);
+    if (pliki.length > 0) {
+      setBlad(null);
+      setKolejka({ pliki, n: 0 });
     }
+  }
+
+  function nastepneWKolejce() {
+    setKolejka((k) => (k.n + 1 < k.pliki.length ? { ...k, n: k.n + 1 } : { pliki: [], n: 0 }));
+  }
+
+  /** Zdjecie z edytora: wgrywa sie w tle, a edytor od razu pokazuje nastepne. */
+  function wgrajPoEdycji(gotowy) {
+    nastepneWKolejce();
+    setWgrywane((n) => n + 1);
+    // Po kolei - serwer dopisuje kazde na koniec, wiec kolejnosc zostaje taka, jak w wyborze.
+    // wykonaj() sam lapie bledy, wiec jedno nieudane nie zatrzymuje nastepnych.
+    wgrywanie.current = wgrywanie.current
+      .then(() => wykonaj(() => karta.dodajZdjecie(gotowy)))
+      .finally(() => setWgrywane((n) => n - 1));
   }
 
   function przesun(z, na) {
@@ -219,6 +237,14 @@ export default function TwojaKarta() {
         </ul>
         <input ref={plik} type="file" accept={TYPY_ZDJEC} multiple hidden onChange={dodajZdjecia}
           aria-label={t('card.addPhoto')} />
+        <EdytorZdjecia
+          plik={kolejka.pliki[kolejka.n] ?? null}
+          rodzaj="karta"
+          licznik={{ n: kolejka.n + 1, z: kolejka.pliki.length }}
+          onGotowe={wgrajPoEdycji}
+          onAnuluj={nastepneWKolejce}
+          onPrzerwij={kolejka.pliki.length > 1 ? () => setKolejka({ pliki: [], n: 0 }) : undefined}
+        />
         <p className="small text-body-secondary">{t('card.photosHint', { max: MAKS_ZDJEC })}</p>
 
         <Form onSubmit={zapisz} noValidate>

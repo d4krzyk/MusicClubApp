@@ -4,7 +4,9 @@ import Button from 'react-bootstrap/Button';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Spinner from 'react-bootstrap/Spinner';
-import { IconCross, IconPlus, IconImage } from './Icons';
+import { IconCross, IconCrop, IconPlus, IconImage } from './Icons';
+import EdytorZdjecia from './obraz/EdytorZdjecia';
+import useAdresPodgladu from '../hooks/useAdresPodgladu';
 import {
   czyDaSieZmniejszyc,
   czyZaDuzy,
@@ -18,6 +20,8 @@ import {
  * Za duze zdjecie nie jest bledem, tylko czyms do zalatwienia: kafelek robi
  * sie klikalny i jedno klikniecie zmniejsza plik do limitu. Kto tego nie
  * zrobi, i tak nie zobaczy bledu - to samo dzieje sie przy wysylaniu.
+ *
+ * Kazde zdjecie mozna przyciac i obrocic (przycisk w rogu miniatury, wspolny edytor zdjec).
  */
 export default function ImagePicker({ files, onChange, maks = 10, error }) {
   const { t } = useTranslation();
@@ -26,6 +30,9 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
 
   /* Indeksy zdjec, ktore wlasnie sa przerabiane. */
   const [wPracy, setWPracy] = useState([]);
+
+  /* Numer zdjecia otwartego w edytorze (kadr i obrot). */
+  const [edytowane, setEdytowane] = useState(null);
 
   /*
    * Rozmiary sprzed zmniejszenia, zeby dalo sie pokazac "8,2 MB -> 1,1 MB".
@@ -67,6 +74,14 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
       /* Nie udalo sie - plik zostaje jaki byl, a przy wysylaniu odezwie sie serwer. */
     } finally {
       setWPracy((lista) => lista.filter((i) => i !== indeks));
+    }
+  }
+
+  function poEdycji(nowy) {
+    const indeks = edytowane;
+    setEdytowane(null);
+    if (indeks !== null && files[indeks] && nowy !== files[indeks]) {
+      onChange(files.map((plik, i) => (i === indeks ? nowy : plik)));
     }
   }
 
@@ -146,15 +161,7 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
             return (
               <Col key={`${file.name}-${file.size}-${i}`} xs={4} sm={3} md={2}>
                 <div className="position-relative">
-                  <img
-                    /*
-                     * createObjectURL robi lokalny adres do pliku z dysku - podglad dziala bez
-                     * wysylania czegokolwiek na serwer.
-                     */
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className={`post-thumb rounded border${duzy ? ' zdjecie-za-duze' : ''}`}
-                  />
+                  <Miniatura plik={file} duzy={duzy} />
 
                   {/* Nakladka tylko na za duzych - klikniecie zmniejsza plik */}
                   {duzy && daSie && (
@@ -192,6 +199,18 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
                     </span>
                   )}
 
+                  {!pracuje && (
+                    <button
+                      type="button"
+                      className="zdjecie-edytuj"
+                      onClick={() => setEdytowane(i)}
+                      aria-label={t('imageEditor.editNamed', { name: file.name })}
+                      title={t('imageEditor.edit')}
+                    >
+                      <IconCrop size={14} />
+                    </button>
+                  )}
+
                   <Button
                     type="button"
                     variant="danger"
@@ -219,6 +238,28 @@ export default function ImagePicker({ files, onChange, maks = 10, error }) {
           })}
         </Row>
       )}
+
+      <EdytorZdjecia
+        plik={edytowane !== null ? files[edytowane] ?? null : null}
+        rodzaj="post"
+        onGotowe={poEdycji}
+        onAnuluj={() => setEdytowane(null)}
+      />
     </div>
+  );
+}
+
+/**
+ * Podglad pliku z dysku - nic nie idzie na serwer. Adres jest zwalniany, gdy zdjecie znika z listy
+ * (wczesniej powstawal nowy przy kazdym odswiezeniu formularza i zaden nie byl zwalniany).
+ */
+function Miniatura({ plik, duzy }) {
+  const adres = useAdresPodgladu(plik);
+  return (
+    <img
+      src={adres ?? undefined}
+      alt={plik.name}
+      className={`post-thumb rounded border${duzy ? ' zdjecie-za-duze' : ''}`}
+    />
   );
 }

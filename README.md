@@ -17,8 +17,9 @@ wypuścić na świat.
 | **Tablica „Dla ciebie”** | znajomi zawsze na górze, pod nimi publiczne posty obcych ułożone według okolicy, wspólnego gustu i reakcji — z podpisem, *dlaczego* dany post jest wysoko |
 | **Okolica** | miasto w profilu (bez adresu i bez lokalizacji z telefonu) podnosi ludzi, koncerty i klany z Twojego regionu; zasięg od 30 km do całego kraju |
 | **Znajomi z gustem** | proponowani znajomi liczeni ze wspólnych artystów, gatunków i znajomych |
-| **Poznawaj** | tryb „jak Tinder” w zakładce Znajomi: karty osób z okolicy od najbardziej podobnego gustu, w prawo = chcę poznać, znajomymi zostajecie po wzajemnym „tak” |
+| **Poznawaj** | karty do przesuwania w zakładce Znajomi (jak w Tinderze, ale do poznawania ludzi, nie randek): osoby z okolicy od najbardziej podobnego gustu, w prawo = chcę poznać, znajomymi zostajecie po wzajemnym „tak” |
 | **Karta profilu** | do 6 zdjęć (bez danych GPS z aparatu), „O mnie”, „Szukam” i muzyczne pytania — na profilu i w Poznawaj |
+| **Edytor zdjęć** | każdy załączany obraz (awatar, zdjęcia postów i karty, ikona i zdjęcie klanu) można przyciąć i obrócić — myszą, palcem albo z klawiatury |
 | **Komentarze** | odpowiedzi, oznaczanie osób przez `@login` z podpowiedziami, powiadomienia, zgłaszanie |
 | **GIF-y** | przeglądarka GIF-ów w komentarzach, na czacie i w czacie klanu; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
 | **Czat** | rozmowy ze znajomymi z linkami muzycznymi, dymkiem „pisze…” i potwierdzeniem przeczytania |
@@ -64,7 +65,7 @@ dotyczy właśnie Ciebie. Przy poście stoi powód: „Z twojej okolicy”, „P
 | | | |
 |:---:|:---:|:---:|
 | <img src="docs/zrzuty/poznawaj-telefon.jpg" alt="Talia kart w trybie Poznawaj" width="250"> | <img src="docs/zrzuty/poznawaj-szczegoly.jpg" alt="Szczegóły karty: co was łączy, opis, pytania" width="250"> | <img src="docs/zrzuty/poznawaj-para.jpg" alt="Wzajemne tak — jesteście znajomymi" width="250"> |
-| Talia: od najbardziej podobnego gustu, w zasięgu z ustawień; w prawo — chcę poznać | Kartę przewija się w górę: co was łączy, „O mnie”, „Szukam”, pytania | Wzajemne „tak” — od razu znajomi, można pisać |
+| Talia: od najbardziej podobnego gustu, w zasięgu z ustawień; w prawo (albo „+”) — chcę poznać | Kartę przewija się w górę: co was łączy, „O mnie”, „Szukam”, pytania | Wzajemne „tak” — „Nowa znajomość!” 🫂, od razu można pisać |
 
 <p align="center">
   <img src="docs/zrzuty/karta-ustawienia.jpg" alt="Twoja karta w ustawieniach" width="520">
@@ -72,6 +73,16 @@ dotyczy właśnie Ciebie. Przy poście stoi powód: „Z twojej okolicy”, „P
 
 Karta profilu w Ustawieniach: do 6 zdjęć (bez danych GPS z aparatu), opis, „Szukam”, muzyczne pytania, włącznik trybu
 Poznawaj i zasięg. Ta sama karta jest na profilu.
+
+### Edytor zdjęć
+
+<p align="center">
+  <img src="docs/zrzuty/edytor-zdjec.jpg" alt="Edytor zdjęć: kadr 3:4 z uchwytami, obrót" width="250">
+</p>
+
+Każdy obraz, który się załącza, przechodzi przez ten sam edytor: kadr (przeciąganie, uchwyty w rogach i na bokach,
+strzałki z klawiatury) i obrót co 90°. Proporcje pasują do miejsca — awatar w kółku, zdjęcia karty 3:4, ikona klanu
+w kwadracie, a przy postach do wyboru (dowolne, 1:1, 4:5, 4:3, 16:9).
 
 ### Klan
 
@@ -165,6 +176,9 @@ Adminer: system `PostgreSQL`, serwer `db`, użytkownik / hasło / baza: `musiccl
 ```bash
 # Testy - działają nawet przy wyłączonym Dockerze (baza H2 w pamięci)
 mvn test
+
+# Testy frontendu (geometria edytora zdjęć, liczenie klatek GIF-a) - wbudowany test runner Node'a, bez bibliotek
+cd frontend && npm test
 ```
 
 ## Struktura
@@ -197,11 +211,11 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V15 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V17 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
-src/test/                          # 695 testów: @SpringBootTest, @WebMvcTest, Mockito; baza H2 w pamięci
+src/test/                          # 725 testów: @SpringBootTest, @WebMvcTest, Mockito; baza H2 w pamięci
 
 frontend/                          # React + Vite (PWA)
 ├── vite.config.js                 # proxy /api → localhost:8080 (bez CORS-a)
@@ -211,7 +225,9 @@ frontend/                          # React + Vite (PWA)
     ├── api/                       # nazwane operacje serwera (client.js to sam transport)
     ├── auth/ theme/ i18n/ legal/  # kto zalogowany, motyw, teksty PL/EN, regulamin i polityka prywatności
     ├── hooks/                     # useOdswiezanie (jeden puls), useLiveReactions, useZasieg, useGify, ...
-    ├── components/                # Layout, Post, Reactions, komentarze/, gif/, klan/, EventCard, ...
+    ├── utils/                     # m.in. obrazy.js (zmniejszanie i zapis edycji), kadr.js (geometria + testy)
+    ├── components/                # Layout, Post, Reactions, komentarze/, gif/, klan/, poznawaj/, karta/,
+    │                              #   obraz/ (edytor zdjęć: kadr i obrót), EventCard, ...
     ├── pages/                     # Feed, Post, Profile, Friends, Events, Klany, Clan, Settings, Reports, ...
     └── style/                     # CSS podzielony tematycznie (czat, klany, wydarzenia, gify, ...)
 ```
@@ -744,9 +760,10 @@ samodzielnie albo razem z tekstem, także jako odpowiedź na cudzy komentarz.
 ## Poznawaj — karty w stylu Tindera
 
 W zakładce **Znajomi** obok zwykłej listy jest tryb **Poznawaj**: karty osób z okolicy, jedna po drugiej. Przesunięcie
-w prawo (albo ♥, albo →) znaczy „chcę poznać”, w lewo (✕, ←) — „nie teraz”. Znajomymi zostajecie dopiero wtedy,
-gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wyskakuje „To jest to!” z przyciskiem
-„Napisz wiadomość”, a obie osoby dostają powiadomienie i push.
+w prawo (przycisk „+” albo →) znaczy „chcę poznać”, w lewo (✕, ←) — „nie teraz”. Znajomymi zostajecie dopiero wtedy,
+gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wyskakuje „Nowa znajomość!” z przytulającymi
+się ludzikami 🫂 i przyciskiem „Napisz wiadomość”, a obie osoby dostają powiadomienie i push. Bez serduszek — to aplikacja
+do poznawania ludzi, nie randkowa.
 
 - **Kto jest w talii.** Tylko osoby, które same włączyły tryb (domyślnie jest wyłączony — karta ze zdjęciami dla obcych
   to świadoma decyzja). Bez znajomych, blokad, oczekujących zaproszeń, osób z zakazem publikowania i już ocenionych
@@ -771,6 +788,38 @@ gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wysk
   więc druga transakcja czeka i widzi pierwszą.
 - Zgłoszenie profilu ma migawkę karty, a administrator może jednym ruchem wyczyścić kartę i wyłączyć tryb.
   Polityka prywatności opisuje, co widać na karcie i jak długo trzymamy decyzje.
+
+## Edytor zdjęć — kadr i obrót
+
+Jeden komponent (`components/obraz/EdytorZdjecia.jsx`) dla każdego miejsca, w którym załącza się obraz:
+
+| Gdzie | Kiedy się otwiera | Proporcje |
+|---|---|---|
+| Awatar (Ustawienia) | od razu po wybraniu pliku; potem „Edytuj” przed zapisem | 1:1, podgląd w kółku |
+| Zdjęcia posta | przycisk w rogu każdej miniatury | do wyboru: dowolne, 1:1, 4:5, 4:3, 16:9 |
+| Zdjęcia karty profilu | od razu, po kolei dla każdego wybranego („Obraz 2 z 3”, „Pomiń”) | 3:4 — tak je widać na karcie |
+| Ikona klanu (zakładanie i ustawienia) | od razu po wybraniu | 1:1, podgląd zaokrąglonego kwadratu |
+| Zdjęcie klanu | od razu po wybraniu | 3:1 (pas u góry strony klanu), 16:9 albo dowolne |
+
+- **Kadr**: przeciąganie całego kadru, osiem uchwytów (w rogu przy stałych proporcjach decyduje kierunek, w którym
+  wskaźnik poszedł dalej), strzałki z klawiatury przesuwają, Shift + strzałki zmieniają rozmiar. Zdarzenia wskaźnika,
+  więc to samo działa myszą i palcem; na scenie `touch-action: none` — palec nie przewija strony. Obrót co 90° w obie
+  strony; wolny kadr obraca się razem ze zdjęciem. Zmiana proporcji daje największy kadr wokół obecnego środka.
+- **Geometria** (`utils/kadr.js`) to same liczby, bez DOM-u — testy w `utils/kadr.test.js` (`npm test`, wbudowany
+  test runner Node'a), w tym 20 000 losowych przypadków: kadr nigdy nie wychodzi poza obraz, trzyma proporcje,
+  przeciwległy róg stoi w miejscu, a macierz obrotu płótna zgadza się z obrotem kadru.
+- **Zapis** (`utils/obrazy.js: zapiszEdycje`): płótno, dłuższy bok najwyżej 2048 px, JPEG (z przezroczystością —
+  WebP), plik zawsze mieści się w limicie 5 MB. Zdjęcie z telefonu trzymanego bokiem wychodzi prosto (obrót z EXIF).
+  **Bez zmian = oryginał nietknięty** — nie ma niepotrzebnej drugiej kompresji, a animowany GIF zostaje animowany
+  (edytor uprzedza, że po przycięciu zostanie z niego jedna klatka; klatki liczy `utils/gifKlatki.js`).
+- **Ponowna edycja** zaczyna od oryginału z poprzednim kadrem, a nie od już przyciętej kopii.
+- **Odporność**: plik, którego przeglądarka nie umie otworzyć, daje komunikat i „Użyj bez edycji”; plik, który nie
+  jest obrazem, w ogóle nie otwiera edytora; nieudany zapis (np. brak pamięci) — komunikat i drugie podejście.
+  Starsze przeglądarki, które nie znają `imageOrientation: 'from-image'`, idą drogą przez `<img>` (obrót z EXIF
+  zostaje). Wynik oddawany jest raz, a przez 0,4 s od pojawienia się nowego obrazu przyciski są nieaktywne —
+  podwójne stuknięcie „Pomiń” w kolejce nie przeskakuje dwóch zdjęć. Pamięć: bitmapa jest zwalniana przy zamknięciu,
+  a podglądy `blob:` przy zmianie pliku (`hooks/useAdresPodgladu`).
+- Serwer niczego nowego nie dostaje — przyjmuje te same pliki co wcześniej i dalej wycina z nich EXIF.
 
 ## Gablotka playlist
 
@@ -1533,15 +1582,17 @@ Caddy z Let's Encrypt), migracje Flyway (17), ciasteczka `Secure`/`HttpOnly`/`Sa
 Swagger, regulamin i polityka prywatności z akceptacją przy rejestracji oraz pobranie własnych danych. Nazwy w kodzie są
 konsekwentnie angielskie, komentarze — polskie.
 
-**Jak to jest sprawdzane.** 725 testów backendu przechodzi na bazie H2 w pamięci. Każdą zmianę sprawdzamy dodatkowo na
+**Jak to jest sprawdzane.** 725 testów backendu przechodzi na bazie H2 w pamięci, a 16 testów frontendu (`npm test`)
+pilnuje geometrii edytora zdjęć i rozpoznawania animowanych GIF-ów. Każdą zmianę sprawdzamy dodatkowo na
 prawdziwym PostgreSQL 16 i w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność postów i kolejność
-tablicy, komentarze i GIF-y, tryb Poznawaj (także dotykiem), wydarzenia, klany, powiadomienia, czat i moderację — także **kilkoma sesjami naraz**, bo
+tablicy, komentarze i GIF-y, tryb Poznawaj i edytor zdjęć (także dotykiem; wynik sprawdzany po pikselach na serwerze), wydarzenia, klany, powiadomienia, czat i moderację — także **kilkoma sesjami naraz**, bo
 inaczej nie da się sprawdzić, czy wiadomość faktycznie dolatuje do drugiej przeglądarki ani czy administrator widzi
 zgłoszenie złożone przez kogoś innego. Zabezpieczenia sprawdzamy też od drugiej strony: wyłączenie każdego z nich w
 kodzie (mutacja) ma zaczerwienić jakiś test.
 
 **Czego stąd nie widać** (i co trzeba zobaczyć po wdrożeniu): prawdziwe usługi push (Google, Apple), prawdziwy KLIPY lub
-GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie (gest przesuwania kart był sprawdzony dotykiem udawanym przez Chromium). Szczegóły i kroki
+GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie (gest przesuwania kart i kadrowanie zdjęć były sprawdzone dotykiem udawanym przez Chromium;
+emotikon 🫂 na Windows 10 i starych Androidach zastępuje ikona dwóch osób — sprawdzone na udawanym braku emotikonu). Szczegóły i kroki
 kontrolne są w [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
 
 **Co dalej:** stały adres → sprawdzenie PWA na telefonie → aplikacja na Androida jako TWA (Bubblewrap) → Google Play.

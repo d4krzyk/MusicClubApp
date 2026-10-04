@@ -1,0 +1,294 @@
+/* --- Edytor zdjec: kadrowanie i obrot (components/obraz/EdytorZdjecia.jsx) ------------- */
+
+.edytor-cialo {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+/* Scena: ciemne tlo jak w podgladzie zdjec, obraz wysrodkowany, poza kadrem przyciemnienie */
+.edytor-scena {
+  position: relative;
+  height: min(60vh, 32rem);
+  min-height: 15rem;
+  overflow: hidden;
+  border-radius: var(--mc-radius);
+  background:
+    repeating-conic-gradient(#1f1a2e 0% 25%, #19152a 0% 50%) 50% / 20px 20px;
+  /* Palec na scenie nie przewija strony ani nie powieksza - przesuwa kadr */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.edytor-scena.is-ciagnie {
+  cursor: grabbing;
+}
+
+.edytor-ladowanie {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, .85);
+  font-size: .875rem;
+}
+
+.edytor-obraz {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.edytor-kadr {
+  position: absolute;
+  cursor: grab;
+  outline: none;
+  border: 1.5px solid #fff;
+  /* Przyciemnienie wszystkiego poza kadrem */
+  box-shadow: 0 0 0 200vmax rgba(10, 8, 18, .62);
+  touch-action: none;
+}
+
+.edytor-scena.is-ciagnie .edytor-kadr {
+  cursor: grabbing;
+}
+
+.edytor-kadr:focus-visible {
+  border-color: var(--mc-3);
+  box-shadow: 0 0 0 200vmax rgba(10, 8, 18, .62), 0 0 0 3px rgba(var(--bs-primary-rgb), .7);
+}
+
+/* Linie trojpodzialu - widac je mocniej w trakcie przeciagania */
+.edytor-siatka {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .35;
+  transition: opacity var(--mc-fast);
+  background:
+    linear-gradient(to right, transparent calc(33.333% - .5px), rgba(255, 255, 255, .9) calc(33.333% - .5px),
+      rgba(255, 255, 255, .9) calc(33.333% + .5px), transparent calc(33.333% + .5px),
+      transparent calc(66.666% - .5px), rgba(255, 255, 255, .9) calc(66.666% - .5px),
+      rgba(255, 255, 255, .9) calc(66.666% + .5px), transparent calc(66.666% + .5px)),
+    linear-gradient(to bottom, transparent calc(33.333% - .5px), rgba(255, 255, 255, .9) calc(33.333% - .5px),
+      rgba(255, 255, 255, .9) calc(33.333% + .5px), transparent calc(33.333% + .5px),
+      transparent calc(66.666% - .5px), rgba(255, 255, 255, .9) calc(66.666% - .5px),
+      rgba(255, 255, 255, .9) calc(66.666% + .5px), transparent calc(66.666% + .5px));
+}
+
+.edytor-scena.is-ciagnie .edytor-siatka {
+  opacity: .8;
+}
+
+/* Awatar w kolku, ikona klanu w zaokraglonym kwadracie: przerywany obrys tego, co bedzie widac */
+.edytor-kadr.is-kolo::after,
+.edytor-kadr.is-zaokraglony::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1.5px dashed rgba(255, 255, 255, .8);
+}
+
+.edytor-kadr.is-kolo::after {
+  border-radius: 50%;
+}
+
+.edytor-kadr.is-zaokraglony::after {
+  border-radius: 26%;
+}
+
+/* Uchwyty: widoczne kropki/kreski, a pole do zlapania palcem duzo wieksze (::before) */
+.edytor-uchwyt {
+  position: absolute;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1.5px rgba(var(--bs-primary-rgb), .9), 0 1px 4px rgba(0, 0, 0, .4);
+  touch-action: none;
+}
+
+.edytor-uchwyt::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+}
+
+.edytor-uchwyt.is-nw { left: 0; top: 0; cursor: nwse-resize; }
+.edytor-uchwyt.is-ne { left: 100%; top: 0; cursor: nesw-resize; }
+.edytor-uchwyt.is-sw { left: 0; top: 100%; cursor: nesw-resize; }
+.edytor-uchwyt.is-se { left: 100%; top: 100%; cursor: nwse-resize; }
+
+.edytor-uchwyt.is-n,
+.edytor-uchwyt.is-s {
+  left: 50%;
+  width: 24px;
+  height: 8px;
+  margin: -4px 0 0 -12px;
+  border-radius: 4px;
+  cursor: ns-resize;
+}
+
+.edytor-uchwyt.is-n { top: 0; }
+.edytor-uchwyt.is-s { top: 100%; }
+
+.edytor-uchwyt.is-w,
+.edytor-uchwyt.is-e {
+  top: 50%;
+  width: 8px;
+  height: 24px;
+  margin: -12px 0 0 -4px;
+  border-radius: 4px;
+  cursor: ew-resize;
+}
+
+.edytor-uchwyt.is-w { left: 0; }
+.edytor-uchwyt.is-e { left: 100%; }
+
+/* Na bardzo malym kadrze uchwyty krawedzi zaslanialyby rogi - zostaja same rogi */
+.edytor-kadr.is-maly .edytor-uchwyt.is-n,
+.edytor-kadr.is-maly .edytor-uchwyt.is-s,
+.edytor-kadr.is-maly .edytor-uchwyt.is-w,
+.edytor-kadr.is-maly .edytor-uchwyt.is-e {
+  display: none;
+}
+
+.edytor-narzedzia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.edytor-obroty {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+}
+
+.edytor-obroty .btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+}
+
+.edytor-proporcje {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+}
+
+.edytor-proporcja {
+  min-width: 2.75rem;
+  min-height: 2.25rem;
+  padding: .25rem .65rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: .8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--mc-fast), color var(--mc-fast), border-color var(--mc-fast);
+}
+
+.edytor-proporcja:hover:not(:disabled) {
+  border-color: rgba(var(--bs-primary-rgb), .6);
+}
+
+.edytor-proporcja.is-wybrana {
+  border-color: transparent;
+  background: var(--mc-gradient);
+  color: #fff;
+}
+
+.edytor-proporcja:focus-visible {
+  outline: 3px solid rgba(var(--bs-primary-rgb), .5);
+  outline-offset: 2px;
+}
+
+.edytor-proporcja:disabled {
+  opacity: .5;
+}
+
+.edytor-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .25rem 1rem;
+}
+
+.edytor-wynik {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Telefon: okno na caly ekran, scena bierze cale wolne miejsce */
+@media (max-width: 575.98px) {
+  .edytor-modal .modal-content {
+    min-height: 100%;
+  }
+
+  .edytor-cialo {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .edytor-scena {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 14rem;
+  }
+
+  .edytor-stopka {
+    flex-wrap: nowrap;
+  }
+
+  .edytor-stopka .btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edytor-siatka,
+  .edytor-proporcja {
+    transition: none;
+  }
+}
+
+/* --- Miniatury z przyciskiem edycji (posty, galeria karty) -------------------------------- */
+
+.zdjecie-edytuj {
+  position: absolute;
+  left: .25rem;
+  bottom: .25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(15, 12, 30, .72);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .35);
+  transition: background-color var(--mc-fast);
+}
+
+.zdjecie-edytuj:hover,
+.zdjecie-edytuj:focus-visible {
+  background: var(--bs-primary);
+}
+
+.zdjecie-edytuj:focus-visible {
+  outline: 3px solid rgba(var(--bs-primary-rgb), .5);
+  outline-offset: 2px;
+}

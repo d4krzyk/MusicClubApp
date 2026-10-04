@@ -12,7 +12,7 @@ import PodpowiedzMiasta from '../PodpowiedzMiasta';
 import ReportButton from '../ReportButton';
 import Zasieg from '../Zasieg';
 import { ZASIEGI } from '../../hooks/useZasieg';
-import { IconCards, IconCross, IconHeart, IconUndo } from '../Icons';
+import { IconCards, IconCross, IconPlus, IconUndo } from '../Icons';
 import Dopasowanie from './Dopasowanie';
 import KartaPoznawaj from './KartaPoznawaj';
 import PrzesuwanaKarta from './PrzesuwanaKarta';
@@ -275,7 +275,7 @@ export default function Talia({ stan, onStan }) {
         <button type="button" className="pz-przycisk is-tak" onClick={() => decyduj('LIKE')}
           disabled={karty.length === 0 || Boolean(odlot) || zostalo <= 0}
           aria-label={t('discover.like')} title={t('discover.like')}>
-          <IconHeart size={28} />
+          <IconPlus size={30} />
         </button>
       </div>
       <p className="pz-skroty">{t('discover.keyboardHint')}</p>

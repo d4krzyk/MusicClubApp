@@ -496,7 +496,7 @@ await s.waitForTimeout(600);
 await zapis(s, 'czat-gif', { clip: { x: 886, y: 0, width: 394, height: 860 } });
 await ctx.close();
 
-/* 9b. Poznawaj: karty profilu, talia, szczegóły karty i „To jest to!” (telefon) oraz edytor karty */
+/* 9b. Poznawaj: karty profilu, talia, szczegóły karty i „Nowa znajomość!” (telefon) oraz edytor karty */
 console.log('Zakładam karty do Poznawaj...');
 const KARTY = {
   igor: {
@@ -563,6 +563,25 @@ await s.locator('#karta').scrollIntoViewIfNeeded();
 await s.waitForTimeout(600);
 await s.locator('#karta').screenshot({ path: path.join(OUT, 'karta-ustawienia.jpg'), type: 'jpeg', quality: 82 });
 console.log('  karta-ustawienia.jpg');
+await ctx.close();
+
+/* 9c. Edytor zdjęć: nowe zdjęcie do karty (telefon) - kadr 3:4, chwilę po obrocie */
+ctx = await kontekst(u.ola, { szer: 390, wys: 844, telefon: true });
+s = await otworz(ctx, '/settings#karta', '#karta .karta-zdjecie img');
+await s.locator('#karta input[type=file]').setInputFiles({
+  name: 'koncert.jpg', mimeType: 'image/jpeg', buffer: await rysuj(1200, 900, 210, 'Koncert na Jeżycach'),
+});
+await s.locator('.edytor-modal .edytor-kadr').waitFor();
+await s.getByRole('button', { name: 'Obróć w prawo' }).click();
+await s.getByRole('button', { name: 'Obróć w lewo' }).click();
+// kadr trochę mniejszy i przesunięty - widać przyciemnienie i uchwyty
+const kadr = await s.locator('.edytor-uchwyt.is-se').boundingBox();
+await s.mouse.move(kadr.x + 7, kadr.y + 7);
+await s.mouse.down();
+await s.mouse.move(kadr.x - 50, kadr.y - 70, { steps: 6 });
+await s.mouse.up();
+await s.waitForTimeout(500);
+await zapis(s, 'edytor-zdjec');
 await ctx.close();
 
 /* 10. Panel administratora */
