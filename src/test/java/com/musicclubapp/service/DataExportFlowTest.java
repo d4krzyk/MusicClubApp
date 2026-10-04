@@ -157,7 +157,10 @@ class DataExportFlowTest {
         Clan klan = clans.save(new Clan("Eksportowcy", "eksportowcy", "EX", "opis"));
         ClanMember czlonek = clanMembers.save(new ClanMember(klan, ala, ClanRole.FOUNDER, java.time.LocalDateTime.now()));
         czlonek.setChatMuted(true);
-        ClanMessage wiadomoscKlanu = clanMessages.save(new ClanMessage(klan, ala, "wiadomosc na czacie klanu"));
+        ClanMessage wiadomoscKlanu = new ClanMessage(klan, ala, "wiadomosc na czacie klanu");
+        wiadomoscKlanu.attachGif(new com.musicclubapp.entity.GifAttachment("https://cdn.example/klan.gif",
+            "https://cdn.example/klan-m.gif", 240, 240, "taniec"));
+        wiadomoscKlanu = clanMessages.save(wiadomoscKlanu);
         clanReactions.save(new ClanMessageReaction(wiadomoscKlanu, ala, ClanEmoji.FIRE, java.time.LocalDateTime.now()));
         ClanTrack utwor = clanTracks.save(new ClanTrack(klan, ala, com.musicclubapp.music.MusicProvider.SPOTIFY,
             com.musicclubapp.music.MusicKind.TRACK, "4uLU6hMCjMI75M1A2tKUQC", "Utwor z eksportu", null,
@@ -288,6 +291,7 @@ class DataExportFlowTest {
         assertThat(dane.at("/clan/membership/clan").asText()).isEqualTo("Eksportowcy");
         // Rozszerzenia klanu: wyciszenie, reakcje, propozycje i glosy w "utworze tygodnia"
         assertThat(dane.at("/clan/membership/chatNotificationsMuted").asBoolean()).isTrue();
+        assertThat(dane.at("/clan/messagesWritten/0/gif/url").asText()).isEqualTo("https://cdn.example/klan.gif");
         assertThat(dane.at("/clan/chatReactionsGiven/0/reaction").asText()).isEqualTo("FIRE");
         assertThat(dane.at("/clan/tracksProposed/0/title").asText()).isEqualTo("Utwor z eksportu");
         assertThat(dane.at("/clan/tracksProposed/0/link").asText()).isEqualTo("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");

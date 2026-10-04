@@ -250,6 +250,14 @@ class DiscoverFlowTest {
         // profil tylko dla znajomych: pozostalych ulubionych na karcie nie ma
         assertThat(ukryta.get("otherArtists")).isEmpty();
         assertThat(ukryta.get("tasteLevel").asInt()).isZero();
+
+        // "Nowa osoba" tylko przez dwa tygodnie od zalozenia konta
+        em.createQuery("UPDATE User u SET u.createdAt = :kiedy WHERE u.username = 'dc_skryty'")
+            .setParameter("kiedy", LocalDateTime.now().minusDays(15)).executeUpdate();
+        em.clear();
+        JsonNode po = tresc(zapytaj("dc_ja", "/api/discover/deck").andExpect(status().isOk()));
+        assertThat(po.get("cards").get(1).get("username").asText()).isEqualTo("dc_skryty");
+        assertThat(po.get("cards").get(1).get("newcomer").asBoolean()).isFalse();
     }
 
     @Test
@@ -341,19 +349,21 @@ class DiscoverFlowTest {
     void undo() throws Exception {
         poznan("dc_bob");
         poznan("dc_cyd");
+        // nowsze konto stoi w talii wyzej niz bob - cofniecie ma oddac boba, a nie "pierwsza karte z brzegu"
+        poznan("dc_dan");
         em.flush();
         decyzja("dc_ja", "dc_cyd", "LIKE");
         decyzja("dc_ja", "dc_bob", "PASS");
 
         JsonNode karta = tresc(wyslij("dc_ja", "/api/discover/undo", Map.of(), false).andExpect(status().isOk()));
         assertThat(karta.get("username").asText()).isEqualTo("dc_bob");
-        assertThat(talia("dc_ja")).containsExactly("dc_bob");
+        assertThat(talia("dc_ja")).containsExactly("dc_dan", "dc_bob");
 
         // teraz ostatnia jest "tak" dla cyda - tez da sie cofnac, ale tylko w ciagu 10 minut
         em.createQuery("UPDATE DiscoverSwipe s SET s.createdAt = :kiedy")
             .setParameter("kiedy", LocalDateTime.now().minusMinutes(11)).executeUpdate();
         wyslij("dc_ja", "/api/discover/undo", Map.of(), false).andExpect(status().isConflict());
-        assertThat(talia("dc_ja")).containsExactly("dc_bob");
+        assertThat(talia("dc_ja")).containsExactly("dc_dan", "dc_bob");
     }
 
     @Test

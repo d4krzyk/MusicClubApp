@@ -894,8 +894,13 @@ Przy karcie profilu, trybie Poznawaj i GIF-ach w czacie klanu (październik 2026
   zgadza się blok po bloku z tym, co buduje Hibernate (różnice tylko w zapisie starych CHECK-ów i kolejności kolumn);
 - `mvnw clean test` → 725 testów; nowe klasy (talia, karta, EXIF, eksport, GIF-y w klanie) przechodzą także na
   PostgreSQL 16 — talia to ręcznie pisany SQL z odległością miast, więc to było ważne;
-- testy z mutacjami: 45 mutantów (talia, decyzje, cofanie, limit, karta, EXIF, eksport, moderacja, GIF-y w klanie) —
-  przebieg w toku, wynik dopisany osobno;
+- testy z mutacjami: 45 mutantów (warunki talii, kolejność, zasięg, para i jej sprzątanie, blokada, limit, cofanie,
+  miasto i ulubieni na karcie, ustawienia, wygasanie, poziomy gustu, zakaz publikowania, limity i walidacja karty,
+  cudze zdjęcie, EXIF/obrót/ICC/PNG, eksport, dowód w zgłoszeniu, „wyczyść kartę”, karta na profilu tylko dla
+  znajomych, argumenty komunikatów, GIF-y w klanie) — po dopisaniu testów wszystkie zabite. Pierwszy przebieg zostawił
+  pięć żywych: niepotwierdzone konto w talii (osoba z testu odpadała już przez brak miasta), cofnięcie oddające
+  pierwszą kartę z brzegu, „Nowa osoba” zawsze włączona, GIF w eksporcie wiadomości klanu i jeden fałszywy — wzorzec
+  mutanta pasował też do starszej obsługi 404, więc zmienił nie to miejsce;
 - znalezione przy sprawdzaniu: obsługa błędów nie podawała argumentów do komunikatów („Klan jest pełny (najwyżej {0}
   osób)” było widać dosłownie od V9) — poprawione; `touch-action: pan-y` na warstwie nad przewijaną kartą nie działał
   (przeglądarka bierze go tylko do najbliższego przewijanego przodka) — przesunięcie palcem w bok nie docierało;
