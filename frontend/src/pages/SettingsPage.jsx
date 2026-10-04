@@ -23,6 +23,7 @@ import { UstawieniaPrywatnosci, Zablokowani } from '../components/UstawieniaPryw
 import UstawieniaPowiadomien from '../components/UstawieniaPowiadomien';
 import PobierzDane from '../components/PobierzDane';
 import UstawieniaLokalizacji from '../components/UstawieniaLokalizacji';
+import TwojaKarta from '../components/karta/TwojaKarta';
 
 /** Ustawienia wlasnego konta: zdjecie, dane profilu i zmiana hasla. */
 export default function SettingsPage() {
@@ -52,6 +53,7 @@ export default function SettingsPage() {
         <h1 className="h4 mb-3">{t('settings.title')}</h1>
 
         <AvatarForm />
+        <TwojaKarta />
 
         {/* key = login. */}
         <ProfileForm key={user.username} />

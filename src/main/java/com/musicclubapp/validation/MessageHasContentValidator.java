@@ -7,6 +7,14 @@ import jakarta.validation.ConstraintValidatorContext;
 public class MessageHasContentValidator
     implements ConstraintValidator<MessageHasContent, MessageToValidate> {
 
+    /** Komunikat z adnotacji - czat klanu ma wlasny (nie wspomina o nagraniu). */
+    private String message = "{validation.message.empty}";
+
+    @Override
+    public void initialize(MessageHasContent annotation) {
+        this.message = annotation.message();
+    }
+
     @Override
     public boolean isValid(MessageToValidate data, ConstraintValidatorContext context) {
         if (data == null) {
@@ -23,7 +31,7 @@ public class MessageHasContentValidator
         }
 
         context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate("{validation.message.empty}")
+        context.buildConstraintViolationWithTemplate(message)
             .addPropertyNode("content")
             .addConstraintViolation();
         return false;

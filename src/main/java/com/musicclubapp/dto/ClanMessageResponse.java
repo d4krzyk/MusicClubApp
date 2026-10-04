@@ -8,7 +8,10 @@ public record ClanMessageResponse(
     Long id,
     String senderUsername,
     String senderAvatarUrl,
+    /** Tresc; pusta, gdy wiadomosc to sam GIF. */
     String content,
+    /** GIF dolaczony do wiadomosci albo {@code null}. */
+    GifView gif,
     LocalDateTime createdAt,
     boolean mine,
     boolean canDelete,

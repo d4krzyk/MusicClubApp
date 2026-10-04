@@ -15,6 +15,7 @@ import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
+import com.musicclubapp.gif.GifService;
 import com.musicclubapp.mapper.ClanMapper;
 import com.musicclubapp.repository.ClanMemberRepository;
 import com.musicclubapp.repository.ClanMessageReactionRepository;
@@ -68,11 +69,13 @@ public class ClanChatService {
     private final ClanService clans;
     private final BlockService blocks;
     private final PushService push;
+    private final GifService gifs;
     private final Clock clock;
 
     public ClanChatService(ClanMessageRepository messages, ClanMessageReactionRepository reactions,
                            ClanMemberRepository members, UserRepository users, ClanService clans,
-                           BlockService blocks, PushService push, Clock clock) {
+                           BlockService blocks, PushService push, GifService gifs, Clock clock) {
+        this.gifs = gifs;
         this.messages = messages;
         this.reactions = reactions;
         this.members = members;
@@ -125,8 +128,12 @@ public class ClanChatService {
             .toList();
     }
 
+    /**
+     * Nowa wiadomosc: tekst, GIF (podpisany token z przegladarki GIF-ow) albo jedno i drugie. Sam GIF ma
+     * pusta tresc - jak komentarz.
+     */
     @Transactional
-    public ClanMessageResponse send(Long clanId, String username, String content, Long replyToId) {
+    public ClanMessageResponse send(Long clanId, String username, String content, Long replyToId, String gifToken) {
         Clan clan = clans.requireMember(username, clanId);
         User sender = user(username);
         if (sender.isBanned(BanKind.MESSAGING)) {
@@ -140,7 +147,14 @@ public class ClanChatService {
                 .filter(m -> m.getClan().getId().equals(clanId) && !ukryci.contains(m.getSender().getId()))
                 .orElseThrow(() -> new NoSuchElementFoundException("clan message", replyToId));
         }
-        ClanMessage message = messages.save(new ClanMessage(clan, sender, content.strip(), replyTo));
+        String tresc = content == null ? "" : content.strip();
+        ClanMessage nowa = new ClanMessage(clan, sender, tresc, replyTo);
+        // Zly albo przeterminowany token = 422 przy polu gif; bez klucza dostawcy = 503
+        nowa.attachGif(gifs.attach(gifToken));
+        if (tresc.isEmpty() && nowa.getGif() == null) {
+            throw OperationNotAllowedException.emptyClanMessage();
+        }
+        ClanMessage message = messages.save(nowa);
 
         // Kto pisze, ten widzial rozmowe - jego wlasne wiadomosci nie zostawiaja mu nieprzeczytanych
         members.findByUserId(sender.getId()).ifPresent(m -> m.markChatRead(message.getId()));
@@ -311,10 +325,11 @@ public class ClanChatService {
         if (cel != null && !ukryci.contains(cel.getSender().getId())) {
             String tresc = cel.getContent();
             podglad = new ClanReplyPreview(cel.getId(), cel.getSender().getUsername(),
-                tresc.length() > SKROT ? tresc.substring(0, SKROT - 1) + "…" : tresc);
+                tresc.length() > SKROT ? tresc.substring(0, SKROT - 1) + "…" : tresc, cel.getGif() != null);
         }
         return new ClanMessageResponse(m.getId(), m.getSender().getUsername(),
-            ClanMapper.avatarUrl(m.getSender()), m.getContent(), m.getCreatedAt(),
+            ClanMapper.avatarUrl(m.getSender()), m.getContent(),
+            m.getGif() == null ? null : m.getGif().toView(), m.getCreatedAt(),
             m.getSender().getId().equals(viewer.getId()), canDelete(m, viewer, clan),
             cel == null ? null : cel.getId(), podglad, reakcje);
     }

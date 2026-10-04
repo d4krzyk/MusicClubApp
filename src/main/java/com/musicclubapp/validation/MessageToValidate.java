@@ -5,7 +5,10 @@ public interface MessageToValidate {
 
     String content();
 
-    String musicUrl();
+    /** Czat klanu nie niesie nagran - tam zawsze pusto. */
+    default String musicUrl() {
+        return null;
+    }
 
     String gif();
 }

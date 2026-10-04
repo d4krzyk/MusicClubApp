@@ -38,5 +38,7 @@ public enum NotificationType {
     /** Ktos odpowiedzial na moj komentarz (albo odpowiedz). */
     COMMENT_REPLY,
     /** Ktos oznaczyl mnie w komentarzu (@login). */
-    COMMENT_MENTION
+    COMMENT_MENTION,
+    /** Wzajemne "tak" w trybie Poznawaj - jestesmy znajomymi. Dostaja je obie osoby. Prowadzi na profil. */
+    DISCOVER_MATCH
 }

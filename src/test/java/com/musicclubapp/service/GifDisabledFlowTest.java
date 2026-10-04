@@ -86,5 +86,13 @@ class GifDisabledFlowTest {
 
         wyslij("gw_bob", "/api/posts/" + post.getId() + "/comments", Map.of("content", "zwykly")).andExpect(status().isCreated());
         wyslij("gw_bob", "/api/messages/with/gw_ala", Map.of("content", "zwykla")).andExpect(status().isCreated());
+
+        // czat klanu tak samo: GIF - 503 i nic nie zapisane, sam tekst - dziala
+        long klan = json.readTree(wyslij("gw_ala", "/api/clans", Map.of("name", "Bez Gifow", "tag", "BG"))
+            .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8))
+            .get("id").asLong();
+        wyslij("gw_ala", "/api/clans/" + klan + "/chat", Map.of("content", "x", "gif", "jakis.token"))
+            .andExpect(status().isServiceUnavailable());
+        wyslij("gw_ala", "/api/clans/" + klan + "/chat", Map.of("content", "zwykla")).andExpect(status().isCreated());
     }
 }

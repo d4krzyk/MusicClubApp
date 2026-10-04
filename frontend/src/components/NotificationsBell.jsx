@@ -153,6 +153,8 @@ export default function NotificationsBell() {
         return t('notifications.friendRequest', { username: notification.actorUsername });
       case 'FRIEND_ACCEPTED':
         return t('notifications.friendAccepted', { username: notification.actorUsername });
+      case 'DISCOVER_MATCH':
+        return t('notifications.discoverMatch', { username: notification.actorUsername });
       /*
        * Powiadomienie o zgloszeniu NIE zdradza, kogo zgloszono - widac tylko, ze cos czeka w
        * panelu.

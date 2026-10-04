@@ -180,8 +180,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         logger.warn("Zablokowana operacja: " + ex.getMessage());
 
+        /*
+         * Z argumentami ("najwyzej {0} osob") - wczesniej ich tu nie bylo i uzytkownik widzial doslownie "{0}".
+         * Termin kary tez jest argumentem, ale komunikaty kar go nie wstawiaja (idzie osobnym polem nizej).
+         */
         ErrorResponse odpowiedz = new ErrorResponse(
-            HttpStatus.CONFLICT.value(), translate(ex.getMessageKey()));
+            HttpStatus.CONFLICT.value(), translate(ex.getMessageKey(), ex.getArguments()));
 
         /* Termin konca kary dokladamy jako OSOBNE POLE, a nie wklejamy w komunikat. */
         odpowiedz.setDeadline(ex.getDeadline());

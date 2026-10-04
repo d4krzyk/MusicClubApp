@@ -177,6 +177,14 @@ async function apiUser(login, { admin = false } = {}) {
       if (r.status() !== 201) throw new Error(`post: ${r.status()} ${await r.text()}`);
       return (await r.json()).id;
     },
+    /** Zdjęcie do galerii karty profilu (JPEG z płótna). */
+    async zdjecieKarty(bajty) {
+      const r = await ctx.post('/api/profile/photos', {
+        headers: { 'X-XSRF-TOKEN': await token() },
+        multipart: { file: { name: 'karta.jpg', mimeType: 'image/jpeg', buffer: bajty } },
+      });
+      if (r.status() !== 200) throw new Error(`zdjęcie karty: ${r.status()} ${await r.text()}`);
+    },
     async gif(fraza = 'taniec') {
       const strona = await this.get(`/gifs/search?q=${encodeURIComponent(fraza)}`);
       return strona.items[0].token;
@@ -486,6 +494,75 @@ await s.locator('.bubble .gif-obrazek').waitFor();
 await s.waitForLoadState('networkidle');
 await s.waitForTimeout(600);
 await zapis(s, 'czat-gif', { clip: { x: 886, y: 0, width: 394, height: 860 } });
+await ctx.close();
+
+/* 9b. Poznawaj: karty profilu, talia, szczegóły karty i „To jest to!” (telefon) oraz edytor karty */
+console.log('Zakładam karty do Poznawaj...');
+const KARTY = {
+  igor: {
+    bio: 'Gram na basie w garażowym składzie z Jeżyc. Po pracy — winyle i długie spacery z dobrą płytą w słuchawkach.',
+    lookingFor: ['JAMMING', 'CONCERT_BUDDIES'],
+    prompts: [{ prompt: 'FIRST_CONCERT', answer: 'Nocne Pociągi w Zielonym Gramofonie, chyba z 2012' },
+      { prompt: 'DESERT_ISLAND', answer: '„Mezzanine” i drugi egzemplarz na zapas' }],
+    zdjecia: [[300, 'Basówka po próbie'], [200, 'Sobota na giełdzie płyt'], [30, 'Zachód nad Wartą']],
+  },
+  kuba: {
+    bio: 'Elektronika, trochę funku, dużo festiwali. Szukam ekipy, która nie wychodzi przed bisem.',
+    lookingFor: ['FESTIVALS', 'PARTIES'],
+    prompts: [{ prompt: 'PARTY_STARTER', answer: 'Daft Punk — „One More Time”, zawsze działa' }],
+    zdjecia: [[170, 'Pod sceną'], [250, 'Namiot nr 3']],
+  },
+  zosia: {
+    bio: 'Śpiewam w chórze, słucham wszystkiego od jazzu po synth-pop.',
+    lookingFor: ['MUSIC_TALK', 'NEW_MUSIC'],
+    prompts: [{ prompt: 'KARAOKE', answer: 'Coś, czego nikt nie zna, a wszyscy po minucie nucą' }],
+    zdjecia: [[330, 'Próba chóru']],
+  },
+};
+for (const [login, k] of Object.entries(KARTY)) {
+  await u[login].put('/profile/card', { bio: k.bio, lookingFor: k.lookingFor, prompts: k.prompts });
+  // Bez podpisu na obrazku - na karcie dół zdjęcia przykrywa nakładka z imieniem
+  for (const [odcien] of k.zdjecia) {
+    await u[login].zdjecieKarty(await rysuj(600, 800, odcien, ''));
+  }
+}
+await u.ola.put('/profile/card', {
+  bio: 'Kolekcjonuję winyle, słucham trip-hopu i jazzu. Szukam ludzi na wspólne koncerty w Poznaniu.',
+  lookingFor: ['CONCERT_BUDDIES', 'RECORD_SWAPS'],
+  prompts: [{ prompt: 'LIFE_CHANGING_ALBUM', answer: '„Mezzanine” — pierwszy raz w nocnym autobusie' },
+    { prompt: 'ON_REPEAT', answer: 'Khruangbin, cała dyskografia po kolei' }],
+});
+await u.ola.zdjecieKarty(await rysuj(600, 800, 285, ''));
+await u.ola.zdjecieKarty(await rysuj(600, 800, 20, ''));
+for (const login of ['ola', 'igor', 'kuba', 'zosia', 'tomek', 'ewa']) {
+  await u[login].put('/discover/settings', { enabled: true, radiusKm: 100 });
+}
+// Kuba powiedział „tak” pierwszy (tajne) - kiedy Ola przesunie go w prawo, będzie para
+await u.kuba.post('/discover/swipes', { username: 'ola', decision: 'LIKE' });
+
+ctx = await kontekst(u.ola, { szer: 390, wys: 844, telefon: true });
+s = await otworz(ctx, '/znajomi?tryb=poznawaj', '.pz-warstwa.is-wierzch .pz-login');
+await zapis(s, 'poznawaj-telefon');
+await s.locator('.pz-warstwa.is-wierzch .pz-karta').evaluate((el) => el.scrollTo(0, el.querySelector('.pz-okladka').offsetHeight - 70));
+await s.waitForTimeout(600);
+await zapis(s, 'poznawaj-szczegoly');
+await s.locator('.pz-warstwa.is-wierzch .pz-karta').evaluate((el) => el.scrollTo(0, 0));
+await s.keyboard.press('ArrowLeft');
+await s.waitForFunction(() => document.querySelector('.pz-warstwa.is-wierzch .pz-login')?.textContent === 'kuba');
+await s.getByRole('button', { name: 'Tak, chcę poznać' }).click();
+await s.locator('.pz-dopasowanie').waitFor();
+await s.waitForTimeout(900);
+await zapis(s, 'poznawaj-para');
+await ctx.close();
+
+ctx = await kontekst(u.ola, { wys: 1100 });
+s = await otworz(ctx, '/settings#karta', '#karta .karta-zdjecie img');
+// przyklejony pasek u góry zasłaniałby górę karty na zrzucie elementu
+await s.addStyleTag({ content: '.top-bar { position: static !important; }' });
+await s.locator('#karta').scrollIntoViewIfNeeded();
+await s.waitForTimeout(600);
+await s.locator('#karta').screenshot({ path: path.join(OUT, 'karta-ustawienia.jpg'), type: 'jpeg', quality: 82 });
+console.log('  karta-ustawienia.jpg');
 await ctx.close();
 
 /* 10. Panel administratora */

@@ -115,6 +115,11 @@ public class Notification {
         return new Notification(recipient, actor, NotificationType.FRIEND_REQUEST);
     }
 
+    /** Wzajemne "tak" w trybie Poznawaj - znajomosc z {@code actor}. */
+    public static Notification discoverMatch(User recipient, User actor) {
+        return new Notification(recipient, actor, NotificationType.DISCOVER_MATCH);
+    }
+
     /** Ktos przyjal zaproszenie odbiorcy (albo znajomosc powstala od razu). */
     public static Notification friendAccepted(User recipient, User actor) {
         return new Notification(recipient, actor, NotificationType.FRIEND_ACCEPTED);

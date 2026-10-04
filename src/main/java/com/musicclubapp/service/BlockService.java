@@ -6,6 +6,7 @@ import com.musicclubapp.entity.UserBlock;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
+import com.musicclubapp.repository.DiscoverSwipeRepository;
 import com.musicclubapp.repository.FriendRequestRepository;
 import com.musicclubapp.repository.UserBlockRepository;
 import com.musicclubapp.repository.UserRepository;
@@ -40,9 +41,11 @@ public class BlockService {
     private final UserRepository users;
     private final FriendRequestRepository requests;
     private final NotificationService notifications;
+    private final DiscoverSwipeRepository swipes;
 
     public BlockService(UserBlockRepository blocks, UserRepository users, FriendRequestRepository requests,
-                        NotificationService notifications) {
+                        NotificationService notifications, DiscoverSwipeRepository swipes) {
+        this.swipes = swipes;
         this.blocks = blocks;
         this.users = users;
         this.requests = requests;
@@ -66,6 +69,8 @@ public class BlockService {
         requests.find(username, targetUsername).ifPresent(requests::delete);
         requests.find(targetUsername, username).ifPresent(requests::delete);
         notifications.deleteBetween(ja.getId(), on.getId());
+        // Decyzje z trybu Poznawaj tez - po odblokowaniu dawne "tak" nie zamieni sie samo w znajomosc
+        swipes.deleteBetween(ja.getId(), on.getId());
         log.info("{} zablokowal(a) {}", username, targetUsername);
     }
 

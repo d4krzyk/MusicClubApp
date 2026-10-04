@@ -25,6 +25,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
      */
     Optional<User> findByUsername(String username);
 
+    /**
+     * Konto z blokada wiersza do konca transakcji. Dwie osoby mowiace sobie "tak" w tej samej chwili
+     * musza sie ustawic w kolejce - inaczej obie nie zobacza decyzji drugiej i znajomosc nie powstanie.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> lockById(@Param("id") Long id);
+
     /** Konta o podanych loginach (dokladnych) - do oznaczen w komentarzach. */
     List<User> findByUsernameIn(java.util.Collection<String> usernames);
 

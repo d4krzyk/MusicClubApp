@@ -45,6 +45,8 @@ public class AccountDeletionService {
     private final PushService push;
     private final ClanService clans;
     private final CommentRepository comments;
+    private final DiscoverService discover;
+    private final ProfileCardService cards;
 
     public AccountDeletionService(UserRepository userRepository,
                                   PasswordEncoder passwordEncoder,
@@ -62,7 +64,11 @@ public class AccountDeletionService {
                                   UserService users,
                                   PushService push,
                                   ClanService clans,
-                                  CommentRepository comments) {
+                                  CommentRepository comments,
+                                  DiscoverService discover,
+                                  ProfileCardService cards) {
+        this.discover = discover;
+        this.cards = cards;
         this.comments = comments;
         this.clans = clans;
         this.push = push;
@@ -197,6 +203,12 @@ public class AccountDeletionService {
 
         // 14. Zdjecie profilowe z dysku
         users.deleteAvatarOf(target);
+
+        // 15. Tryb Poznawaj: decyzje tej osoby i decyzje innych o niej ("tak" do kogos, kogo juz nie ma)
+        discover.deleteAllOf(target);
+
+        // 16. Karta profilu: zdjecia galerii z dysku, pytania muzyczne
+        cards.clear(target);
 
         userRepository.delete(target);
     }

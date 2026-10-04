@@ -1,6 +1,7 @@
 package com.musicclubapp.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -36,8 +37,13 @@ public class ClanMessage {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    /** Tresc; pusty napis, gdy wiadomosc to sam GIF (kolumna zostaje NOT NULL - jak w komentarzach). */
     @Column(nullable = false, length = MAX_CONTENT_LENGTH)
     private String content;
+
+    /** GIF z przegladarki GIF-ow - albo {@code null}. */
+    @Embedded
+    private GifAttachment gif;
 
     /**
      * Wiadomosc, na ktora ta odpowiada, albo null. Skasowanie tamtej wiadomosci nie usuwa tej -
@@ -95,5 +101,13 @@ public class ClanMessage {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public GifAttachment getGif() {
+        return gif;
+    }
+
+    public void attachGif(GifAttachment gif) {
+        this.gif = gif;
     }
 }

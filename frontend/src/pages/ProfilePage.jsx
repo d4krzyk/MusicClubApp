@@ -22,6 +22,7 @@ import ReportButton from '../components/ReportButton';
 import FriendsStrip from '../components/FriendsStrip';
 import TopMusic from '../components/TopMusic';
 import Favorites from '../components/Favorites';
+import KartaNaProfilu from '../components/karta/KartaNaProfilu';
 import Playlists from '../components/Playlists';
 import FriendshipButton from '../components/FriendshipButton';
 import BlockButton from '../components/BlockButton';
@@ -291,6 +292,9 @@ export default function ProfilePage() {
 
         {pelny && (
         <>
+        {/* Karta: zdjecia, o mnie, szukam, pytania muzyczne - to, co ta osoba sama o sobie mowi */}
+        <KartaNaProfilu karta={profile.card} wlasna={profile.self} login={profile.username} />
+
         {/* "Co Was laczy" stoi NAD ulubionymi i to jest celowe. */}
         <CommonGround username={profile.username} />
 

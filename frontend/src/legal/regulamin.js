@@ -48,6 +48,7 @@ const pl = {
             'podszywają się pod inną osobę, organizację lub obsługę Serwisu;',
             'są spamem, reklamą albo masowymi, niechcianymi zaproszeniami i wiadomościami;',
             'naruszają cudze prawa autorskie lub prawa do wizerunku — wgrywaj tylko zdjęcia i teksty, do których masz prawa;',
+            'na karcie profilu: przedstawiają inne osoby bez ich zgody, mają charakter seksualny albo udają kogoś, kim nie jesteś;',
             'zakłócają działanie Serwisu: próby obejścia zabezpieczeń, automatyczne pobieranie danych, wgrywanie złośliwego kodu.',
           ],
         },
@@ -59,6 +60,7 @@ const pl = {
       akapity: [
         'Prawa do zdjęć, postów, wiadomości i opisów, które publikujesz, pozostają przy Tobie. Odpowiadasz za ich treść.',
         'Udzielasz Usługodawcy nieodpłatnej, niewyłącznej licencji na przechowywanie i wyświetlanie tych treści w Serwisie — wyłącznie w zakresie potrzebnym do świadczenia usługi i tylko osobom, którym je udostępniasz zgodnie z ustawieniami widoczności. Licencja wygasa wraz z usunięciem treści lub konta.',
+        'Na karcie profilu możesz pokazać do 6 zdjęć, kilka słów o sobie, to, czego szukasz, i odpowiedzi na muzyczne pytania. W trybie Poznawaj (włączasz go w zakładce Znajomi, a wyłączasz w każdej chwili w Ustawieniach) Twoja karta trafia do osób, które też go włączyły — znajomymi zostajecie tylko wtedy, gdy obie osoby powiedzą „tak”. Dzienny limit decyzji chroni przed masowym przeglądaniem kart. Administrator może wyczyścić kartę naruszającą Regulamin i wyłączyć tryb Poznawaj.',
         'Post możesz ustawić jako publiczny albo tylko dla znajomych, a profil ukryć przed osobami spoza znajomych. Pamiętaj jednak, że każda osoba, która widzi treść, może zrobić jej zrzut ekranu — Serwis tego nie uniemożliwi.',
         'Pod postem możesz pisać komentarze, odpowiadać na cudze komentarze i oznaczać osoby znakiem @ przed loginem. Komentarz widzą te same osoby, które widzą post. Skasować go może jego autor, autor posta, administrator Serwisu, a pod postem klanu także zarząd klanu; razem z komentarzem znikają odpowiedzi pod nim. Oznaczanie osób nie służy do nękania ani rozsyłania spamu. Do komentarza i wiadomości możesz dołączyć GIF z wbudowanej przeglądarki GIF-ów. GIF-y pochodzą od zewnętrznego dostawcy i nie podlegają naszej redakcji — jeśli któryś narusza Regulamin, zgłoś komentarz lub rozmowę przyciskiem „Zgłoś”. Dostępność GIF-ów zależy od dostawcy.',
       ],
@@ -175,6 +177,7 @@ const en = {
             'impersonates another person, organisation or the Service’s staff;',
             'is spam, advertising or mass unwanted invitations and messages;',
             'infringes copyright or image rights — upload only photos and text you have the rights to;',
+            'on a profile card: shows other people without their consent, is sexual in nature or pretends you are someone you are not;',
             'disrupts the Service: bypassing security, automated data scraping, uploading malicious code.',
           ],
         },
@@ -186,6 +189,7 @@ const en = {
       akapity: [
         'You keep the rights to the photos, posts, messages and descriptions you publish. You are responsible for them.',
         'You grant the Provider a free, non-exclusive licence to store and display this content in the Service — only as far as needed to provide it, and only to the people you share it with under your visibility settings. The licence ends when you delete the content or the account.',
+        'On your profile card you can show up to 6 photos, a few words about yourself, what you are looking for and answers to music questions. In Discover (you turn it on in the Friends tab and can turn it off at any time in Settings) your card goes to people who also turned it on — you become friends only when both of you say “yes”. A daily limit on decisions protects against mass browsing of cards. The administrator may clear a card that breaches the Terms and turn Discover off.',
         'You can make a post public or friends-only, and hide your profile from non-friends. Remember that anyone who can see something can take a screenshot — the Service can’t prevent that.',
         'Under a post you can write comments, reply to other people’s comments and mention people with @ before their username. A comment is seen by the same people who see the post. It can be deleted by its author, the post’s author, the Service administrator and, under a clan post, the clan’s leaders; replies under a comment disappear with it. Mentions are not for harassment or spam. You can attach a GIF from the built-in GIF browser to a comment or message. GIFs come from an external provider and are not edited by us — if one breaks the Terms, report the comment or conversation with the “Report” button. GIF availability depends on the provider.',
       ],

@@ -59,6 +59,7 @@ public class ReportService {
     private final CommentRepository commentRepository;
     private final BlockService blocks;
     private final ClanMemberRepository clanMembers;
+    private final ProfileCardService cards;
 
     public ReportService(ReportRepository reportRepository,
                          UserRepository userRepository,
@@ -68,7 +69,9 @@ public class ReportService {
                          ClanRepository clanRepository,
                          ClanMemberRepository clanMembers,
                          CommentRepository commentRepository,
-                         BlockService blocks) {
+                         BlockService blocks,
+                         ProfileCardService cards) {
+        this.cards = cards;
         this.blocks = blocks;
         this.commentRepository = commentRepository;
         this.clanRepository = clanRepository;
@@ -180,10 +183,30 @@ public class ReportService {
             case POST -> attachPost(report, reporter, reported, request.postId());
             case COMMENT -> attachComment(report, reporter, reported, request.commentId());
             case CONVERSATION -> attachConversation(report, reporter, reported);
-            case PROFILE -> { /* dowodem jest sam profil */ }
+            case PROFILE -> attachProfileCard(report, reported);
             // Klan zglasza sie osobna sciezka (createForClan) - tu nie wiadomo, ktorego dotyczy
             case CLAN -> throw OperationNotAllowedException.reportClanEndpoint();
         }
+    }
+
+    /**
+     * Migawka karty profilu: opis, "szukam", pytania i adresy zdjec galerii - ktos mogl je zmienic albo
+     * usunac, zanim administrator otworzy zgloszenie. Sam login i awatar i tak widac przy zgloszeniu.
+     */
+    private void attachProfileCard(Report report, User reported) {
+        var karta = cards.of(reported);
+        String kto = reported.getUsername();
+        LocalDateTime teraz = LocalDateTime.now();
+        if (karta.bio() != null && !karta.bio().isBlank()) {
+            report.addEvidence(new ReportEvidence(kto, "[O mnie] " + karta.bio(), teraz));
+        }
+        if (!karta.lookingFor().isEmpty()) {
+            report.addEvidence(new ReportEvidence(kto, "[Szukam] " + karta.lookingFor(), teraz));
+        }
+        karta.prompts().forEach(p -> report.addEvidence(
+            new ReportEvidence(kto, "[" + p.prompt() + "] " + p.answer(), teraz)));
+        karta.photos().forEach(p -> report.addEvidence(
+            new ReportEvidence(kto, "[Zdjecie] " + p.url(), teraz)));
     }
 
     private void attachPost(Report report, User reporter, User reported, Long postId) {

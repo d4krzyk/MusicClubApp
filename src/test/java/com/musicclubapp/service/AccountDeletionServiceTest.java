@@ -54,6 +54,8 @@ class AccountDeletionServiceTest {
     @Mock private PushService push;
     @Mock private ClanService clans;
     @Mock private CommentRepository comments;
+    @Mock private DiscoverService discover;
+    @Mock private ProfileCardService cards;
 
     @InjectMocks private AccountDeletionService deletion;
 
@@ -83,7 +85,7 @@ class AccountDeletionServiceTest {
         deletion.erase(target);
 
         InOrder kolejnosc = inOrder(notifications, comments, reactions, reports, clans, posts, friends,
-            messages, network, playlists, eventParticipations, emailVerification, blocks, push, users, userRepository);
+            messages, network, playlists, eventParticipations, emailVerification, blocks, push, users, userRepository, discover, cards);
 
         kolejnosc.verify(notifications).deleteAllOf(target.getId());
         kolejnosc.verify(comments).deleteByAuthorId(target.getId());
@@ -100,6 +102,8 @@ class AccountDeletionServiceTest {
         kolejnosc.verify(blocks).deleteAllOf(target.getId());
         kolejnosc.verify(push).deleteAllOf(target.getId());
         kolejnosc.verify(users).deleteAvatarOf(target);
+        kolejnosc.verify(discover).deleteAllOf(target);
+        kolejnosc.verify(cards).clear(target);
         kolejnosc.verify(userRepository).delete(target);
     }
 

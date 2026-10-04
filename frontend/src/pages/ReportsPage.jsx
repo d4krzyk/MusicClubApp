@@ -167,6 +167,8 @@ function ReportCard({ report, language, t, me, onResolved }) {
   const actions = ['NONE',
     ...(report.postId && !report.commentId ? ['DELETE_POST'] : []),
     ...(report.commentId ? ['DELETE_COMMENT'] : []),
+    /* Karta profilu (zdjecia, opis, pytania) - przy zgloszeniu samego profilu */
+    ...(report.context === 'PROFILE' ? ['CLEAR_CARD'] : []),
     ...(aboutMe ? [] : ['BAN_POSTING', 'BAN_MESSAGING', 'DELETE_ACCOUNT'])];
 
   /** Dowody pobieramy dopiero przy rozwinieciu karty. */

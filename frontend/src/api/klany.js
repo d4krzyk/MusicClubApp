@@ -96,8 +96,9 @@ export async function czat(id, { po, przed, limit } = {}) {
   return data;
 }
 
-export async function napisz(id, tresc, odpowiedzNa = null) {
-  const { data } = await client.post(`/clans/${id}/chat`, { content: tresc, replyTo: odpowiedzNa });
+/** Tekst, GIF (token z przegladarki GIF-ow) albo jedno i drugie. */
+export async function napisz(id, tresc, odpowiedzNa = null, gif = null) {
+  const { data } = await client.post(`/clans/${id}/chat`, { content: tresc, replyTo: odpowiedzNa, gif });
   return data;
 }
 

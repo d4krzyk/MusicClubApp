@@ -12,7 +12,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.UUID;
 
@@ -62,8 +61,8 @@ public class FileStorageService {
         String name = UUID.randomUUID().toString().replace("-", "") + extension;
 
         try {
-            Files.copy(file.getInputStream(), catalog.resolve(name),
-                StandardCopyOption.REPLACE_EXISTING);
+            // Bez EXIF-u z aparatu (wspolrzedne GPS, model telefonu) - patrz ImageMetadata
+            Files.write(catalog.resolve(name), ImageMetadata.strip(file.getBytes()));
         } catch (IOException e) {
             throw new UncheckedIOException("Nie udalo sie zapisac pliku " + name, e);
         }

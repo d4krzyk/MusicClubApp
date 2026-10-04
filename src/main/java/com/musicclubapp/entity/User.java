@@ -1,6 +1,7 @@
 package com.musicclubapp.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -14,6 +15,7 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Objects;
@@ -168,6 +170,38 @@ public class User {
     @org.hibernate.annotations.ColumnDefault("true")
     @Column(name = "show_city", nullable = false)
     private boolean showCity = true;
+
+    /*
+     * Karta profilu: to, co ktos o sobie mowi poza muzyka z ulubionych. Widac ja na profilu (przy pelnym
+     * widoku) i na karcie w trybie Poznawaj. Zdjecia i pytania sa w osobnych tabelach (ProfilePhoto,
+     * ProfilePromptAnswer).
+     */
+
+    public static final int MAX_BIO = 300;
+
+    /** "O mnie" - zwykly tekst. */
+    @Column(name = "bio", length = MAX_BIO)
+    private String bio;
+
+    /** "Szukam" - do trzech pozycji. */
+    @Convert(converter = LookingForConverter.class)
+    @Column(name = "looking_for", length = 200)
+    private Set<LookingFor> lookingFor = EnumSet.noneOf(LookingFor.class);
+
+    /*
+     * Tryb Poznawaj. Wlaczony = moja karta trafia do talii innych osob z wlaczonym trybem (i tylko ich), a ja
+     * moge przegladac ich karty. Domyslnie wylaczony: na karcie sa zdjecia i opis dla obcych, wiec to swiadoma
+     * decyzja, a nie cos, co konto ma od urodzenia.
+     */
+
+    @org.hibernate.annotations.ColumnDefault("false")
+    @Column(name = "discover_enabled", nullable = false)
+    private boolean discoverEnabled = false;
+
+    /** Zasieg talii w km od mojego miasta; 0 = caly kraj. Bez miasta w profilu nic nie robi. */
+    @org.hibernate.annotations.ColumnDefault("100")
+    @Column(name = "discover_radius_km", nullable = false)
+    private int discoverRadiusKm = 100;
 
     private static final java.security.SecureRandom LOSOWANIE = new java.security.SecureRandom();
 
@@ -438,6 +472,37 @@ public class User {
         this.cityKey = cityKey;
         this.cityLatitude = latitude;
         this.cityLongitude = longitude;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    /** Zawsze zbior (pusty, gdy nic nie wybrano) - kolumna NULL tez daje pusty. */
+    public Set<LookingFor> getLookingFor() {
+        return lookingFor == null ? EnumSet.noneOf(LookingFor.class) : lookingFor;
+    }
+
+    public void setLookingFor(Set<LookingFor> lookingFor) {
+        this.lookingFor = lookingFor == null || lookingFor.isEmpty()
+            ? EnumSet.noneOf(LookingFor.class) : EnumSet.copyOf(lookingFor);
+    }
+
+    public boolean isDiscoverEnabled() {
+        return discoverEnabled;
+    }
+
+    public int getDiscoverRadiusKm() {
+        return discoverRadiusKm;
+    }
+
+    public void setDiscover(boolean enabled, int radiusKm) {
+        this.discoverEnabled = enabled;
+        this.discoverRadiusKm = radiusKm;
     }
 
     public String getEventsCountry() {

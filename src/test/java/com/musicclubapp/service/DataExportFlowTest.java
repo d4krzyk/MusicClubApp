@@ -114,6 +114,10 @@ class DataExportFlowTest {
     private User bob;
     private User cyd;
     private Path plik;
+    private Path galeria;
+    @Autowired private com.musicclubapp.repository.ProfilePhotoRepository profilePhotos;
+    @Autowired private com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts;
+    @Autowired private com.musicclubapp.repository.DiscoverSwipeRepository swipes;
 
     @Autowired private com.musicclubapp.repository.CommentRepository comments;
     @Autowired private com.musicclubapp.repository.CommentMentionRepository commentMentions;
@@ -175,6 +179,22 @@ class DataExportFlowTest {
         klanowy.setClan(klan);
         posts.save(klanowy);
 
+        // Karta profilu i tryb Poznawaj: moja decyzja jest w archiwum, cudze "tak" o mnie - nie (jest tajne)
+        // wczesniejsze zapytania zbiorcze czyszcza kontekst - alicje bierzemy na nowo, zeby zmiany sie zapisaly
+        ala = users.findById(ala.getId()).orElseThrow();
+        ala.setBio("opis z karty do eksportu");
+        ala.setLookingFor(java.util.EnumSet.of(com.musicclubapp.entity.LookingFor.JAMMING));
+        ala.setDiscover(true, 50);
+        galeria = fileStorage.getDirectory().resolve("ex-test-galeria.png");
+        Files.write(galeria, OBRAZ);
+        profilePhotos.save(new com.musicclubapp.entity.ProfilePhoto(ala, "ex-test-galeria.png", 0));
+        profilePrompts.save(new com.musicclubapp.entity.ProfilePromptAnswer(ala,
+            com.musicclubapp.entity.ProfilePrompt.KARAOKE, "odpowiedz z karty", 0));
+        swipes.save(new com.musicclubapp.entity.DiscoverSwipe(ala, cyd, com.musicclubapp.entity.SwipeDecision.LIKE,
+            java.time.LocalDateTime.now()));
+        swipes.save(new com.musicclubapp.entity.DiscoverSwipe(bob, ala, com.musicclubapp.entity.SwipeDecision.LIKE,
+            java.time.LocalDateTime.now()));
+
         reports.save(new Report(bob, ala, ReportReason.values()[0], ReportContext.PROFILE, "zgloszenie od boba na ale"));
         reports.save(new Report(ala, cyd, ReportReason.values()[0], ReportContext.PROFILE, "moje zgloszenie na cyda"));
         em.flush();
@@ -184,6 +204,9 @@ class DataExportFlowTest {
     @AfterEach
     void tearDown() throws Exception {
         Files.deleteIfExists(plik);
+        if (galeria != null) {
+            Files.deleteIfExists(galeria);
+        }
     }
 
     private org.springframework.test.web.servlet.ResultActions eksport(String login, String haslo) throws Exception {
@@ -282,6 +305,19 @@ class DataExportFlowTest {
         String sciezka = dane.at("/posts/0/images/0").asText();
         assertThat(sciezka).startsWith("zdjecia/post-").endsWith(".png");
         assertThat(wpisy.get(sciezka)).isEqualTo(OBRAZ);
+
+        // Karta profilu (z plikiem z galerii) i tryb Poznawaj - tylko MOJE decyzje
+        assertThat(dane.at("/profileCard/bio").asText()).isEqualTo("opis z karty do eksportu");
+        assertThat(dane.at("/profileCard/lookingFor/0").asText()).isEqualTo("JAMMING");
+        assertThat(dane.at("/profileCard/prompts/0/answer").asText()).isEqualTo("odpowiedz z karty");
+        String zGalerii = dane.at("/profileCard/photos/0").asText();
+        assertThat(zGalerii).isEqualTo("zdjecia/galeria-1.png");
+        assertThat(wpisy.get(zGalerii)).isEqualTo(OBRAZ);
+        assertThat(dane.at("/discover/enabled").asBoolean()).isTrue();
+        assertThat(dane.at("/discover/radiusKm").asInt()).isEqualTo(50);
+        assertThat(dane.at("/discover/decisions").size()).isEqualTo(1);
+        assertThat(dane.at("/discover/decisions/0/username").asText()).isEqualTo("ex_cyd");
+        assertThat(dane.at("/discover/decisions/0/decision").asText()).isEqualTo("LIKE");
 
         // Czego nie ma: cudze posty, skasowana rozmowa, haslo, cudze adresy e-mail, kto zglosil
         assertThat(tekst).doesNotContain("post boba - nie mój", "sekret z rozmowy", "ex_bob@example.com",

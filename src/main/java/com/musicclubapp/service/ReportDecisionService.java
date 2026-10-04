@@ -25,12 +25,15 @@ public class ReportDecisionService {
     private final UserModerationService moderation;
     private final PostService posts;
     private final CommentService comments;
+    private final ProfileCardService cards;
 
     public ReportDecisionService(ReportRepository reportRepository,
                                  ReportService reports,
                                  UserModerationService moderation,
                                  PostService posts,
-                                 CommentService comments) {
+                                 CommentService comments,
+                                 ProfileCardService cards) {
+        this.cards = cards;
         this.comments = comments;
         this.reportRepository = reportRepository;
         this.reports = reports;
@@ -80,6 +83,13 @@ public class ReportDecisionService {
                 Long commentId = report.getComment().getId();
                 comments.delete(adminUsername, commentId);
                 log.info("Administrator {} skasowal komentarz {} przy zgloszeniu {}", adminUsername, commentId, id);
+            }
+            case CLEAR_CARD -> {
+                // Karta znika, a tryb Poznawaj sie wylacza - nowa karte osoba wystawia sama, swiadomie
+                cards.clear(target);
+                target.setDiscover(false, target.getDiscoverRadiusKm());
+                log.info("Administrator {} wyczyscil karte profilu {} przy zgloszeniu {}",
+                    adminUsername, target.getUsername(), id);
             }
             case BAN_POSTING, BAN_MESSAGING -> moderation.setBan(adminUsername, target.getId(),
                 action.banKind(), new BanRequest(request.hours(), request.forever()));

@@ -20,13 +20,16 @@ public class PublicProfileService {
     private final PresenceService presence;
     private final PrivacyService privacy;
     private final ClanService clans;
+    private final ProfileCardService cards;
 
     public PublicProfileService(UserRepository userRepository,
                                 PostRepository postRepository,
                                 FriendService friendService,
                                 PresenceService presence,
                                 PrivacyService privacy,
-                                ClanService clans) {
+                                ClanService clans,
+                                ProfileCardService cards) {
+        this.cards = cards;
         this.clans = clans;
         this.privacy = privacy;
         this.userRepository = userRepository;
@@ -61,7 +64,9 @@ public class PublicProfileService {
             widok == PrivacyService.ProfileView.RESTRICTED,
             viewer != null && relacja == FriendshipStatus.NONE && privacy.canInvite(viewer, user),
             clans.badgeOf(user.getId()),
-            pelny && (user.isShowCity() || user.getUsername().equals(viewerUsername)) ? user.getCity() : null);
+            pelny && (user.isShowCity() || user.getUsername().equals(viewerUsername)) ? user.getCity() : null,
+            // Karta jak ulubieni: tylko przy pelnym widoku (profil "tylko znajomi" jej obcym nie pokazuje)
+            pelny ? cards.of(user) : null);
     }
 
     /**

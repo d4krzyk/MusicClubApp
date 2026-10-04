@@ -415,3 +415,71 @@ export function IconSmile(props) {
     </Svg>
   );
 }
+
+/** Serce - "tak" w trybie Poznawaj. */
+export function IconHeart(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314" />
+    </Svg>
+  );
+}
+
+/** Strzalka w kolo - cofnij ostatnia decyzje. */
+export function IconUndo(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z" />
+      <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466" />
+    </Svg>
+  );
+}
+
+/** "i" w kole - wiecej o osobie na karcie. */
+export function IconInfo(props) {
+  return (
+    <Svg {...props}>
+      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+      <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0" />
+    </Svg>
+  );
+}
+
+/** Lista - zwykly widok znajomych. */
+export function IconList(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2" />
+    </Svg>
+  );
+}
+
+/** Dwie karty jedna na drugiej - tryb Poznawaj. */
+export function IconCards(props) {
+  return (
+    <Svg {...props}>
+      <rect x="2.2" y="2.4" width="7.6" height="10.6" rx="1.4" transform="rotate(-12 6 7.7)" fill="none"
+        stroke="currentColor" strokeWidth="1.1" />
+      <rect x="6.2" y="3.2" width="7.6" height="10.6" rx="1.4" transform="rotate(9 10 8.5)" />
+    </Svg>
+  );
+}
+
+/** Aparat - dodanie zdjecia do galerii. */
+export function IconCamera(props) {
+  return (
+    <Svg {...props}>
+      <path d="M10.5 8.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" />
+      <path d="M2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4zm.5 2a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m9 2.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0" />
+    </Svg>
+  );
+}
+
+/** Strzalka w dol - rozwiniecie szczegolow karty. */
+export function IconChevronDown(props) {
+  return (
+    <Svg {...props}>
+      <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708" />
+    </Svg>
+  );
+}

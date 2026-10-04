@@ -217,7 +217,7 @@ public class ClanController {
     public ResponseEntity<ClanMessageResponse> send(@PathVariable Long id, @Valid @RequestBody ClanMessageRequest payload,
                                                     Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED)
-            .body(chat.send(id, auth.getName(), payload.content(), payload.replyTo()));
+            .body(chat.send(id, auth.getName(), payload.content(), payload.replyTo(), payload.gif()));
     }
 
     @DeleteMapping("/{id}/chat/{messageId}")

@@ -17,8 +17,10 @@ wypuścić na świat.
 | **Tablica „Dla ciebie”** | znajomi zawsze na górze, pod nimi publiczne posty obcych ułożone według okolicy, wspólnego gustu i reakcji — z podpisem, *dlaczego* dany post jest wysoko |
 | **Okolica** | miasto w profilu (bez adresu i bez lokalizacji z telefonu) podnosi ludzi, koncerty i klany z Twojego regionu; zasięg od 30 km do całego kraju |
 | **Znajomi z gustem** | proponowani znajomi liczeni ze wspólnych artystów, gatunków i znajomych |
+| **Poznawaj** | tryb „jak Tinder” w zakładce Znajomi: karty osób z okolicy od najbardziej podobnego gustu, w prawo = chcę poznać, znajomymi zostajecie po wzajemnym „tak” |
+| **Karta profilu** | do 6 zdjęć (bez danych GPS z aparatu), „O mnie”, „Szukam” i muzyczne pytania — na profilu i w Poznawaj |
 | **Komentarze** | odpowiedzi, oznaczanie osób przez `@login` z podpowiedziami, powiadomienia, zgłaszanie |
-| **GIF-y** | przeglądarka GIF-ów w komentarzach i na czacie; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
+| **GIF-y** | przeglądarka GIF-ów w komentarzach, na czacie i w czacie klanu; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
 | **Czat** | rozmowy ze znajomymi z linkami muzycznymi, dymkiem „pisze…” i potwierdzeniem przeczytania |
 | **Wydarzenia** | koncerty z Ticketmastera, widok „Dla ciebie”, zapisy i lista uczestników, przypomnienia, posty „szukam ekipy” |
 | **Klany** | przeglądarka klanów, prośby o dołączenie, czat, ankiety, utwór tygodnia, tytuły i ranking aktywności |
@@ -57,13 +59,27 @@ dotyczy właśnie Ciebie. Przy poście stoi powód: „Z twojej okolicy”, „P
 | ![Proponowani znajomi](docs/zrzuty/znajomi.jpg) | ![Ustawienie miasta](docs/zrzuty/ustawienia-miasto.jpg) |
 | Proponowani znajomi — „Z twojego miasta”, wspólni artyści | Miasto w ustawieniach: tylko nazwa miasta, nigdy adres |
 
+### Poznawaj: karty w stylu Tindera
+
+| | | |
+|:---:|:---:|:---:|
+| <img src="docs/zrzuty/poznawaj-telefon.jpg" alt="Talia kart w trybie Poznawaj" width="250"> | <img src="docs/zrzuty/poznawaj-szczegoly.jpg" alt="Szczegóły karty: co was łączy, opis, pytania" width="250"> | <img src="docs/zrzuty/poznawaj-para.jpg" alt="Wzajemne tak — jesteście znajomymi" width="250"> |
+| Talia: od najbardziej podobnego gustu, w zasięgu z ustawień; w prawo — chcę poznać | Kartę przewija się w górę: co was łączy, „O mnie”, „Szukam”, pytania | Wzajemne „tak” — od razu znajomi, można pisać |
+
+<p align="center">
+  <img src="docs/zrzuty/karta-ustawienia.jpg" alt="Twoja karta w ustawieniach" width="520">
+</p>
+
+Karta profilu w Ustawieniach: do 6 zdjęć (bez danych GPS z aparatu), opis, „Szukam”, muzyczne pytania, włącznik trybu
+Poznawaj i zasięg. Ta sama karta jest na profilu.
+
 ### Klan
 
 <p align="center">
   <img src="docs/zrzuty/klan.jpg" alt="Strona klanu z ogłoszeniem, zasadami i czatem" width="680">
 </p>
 
-Strona klanu: ogłoszenie i zasady od zarządu, a pod nimi czat, posty, muzyka, koncerty, ankiety, ranking i tytuły.
+Strona klanu: ogłoszenie i zasady od zarządu, a pod nimi czat (także z GIF-ami), posty, muzyka, koncerty, ankiety, ranking i tytuły.
 Zawartość klanu widzą tylko jego członkowie.
 
 ### Rozmowy i powiadomienia
@@ -88,7 +104,7 @@ demonstracyjnych zakładanych przez zwykłe API aplikacji — skrypt
 [`docs/zrzuty/zrzuty-do-readme.mjs`](docs/zrzuty/zrzuty-do-readme.mjs) (na górze pliku jest instrukcja uruchomienia).
 
 **Wszystko na nich jest fikcyjne:** osoby, zespoły, kluby i koncerty (nie są to dane z Ticketmastera). Zdjęcia w
-postach, plakaty koncertów i „GIF-y” to obrazki narysowane na płótnie przeglądarki — chodzi o układ strony, a nie o
+postach i na kartach w Poznawaj, plakaty koncertów i „GIF-y” to obrazki narysowane na płótnie przeglądarki — chodzi o układ strony, a nie o
 ilustracje. Dostawcę GIF-ów udaje mały serwer, który skrypt stawia na czas zrzutów, więc nie widać na nich prawdziwych
 zasobów KLIPY ani GIPHY.
 
@@ -297,6 +313,13 @@ z opisami: Swagger (adres niżej).
 | GET | `/api/posts/{id}/mentionable?q=` | podpowiedzi osób do oznaczenia (`@login`) pod tym postem |
 | GET | `/api/gifs/status` | czy GIF-y są włączone i czyim logiem je podpisać („Powered by …”) |
 | GET | `/api/gifs/search?q=&pos=&limit=` | przeglądarka GIF-ów: szuka u dostawcy (pusta fraza = popularne); wyniki mają podpisany `token`, który wysyła się w polu `gif` komentarza (`POST /api/posts/{id}/comments`) albo wiadomości (`POST /api/messages/with/{login}`) |
+| GET / PUT | `/api/profile/card` | moja karta profilu: „O mnie”, „Szukam” (do 3), pytania muzyczne (do 3) — zapis w całości |
+| POST / DELETE | `/api/profile/photos`, `/photos/{id}` | zdjęcie do galerii (do 6, JPG/PNG/WebP; serwer wycina EXIF z GPS) / usunięcie |
+| PUT | `/api/profile/photos/order` | nowa kolejność zdjęć (pierwsze = okładka karty) |
+| GET / PUT | `/api/discover/me`, `/api/discover/settings` | tryb Poznawaj: stan, braki na karcie i podgląd / włączenie i zasięg (km; 0 = cały kraj) |
+| GET | `/api/discover/deck?limit=&skip=` | kolejne karty — od najlepiej dopasowanych gustem, w zasięgu; `skip` = karty, które przeglądarka już ma |
+| POST | `/api/discover/swipes` | decyzja `LIKE` / `PASS`; wzajemne „tak” = znajomość od razu (`matched: true`) |
+| POST | `/api/discover/undo` | cofnięcie ostatniej decyzji (do 10 minut) — oddaje kartę tej osoby |
 | POST | `/api/auth/verify-email` | potwierdzenie adresu z linku w wiadomości |
 | POST | `/api/auth/password-reset/request` | prośba o reset hasła (zawsze 204) |
 | POST | `/api/auth/password-reset/confirm` | nowe hasło z linku |
@@ -320,7 +343,7 @@ z opisami: Swagger (adres niżej).
 | POST | `/api/clans/invitations/{id}/accept`, `/decline` | przyjęcie / odmowa zaproszenia |
 | DELETE | `/api/clans/{id}/members/me`, `/members/{username}` | odejście / wyrzucenie |
 | PUT | `/api/clans/{id}/color` | mój głos na kolor klanu |
-| GET / POST | `/api/clans/{id}/chat` | czat klanu (`after=`, `before=`) |
+| GET / POST | `/api/clans/{id}/chat` | czat klanu (`after=`, `before=`); wiadomość: tekst, `gif` (token z wyszukiwania) albo jedno i drugie |
 | POST / PUT | `/api/clans/{id}/chat/read`, `/chat/mute` | „przeczytane do” (licznik nieprzeczytanych) / wyciszenie powiadomień z czatu |
 | GET | `/api/clans/mine/unread` | ile nieprzeczytanych wiadomości czeka w moim klanie |
 | PUT / DELETE | `/api/clans/{id}/chat/{messageId}/reaction` | reakcja emoji na wiadomość (jedna na osobę) |
@@ -716,7 +739,38 @@ samodzielnie albo razem z tekstem, także jako odpowiedź na cudzy komentarz.
   `gif_height`, `gif_title` w `comments` i `messages`) — plik zostaje u dostawcy. GIF znika razem z komentarzem
   albo wiadomością, trafia do dowodu w zgłoszeniu (`[GIF] adres (opis)`, bo plik może zniknąć u dostawcy)
   i do pobrania własnych danych.
-- Czat klanu na razie GIF-ów nie ma.
+- W czacie klanu tak samo (migracja V16: te same kolumny w `clan_messages`); odpowiedź na sam GIF cytuje go jako „GIF”.
+
+## Poznawaj — karty w stylu Tindera
+
+W zakładce **Znajomi** obok zwykłej listy jest tryb **Poznawaj**: karty osób z okolicy, jedna po drugiej. Przesunięcie
+w prawo (albo ♥, albo →) znaczy „chcę poznać”, w lewo (✕, ←) — „nie teraz”. Znajomymi zostajecie dopiero wtedy,
+gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wyskakuje „To jest to!” z przyciskiem
+„Napisz wiadomość”, a obie osoby dostają powiadomienie i push.
+
+- **Kto jest w talii.** Tylko osoby, które same włączyły tryb (domyślnie jest wyłączony — karta ze zdjęciami dla obcych
+  to świadoma decyzja). Bez znajomych, blokad, oczekujących zaproszeń, osób z zakazem publikowania i już ocenionych
+  („tak” na stałe, „nie” wraca po 30 dniach).
+- **Kolejność**: od najbardziej podobnego gustu do najmniej (wspólny ulubiony wykonawca 5 pkt, utwór 3, gatunek 1 —
+  `DiscoverMatch`), w zasięgu ustawionym na koncie (30 / 50 / 100 / 200 km od miasta z profilu albo cały kraj).
+  Na karcie zamiast procentów są kreski i podpis: „Coś nowego” … „Muzyczna bratnia dusza” — serwer liczy wspólne
+  rzeczy, a nie coś, co da się uczciwie podać co do procenta.
+- **Karta**: zdjęcia (stuknięcie w prawą część — następne), „O mnie”, „Szukam”, pytania muzyczne, co was łączy
+  (wspólni wykonawcy z okładkami, gatunki), miasto i pasmo odległości (tylko jeśli ktoś pokazuje miasto), plakietka
+  klanu, „Nowa osoba”. Kartę przewija się w pionie; zgłoszenie i blokada są na jej dole. Ostatnią decyzję można
+  cofnąć przez 10 minut; limit to 300 decyzji na dobę.
+- **Gest** (`PrzesuwanaKarta`): zdarzenia wskaźnika, więc to samo działa palcem i myszą. Ruch w pionie zostaje dla
+  przewijania (`touch-action: pan-y` — także na samej karcie, bo przeglądarka patrzy tylko do najbliższego
+  przewijanego elementu), w poziomie karta jedzie za palcem z pieczątką TAK/NIE i odlatuje po 110 px albo po
+  szybkim machnięciu. Przy „ogranicz ruch” animacji nie ma.
+- **Karta profilu** (Ustawienia → „Twoja karta”): do 6 zdjęć z układaniem (strzałki albo przeciąganie), opis,
+  do 3 „szukam” i do 3 odpowiedzi na pytania, przełącznik trybu i zasięgu oraz podgląd karty. Ta sama karta jest na
+  profilu (przy pełnym widoku). Każde wgrywane zdjęcie — także w postach i awatar — traci po drodze EXIF z aparatu
+  (współrzędne GPS, model telefonu); zostaje tylko obrót.
+- **Dwie osoby mówiące „tak” w tej samej chwili** nie mogą się minąć: decyzja blokuje wiersz konta o mniejszym numerze,
+  więc druga transakcja czeka i widzi pierwszą.
+- Zgłoszenie profilu ma migawkę karty, a administrator może jednym ruchem wyczyścić kartę i wyłączyć tryb.
+  Polityka prywatności opisuje, co widać na karcie i jak długo trzymamy decyzje.
 
 ## Gablotka playlist
 
@@ -1475,19 +1529,19 @@ java -jar target/musicclubapp-0.0.1-SNAPSHOT.jar --app.security.behind-proxy=fal
 ## Stan projektu
 
 **Gotowe** jest wszystko z tabeli „Co potrafi” na górze oraz konfiguracja produkcyjna: HTTPS (tunel Cloudflare albo
-Caddy z Let's Encrypt), migracje Flyway (15), ciasteczka `Secure`/`HttpOnly`/`SameSite`, ciche logi z rotacją, wyłączony
+Caddy z Let's Encrypt), migracje Flyway (17), ciasteczka `Secure`/`HttpOnly`/`SameSite`, ciche logi z rotacją, wyłączony
 Swagger, regulamin i polityka prywatności z akceptacją przy rejestracji oraz pobranie własnych danych. Nazwy w kodzie są
 konsekwentnie angielskie, komentarze — polskie.
 
-**Jak to jest sprawdzane.** 695 testów backendu przechodzi na bazie H2 w pamięci. Każdą zmianę sprawdzamy dodatkowo na
+**Jak to jest sprawdzane.** 725 testów backendu przechodzi na bazie H2 w pamięci. Każdą zmianę sprawdzamy dodatkowo na
 prawdziwym PostgreSQL 16 i w prawdziwej przeglądarce (Chromium sterowany Playwrightem): widoczność postów i kolejność
-tablicy, komentarze i GIF-y, wydarzenia, klany, powiadomienia, czat i moderację — także **kilkoma sesjami naraz**, bo
+tablicy, komentarze i GIF-y, tryb Poznawaj (także dotykiem), wydarzenia, klany, powiadomienia, czat i moderację — także **kilkoma sesjami naraz**, bo
 inaczej nie da się sprawdzić, czy wiadomość faktycznie dolatuje do drugiej przeglądarki ani czy administrator widzi
 zgłoszenie złożone przez kogoś innego. Zabezpieczenia sprawdzamy też od drugiej strony: wyłączenie każdego z nich w
 kodzie (mutacja) ma zaczerwienić jakiś test.
 
 **Czego stąd nie widać** (i co trzeba zobaczyć po wdrożeniu): prawdziwe usługi push (Google, Apple), prawdziwy KLIPY lub
-GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie. Szczegóły i kroki
+GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie (gest przesuwania kart był sprawdzony dotykiem udawanym przez Chromium). Szczegóły i kroki
 kontrolne są w [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
 
 **Co dalej:** stały adres → sprawdzenie PWA na telefonie → aplikacja na Androida jako TWA (Bubblewrap) → Google Play.

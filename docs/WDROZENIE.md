@@ -390,6 +390,25 @@ Opcjonalne: bez klucza przycisk **GIF** w ogóle się nie pokazuje, a reszta apl
 6. **Koszt i limity.** Wyszukiwanie ma limit 30 na minutę na osobę i pamięć podręczną na 5 minut
    (`app.gifs.searches-per-minute`, `app.gifs.cache-seconds`), więc jeden użytkownik nie wyczerpie limitu klucza.
 
+### Karta profilu, zdjęcia i tryb Poznawaj
+
+Nic do ustawiania — działa od razu. Kilka rzeczy, o których warto wiedzieć przed wpuszczeniem ludzi:
+
+1. **Zdjęcia bez GPS.** Każde wgrane zdjęcie (galeria karty, awatar, zdjęcia w postach) przechodzi przez
+   `ImageMetadata`: z JPEG-ów znika EXIF (współrzędne GPS, model telefonu, data), XMP, IPTC i komentarze, z PNG
+   fragmenty tekstowe i `eXIf`. Zostaje tylko obrót zdjęcia (jako nowy, minimalny EXIF) i profil barw ICC. Zdjęcia
+   zrobione przed tą zmianą **mają EXIF nadal** — jeśli na serwerze są już prawdziwe zdjęcia, warto je raz przepuścić
+   przez narzędzie typu `exiftool -all= -tagsfromfile @ -Orientation` w katalogu `uploads`.
+2. **Poznawaj jest dobrowolny i wzajemny.** Domyślnie wyłączony; karty oglądają tylko osoby, które same go włączyły.
+   Wzajemne „tak” = znajomość od razu (powiadomienie i push dla obu). Limit 300 decyzji na dobę na osobę
+   (`app.discover.swipes-per-day`), wygasłe decyzje sprząta zadanie o 4:40 (`app.discover.cleanup-cron`).
+3. **Moderacja.** Zgłoszenie profilu zapisuje migawkę karty (opis, „Szukam”, pytania, adresy zdjęć). W panelu zgłoszeń
+   jest decyzja „wyczyść kartę profilu” — usuwa zdjęcia z galerii (także pliki), opis i pytania i wyłącza Poznawaj.
+   Zakaz publikowania obejmuje kartę: z zakazem nie da się jej zmienić ani dodać zdjęcia, a osoba znika z talii.
+4. **Google Play.** Galeria zdjęć i tryb poznawania ludzi to w formularzu *Data safety* „zdjęcia” i „treści tworzone
+   przez użytkownika” widoczne dla innych; w ankiecie treści (IARC) zaznacza się kontakt między użytkownikami.
+   Aplikacja do poznawania ludzi musi mieć zgłaszanie i blokowanie z poziomu karty — są (pod opisem na karcie).
+
 ### Powiadomienia push i przypomnienia o wydarzeniach
 
 Przypomnienia („za 3 dni”, „jutro”) działają zawsze — w dzwonku. Żeby
@@ -866,6 +885,32 @@ Przy GIF-ach w komentarzach i na czacie (październik 2026, migracja V15):
   komentarz z samym GIF-em, z tekstem i odpowiedź GIF-em (obrazek faktycznie się ładuje, `naturalWidth > 1`), czat
   (GIF sam i z tekstem, drugi użytkownik widzi oba, podgląd „GIF” na liście rozmów), brak przelewu strony przy 390 i
   320 px, 3 kolumny kafelków na szerokim ekranie, Esc, ciemny motyw. Skrypt trzeba puszczać na świeżej bazie.
+
+Przy karcie profilu, trybie Poznawaj i GIF-ach w czacie klanu (październik 2026, migracje V16 i V17):
+
+- migracje V16 i V17 na **pustej** bazie (V1 → V17, profil `prod`: Flyway + `validate`): V16 dodaje pięć kolumn `gif_*`
+  do `clan_messages`, V17 — `bio`, `looking_for`, `discover_enabled`, `discover_radius_km` w `users`, tabele
+  `profile_photos`, `profile_prompts`, `discover_swipes` i `DISCOVER_MATCH` w CHECK powiadomień. Schemat po migracjach
+  zgadza się blok po bloku z tym, co buduje Hibernate (różnice tylko w zapisie starych CHECK-ów i kolejności kolumn);
+- `mvnw clean test` → 725 testów; nowe klasy (talia, karta, EXIF, eksport, GIF-y w klanie) przechodzą także na
+  PostgreSQL 16 — talia to ręcznie pisany SQL z odległością miast, więc to było ważne;
+- testy z mutacjami: 45 mutantów (talia, decyzje, cofanie, limit, karta, EXIF, eksport, moderacja, GIF-y w klanie) —
+  przebieg w toku, wynik dopisany osobno;
+- znalezione przy sprawdzaniu: obsługa błędów nie podawała argumentów do komunikatów („Klan jest pełny (najwyżej {0}
+  osób)” było widać dosłownie od V9) — poprawione; `touch-action: pan-y` na warstwie nad przewijaną kartą nie działał
+  (przeglądarka bierze go tylko do najbliższego przewijanego przodka) — przesunięcie palcem w bok nie docierało;
+  przyciski decyzji wychodziły 40 px pod dolną krawędź ekranu 390×844;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V17, 64 sprawdzenia): ekran startowy z podglądem własnej karty
+  i listą braków, włączenie, kolejność talii wg gustu, przeciągnięcie myszą z pieczątką TAK, stuknięcie w zdjęcie (nie
+  jest decyzją), przycisk „tak” = para (ekran „To jest to!”, znajomość, powiadomienie u drugiej osoby), ← z klawiatury,
+  cofnięcie, pusta talia → poszerzenie zasięgu → cały kraj (pasmo „ponad 250 km”), osoba z wyłączonym trybem nigdy
+  w talii; **telefon z dotykiem** (CDP `Input.dispatchTouchEvent`): ruch w pionie przewija kartę i nie jest decyzją,
+  w bok — decyzja i para, „Napisz wiadomość” otwiera rozmowę; przyciski na ekranie przy 390×844 i 360×740; brak przelewu
+  strony przy 320, 360 i 390 px (Znajomi, Poznawaj, Ustawienia, profil z kartą); edytor karty (dwa zdjęcia naraz,
+  układanie, limit „szukam”, pytanie, zapis, podgląd); karta na profilu; GIF w czacie klanu, odpowiedź na GIF z cytatem
+  „GIF”; ciemny motyw; zero błędów w konsoli. Skrypt trzeba puszczać na świeżej bazie;
+- **czego nie sprawdzono:** prawdziwego telefonu (dotyk był udawany przez Chromium) i zdjęć z prawdziwych aparatów
+  (EXIF z telefonów sprawdzony na plikach zbudowanych w teście — także z obrotem w obu kolejnościach bajtów).
 
 ---
 

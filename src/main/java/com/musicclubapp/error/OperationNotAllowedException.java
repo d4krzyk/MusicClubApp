@@ -428,6 +428,49 @@ public class OperationNotAllowedException extends RuntimeException {
             "To zgloszenie nie dotyczy zadnego komentarza", "error.report.action.nocomment");
     }
 
+    /* --- Karta profilu i tryb Poznawaj --- */
+
+    /** To samo pytanie muzyczne dwa razy na jednej karcie. */
+    public static OperationNotAllowedException cardPromptTwice() {
+        return new OperationNotAllowedException("To samo pytanie dwa razy", "error.card.promptTwice");
+    }
+
+    /** Galeria jest pelna. */
+    public static OperationNotAllowedException cardPhotoLimit(int max) {
+        return new OperationNotAllowedException("Galeria jest pelna", "error.card.photoLimit", max);
+    }
+
+    /** Nowa kolejnosc zdjec nie obejmuje dokladnie wszystkich zdjec z galerii. */
+    public static OperationNotAllowedException cardPhotoOrder() {
+        return new OperationNotAllowedException("Kolejnosc nie pasuje do galerii", "error.card.photoOrder");
+    }
+
+    /** Talia i decyzje tylko z wlaczonym trybem Poznawaj. */
+    public static OperationNotAllowedException discoverOff() {
+        return new OperationNotAllowedException("Tryb Poznawaj jest wylaczony", "error.discover.off");
+    }
+
+    /** Zasieg spoza listy. */
+    public static OperationNotAllowedException discoverRadius() {
+        return new OperationNotAllowedException("Niedozwolony zasieg", "error.discover.radius");
+    }
+
+    /** Ta osoba juz nie jest w talii (wylaczyla tryb, zablokowala, juz jestescie znajomymi). */
+    public static OperationNotAllowedException discoverGone() {
+        return new OperationNotAllowedException("Tej osoby nie ma juz w talii", "error.discover.gone");
+    }
+
+    /** Nie ma czego cofnac (ostatnia decyzja jest za stara albo dala znajomosc). */
+    public static OperationNotAllowedException discoverNothingToUndo() {
+        return new OperationNotAllowedException("Nie ma czego cofnac", "error.discover.undo");
+    }
+
+    /** Wiadomosc na czacie klanu bez tekstu i bez GIF-a (walidacja zapytania lapie to wczesniej - to zapas). */
+    public static OperationNotAllowedException emptyClanMessage() {
+        return new OperationNotAllowedException(
+            "Wiadomosc nie ma tresci ani GIF-a", "validation.clanMessage.empty");
+    }
+
     /** Proba skasowania posta przy zgloszeniu, ktore posta nie dotyczy. */
     public static OperationNotAllowedException reportHasNoPost() {
         return new OperationNotAllowedException(

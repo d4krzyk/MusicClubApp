@@ -91,6 +91,8 @@ class GifFlowTest {
     @Autowired private PostRepository posts;
     @Autowired private CommentRepository comments;
     @Autowired private MessageRepository messages;
+    @Autowired private com.musicclubapp.repository.ClanMessageRepository clanMessages;
+    @Autowired private com.musicclubapp.repository.ClanInvitationRepository clanInvitations;
     @Autowired private com.musicclubapp.repository.ReportRepository reports;
     @Autowired private EntityManager em;
 
@@ -322,6 +324,73 @@ class GifFlowTest {
         users.save(new User("gf_obcy", "gf_obcy@example.com", "x"));
         em.flush();
         wyslij("gf_bob", "/api/messages/with/gf_obcy", Map.of("gif", token("gf_bob"))).andExpect(status().isConflict());
+    }
+
+    /* ---------------------------- czat klanu ---------------------------- */
+
+    /** Klan alicji z bobem w srodku - przez API, jak w testach klanow. */
+    private long klanAliBoba() throws Exception {
+        long klan = tresc(wyslij("gf_ala", "/api/clans", Map.of("name", "Gifowe Sowy", "tag", "GS"))
+            .andExpect(status().isCreated())).get("id").asLong();
+        wyslij("gf_ala", "/api/clans/" + klan + "/invitations", Map.of("username", "gf_bob")).andExpect(status().isOk());
+        em.flush();
+        long zaproszenie = clanInvitations.findAll().stream()
+            .filter(i -> i.getInvitee().getUsername().equals("gf_bob")).findFirst().orElseThrow().getId();
+        wyslij("gf_bob", "/api/clans/invitations/" + zaproszenie + "/accept", Map.of()).andExpect(status().isOk());
+        em.flush();
+        return klan;
+    }
+
+    @Test
+    @DisplayName("czat klanu: sam GIF (pusta tresc), tekst z GIF-em i odpowiedz na GIF - cytat wie, ze to GIF")
+    void clanChatGif() throws Exception {
+        long klan = klanAliBoba();
+        JsonNode sam = tresc(wyslij("gf_bob", "/api/clans/" + klan + "/chat", Map.of("gif", token("gf_bob")))
+            .andExpect(status().isCreated()));
+        assertThat(sam.get("content").asText()).isEmpty();
+        assertThat(sam.get("gif").get("url").asText()).isEqualTo("https://static.example/kot.gif");
+        assertThat(sam.get("gif").get("width").asInt()).isEqualTo(320);
+
+        JsonNode oba = tresc(wyslij("gf_ala", "/api/clans/" + klan + "/chat",
+            Map.of("content", "dobre", "gif", token("gf_ala"), "replyTo", sam.get("id").asLong()))
+            .andExpect(status().isCreated()));
+        assertThat(oba.get("content").asText()).isEqualTo("dobre");
+        assertThat(oba.get("replyTo").get("excerpt").asText()).isEmpty();
+        assertThat(oba.get("replyTo").get("gif").asBoolean()).isTrue();
+
+        em.flush();
+        em.clear();
+        JsonNode czat = tresc(pobierz("gf_bob", "/api/clans/" + klan + "/chat").andExpect(status().isOk()));
+        assertThat(czat).hasSize(2);
+        assertThat(czat.get(0).get("gif").get("previewUrl").asText()).isEqualTo("https://static.example/kot-s.gif");
+        assertThat(czat.get(1).get("gif").get("title").asText()).isEqualTo("Kot na pianinie");
+        // tekst bez GIF-a: pole gif puste, a cytat zwyklej wiadomosci nie jest GIF-em
+        long tekst = tresc(wyslij("gf_bob", "/api/clans/" + klan + "/chat", Map.of("content", "sam tekst"))
+            .andExpect(status().isCreated())).get("id").asLong();
+        JsonNode naTekst = tresc(wyslij("gf_ala", "/api/clans/" + klan + "/chat",
+            Map.of("content", "ok", "replyTo", tekst)).andExpect(status().isCreated()));
+        assertThat(naTekst.get("gif").isNull()).isTrue();
+        assertThat(naTekst.get("replyTo").get("gif").asBoolean()).isFalse();
+    }
+
+    @Test
+    @DisplayName("czat klanu: podrobiony token (422 na polu gif), pusta wiadomosc (422 z komunikatem bez nagrania), obcy - 409")
+    void clanChatGifValidation() throws Exception {
+        long klan = klanAliBoba();
+        long przed = clanMessages.count();
+        polePrzyBledzie(tresc(wyslij("gf_bob", "/api/clans/" + klan + "/chat", Map.of("gif", podmien(token("gf_bob"))))
+            .andExpect(status().isUnprocessableEntity())), "gif");
+        JsonNode pusta = tresc(wyslij("gf_bob", "/api/clans/" + klan + "/chat", Map.of("content", "  "))
+            .andExpect(status().isUnprocessableEntity()));
+        polePrzyBledzie(pusta, "content");
+        assertThat(pusta.get("errors").get(0).get("message").asText()).isEqualTo("Napisz coś albo wybierz GIF");
+        polePrzyBledzie(tresc(wyslij("gf_bob", "/api/clans/" + klan + "/chat", Map.of())
+            .andExpect(status().isUnprocessableEntity())), "content");
+
+        users.save(new User("gf_obcy", "gf_obcy@example.com", "x"));
+        em.flush();
+        wyslij("gf_obcy", "/api/clans/" + klan + "/chat", Map.of("gif", token("gf_obcy"))).andExpect(status().isConflict());
+        assertThat(clanMessages.count()).isEqualTo(przed);
     }
 
     /* ---------------------------- moderacja ---------------------------- */

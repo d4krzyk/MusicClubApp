@@ -24,6 +24,8 @@ public record PublicProfileResponse(
     /** Klan tej osoby - plakietka pod loginem; widoczna takze przy profilu tylko dla znajomych. */
     ClanBadge clan,
     /** Miasto z profilu - tylko przy pelnym widoku i gdy osoba go nie ukryla. */
-    String city
+    String city,
+    /** Karta profilu (zdjecia, o mnie, szukam, pytania) - tylko przy pelnym widoku. */
+    ProfileCardResponse card
 ) {
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
@@ -14,11 +14,66 @@ import Avatar from '../components/Avatar';
 import PeopleSkeleton from '../components/PeopleSkeleton';
 import FriendsStrip from '../components/FriendsStrip';
 import FriendSuggestions from '../components/FriendSuggestions';
-import { IconCross, IconPersonCheck, IconPersonPlus } from '../components/Icons';
+import { IconCards, IconCross, IconList, IconPersonCheck, IconPersonPlus } from '../components/Icons';
+import TrybPoznawaj from '../components/poznawaj/TrybPoznawaj';
 import { formatDate } from '../utils/dates';
 
-/** Ekran "Znajomi": zaproszenia oczekujace, wyszukiwarka i wlasna lista. */
+/** Zapamietany tryb zakladki - kto przeglada karty, wraca do kart. */
+const KLUCZ_TRYBU = 'znajomi.tryb';
+
+function zapamietanyTryb() {
+  try {
+    return localStorage.getItem(KLUCZ_TRYBU) === 'poznawaj' ? 'poznawaj' : 'lista';
+  } catch {
+    return 'lista';
+  }
+}
+
+/**
+ * Ekran "Znajomi" w dwoch trybach: "Lista" (zaproszenia, wyszukiwarka, propozycje i wlasna lista) i "Poznawaj"
+ * (karty osob z okolicy jedna po drugiej - wzajemne "tak" = znajomi). Tryb siedzi w adresie (?tryb=poznawaj),
+ * wiec da sie do niego prowadzic odnosnikiem.
+ */
 export default function FriendsPage() {
+  const { t } = useTranslation();
+  const [params, setParams] = useSearchParams();
+  const tryb = params.get('tryb') ?? zapamietanyTryb();
+
+  function przelacz(nowy) {
+    try {
+      localStorage.setItem(KLUCZ_TRYBU, nowy);
+    } catch {
+      // bez pamieci - tryb i tak siedzi w adresie
+    }
+    setParams(nowy === 'poznawaj' ? { tryb: 'poznawaj' } : {}, { replace: true });
+  }
+
+  return (
+    <Row className="justify-content-center">
+      <Col lg={tryb === 'poznawaj' ? 10 : 8} xl={tryb === 'poznawaj' ? 9 : 8} className="tiles-in">
+        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <h1 className="h4 mb-0">{t('friends.title')}</h1>
+          <div className="znajomi-tryby" role="tablist" aria-label={t('discover.modes')}>
+            <button type="button" role="tab" id="tryb-lista" aria-selected={tryb === 'lista'}
+              aria-controls="tryb-panel" className={tryb === 'lista' ? 'is-aktywny' : ''} onClick={() => przelacz('lista')}>
+              <IconList size={14} /> {t('discover.tabList')}
+            </button>
+            <button type="button" role="tab" id="tryb-poznawaj" aria-selected={tryb === 'poznawaj'}
+              aria-controls="tryb-panel" className={tryb === 'poznawaj' ? 'is-aktywny' : ''} onClick={() => przelacz('poznawaj')}>
+              <IconCards size={14} /> {t('discover.tabDiscover')}
+            </button>
+          </div>
+        </div>
+        <div id="tryb-panel" role="tabpanel" aria-labelledby={tryb === 'poznawaj' ? 'tryb-poznawaj' : 'tryb-lista'}>
+          {tryb === 'poznawaj' ? <TrybPoznawaj /> : <ListaZnajomych />}
+        </div>
+      </Col>
+    </Row>
+  );
+}
+
+/** Tryb "Lista": zaproszenia oczekujace, wyszukiwarka, propozycje i wlasna lista. */
+function ListaZnajomych() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
 
@@ -101,11 +156,7 @@ export default function FriendsPage() {
   }
 
   return (
-    <Row className="justify-content-center">
-      {/* Sekcje wchodza po kolei - tak samo jak karty na tablicy */}
-      <Col lg={8} className="tiles-in">
-        <h1 className="h4 mb-3">{t('friends.title')}</h1>
-
+      <>
         {message && (
           <Alert variant="success" dismissible onClose={() => setMessage(null)}>
             {message}
@@ -221,7 +272,6 @@ export default function FriendsPage() {
         {/* Moja lista znajomych - ten sam komponent co na profilu */}
         <h2 className="h5 mb-2">{t('friends.mine')}</h2>
         {user && <FriendsStrip username={user.username} refresh={refreshFriends} self />}
-      </Col>
-    </Row>
+      </>
   );
 }

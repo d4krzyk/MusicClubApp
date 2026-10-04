@@ -55,6 +55,8 @@ public class NotificationService {
                 "push.friendRequest.body", new Object[] {kto}, link, "friend-" + kto);
             case FRIEND_ACCEPTED -> new PushService.Message("push.friendAccepted.title", null,
                 "push.friendAccepted.body", new Object[] {kto}, link, "friend-" + kto);
+            case DISCOVER_MATCH -> new PushService.Message("push.discoverMatch.title", null,
+                "push.discoverMatch.body", new Object[] {kto}, link, "friend-" + kto);
             case REPORT -> new PushService.Message("push.report.title", null,
                 "push.report.body", new Object[] {kto}, link, "report");
             case REPORT_RESOLVED -> new PushService.Message("push.reportResolved.title", null,
@@ -249,6 +251,13 @@ public class NotificationService {
         notificationRepository.deleteByType(
             actor.getId(), recipient.getId(), NotificationType.FRIEND_REQUEST);
         zapisz(Notification.friendAccepted(recipient, actor));
+    }
+
+    /** Wzajemne "tak" w trybie Poznawaj - obie osoby dostaja powiadomienie (w dzwonku i na telefonie). */
+    @Transactional
+    public void discoverMatch(User a, User b) {
+        zapisz(Notification.discoverMatch(a, b));
+        zapisz(Notification.discoverMatch(b, a));
     }
 
     /* ------------------------------------------------------------------ */

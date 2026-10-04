@@ -120,6 +120,9 @@ public class DataExportService {
     private final CommentRepository comments;
     private final CommentMentionRepository commentMentions;
     private final FileStorageService fileStorage;
+    private final com.musicclubapp.repository.ProfilePhotoRepository profilePhotos;
+    private final com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts;
+    private final com.musicclubapp.repository.DiscoverSwipeRepository swipes;
     private final ObjectMapper mapper;
     private final Clock clock;
     private final Map<Long, Instant> ostatnie = new ConcurrentHashMap<>();
@@ -136,7 +139,10 @@ public class DataExportService {
                              ClanMemberTitleRepository clanTitles,
                              PushSubscriptionRepository pushSubscriptions, ReportRepository reports,
                              CommentRepository comments, CommentMentionRepository commentMentions,
-                             FileStorageService fileStorage, ObjectMapper mapper, Clock clock) {
+                             FileStorageService fileStorage, ObjectMapper mapper, Clock clock,
+                             com.musicclubapp.repository.ProfilePhotoRepository profilePhotos,
+                             com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts,
+                             com.musicclubapp.repository.DiscoverSwipeRepository swipes) {
         this.comments = comments;
         this.commentMentions = commentMentions;
         this.clanReactions = clanReactions;
@@ -162,6 +168,9 @@ public class DataExportService {
         this.pushSubscriptions = pushSubscriptions;
         this.reports = reports;
         this.fileStorage = fileStorage;
+        this.profilePhotos = profilePhotos;
+        this.profilePrompts = profilePrompts;
+        this.swipes = swipes;
         // Wlasna kopia: daty jako tekst ISO, a nie liczby - plik ma byc czytelny dla czlowieka
         this.mapper = mapper.copy().disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .enable(SerializationFeature.INDENT_OUTPUT);
@@ -187,6 +196,8 @@ public class DataExportService {
         dane.put("generatedAt", clock.instant().toString());
         dane.put("account", konto(user, pliki));
         dane.put("profile", profil(user));
+        dane.put("profileCard", karta(user, pliki));
+        dane.put("discover", poznawaj(user));
         dane.put("posts", posty(id, pliki));
         dane.put("reactions", reakcje(id));
         dane.put("comments", komentarze(id));
@@ -288,6 +299,36 @@ public class DataExportService {
                     "addedAt", p.getAddedAt())).toList());
     }
 
+    /** Karta profilu: opis, "szukam", pytania i zdjecia galerii (pliki w zdjecia/). */
+    private Map<String, Object> karta(User u, List<Plik> pliki) {
+        List<String> zdjecia = new ArrayList<>();
+        int numer = 1;
+        for (var zdjecie : profilePhotos.ofUser(u.getId())) {
+            String nazwa = "zdjecia/galeria-" + numer++ + rozszerzenie(zdjecie.getFileName());
+            pliki.add(new Plik(nazwa, zdjecie.getFileName()));
+            zdjecia.add(nazwa);
+        }
+        return mapa(
+            "bio", u.getBio(),
+            "lookingFor", List.copyOf(u.getLookingFor()),
+            "prompts", profilePrompts.ofUser(u.getId()).stream()
+                .map(a -> mapa("prompt", a.getPrompt(), "answer", a.getAnswer())).toList(),
+            "photos", zdjecia);
+    }
+
+    /**
+     * Tryb Poznawaj: ustawienia i MOJE decyzje. Decyzji innych o mnie nie ma - "tak" jest tajne do chwili,
+     * gdy obie strony je powiedza (wtedy jestescie znajomymi i decyzje znikaja).
+     */
+    private Map<String, Object> poznawaj(User u) {
+        return mapa(
+            "enabled", u.isDiscoverEnabled(),
+            "radiusKm", u.getDiscoverRadiusKm(),
+            "decisions", swipes.madeBy(u.getId()).stream()
+                .map(s -> mapa("username", s.getTarget().getUsername(), "decision", s.getDecision(),
+                    "at", s.getCreatedAt())).toList());
+    }
+
     private List<Object> posty(Long autorId, List<Plik> pliki) {
         List<Object> wynik = new ArrayList<>();
         List<Post> wszystkie = new ArrayList<>(posts.findByAuthorId(autorId));
@@ -378,7 +419,8 @@ public class DataExportService {
     private Map<String, Object> klan(Long userId) {
         ClanMember m = clanMembers.findByUserId(userId).orElse(null);
         List<Object> wiadomosci = clanMessages.writtenBy(userId).stream()
-            .map(x -> mapa("clan", x.getClan().getName(), "at", x.getCreatedAt(), "content", x.getContent()))
+            .map(x -> mapa("clan", x.getClan().getName(), "at", x.getCreatedAt(), "content", x.getContent(),
+                "gif", gif(x.getGif())))
             .collect(java.util.stream.Collectors.toList());
         return mapa(
             "membership", m == null ? null : mapa("clan", m.getClan().getName(), "tag", m.getClan().getTag(),
@@ -460,20 +502,21 @@ public class DataExportService {
             PL
             Konto: %1$s
             Ten plik ZIP zawiera Twoje dane z serwisu MusicClub (art. 15 i 20 RODO):
-              dane.json  - dane konta, profil, posty, reakcje, wiadomosci, znajomi, blokady,
-                           zapisy na wydarzenia, powiadomienia, klan, urzadzenia powiadomien
-                           i zgloszenia; w formacie JSON, do odczytu maszynowego,
-              zdjecia/   - Twoje zdjecie profilowe i zdjecia z Twoich postow.
+              dane.json  - dane konta, profil i karta profilu, posty, reakcje, wiadomosci,
+                           znajomi, blokady, decyzje z trybu Poznawaj, zapisy na wydarzenia,
+                           powiadomienia, klan, urzadzenia powiadomien i zgloszenia;
+                           w formacie JSON, do odczytu maszynowego,
+              zdjecia/   - Twoje zdjecie profilowe, zdjecia z galerii profilu i z Twoich postow.
             Wiadomosci zawieraja slowa obu stron rozmowy. Nie ma tu hasla ani danych
             osobowych innych osob poza loginami, z ktorymi masz kontakt w serwisie.
 
             EN
             Account: %1$s
             This ZIP contains your data from MusicClub (GDPR Art. 15 and 20):
-              dane.json  - account data, profile, posts, reactions, messages, friends, blocks,
-                           event sign-ups, notifications, clan, notification devices and
-                           reports; machine-readable JSON,
-              zdjecia/   - your profile photo and the photos from your posts.
+              dane.json  - account data, profile and profile card, posts, reactions, messages,
+                           friends, blocks, Discover decisions, event sign-ups, notifications,
+                           clan, notification devices and reports; machine-readable JSON,
+              zdjecia/   - your profile photo, your profile gallery and the photos from your posts.
             Messages contain the words of both sides of a conversation. There is no password
             here, and no personal data of other people apart from the usernames you deal with.
             """.formatted(login);

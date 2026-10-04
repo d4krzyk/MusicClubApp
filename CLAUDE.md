@@ -18,7 +18,8 @@ zakładka Wydarzenia — etapy 1–2 i wybór kraju (niżej), potwierdzanie adre
 e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów, klany
 z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12), miasto w profilu
 i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i komentarze
-z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15).
+z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie klanu (V16), karta profilu
+(galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -596,6 +597,56 @@ kolumn `gif_*` w `comments` i `messages`).
   rejestruje konta, więc wymaga świeżej bazy (`backend-*.sh` odtwarza ją z wzorca).
 - Mutanty GIF-ów: 34, wszystkie zabite (lista w `docs/WDROZENIE.md`). Mutantem nie jest zmiana stałej, po której
   pętli się test.
+
+## GIF-y w czacie klanu (V16)
+
+Te same pięć kolumn `gif_*` co w komentarzach i wiadomościach, w `clan_messages`. `ClanMessageRequest` ma `gif` (token)
+i ten sam walidator co wiadomości (`MessageHasContent` z własnym komunikatem `validation.clanMessage.empty` — walidator
+bierze komunikat z adnotacji); sam GIF = `content` `""`. Cytat odpowiedzi ma `gif: true`, a przeglądarka pisze wtedy
+„GIF”. Eksport ma `gif` przy wiadomościach klanu. Push z czatu bez zmian (bez treści).
+
+## Karta profilu i tryb Poznawaj (V17)
+
+Karta (`ProfileCardService`, `/api/profile/card`, `/api/profile/photos`): do 6 zdjęć (`profile_photos`, pierwsze =
+okładka; JPEG/PNG/WebP, bez GIF), `users.bio` (300), `users.looking_for` (do 3 z `LookingFor`, jedna kolumna przez
+`LookingForConverter`, bez CHECK), do 3 odpowiedzi na pytania (`profile_prompts`, `ProfilePrompt` z CHECK — wpis
+w `EnumConstraintRefresher`). Na profilu tylko przy pełnym widoku (`PublicProfileResponse.card`, jak ulubieni).
+Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z talii.
+
+- **EXIF**: `storage/ImageMetadata` czyści **każde** wgrywane zdjęcie (też posty i awatary): JPEG bez APP1/APP3–13/APP15
+  i komentarzy (zostaje APP0, APP14, APP2 tylko z ICC), z obrotem przepisanym do minimalnego EXIF-u; PNG bez
+  `eXIf`/`tEXt`/`zTXt`/`iTXt`/`tIME`. Format rozpoznawany po bajtach; plik nie do przeczytania zostaje bez zmian.
+- **Poznawaj** (`DiscoverService`, `/api/discover/*`): `users.discover_enabled` (domyślnie **wyłączony**) i
+  `discover_radius_km` (0/30/50/100/200 jak `useZasieg`; bez miasta nic nie robi). Talię widzą i są w niej tylko osoby
+  z włączonym trybem. Wykluczeni: znajomi, blokady w obie strony, oczekujące zaproszenia (to sprawa listy), niepotwierdzeni,
+  wyłączeni, z zakazem publikowania, już ocenieni („tak” na stałe, „nie” 30 dni). Kolejność: gust
+  (`DiscoverMatch`: wykonawca 5, utwór 3, gatunek 1 — te same wagi w SQL `deck`), potem odległość, potem nowsze konta.
+  Poziom 0–4 to podpis i kreski na karcie, **nie procenty**.
+- Karta w talii: miasto i pasmo odległości (`proximity`) tylko gdy osoba pokazuje miasto; wspólni wykonawcy i gatunki
+  zawsze (włączenie trybu to zgoda, mówi o tym ekran startowy i polityka), pozostali ulubieni tylko przy profilu
+  `EVERYONE`.
+- **Decyzje** (`discover_swipes`, jedna na parę): „tak” jest tajne. Wzajemne „tak” → `addFriend`, kasuje obie decyzje
+  i zaproszenia między nimi, `DISCOVER_MATCH` + push dla obu. Dwie osoby mówiące „tak” naraz: blokada wiersza konta
+  o mniejszym numerze (`UserRepository.lockById`). Cofnięcie ostatniej decyzji do 10 min (`/undo` oddaje kartę).
+  Limit 300/dobę (czas polski, 429 z `Retry-After` do północy). Blokada kasuje decyzje między osobami. Sprzątanie
+  wygasłych: „nie” po 30, „tak” po 180 dniach (`app.discover.cleanup-cron`).
+- **Moderacja**: zgłoszenie profilu ma migawkę karty (`[O mnie]`, `[Szukam]`, `[PYTANIE]`, `[Zdjecie] url`); decyzja
+  `ModerationAction.CLEAR_CARD` czyści kartę (z plikami) i wyłącza tryb. Usunięcie konta: `discover.deleteAllOf`,
+  `cards.clear` (pliki) — `AccountDeletionServiceTest` pilnuje kolejności. Eksport: `profileCard` (zdjęcia w
+  `zdjecia/galeria-N`) i `discover` — **tylko moje** decyzje.
+- Frontend: zakładka Znajomi ma tryb „Lista” / „Poznawaj” (`?tryb=poznawaj`, pamięć `znajomi.tryb`),
+  `components/poznawaj/*` (stos 3 kart, `PrzesuwanaKarta` — wskaźnik, próg 110 px albo szybkie machnięcie,
+  pieczątki TAK/NIE; przyciski; ←/→; ekran pary z „Napisz wiadomość”), `components/karta/*` (Ustawienia → „Twoja karta”
+  z `#karta`, profil). Ruch w pionie przewija kartę, w poziomie decyduje.
+- **Pułapki z tej rundy**: `touch-action` przeglądarka bierze z elementów tylko do najbliższego przewijanego przodka —
+  `pan-y` na samym `.pz-warstwa` nie działał, bo karta (`overflow-y: auto`) jest przewijana; teraz jest na niej i na
+  dzieciach (sprawdzone dotykiem przez CDP `Input.dispatchTouchEvent`). Miarka przelewu strony musi pomijać elementy
+  przycięte przez przodka z `overflow` (paski przewijane w bok) — inaczej fałszywy alarm. `GlobalExceptionHandler`
+  nie podawał argumentów do komunikatów `OperationNotAllowedException` — „najwyżej {0}” było widać dosłownie od V9
+  (np. pełny klan); poprawione. W teście po zapytaniach zbiorczych encja bywa odpięta — wczytać ją ponownie, zanim się
+  ją zmieni. `user("x")` w MockMvc nie ma roli ADMIN — do `/api/reports/admin/**` trzeba `.roles("ADMIN")`.
+- Polityka i regulamin opisują kartę, EXIF, Poznawaj, retencję decyzji i `CLEAR_CARD`; `app.legal.version` bez zmian
+  (nikt jeszcze nie akceptował).
 
 ## Regulamin i polityka prywatności (V10)
 

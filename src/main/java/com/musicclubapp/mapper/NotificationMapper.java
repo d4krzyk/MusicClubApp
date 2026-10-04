@@ -59,7 +59,7 @@ public class NotificationMapper {
                     + (notification.getComment() != null ? "?komentarz=" + notification.getComment().getId() : "")
                 : "/";
             case FRIEND_REQUEST -> "/znajomi";
-            case FRIEND_ACCEPTED -> "/profil/"
+            case FRIEND_ACCEPTED, DISCOVER_MATCH -> "/profil/"
                 + URLEncoder.encode(notification.getActor().getUsername(), StandardCharsets.UTF_8);
             // Zgloszenie prowadzi do panelu, a nie na profil zglaszajacego -
             // administrator ma tam podjac decyzje, a nie ogladac czyjs profil

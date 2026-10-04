@@ -12,6 +12,12 @@ public enum ModerationAction {
     /** Kasuje zglaszany komentarz (razem z odpowiedziami pod nim). */
     DELETE_COMMENT(null),
 
+    /**
+     * Czysci karte profilu zglaszanego (zdjecia galerii, opis, "szukam", pytania) i wylacza mu tryb Poznawaj.
+     * Konto i reszta zostaja - to usuniecie tresci, a nie kara.
+     */
+    CLEAR_CARD(null),
+
     /** Zakaz publikowania - na podana liczbe godzin albo bezterminowo. */
     BAN_POSTING(BanKind.POSTING),
 

@@ -4,7 +4,10 @@ import Button from 'react-bootstrap/Button';
 import { describeError } from '../../api/client';
 import * as klany from '../../api/klany';
 import Avatar from '../Avatar';
-import { IconBell, IconCross, IconReply, IconSend, IconSmile, IconTrash } from '../Icons';
+import GifObrazek from '../gif/GifObrazek';
+import GifPicker from '../gif/GifPicker';
+import { IconBell, IconCross, IconGif, IconReply, IconSend, IconSmile, IconTrash } from '../Icons';
+import useGify from '../../hooks/useGify';
 import useOdswiezanie from '../../hooks/useOdswiezanie';
 import { timeAgo } from '../../utils/dates';
 import { EMOJI, ODSWIEZ_LICZNIK } from '../../utils/klan';
@@ -15,7 +18,7 @@ const ODSTEP_MS = 4000;
 /**
  * Czat klanu. Ten sam wyglad dymkow co w rozmowach ze znajomymi, ale jedna wspolna rozmowa
  * dla calego klanu; nowe wiadomosci przychodza przez odpytywanie (nie ma polaczenia na stale).
- * Mozna odpowiadac na konkretna wiadomosc i reagowac emoji (jedna reakcja na osobe).
+ * Mozna odpowiadac na konkretna wiadomosc, reagowac emoji (jedna reakcja na osobe) i wysylac GIF-y.
  * Wiadomosci widziane na ekranie sa oznaczane jako przeczytane - stad licznik w menu.
  * Administrator aplikacji, ktory nie jest czlonkiem, czyta, ale nie pisze i niczego nie oznacza.
  */
@@ -31,6 +34,11 @@ export default function KlanCzat({ klan, onZmiana }) {
   const [wysylanie, setWysylanie] = useState(false);
   const [blad, setBlad] = useState(null);
   const [wyciszony, setWyciszony] = useState(klan.chatMuted);
+  /* GIF wybrany z przegladarki (caly wynik z tokenem) i czy przegladarka jest otwarta - jak w rozmowach */
+  const gify = useGify();
+  const [gif, setGif] = useState(null);
+  const [gifOtwarty, setGifOtwarty] = useState(false);
+  const pole = useRef(null);
   const okno = useRef(null);
   const naDole = useRef(true);
   const mozePisac = klan.myRole != null;
@@ -134,17 +142,21 @@ export default function KlanCzat({ klan, onZmiana }) {
     }
   }
 
+  const nicDoWyslania = !tekst.trim() && !gif;
+
   async function wyslij(e) {
     e.preventDefault();
-    if (!tekst.trim() || wysylanie) {
+    if (nicDoWyslania || wysylanie) {
       return;
     }
     setWysylanie(true);
     setBlad(null);
     try {
-      const nowa = await klany.napisz(klan.id, tekst, odpowiedzNa?.id ?? null);
+      const nowa = await klany.napisz(klan.id, tekst, odpowiedzNa?.id ?? null, gif?.token ?? null);
       setTekst('');
       setOdpowiedzNa(null);
+      setGif(null);
+      setGifOtwarty(false);
       naDole.current = true;
       dopiszNowe([nowa]);
     } catch (problem) {
@@ -263,14 +275,17 @@ export default function KlanCzat({ klan, onZmiana }) {
                       <button type="button" className="klan-cytat" onClick={() => przejdzDo(m.replyTo.id)}
                         title={t('clans.chat.goToMessage')}>
                         <span className="klan-cytat-autor">{m.replyTo.senderUsername}</span>
-                        <span className="klan-cytat-tekst">{m.replyTo.excerpt}</span>
+                        <span className="klan-cytat-tekst">
+                          {m.replyTo.excerpt || (m.replyTo.gif ? t('chat.gifPreview') : '')}
+                        </span>
                       </button>
                     ) : (
                       <span className="klan-cytat is-brak">{t('clans.chat.replyUnavailable')}</span>
                     )
                   )}
 
-                  <p className="bubble-text">{m.content}</p>
+                  {m.content && <p className="bubble-text">{m.content}</p>}
+                  <GifObrazek gif={m.gif} />
 
                   {(m.reactions ?? []).length > 0 && (
                     <div className="klan-reakcje">
@@ -343,7 +358,7 @@ export default function KlanCzat({ klan, onZmiana }) {
               <div className="klan-odpowiadasz">
                 <span className="klan-odpowiadasz-tekst">
                   <strong>{t('clans.chat.replyingTo', { username: odpowiedzNa.senderUsername })}</strong>
-                  <span>{odpowiedzNa.content}</span>
+                  <span>{odpowiedzNa.content || (odpowiedzNa.gif ? t('chat.gifPreview') : '')}</span>
                 </span>
                 <button type="button" className="klan-akcja" onClick={() => setOdpowiedzNa(null)}
                   aria-label={t('clans.chat.cancelReply')} title={t('clans.chat.cancelReply')}>
@@ -351,8 +366,38 @@ export default function KlanCzat({ klan, onZmiana }) {
                 </button>
               </div>
             )}
+            {gif && (
+              <div className="gif-wybrany chat-gif-wybrany">
+                <img src={gif.previewUrl} alt={gif.title || t('gifs.selected')} referrerPolicy="no-referrer" />
+                <button type="button" onClick={() => setGif(null)} aria-label={t('gifs.remove')}
+                  title={t('gifs.remove')}>
+                  <IconCross size={12} />
+                </button>
+              </div>
+            )}
+            {gifOtwarty && (
+              <GifPicker
+                idPrefix="klan-gif"
+                podpis={gify.podpis}
+                onWybierz={(wybrany) => { setGif(wybrany); setGifOtwarty(false); pole.current?.focus(); }}
+                onZamknij={() => setGifOtwarty(false)}
+              />
+            )}
             <div className="chat-composer-row">
+              {gify.wlaczone && (
+                <button
+                  type="button"
+                  className={`chat-music-toggle chat-gif-toggle${gifOtwarty ? ' is-open' : ''}`}
+                  onClick={() => setGifOtwarty((bylo) => !bylo)}
+                  aria-pressed={gifOtwarty}
+                  aria-label={t('chat.attachGif')}
+                  title={t('chat.attachGif')}
+                >
+                  <IconGif size={18} />
+                </button>
+              )}
               <textarea
+                ref={pole}
                 className="chat-input form-control"
                 rows={1}
                 value={tekst}
@@ -365,7 +410,7 @@ export default function KlanCzat({ klan, onZmiana }) {
               <button
                 type="submit"
                 className="chat-send"
-                disabled={wysylanie || !tekst.trim()}
+                disabled={wysylanie || nicDoWyslania}
                 aria-label={t('chat.send')}
                 title={t('chat.send')}
               >
