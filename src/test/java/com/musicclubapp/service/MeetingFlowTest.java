@@ -118,6 +118,7 @@ class MeetingFlowTest {
     @Autowired private PasswordEncoder encoder;
     @Autowired private Zegar zegar;
     @Autowired private EntityManager em;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     @MockBean private PushService push;
 
@@ -316,9 +317,14 @@ class MeetingFlowTest {
     @DisplayName("odpowiedzi: bede / nie dam rady / cofniecie; liczniki i lista; odswiezanie rozmowy oddaje zmienione spotkanie")
     void rsvpAndSync() throws Exception {
         long id = wyslijSpotkanie("sp_ala", "sp_bob", spotkanie("Hala", 120, 30)).get("meeting").get("id").asLong();
+        // spotkanie wyslane godzine temu - bez nowych odpowiedzi nie ma czego odswiezac
+        jdbc.update("UPDATE meetings SET updated_at = ? WHERE id = ?",
+            java.sql.Timestamp.from(Instant.now().minus(Duration.ofHours(1))), id);
         JsonNode przed = tresc(zapytaj("sp_ala", "/api/messages/with/sp_bob/sync?after=0").andExpect(status().isOk()));
         String czas = przed.get("serverTime").asText();
         assertThat(przed.get("meetings")).isEmpty();
+        assertThat(tresc(zapytaj("sp_ala", "/api/messages/with/sp_bob/sync?after=0&changedSince=" + czas)).get("meetings"))
+            .as("stare spotkanie bez zmian").isEmpty();
 
         JsonNode s = odpowiedz("sp_bob", id, "GOING");
         assertThat(s.get("myStatus").asText()).isEqualTo("GOING");
@@ -359,6 +365,10 @@ class MeetingFlowTest {
         long id = wyslijSpotkanie("sp_ala", "sp_bob", spotkanie("Hala", 120, 30)).get("meeting").get("id").asLong();
         odpowiedz("sp_bob", id, "GOING");
         assertThat(blad(wyslij("POST", "sp_bob", "/api/meetings/" + id + "/cancel", null))).contains("tylko osoba");
+        // przypomnienia juz poszly - po odwolaniu maja zniknac z dzwonkow obu osob
+        zegar.przesun(Duration.ofMinutes(91));
+        assertThat(reminders.run()).isEqualTo(2);
+        em.flush();
         clearInvocations(push);
 
         JsonNode s = tresc(wyslij("POST", "sp_ala", "/api/meetings/" + id + "/cancel", null).andExpect(status().isOk()));
@@ -367,6 +377,8 @@ class MeetingFlowTest {
         assertThat(s.get("canRespond").asBoolean()).isFalse();
         assertThat(powiadomienia("sp_bob", NotificationType.MEETING_CANCELLED)).isEqualTo(1);
         assertThat(powiadomienia("sp_ala", NotificationType.MEETING_CANCELLED)).isZero();
+        assertThat(powiadomienia("sp_bob", NotificationType.MEETING_REMINDER)).isZero();
+        assertThat(powiadomienia("sp_ala", NotificationType.MEETING_REMINDER)).isZero();
         JsonNode dzwonek = tresc(zapytaj("sp_bob", "/api/notifications").andExpect(status().isOk())).get("content").get(0);
         assertThat(dzwonek.get("link").asText()).isEqualTo("/?czat=sp_ala");
         assertThat(dzwonek.get("meetingPlace").asText()).isEqualTo("Hala");
@@ -377,7 +389,7 @@ class MeetingFlowTest {
         wyslij("PUT", "sp_bob", "/api/meetings/" + id + "/rsvp", Map.of("status", "NOT_GOING")).andExpect(status().isConflict());
         wyslij("POST", "sp_ala", "/api/meetings/" + id + "/cancel", null).andExpect(status().isConflict());
         // odwolane nie przypomina
-        zegar.przesun(Duration.ofMinutes(95));
+        zegar.przesun(Duration.ofMinutes(5));
         assertThat(reminders.run()).isZero();
     }
 
@@ -398,8 +410,9 @@ class MeetingFlowTest {
         em.flush();
         assertThat(reminders.run()).isZero();
 
+        // 30 min przed startem; 29, gdy przebieg testu przekroczyl granice minuty (minuty liczone w chwili wysylki)
         verify(push).send(eq(bobId), argThat(m -> m.titleKey().equals("push.meeting.minutes")
-            && m.titleArgs()[0].equals(30L) && m.url().equals("/?czat=sp_ala") && m.tag().equals("meeting-" + id)));
+            && List.of(29L, 30L).contains(m.titleArgs()[0]) && m.url().equals("/?czat=sp_ala") && m.tag().equals("meeting-" + id)));
         verify(push).send(eq(alaId), argThat(m -> m.url().equals("/?czat=sp_bob")));
         JsonNode dzwonek = tresc(zapytaj("sp_bob", "/api/notifications")).get("content").get(0);
         assertThat(dzwonek.get("type").asText()).isEqualTo("MEETING_REMINDER");
@@ -442,6 +455,26 @@ class MeetingFlowTest {
         zegar.przesun(Duration.ofMinutes(250));
         assertThat(reminders.run()).isZero();
         verify(push, never()).send(any(), argThat(m -> m.tag().equals("meeting-" + zerwane)));
+    }
+
+    @Test
+    @DisplayName("przypomnienie: nie po koncu spotkania (serwer stal dluzej)")
+    void noReminderAfterEnd() throws Exception {
+        long koniec = wyslijSpotkanie("sp_ala", "sp_bob", spotkanie("Koniec", 20, 15)).get("meeting").get("id").asLong();
+        odpowiedz("sp_bob", koniec, "GOING");
+        zegar.przesun(Duration.ofMinutes(100));
+        assertThat(reminders.run()).as("po koncu").isZero();
+    }
+
+    @Test
+    @DisplayName("przypomnienie: 'nie dam rady' go nie dostaje, zakladajaca tak")
+    void noReminderForNotGoing() throws Exception {
+        long nie = wyslijSpotkanie("sp_ala", "sp_bob", spotkanie("Nie dam rady", 60, 30)).get("meeting").get("id").asLong();
+        odpowiedz("sp_bob", nie, "NOT_GOING");
+        zegar.przesun(Duration.ofMinutes(31));
+        assertThat(reminders.run()).as("tylko zakladajaca").isEqualTo(1);
+        em.flush();
+        assertThat(powiadomienia("sp_bob", NotificationType.MEETING_REMINDER)).isZero();
     }
 
     @Test
@@ -551,6 +584,24 @@ class MeetingFlowTest {
         odpowiedz("sp_bob", id, "GOING");
         JsonNode zmiany = tresc(zapytaj("sp_ala", "/api/clans/" + klan + "/chat/changes?since=" + czas));
         assertThat(zmiany.get("meetings").get(0).get("goingCount").asInt()).isEqualTo(2);
+
+        // trzecia osoba w klanie; kto ja zablokuje, nie widzi jej na spotkaniu (ani w liczniku)
+        wyslij("POST", "sp_ala", "/api/clans/" + klan + "/invitations", Map.of("username", "sp_cyd")).andExpect(status().isOk());
+        em.flush();
+        long zaprCyd = invitations.findAll().stream()
+            .filter(i -> i.getInvitee().getUsername().equals("sp_cyd")).findFirst().orElseThrow().getId();
+        wyslij("POST", "sp_cyd", "/api/clans/invitations/" + zaprCyd + "/accept", null).andExpect(status().isOk());
+        em.flush();
+        odpowiedz("sp_cyd", id, "GOING");
+        wyslij("PUT", "sp_bob", "/api/blocks/sp_cyd", null).andExpect(status().is2xxSuccessful());
+        em.flush();
+        JsonNode uBoba = tresc(zapytaj("sp_bob", "/api/meetings/" + id));
+        assertThat(uBoba.get("goingCount").asInt()).isEqualTo(2);
+        assertThat(loginy(uBoba.get("going"))).doesNotContain("sp_cyd");
+        assertThat(tresc(zapytaj("sp_ala", "/api/meetings/" + id)).get("goingCount").asInt()).isEqualTo(3);
+        // i odchodzi z klanu - dalej jest obca
+        wyslij("DELETE", "sp_cyd", "/api/clans/" + klan + "/members/me", null).andExpect(status().is2xxSuccessful());
+        em.flush();
 
         // odpowiedz na spotkanie cytuje jego miejsce
         JsonNode odp = tresc(wyslij("POST", "sp_bob", "/api/clans/" + klan + "/chat",

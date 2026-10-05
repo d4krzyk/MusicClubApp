@@ -1061,6 +1061,13 @@ Przy spotkaniach w czacie i mapie (październik 2026, migracja V20):
   w dymku, pole pisania 137 / 177 px), ciemny motyw, zero błędów w konsoli. Dwa przebiegi pod rząd zielone;
 - znalezione przy sprawdzaniu: przy 320 px trzy przyciski załączników zostawiały 99 px na pisanie — mniejsze przyciski
   poniżej 375 px; pierwsza wersja testu sprawdzała listę rozmów, zanim się odświeżyła (test czeka na tekst).
+- testy z mutacjami: 42 mutanty (walidacja czasu, punktu, przypomnienia i limitu, kto widzi i kto odpowiada, odwołanie,
+  harmonogram przypomnień, sprzątanie przy usunięciu wiadomości, rozmowy, klanu i konta, odświeżanie czatów, link
+  i sprawca powiadomienia, dowód w zgłoszeniu, push). Pierwszy przebieg: 36 zabitych. Ocalałe pokazały dziury w testach:
+  „odpowiedź nie odświeża czatów” (świeże spotkanie i tak mieściło się w 30 s zapasu — test cofa `updated_at` o godzinę),
+  „odwołanie zostawia przypomnienia”, „lista bez filtra blokad”, „przypomnienie po końcu”, „przypomnienie dla «nie dam
+  rady»”, a jeden mutant był źle zapisany (nic nie zmieniał). Po dopisaniu testów (`MeetingFlowTest` 12 → 14,
+  `mvnw clean test` → 755) wszystkie 42 zabite.
 
 ---
 
