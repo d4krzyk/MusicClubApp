@@ -1428,7 +1428,7 @@
   },
   "card": {
     "title": "Twoja karta",
-    "subtitle": "Zdjęcia, kilka słów o sobie i muzyczne pytania. Widać je na Twoim profilu i — jeśli go włączysz — w trybie Poznawaj.",
+    "subtitle": "Zdjęcia, kilka słów o sobie i muzyczne pytania. Widać je na Twoim profilu (kto dokładnie — wybierzesz niżej) i — jeśli go włączysz — w trybie Poznawaj.",
     "photos": "Zdjęcia",
     "photosHint": "Do {{max}} zdjęć (JPG, PNG albo WebP). Pierwsze to okładka karty — kolejność zmienisz strzałkami albo przeciągając. Przed dodaniem każde przytniesz (karta ma proporcje 3:4) i obrócisz. Ze zdjęć usuwamy dane z aparatu, w tym miejsce zrobienia (GPS).",
     "addPhoto": "Dodaj zdjęcie",
@@ -1480,7 +1480,25 @@
     "emptyOwn": "Uzupełnij swoją kartę — zdjęcia, kilka słów o sobie i muzyczne pytania",
     "edit": "Edytuj kartę",
     "onProfile": "Karta {{username}}",
-    "enlarge": "Powiększ zdjęcie {{n}} z {{count}}"
+    "enlarge": "Powiększ zdjęcie {{n}} z {{count}}",
+    "visibility": {
+      "title": "Kto widzi kartę na profilu",
+      "EVERYONE": "Każdy, kto widzi profil",
+      "FRIENDS": "Tylko znajomi",
+      "DISCOVER_ONLY": "Nikt — tylko w Poznawaj",
+      "hint": {
+        "EVERYONE": "Karta jest na profilu i w trybie Poznawaj. Przy profilu tylko dla znajomych i tak widzą ją tylko znajomi.",
+        "FRIENDS": "Na profilu widzą ją tylko znajomi. W trybie Poznawaj karta jest nadal — dla osób, które też go włączyły.",
+        "DISCOVER_ONLY": "Na profilu karty nie widać nikomu poza Tobą. Jest tylko w trybie Poznawaj — dla osób, które też go włączyły."
+      },
+      "saved": "Zapisano.",
+      "nowhere": "Poznawaj jest wyłączony, więc teraz Twojej karty nie widzi nikt poza Tobą.",
+      "ownNote": {
+        "FRIENDS": "Na profilu tę kartę widzą tylko znajomi.",
+        "DISCOVER_ONLY": "Tę kartę na profilu widzisz tylko Ty — inni mogą ją zobaczyć tylko w trybie Poznawaj."
+      },
+      "change": "Zmień"
+    }
   },
   "discover": {
     "modes": "Tryb zakładki Znajomi",

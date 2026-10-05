@@ -14,6 +14,15 @@ export async function zapisz({ bio, lookingFor, prompts }) {
   return data;
 }
 
+/**
+ * Kto widzi karte na profilu: EVERYONE (kazdy, kto widzi profil), FRIENDS albo DISCOVER_ONLY (na profilu
+ * nikt - karta jest tylko w trybie Poznawaj). Talii Poznawaj to nie zmienia.
+ */
+export async function ustawWidocznosc(visibility) {
+  const { data } = await client.put('/profile/card/visibility', { visibility });
+  return data;
+}
+
 /** Nowe zdjecie na koncu galerii. Serwer i tak wycina z niego EXIF (m.in. GPS). */
 export async function dodajZdjecie(plik) {
   const formData = new FormData();

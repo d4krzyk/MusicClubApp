@@ -979,6 +979,36 @@ Przy ikonie w układzie „E4” (dolna ręka wysoko na plecach) z gładkimi kra
   kursor zszedł z przycisku w trakcie pomiaru), edytor 93/93; skrypt w repozytorium daje dokładnie to, co jest
   w `Icons.jsx` (porównane znak po znaku).
 
+Przy wyborze, kto widzi kartę na profilu (październik 2026, migracja V18):
+
+- migracja V18 na **pustej** bazie (V1 → V18, profil `prod`: Flyway + `validate`) i na bazie z danymi po V17 (18 kont
+  — wszystkie dostały `EVERYONE`, czyli zachowanie sprzed zmiany; CHECK odrzuca wartość spoza listy). Kolumny i nazwy
+  ograniczeń zgadzają się z tym, co buduje Hibernate (`information_schema` i `pg_constraint` porównane w całości);
+- `mvnw clean test` → 727 testów; nowy test najpierw czerwony we właściwym miejscu (obcy dostawał kartę mimo „tylko
+  Poznawaj”), potem zielony: każdy / znajomi / tylko Poznawaj, właściciel i administrator widzą zawsze, ustawienie
+  dostaje tylko właściciel, zaproszenie to jeszcze nie znajomość, talia Poznawaj bez zmian, zapis także z zakazem
+  publikowania, zła i pusta wartość odrzucone, eksport ma ustawienie;
+- testy z mutacjami: 16 mutantów (każda z trzech wartości na „każdy”/„nikt”, właściciel i administrator bez karty,
+  administrator = każdy zalogowany, zaproszenie = znajomość, pominięcie ustawienia, ustawienie widoczne dla wszystkich
+  albo niewidoczne dla właściciela, zapis bez skutku, zapis zablokowany zakazem publikowania, eksport, `GET` karty,
+  pusta kolumna) — wszystkie zabite. Przypadek „zaproszenie to nie znajomość” dopisany przed puszczeniem mutantów;
+- Chromium na prawdziwym PostgreSQL (baza z migracji V1–V18, 61 sprawdzeń): wybór w „Twoja karta” zapisuje się od
+  razu i zostaje po odświeżeniu; na własnym profilu podpis z kłódką („widzisz tylko Ty”) albo ikoną znajomych i „Zmień”
+  do ustawień; obcy i znajoma bez karty przy „tylko Poznawaj”, znajoma z kartą przy „tylko znajomi”, obcy znów z kartą
+  przy „każdy”; talia Poznawaj pokazuje kartę przy „tylko Poznawaj”; awaria serwera → wybór wraca, komunikat, baza bez
+  zmian; dwa szybkie wybory z opóźnionym pierwszym zapisem → w bazie i na ekranie zostaje drugi; ostrzeżenie „teraz karty nie widzi nikt” przy „tylko Poznawaj” z wyłączonym Poznawaj (znika po włączeniu, nie
+  ma go przy „tylko znajomi”); telefon 320/360/390 px bez przelewu, ikona podpisu przy pierwszym wierszu zawiniętego
+  tekstu, żadna opcja listy nie jest ucięta (szerokość napisu tym samym krojem wobec miejsca w polu, PL przy 320/360/390
+  i EN przy 320 px); ciemny motyw, angielski, zero błędów w konsoli. Skrypt zaczerwienił się na dwóch celowych usterkach (brak
+  cofnięcia wyboru po błędzie, brak podpisu — 11 czerwonych sprawdzeń). Poprzedni skrypt Poznawaj — 64/64;
+- znalezione przy sprawdzaniu: podpis jako „pigułka” po zawinięciu na telefonie zostawiał kłódkę samą w wierszu — teraz
+  ikona stoi obok pierwszego wiersza (zmierzone); „tylko Poznawaj” przy wyłączonym Poznawaj znaczyło po cichu „nikt” —
+  teraz ustawienia to mówią; natywna lista ucinała najdłuższą opcję („…w trybie Pozn”) już przy 390 px, a przy 320 px
+  nawet „Każdy, kto widzi mój profil” (o 2 px) i angielskie „Anyone who sees my profile” (o 22 px) — etykiety skrócone,
+  szczegóły są w opisie pod listą; dwa szybkie wybory pod rząd szły równolegle i serwer mógł skończyć na pierwszym
+  (próba czerwona na wersji bez poprawki: w bazie `FRIENDS` przy wybranym „tylko Poznawaj”) — zapisy idą teraz po
+  kolei, a ekran słucha tylko odpowiedzi na ostatni wybór.
+
 ---
 
 ## Co dalej, żeby aplikacja trafiła na Google Play

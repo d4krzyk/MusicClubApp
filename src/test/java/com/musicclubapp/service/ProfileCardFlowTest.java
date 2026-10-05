@@ -297,6 +297,100 @@ class ProfileCardFlowTest {
         assertThat(znajomy.get("card").get("lookingFor").get(0).asText()).isEqualTo("JAMMING");
     }
 
+    private JsonNode profilDla(String kto) throws Exception {
+        var zadanie = get("/api/profiles/pc_ala").with("pc_szef".equals(kto) ? user(kto).roles("ADMIN") : user(kto));
+        return tresc(mvc.perform(zadanie).andExpect(status().isOk()));
+    }
+
+    @Test
+    @DisplayName("kto widzi karte na profilu: domyslnie kazdy; 'znajomi' - tylko znajomi; 'tylko Poznawaj' - nikt poza mna "
+        + "i administratorem; w talii Poznawaj karta jest zawsze")
+    void cardVisibilitySetting() throws Exception {
+        wyslij("PUT", "pc_ala", "/api/profile/card", karta("Tylko dla Poznawaj", List.of("JAMMING"), null))
+            .andExpect(status().isOk());
+        JsonNode moja = tresc(mvc.perform(get("/api/profile/card").with(user("pc_ala"))).andExpect(status().isOk()));
+        assertThat(moja.get("visibility").asText()).isEqualTo("EVERYONE");
+
+        // "Tylko Poznawaj": obcy, znajomy - nic; ja i administrator - karta, a ja dodatkowo widze, kto ja widzi
+        JsonNode po = tresc(wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "DISCOVER_ONLY"))
+            .andExpect(status().isOk()));
+        assertThat(po.get("visibility").asText()).isEqualTo("DISCOVER_ONLY");
+        assertThat(po.get("bio").asText()).isEqualTo("Tylko dla Poznawaj");
+        em.flush();
+        assertThat(profilDla("pc_bob").get("card").isNull()).isTrue();
+        JsonNode moj = profilDla("pc_ala");
+        assertThat(moj.get("card").get("bio").asText()).isEqualTo("Tylko dla Poznawaj");
+        assertThat(moj.get("card").get("visibility").asText()).isEqualTo("DISCOVER_ONLY");
+        JsonNode dlaAdmina = profilDla("pc_szef");
+        assertThat(dlaAdmina.get("card").get("bio").asText()).isEqualTo("Tylko dla Poznawaj");
+        // Ustawienie jest sprawa wlasciciela - inni go nie dostaja
+        assertThat(dlaAdmina.get("card").get("visibility").isNull()).isTrue();
+
+        User bob = users.findByUsername("pc_bob").orElseThrow();
+        ala.addFriend(bob);
+        users.save(ala);
+        em.flush();
+        assertThat(profilDla("pc_bob").get("card").isNull()).isTrue();
+
+        // "Znajomi": znajomy widzi, obcy nie
+        wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "FRIENDS")).andExpect(status().isOk());
+        users.save(new User("pc_cyd", "pc_cyd@example.com", "x"));
+        em.flush();
+        JsonNode dlaZnajomego = profilDla("pc_bob");
+        assertThat(dlaZnajomego.get("card").get("bio").asText()).isEqualTo("Tylko dla Poznawaj");
+        assertThat(dlaZnajomego.get("card").get("visibility").isNull()).isTrue();
+        assertThat(profilDla("pc_cyd").get("card").isNull()).isTrue();
+
+        // Talia Poznawaj nie patrzy na to ustawienie - po to ono jest
+        wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "DISCOVER_ONLY")).andExpect(status().isOk());
+        // do talii trafiaja tylko konta z potwierdzonym adresem
+        for (String login : List.of("pc_ala", "pc_cyd")) {
+            User u = users.findByUsername(login).orElseThrow();
+            u.markEmailVerified(java.time.LocalDateTime.now());
+            users.save(u);
+        }
+        em.flush();
+        wyslij("PUT", "pc_ala", "/api/discover/settings", Map.of("enabled", true, "radiusKm", 0)).andExpect(status().isOk());
+        wyslij("PUT", "pc_cyd", "/api/discover/settings", Map.of("enabled", true, "radiusKm", 0)).andExpect(status().isOk());
+        em.flush();
+        JsonNode talia = tresc(mvc.perform(get("/api/discover/deck?limit=20").with(user("pc_cyd"))).andExpect(status().isOk()));
+        JsonNode ala = null;
+        for (JsonNode k : talia.get("cards")) {
+            if ("pc_ala".equals(k.get("username").asText())) {
+                ala = k;
+            }
+        }
+        assertThat(ala).isNotNull();
+        assertThat(ala.get("bio").asText()).isEqualTo("Tylko dla Poznawaj");
+
+        // Z powrotem do "kazdy"; zle i puste wartosci - 422 (bez zmiany)
+        wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "EVERYONE")).andExpect(status().isOk());
+        wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "NIKT"))
+            .andExpect(status().is4xxClientError());
+        wyslij("PUT", "pc_ala", "/api/profile/card/visibility", new HashMap<>()).andExpect(status().isUnprocessableEntity());
+        em.flush();
+        assertThat(profilDla("pc_cyd").get("card").get("bio").asText()).isEqualTo("Tylko dla Poznawaj");
+
+        // Zaproszenie to jeszcze nie znajomosc - karta "tylko znajomi" sie nie pokazuje
+        wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "FRIENDS")).andExpect(status().isOk());
+        wyslij("POST", "pc_cyd", "/api/friends/requests", Map.of("username", "pc_ala")).andExpect(status().is2xxSuccessful());
+        em.flush();
+        JsonNode zaproszony = profilDla("pc_cyd");
+        assertThat(zaproszony.get("friendshipStatus").asText()).isEqualTo("REQUEST_SENT");
+        assertThat(zaproszony.get("card").isNull()).isTrue();
+    }
+
+    @Test
+    @DisplayName("widocznosc karty mozna zmienic takze z zakazem publikowania - to ustawienie prywatnosci, nie tresc")
+    void cardVisibilityUnderBan() throws Exception {
+        ala.setBannedUntil(BanKind.POSTING, java.time.LocalDateTime.now().plusDays(1));
+        users.save(ala);
+        em.flush();
+        JsonNode po = tresc(wyslij("PUT", "pc_ala", "/api/profile/card/visibility", Map.of("visibility", "FRIENDS"))
+            .andExpect(status().isOk()));
+        assertThat(po.get("visibility").asText()).isEqualTo("FRIENDS");
+    }
+
     /* ---------------------------- moderacja ---------------------------- */
 
     @Test

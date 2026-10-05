@@ -6,6 +6,7 @@ import com.musicclubapp.dto.PromptAnswerRequest;
 import com.musicclubapp.dto.PromptAnswerView;
 import com.musicclubapp.dto.UpdateProfileCardRequest;
 import com.musicclubapp.entity.BanKind;
+import com.musicclubapp.entity.CardVisibility;
 import com.musicclubapp.entity.LookingFor;
 import com.musicclubapp.entity.ProfilePhoto;
 import com.musicclubapp.entity.ProfilePrompt;
@@ -67,17 +68,43 @@ public class ProfileCardService {
 
     @Transactional(readOnly = true)
     public ProfileCardResponse mine(String username) {
-        return of(user(username));
+        return own(user(username));
     }
 
-    /** Karta tej osoby - kto ja oglada, rozstrzyga wolajacy (profil: privacy.view). */
+    /** Karta tej osoby - kto ja oglada, rozstrzyga wolajacy (profil: privacy.view i {@link #shownOnProfile}). */
     @Transactional(readOnly = true)
     public ProfileCardResponse of(User user) {
+        return card(user, null);
+    }
+
+    /** Karta dla jej wlasciciela - z ustawieniem, kto ja widzi na profilu. */
+    @Transactional(readOnly = true)
+    public ProfileCardResponse own(User user) {
+        return card(user, user.getCardVisibility());
+    }
+
+    private ProfileCardResponse card(User user, CardVisibility visibility) {
         return new ProfileCardResponse(
             user.getBio(),
             List.copyOf(user.getLookingFor()),
             prompts.ofUser(user.getId()).stream().map(ProfileCardService::view).toList(),
-            photos.ofUser(user.getId()).stream().map(ProfileCardService::view).toList());
+            photos.ofUser(user.getId()).stream().map(ProfileCardService::view).toList(),
+            visibility);
+    }
+
+    /**
+     * Czy karte pokazac na profilu temu ogladajacemu - przy pelnym widoku profilu (to sprawdza wolajacy).
+     * Wlasciciel i administrator widza ja zawsze; talii Poznawaj to nie dotyczy.
+     */
+    public static boolean shownOnProfile(CardVisibility visibility, boolean own, boolean friends, boolean admin) {
+        if (own || admin) {
+            return true;
+        }
+        return switch (visibility) {
+            case EVERYONE -> true;
+            case FRIENDS -> friends;
+            case DISCOVER_ONLY -> false;
+        };
     }
 
     /** Zdjecia i pytania wielu osob naraz - do talii (dwa zapytania na strone, a nie dwa na osobe). */
@@ -133,7 +160,18 @@ public class ProfileCardService {
         for (PromptAnswerRequest p : nowe) {
             prompts.save(new ProfilePromptAnswer(user, p.prompt(), p.answer().strip(), pozycja++));
         }
-        return of(user);
+        return own(user);
+    }
+
+    /**
+     * Kto widzi karte na profilu. Wolno takze z zakazem publikowania - to ustawienie prywatnosci, a nie nowa
+     * tresc (zawezenie widocznosci nie moze czekac do konca kary).
+     */
+    @Transactional
+    public ProfileCardResponse setVisibility(String username, CardVisibility visibility) {
+        User user = user(username);
+        user.setCardVisibility(visibility);
+        return own(user);
     }
 
     /** Nowe zdjecie na koncu galerii. */
@@ -157,7 +195,7 @@ public class ProfileCardService {
         List<ProfilePhoto> obecne = photos.ofUser(user.getId());
         int pozycja = obecne.isEmpty() ? 0 : obecne.get(obecne.size() - 1).getPosition() + 1;
         photos.save(new ProfilePhoto(user, nazwa, pozycja));
-        return of(user);
+        return own(user);
     }
 
     /** Usuwa zdjecie z galerii (zawsze mozna - takze z zakazem publikowania). */
@@ -171,7 +209,7 @@ public class ProfileCardService {
         String nazwa = zdjecie.getFileName();
         // Plik znika dopiero po zatwierdzeniu - wycofana transakcja zostawilaby wiersz bez pliku
         poZatwierdzeniu(() -> storage.remove(nazwa));
-        return of(user);
+        return own(user);
     }
 
     /** Nowa kolejnosc: musza byc wszystkie zdjecia tej osoby, kazde raz. */
@@ -187,7 +225,7 @@ public class ProfileCardService {
         for (int i = 0; i < ids.size(); i++) {
             wg.get(ids.get(i)).setPosition(i);
         }
-        return of(user);
+        return own(user);
     }
 
     /* ------------------------------------------------------------------ */

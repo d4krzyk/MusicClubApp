@@ -188,6 +188,7 @@ class DataExportFlowTest {
         ala.setBio("opis z karty do eksportu");
         ala.setLookingFor(java.util.EnumSet.of(com.musicclubapp.entity.LookingFor.JAMMING));
         ala.setDiscover(true, 50);
+        ala.setCardVisibility(com.musicclubapp.entity.CardVisibility.DISCOVER_ONLY);
         galeria = fileStorage.getDirectory().resolve("ex-test-galeria.png");
         Files.write(galeria, OBRAZ);
         profilePhotos.save(new com.musicclubapp.entity.ProfilePhoto(ala, "ex-test-galeria.png", 0));
@@ -313,6 +314,7 @@ class DataExportFlowTest {
         // Karta profilu (z plikiem z galerii) i tryb Poznawaj - tylko MOJE decyzje
         assertThat(dane.at("/profileCard/bio").asText()).isEqualTo("opis z karty do eksportu");
         assertThat(dane.at("/profileCard/lookingFor/0").asText()).isEqualTo("JAMMING");
+        assertThat(dane.at("/profileCard/visibility").asText()).isEqualTo("DISCOVER_ONLY");
         assertThat(dane.at("/profileCard/prompts/0/answer").asText()).isEqualTo("odpowiedz z karty");
         String zGalerii = dane.at("/profileCard/photos/0").asText();
         assertThat(zGalerii).isEqualTo("zdjecia/galeria-1.png");

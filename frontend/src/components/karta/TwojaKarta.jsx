@@ -22,12 +22,17 @@ const MAKS_SZUKAM = 3;
 export const PYTANIA = ['FIRST_CONCERT', 'LIFE_CHANGING_ALBUM', 'DESERT_ISLAND', 'DREAM_GIG', 'GUILTY_PLEASURE',
   'ON_REPEAT', 'KARAOKE', 'PARTY_STARTER', 'UNPOPULAR_OPINION', 'INSTRUMENT', 'MORNING_SONG', 'UNDERRATED_ARTIST'];
 const MAKS_PYTAN = 3;
+/** Kto widzi karte na profilu - kolejnosc od najszerzej do "tylko Poznawaj". */
+export const WIDOCZNOSCI = ['EVERYONE', 'FRIENDS', 'DISCOVER_ONLY'];
 const TYPY_ZDJEC = 'image/jpeg,image/png,image/webp';
 
 /**
  * Ustawienia: "Twoja karta" - galeria zdjec (do 6, pierwsze = okladka, kolejnosc strzalkami albo
  * przeciaganiem), "o mnie", "szukam", pytania muzyczne, tryb Poznawaj z zasiegiem i podglad karty tak, jak
  * widza ja inni. Zdjecia zapisuja sie od razu; tekst - przyciskiem "Zapisz karte".
+ *
+ * "Kto widzi karte na profilu" zapisuje sie od razu, jak reszta ustawien prywatnosci - na talie Poznawaj nie
+ * wplywa (karta "tylko w Poznawaj" znika z profilu, a w talii zostaje).
  *
  * Kazde wybrane zdjecie przechodzi przez edytor (kadr 3:4 - tak je widac na karcie - i obrot), po kolei;
  * "Pomin" odpuszcza jedno zdjecie, zamkniecie okna - reszte. Gotowe wgrywaja sie w tle w kolejnosci wyboru.
@@ -45,8 +50,13 @@ export default function TwojaKarta() {
   const [podglad, setPodglad] = useState(false);
   const [przeciagane, setPrzeciagane] = useState(null);
   const [kolejka, setKolejka] = useState({ pliki: [], n: 0 });
+  const [widocznoscZapisana, setWidocznoscZapisana] = useState(false);
   const plik = useRef(null);
   const wgrywanie = useRef(Promise.resolve());
+  // Zapisy widocznosci ida po kolei (serwer konczy na ostatnim wyborze), a ekran slucha tylko odpowiedzi na ostatni
+  const zapisyWidocznosci = useRef(Promise.resolve());
+  const numerWidocznosci = useRef(0);
+  const potwierdzonaWidocznosc = useRef(null);
 
   useEffect(() => {
     Promise.all([karta.moja(), poznawaj.stan()])
@@ -55,6 +65,7 @@ export default function TwojaKarta() {
   }, []);
 
   function przyjmij(k) {
+    potwierdzonaWidocznosc.current = k.visibility;
     setDane(k);
     setFormularz({
       bio: k.bio ?? '',
@@ -147,6 +158,29 @@ export default function TwojaKarta() {
     } catch (problem) {
       setBlad(describeError(problem).message);
     }
+  }
+
+  function ustawWidocznosc(nowa) {
+    const numer = ++numerWidocznosci.current;
+    setBlad(null);
+    setWidocznoscZapisana(false);
+    // Od razu na ekranie; przy bledzie wraca to, co serwer ostatnio potwierdzil
+    setDane((d) => ({ ...d, visibility: nowa }));
+    zapisyWidocznosci.current = zapisyWidocznosci.current.then(async () => {
+      try {
+        const k = await karta.ustawWidocznosc(nowa);
+        potwierdzonaWidocznosc.current = k.visibility;
+        if (numer === numerWidocznosci.current) {
+          setDane((d) => ({ ...d, visibility: k.visibility }));
+          setWidocznoscZapisana(true);
+        }
+      } catch (problem) {
+        if (numer === numerWidocznosci.current) {
+          setDane((d) => ({ ...d, visibility: potwierdzonaWidocznosc.current }));
+          setBlad(describeError(problem).message);
+        }
+      }
+    });
   }
 
   function przelaczSzukam(l) {
@@ -341,6 +375,31 @@ export default function TwojaKarta() {
           {zapisano && <Alert variant="success" className="py-2">{t('card.saved')}</Alert>}
           <Button type="submit" disabled={wysylanie}>{wysylanie ? t('settings.saving') : t('card.save')}</Button>
         </Form>
+
+        {/* --- Kto widzi karte na profilu --- */}
+        <div className="border-top mt-4 pt-3">
+          <Form.Group controlId="karta-widocznosc">
+            <Form.Label className="karta-podtytul">{t('card.visibility.title')}</Form.Label>
+            <Form.Select
+              value={dane.visibility ?? 'EVERYONE'}
+              onChange={(e) => ustawWidocznosc(e.target.value)}
+              aria-describedby="karta-widocznosc-opis"
+            >
+              {WIDOCZNOSCI.map((w) => <option key={w} value={w}>{t(`card.visibility.${w}`)}</option>)}
+            </Form.Select>
+            <Form.Text id="karta-widocznosc-opis" as="p" className="mb-0 mt-1">
+              {t(`card.visibility.hint.${dane.visibility ?? 'EVERYONE'}`)}
+              {' '}
+              <span className="karta-widocznosc-zapisano" aria-live="polite">
+                {widocznoscZapisana ? t('card.visibility.saved') : ''}
+              </span>
+            </Form.Text>
+            {/* "Tylko Poznawaj" przy wylaczonym Poznawaj = karty nie widzi nikt; lepiej to powiedziec wprost */}
+            {dane.visibility === 'DISCOVER_ONLY' && stan && !stan.enabled && (
+              <Form.Text as="p" className="karta-widocznosc-nigdzie mb-0 mt-1">{t('card.visibility.nowhere')}</Form.Text>
+            )}
+          </Form.Group>
+        </div>
 
         {/* --- Poznawaj --- */}
         {stan && (

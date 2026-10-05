@@ -18,7 +18,7 @@ wypuścić na świat.
 | **Okolica** | miasto w profilu (bez adresu i bez lokalizacji z telefonu) podnosi ludzi, koncerty i klany z Twojego regionu; zasięg od 30 km do całego kraju |
 | **Znajomi z gustem** | proponowani znajomi liczeni ze wspólnych artystów, gatunków i znajomych |
 | **Poznawaj** | karty do przesuwania w zakładce Znajomi (jak w Tinderze, ale do poznawania ludzi, nie randek): osoby z okolicy od najbardziej podobnego gustu, w prawo = chcę poznać, znajomymi zostajecie po wzajemnym „tak” |
-| **Karta profilu** | do 6 zdjęć (bez danych GPS z aparatu), „O mnie”, „Szukam” i muzyczne pytania — na profilu i w Poznawaj |
+| **Karta profilu** | do 6 zdjęć (bez danych GPS z aparatu), „O mnie”, „Szukam” i muzyczne pytania — na profilu (dla każdego, tylko dla znajomych albo dla nikogo — do wyboru) i w Poznawaj |
 | **Edytor zdjęć** | każdy załączany obraz (awatar, zdjęcia postów i karty, ikona i zdjęcie klanu) można przyciąć i obrócić — myszą, palcem albo z klawiatury |
 | **Komentarze** | odpowiedzi, oznaczanie osób przez `@login` z podpowiedziami, powiadomienia, zgłaszanie |
 | **GIF-y** | przeglądarka GIF-ów w komentarzach, na czacie i w czacie klanu; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
@@ -71,8 +71,9 @@ dotyczy właśnie Ciebie. Przy poście stoi powód: „Z twojej okolicy”, „P
   <img src="docs/zrzuty/karta-ustawienia.jpg" alt="Twoja karta w ustawieniach" width="520">
 </p>
 
-Karta profilu w Ustawieniach: do 6 zdjęć (bez danych GPS z aparatu), opis, „Szukam”, muzyczne pytania, włącznik trybu
-Poznawaj i zasięg. Ta sama karta jest na profilu.
+Karta profilu w Ustawieniach: do 6 zdjęć (bez danych GPS z aparatu), opis, „Szukam”, muzyczne pytania, kto widzi kartę
+na profilu, włącznik trybu Poznawaj i zasięg. Ta sama karta jest na profilu — chyba że wybierzesz „tylko znajomi” albo
+„tylko w trybie Poznawaj”.
 
 ### Edytor zdjęć
 
@@ -211,7 +212,7 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V17 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V18 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
@@ -332,6 +333,7 @@ z opisami: Swagger (adres niżej).
 | GET / PUT | `/api/profile/card` | moja karta profilu: „O mnie”, „Szukam” (do 3), pytania muzyczne (do 3) — zapis w całości |
 | POST / DELETE | `/api/profile/photos`, `/photos/{id}` | zdjęcie do galerii (do 6, JPG/PNG/WebP; serwer wycina EXIF z GPS) / usunięcie |
 | PUT | `/api/profile/photos/order` | nowa kolejność zdjęć (pierwsze = okładka karty) |
+| PUT | `/api/profile/card/visibility` | kto widzi kartę na profilu: `EVERYONE` (każdy, kto widzi profil), `FRIENDS` albo `DISCOVER_ONLY` (nikt — karta tylko w talii Poznawaj) |
 | GET / PUT | `/api/discover/me`, `/api/discover/settings` | tryb Poznawaj: stan, braki na karcie i podgląd / włączenie i zasięg (km; 0 = cały kraj) |
 | GET | `/api/discover/deck?limit=&skip=` | kolejne karty — od najlepiej dopasowanych gustem, w zasięgu; `skip` = karty, które przeglądarka już ma |
 | POST | `/api/discover/swipes` | decyzja `LIKE` / `PASS`; wzajemne „tak” = znajomość od razu (`matched: true`) |
@@ -786,7 +788,10 @@ nowej znajomości obie ręce rysują się po kolei.
   szybkim machnięciu. Przy „ogranicz ruch” animacji nie ma.
 - **Karta profilu** (Ustawienia → „Twoja karta”): do 6 zdjęć z układaniem (strzałki albo przeciąganie), opis,
   do 3 „szukam” i do 3 odpowiedzi na pytania, przełącznik trybu i zasięgu oraz podgląd karty. Ta sama karta jest na
-  profilu (przy pełnym widoku). Każde wgrywane zdjęcie — także w postach i awatar — traci po drodze EXIF z aparatu
+  profilu (przy pełnym widoku) — chyba że w „Kto widzi kartę na profilu” wybierzesz „Tylko znajomi” albo „Nikt — karta
+  tylko w trybie Poznawaj” (V18, `users.card_visibility`). Talii to nie zmienia; na swoim profilu widzisz kartę zawsze,
+  z podpisem, kto jeszcze ją tam widzi. Przy „tylko Poznawaj” i wyłączonym Poznawaj ustawienia uprzedzają, że teraz karty
+  nie widzi nikt. Każde wgrywane zdjęcie — także w postach i awatar — traci po drodze EXIF z aparatu
   (współrzędne GPS, model telefonu); zostaje tylko obrót.
 - **Dwie osoby mówiące „tak” w tej samej chwili** nie mogą się minąć: decyzja blokuje wiersz konta o mniejszym numerze,
   więc druga transakcja czeka i widzi pierwszą.

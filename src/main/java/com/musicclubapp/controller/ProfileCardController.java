@@ -1,5 +1,6 @@
 package com.musicclubapp.controller;
 
+import com.musicclubapp.dto.CardVisibilityRequest;
 import com.musicclubapp.dto.PhotoOrderRequest;
 import com.musicclubapp.dto.ProfileCardResponse;
 import com.musicclubapp.dto.UpdateProfileCardRequest;
@@ -44,6 +45,13 @@ public class ProfileCardController {
     public ResponseEntity<ProfileCardResponse> update(@Valid @RequestBody UpdateProfileCardRequest payload,
                                                       Authentication auth) {
         return ResponseEntity.ok(cards.update(auth.getName(), payload));
+    }
+
+    @PutMapping("/card/visibility")
+    @Operation(summary = "Kto widzi moja karte na profilu: wszyscy, znajomi albo nikt (tylko tryb Poznawaj)")
+    public ResponseEntity<ProfileCardResponse> visibility(@Valid @RequestBody CardVisibilityRequest payload,
+                                                          Authentication auth) {
+        return ResponseEntity.ok(cards.setVisibility(auth.getName(), payload.visibility()));
     }
 
     @PostMapping(value = "/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

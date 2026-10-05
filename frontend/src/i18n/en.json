@@ -1347,7 +1347,7 @@
   },
   "card": {
     "title": "Your card",
-    "subtitle": "Photos, a few words about you and music questions. They show on your profile and — if you turn it on — in Discover.",
+    "subtitle": "Photos, a few words about you and music questions. They show on your profile (who exactly — you choose below) and — if you turn it on — in Discover.",
     "photos": "Photos",
     "photosHint": "Up to {{max}} photos (JPG, PNG or WebP). The first one is the card cover — reorder with the arrows or by dragging. Before adding, you can crop each one (cards are 3:4) and rotate it. We remove camera data from photos, including where they were taken (GPS).",
     "addPhoto": "Add a photo",
@@ -1399,7 +1399,25 @@
     "emptyOwn": "Fill in your card — photos, a few words about you and music questions",
     "edit": "Edit card",
     "onProfile": "{{username}}'s card",
-    "enlarge": "Enlarge photo {{n}} of {{count}}"
+    "enlarge": "Enlarge photo {{n}} of {{count}}",
+    "visibility": {
+      "title": "Who sees your card on your profile",
+      "EVERYONE": "All profile visitors",
+      "FRIENDS": "Friends only",
+      "DISCOVER_ONLY": "No one — Discover only",
+      "hint": {
+        "EVERYONE": "Your card is on your profile and in Discover. If your profile is friends-only, only friends see it anyway.",
+        "FRIENDS": "On your profile only friends see it. Your card is still in Discover — for people who turned it on too.",
+        "DISCOVER_ONLY": "No one but you sees the card on your profile. It is only in Discover — for people who turned it on too."
+      },
+      "saved": "Saved.",
+      "nowhere": "Discover is off, so right now no one but you sees your card.",
+      "ownNote": {
+        "FRIENDS": "On your profile only friends see this card.",
+        "DISCOVER_ONLY": "Only you see this card on your profile — others can see it only in Discover."
+      },
+      "change": "Change"
+    }
   },
   "discover": {
     "modes": "Friends tab mode",

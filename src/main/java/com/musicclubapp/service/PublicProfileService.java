@@ -2,6 +2,8 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.FriendshipStatus;
 import com.musicclubapp.dto.PublicProfileResponse;
+import com.musicclubapp.dto.ProfileCardResponse;
+import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.mapper.PostMapper;
@@ -65,8 +67,21 @@ public class PublicProfileService {
             viewer != null && relacja == FriendshipStatus.NONE && privacy.canInvite(viewer, user),
             clans.badgeOf(user.getId()),
             pelny && (user.isShowCity() || user.getUsername().equals(viewerUsername)) ? user.getCity() : null,
-            // Karta jak ulubieni: tylko przy pelnym widoku (profil "tylko znajomi" jej obcym nie pokazuje)
-            pelny ? cards.of(user) : null);
+            pelny ? karta(user, viewer, relacja) : null);
+    }
+
+    /**
+     * Karta jak ulubieni: tylko przy pelnym widoku (profil "tylko znajomi" jej obcym nie pokazuje), a do tego
+     * wedlug ustawienia karty - mozna ja zostawic tylko znajomym albo tylko dla trybu Poznawaj.
+     */
+    private ProfileCardResponse karta(User user, User viewer, FriendshipStatus relacja) {
+        boolean wlasny = relacja == FriendshipStatus.SELF;
+        boolean admin = viewer != null && viewer.getRole() == Role.ADMIN;
+        if (!ProfileCardService.shownOnProfile(user.getCardVisibility(), wlasny, relacja == FriendshipStatus.FRIENDS, admin)) {
+            return null;
+        }
+        // Wlasciciel widzi takze, komu karta sie pokazuje - na swoim profilu ma o tym podpis
+        return wlasny ? cards.own(user) : cards.of(user);
     }
 
     /**

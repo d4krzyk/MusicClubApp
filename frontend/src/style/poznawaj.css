@@ -1190,6 +1190,41 @@ legend.karta-podtytul {
   background: rgba(var(--bs-primary-rgb), .06);
 }
 
+/* Wlasna karta, ktorej na profilu nie widac wszystkim - podpis widoczny tylko dla wlasciciela */
+.profil-karta-widocznosc {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin: 0 0 .9rem;
+  padding: .45rem .8rem;
+  border-radius: .9rem;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+  font-size: .82rem;
+  line-height: 1.35;
+}
+
+/* Ikona przy pierwszym wierszu tekstu, takze gdy tekst sie zawija (telefon) */
+.profil-karta-widocznosc > svg {
+  flex: 0 0 auto;
+  margin-top: .1rem;
+}
+
+.profil-karta-widocznosc a {
+  font-weight: 600;
+}
+
+.karta-widocznosc-nigdzie {
+  color: var(--bs-warning-text-emphasis);
+}
+
+.karta-widocznosc-zapisano {
+  color: var(--bs-success-text-emphasis);
+  font-weight: 600;
+}
+
 /* --- Ogranicz ruch ---------------------------------------------------------------- */
 
 @media (prefers-reduced-motion: reduce) {

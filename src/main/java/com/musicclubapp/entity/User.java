@@ -188,6 +188,12 @@ public class User {
     @Column(name = "looking_for", length = 200)
     private Set<LookingFor> lookingFor = EnumSet.noneOf(LookingFor.class);
 
+    /** Kto widzi karte na profilu. Na talie Poznawaj nie wplywa - tam karta jest zawsze. */
+    @Enumerated(EnumType.STRING)
+    @org.hibernate.annotations.ColumnDefault("'EVERYONE'")
+    @Column(name = "card_visibility", nullable = false, length = 20)
+    private CardVisibility cardVisibility = CardVisibility.EVERYONE;
+
     /*
      * Tryb Poznawaj. Wlaczony = moja karta trafia do talii innych osob z wlaczonym trybem (i tylko ich), a ja
      * moge przegladac ich karty. Domyslnie wylaczony: na karcie sa zdjecia i opis dla obcych, wiec to swiadoma
@@ -490,6 +496,14 @@ public class User {
     public void setLookingFor(Set<LookingFor> lookingFor) {
         this.lookingFor = lookingFor == null || lookingFor.isEmpty()
             ? EnumSet.noneOf(LookingFor.class) : EnumSet.copyOf(lookingFor);
+    }
+
+    public CardVisibility getCardVisibility() {
+        return cardVisibility == null ? CardVisibility.EVERYONE : cardVisibility;
+    }
+
+    public void setCardVisibility(CardVisibility cardVisibility) {
+        this.cardVisibility = cardVisibility;
     }
 
     public boolean isDiscoverEnabled() {

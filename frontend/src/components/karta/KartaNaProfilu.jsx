@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Modal from 'react-bootstrap/Modal';
-import { IconCamera } from '../Icons';
+import { IconCamera, IconFriends, IconLock } from '../Icons';
 
 /**
  * Karta na profilu: zdjecia z galerii (klikniecie powieksza), "o mnie", "szukam" i pytania muzyczne. Serwer
- * oddaje ja tylko przy pelnym widoku profilu. Pusta karta na wlasnym profilu zacheca do uzupelnienia.
+ * oddaje ja tylko przy pelnym widoku profilu i wedlug ustawienia karty (wszyscy / znajomi / tylko Poznawaj).
+ * Pusta karta na wlasnym profilu zacheca do uzupelnienia. Wlasna karta, ktorej inni na profilu nie widza (albo
+ * widza tylko znajomi), ma o tym podpis - inaczej latwo zapomniec, ze ktos jej tu nie zobaczy.
  */
 export default function KartaNaProfilu({ karta, wlasna = false, login }) {
   const { t } = useTranslation();
@@ -25,8 +27,20 @@ export default function KartaNaProfilu({ karta, wlasna = false, login }) {
     ) : null;
   }
 
+  const ograniczona = wlasna && karta.visibility && karta.visibility !== 'EVERYONE';
+
   return (
     <section className="profil-panel profil-karta mb-4" aria-label={t('card.onProfile', { username: login })}>
+      {ograniczona && (
+        <p className="profil-karta-widocznosc">
+          {karta.visibility === 'FRIENDS' ? <IconFriends size={14} /> : <IconLock size={14} />}
+          <span>
+            {t(`card.visibility.ownNote.${karta.visibility}`)}
+            {' '}
+            <Link to="/settings#karta">{t('card.visibility.change')}</Link>
+          </span>
+        </p>
+      )}
       {karta.photos.length > 0 && (
         <ul className="profil-karta-zdjecia list-unstyled">
           {karta.photos.map((p, i) => (

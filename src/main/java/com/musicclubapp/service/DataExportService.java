@@ -313,7 +313,8 @@ public class DataExportService {
             "lookingFor", List.copyOf(u.getLookingFor()),
             "prompts", profilePrompts.ofUser(u.getId()).stream()
                 .map(a -> mapa("prompt", a.getPrompt(), "answer", a.getAnswer())).toList(),
-            "photos", zdjecia);
+            "photos", zdjecia,
+            "visibility", u.getCardVisibility());
     }
 
     /**

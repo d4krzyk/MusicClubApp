@@ -21,7 +21,7 @@ i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i 
 z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie klanu (V16), karta profilu
 (galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i ikona
 obejmujących się osób zamiast serduszek, wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie — oraz
-animacje w całej aplikacji (bez migracji).
+animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu — wszyscy / znajomi / tylko Poznawaj (V18).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -612,7 +612,8 @@ bierze komunikat z adnotacji); sam GIF = `content` `""`. Cytat odpowiedzi ma `gi
 Karta (`ProfileCardService`, `/api/profile/card`, `/api/profile/photos`): do 6 zdjęć (`profile_photos`, pierwsze =
 okładka; JPEG/PNG/WebP, bez GIF), `users.bio` (300), `users.looking_for` (do 3 z `LookingFor`, jedna kolumna przez
 `LookingForConverter`, bez CHECK), do 3 odpowiedzi na pytania (`profile_prompts`, `ProfilePrompt` z CHECK — wpis
-w `EnumConstraintRefresher`). Na profilu tylko przy pełnym widoku (`PublicProfileResponse.card`, jak ulubieni).
+w `EnumConstraintRefresher`). Na profilu tylko przy pełnym widoku (`PublicProfileResponse.card`, jak ulubieni)
+i według `users.card_visibility` (V18, niżej).
 Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z talii.
 
 - **EXIF**: `storage/ImageMetadata` czyści **każde** wgrywane zdjęcie (też posty i awatary): JPEG bez APP1/APP3–13/APP15
@@ -649,6 +650,34 @@ Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z ta
   ją zmieni. `user("x")` w MockMvc nie ma roli ADMIN — do `/api/reports/admin/**` trzeba `.roles("ADMIN")`.
 - Polityka i regulamin opisują kartę, EXIF, Poznawaj, retencję decyzji i `CLEAR_CARD`; `app.legal.version` bez zmian
   (nikt jeszcze nie akceptował).
+
+## Kto widzi kartę na profilu (V18)
+
+`users.card_visibility` (`CardVisibility`: `EVERYONE` domyślnie / `FRIENDS` / `DISCOVER_ONLY`, CHECK — wpis
+w `EnumConstraintRefresher`), `PUT /api/profile/card/visibility`, w Ustawieniach lista w „Twoja karta” (zapis od razu,
+przy błędzie wraca to, co serwer ostatnio potwierdził). Zapisy idą **po kolei** (łańcuch obietnic), a ekran przyjmuje
+tylko odpowiedź na ostatni wybór — równoległe zapytania kończyły się w bazie na pierwszym wyborze.
+
+- **Tylko profil.** Talia Poznawaj tego nie czyta (`DiscoverService` bierze kartę z własnego SQL) — „tylko Poznawaj”
+  znaczy: na profilu nikt, w talii jak dotąd. Reguła w jednym miejscu: `ProfileCardService.shownOnProfile`, wołana
+  w `PublicProfileService` **po** `privacy.view()` — profil „tylko znajomi” dalej ukrywa kartę przed obcymi niezależnie
+  od tego ustawienia. Znajomy = `FriendshipStatus.FRIENDS`; oczekujące zaproszenie nim nie jest.
+- Właściciel i administrator aplikacji widzą kartę na profilu zawsze (administrator rozpatruje zgłoszenia — migawka
+  karty w zgłoszeniu i tak jest). Ustawienie (`ProfileCardResponse.visibility`) dostaje **tylko właściciel**
+  (`cards.own`); innym idzie `null` (`cards.of`). Na własnym profilu przy `FRIENDS`/`DISCOVER_ONLY` jest podpis
+  (`.profil-karta-widocznosc`) z „Zmień”; przy `DISCOVER_ONLY` i wyłączonym Poznawaj ustawienia ostrzegają, że karty
+  nie widzi nikt.
+- To ustawienie prywatności, nie treść — wolno je zmienić także z zakazem publikowania. Eksport ma
+  `profileCard.visibility`; kolumna na `users`, więc kasuje się z kontem. Polityka mówi o wyborze (sekcja o tym, kto
+  co widzi); `app.legal.version` bez zmian (nikt jeszcze nie akceptował).
+- **Pułapki z tej rundy**: w teście konto bez potwierdzonego adresu nie trafia do talii (`markEmailVerified`), a
+  oczekujące zaproszenie też z niej wyrzuca — przypadek „zaproszenie to nie znajomość” jest na końcu testu, po talii;
+  w Playwrighcie `goto` na ten sam adres z `#kotwicą` nie przeładowuje strony (tylko zmienia kotwicę) — `reload()`;
+  przełącznik Poznawaj zmienia stan dopiero po odpowiedzi serwera, więc `check()` w Playwrighcie zgłasza błąd —
+  `click()` i czekanie.
+- **Natywny `<select>` ucina długie opcje bez wielokropka** i nie da się tego zmierzyć `scrollWidth`. Mierzy się napis:
+  `canvas.measureText` krojem pola wobec `clientWidth − padding` (prawy padding to miejsce na strzałkę). Przy 320 px
+  w polu formularza mieści się ok. 200 px tekstu — „Nikt — karta tylko w trybie Poznawaj” miało 283 px.
 
 ## Edytor zdjęć i „nie randka” (bez migracji)
 
