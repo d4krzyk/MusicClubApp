@@ -410,6 +410,9 @@
     "reminderTomorrow": "Tomorrow: {{name}}",
     "reminderDays_one": "In {{count}} day: {{name}}",
     "reminderDays_other": "In {{count}} days: {{name}}",
+    "meetingReminder": "Meeting with {{username}} at {{time}}: {{place}}",
+    "meetingReminderClan": "{{name}} clan meeting at {{time}}: {{place}}",
+    "meetingCancelled": "{{username}} cancelled the meeting: {{place}}",
     "clanInvite": "{{username}} invites you to the clan {{name}}",
     "clanKicked": "You are no longer in the clan {{name}}",
     "clanJoinRequest": "{{username}} asks to join the clan {{name}}",
@@ -701,7 +704,8 @@
     "forYouNearHint": "Concerts from your area come first.",
     "nearEmptyTitle": "Nothing within {{km}} km of {{city}}",
     "nearEmptyText": "Try a larger range or show concerts from the whole country.",
-    "nearEmptyForYou": "Nothing in your area matches your taste. Increase the range or show the whole country."
+    "nearEmptyForYou": "Nothing in your area matches your taste. Increase the range or show the whole country.",
+    "whereTitle": "Where"
   },
   "verify": {
     "checkTitle": "Check your inbox",
@@ -1542,5 +1546,82 @@
     "edit": "Edit",
     "editNamed": "Crop and rotate: {{name}}",
     "notImage": "That's not an image — choose a photo or a picture."
+  },
+  "map": {
+    "region": "Map",
+    "regionNamed": "Map: {{name}}",
+    "unavailable": "The map is unavailable right now — check your connection or open the place in Maps.",
+    "directions": "Get directions",
+    "openInMaps": "Open in Maps",
+    "pickHint": "Tap the map or drag the pin to mark the exact spot."
+  },
+  "meetings": {
+    "title": "Meeting",
+    "attach": "Suggest a meeting",
+    "preview": "Meeting: {{place}}",
+    "cardLabel": "Meeting: {{place}}",
+    "state": {
+      "now": "Now",
+      "over": "Over",
+      "cancelled": "Cancelled",
+      "inMinutes": "in {{count}} min",
+      "inHours": "in {{count}} h",
+      "inDays_one": "in {{count}} day",
+      "inDays_other": "in {{count}} days"
+    },
+    "going_one": "Going: {{names}}",
+    "going_other": "Going ({{count}}): {{names}}",
+    "notGoing_one": "{{count}} can’t make it",
+    "notGoing_other": "{{count}} can’t make it",
+    "nobodyYet": "Nobody has confirmed yet",
+    "rsvp": "Your answer",
+    "imGoing": "I’m going",
+    "cantMake": "Can’t make it",
+    "toCalendar": "Add to calendar",
+    "cancel": "Cancel",
+    "cancelConfirm": "Cancel the meeting? People who confirmed will get a notification.",
+    "icsTitle": "Meeting: {{place}}",
+    "willRemind": "We’ll remind you {{czas}} before.",
+    "remind": {
+      "none": "No reminder",
+      "before": "{{czas}} before",
+      "minutes": "{{count}} min",
+      "hours_one": "{{count}} hour",
+      "hours_other": "{{count}} hours",
+      "day": "a day"
+    },
+    "formTitle": "New meeting",
+    "beforeConcert": "Before a concert:",
+    "place": "Place",
+    "placePlaceholder": "e.g. by the main entrance",
+    "useMyLocation": "My location",
+    "pickOnMap": "Pick on the map",
+    "hideMap": "Hide map",
+    "removePoint": "Remove point",
+    "geo": {
+      "unsupported": "This browser doesn’t share location — pick the place on the map.",
+      "locating": "Finding your location…",
+      "denied": "Location not allowed — pick the place on the map.",
+      "unavailable": "Couldn’t get your location — pick the place on the map."
+    },
+    "date": "Day",
+    "from": "From",
+    "to": "To",
+    "reminder": "Reminder",
+    "note": "Note (optional)",
+    "notePlaceholder": "e.g. I have the tickets, waiting by the cloakroom",
+    "send": "Send meeting",
+    "errors": {
+      "placeRequired": "Say where you’re meeting.",
+      "placeTooLong": "The place can be at most 100 characters.",
+      "noteTooLong": "The note can be at most 200 characters.",
+      "startRequired": "Pick a day and time.",
+      "startInPast": "A meeting can’t start in the past.",
+      "startTooFar": "A meeting can be planned at most 60 days ahead.",
+      "endBeforeStart": "The end has to be later than the start.",
+      "tooLong": "A meeting can last at most a day.",
+      "concertFailed": "Couldn’t load the concert.",
+      "sendFailed": "Couldn’t send the meeting."
+    }
   }
 }

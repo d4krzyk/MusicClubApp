@@ -17,6 +17,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -108,6 +110,15 @@ public class Message {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /**
+     * Spotkanie, ktore niesie ta wiadomosc (miejsce, czas, przypomnienie) - albo {@code null}. Usuniecie wiadomosci
+     * kasuje spotkanie; skasowanie spotkania zostawia wiadomosc bez niego.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meeting_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Meeting meeting;
+
     protected Message() {
     }
 
@@ -167,7 +178,16 @@ public class Message {
         content = null;
         applyMusic(null, null, null, null);
         gif = null;
+        meeting = null;
         deletedAt = now;
+    }
+
+    public Meeting getMeeting() {
+        return meeting;
+    }
+
+    public void attachMeeting(Meeting meeting) {
+        this.meeting = meeting;
     }
 
     public boolean isDeleted() {

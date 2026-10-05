@@ -46,7 +46,12 @@ public class EventReminderService {
             .sorted().distinct().toList();
     }
 
+    /*
+     * Transakcja TUTAJ, a nie tylko na run(): harmonogram wola scheduled(), a wywolanie run() z wnetrza tej samej klasy
+     * omija posrednika Springa - bez tego "przypomniane" nie trafialo do bazy i przypomnienie szlo przy kazdym przebiegu.
+     */
     @Scheduled(cron = "${app.events.reminders.cron:0 7 9-21 * * *}", zone = "Europe/Warsaw")
+    @Transactional
     public void scheduled() {
         int wyslane = run();
         if (wyslane > 0) {

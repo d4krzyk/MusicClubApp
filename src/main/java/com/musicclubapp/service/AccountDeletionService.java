@@ -47,6 +47,7 @@ public class AccountDeletionService {
     private final CommentRepository comments;
     private final DiscoverService discover;
     private final ProfileCardService cards;
+    private final MeetingService meetings;
 
     public AccountDeletionService(UserRepository userRepository,
                                   PasswordEncoder passwordEncoder,
@@ -66,7 +67,9 @@ public class AccountDeletionService {
                                   ClanService clans,
                                   CommentRepository comments,
                                   DiscoverService discover,
-                                  ProfileCardService cards) {
+                                  ProfileCardService cards,
+                                  MeetingService meetings) {
+        this.meetings = meetings;
         this.discover = discover;
         this.cards = cards;
         this.comments = comments;
@@ -178,6 +181,9 @@ public class AccountDeletionService {
 
         // 6. Wiadomosci z czatu - wyslane i otrzymane
         messages.deleteAllOf(id);
+
+        // 6a. Spotkania zalozone przez to konto i spotkania z jego rozmow (odpowiedzi i powiadomienia kaskada w bazie)
+        meetings.deleteAllOf(id);
 
         // 7. Historia adresow sieciowych
         network.deleteAllOf(id);

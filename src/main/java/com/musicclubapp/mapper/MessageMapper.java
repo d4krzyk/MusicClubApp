@@ -1,5 +1,6 @@
 package com.musicclubapp.mapper;
 
+import com.musicclubapp.dto.MeetingResponse;
 import com.musicclubapp.dto.MessageResponse;
 import com.musicclubapp.entity.Message;
 import com.musicclubapp.entity.User;
@@ -11,6 +12,11 @@ import org.springframework.stereotype.Component;
 public class MessageMapper {
 
     public MessageResponse toResponse(Message message, User viewer) {
+        return toResponse(message, viewer, null);
+    }
+
+    /** {@code meeting} - spotkanie z wiadomosci juz w postaci dla ogladajacego (liczy je {@code MeetingService}). */
+    public MessageResponse toResponse(Message message, User viewer, MeetingResponse meeting) {
         User sender = message.getSender();
 
         return new MessageResponse(
@@ -29,7 +35,8 @@ public class MessageMapper {
             message.getCreatedAt(),
             sender.getId().equals(viewer.getId()),
             message.isRead(),
-            message.isDeleted());
+            message.isDeleted(),
+            meeting);
     }
 
     private String avatarUrl(User user) {

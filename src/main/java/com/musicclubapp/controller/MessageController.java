@@ -131,6 +131,22 @@ public class MessageController {
         return ResponseEntity.status(HttpStatus.CREATED).body(sent);
     }
 
+    @PostMapping("/with/{username}/meeting")
+    @Operation(summary = "Wysyla znajomemu spotkanie (miejsce, czas od-do, przypomnienie, opcjonalnie punkt na mapie)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "201", description = "Wyslane"),
+        @ApiResponse(responseCode = "409", description = "Zly czas, punkt albo przypomnienie, limit spotkan, "
+            + "to nie jest znajomy albo konto ma zakaz pisania"),
+        @ApiResponse(responseCode = "422", description = "Brak miejsca, za dluga notatka")
+    })
+    public ResponseEntity<MessageResponse> sendMeeting(
+            @PathVariable String username,
+            @Valid @RequestBody com.musicclubapp.dto.MeetingRequest request,
+            Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(messageService.sendMeeting(authentication.getName(), username, request));
+    }
+
     @PostMapping("/with/{username}/read")
     @Operation(summary = "Oznacza cala rozmowe jako przeczytana")
     public ResponseEntity<Map<String, Integer>> markRead(@PathVariable String username,

@@ -1,6 +1,7 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useState,
 } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { licznikNieprzeczytanych } from '../api/czat';
 import { useAuth } from '../auth/AuthContext';
 import useOdswiezanie from '../hooks/useOdswiezanie';
@@ -80,6 +81,27 @@ export function ChatProvider({ children }) {
   }, []);
 
   const closeChat = useCallback(() => setOpen(false), []);
+
+  /*
+   * Adres z "?czat=login" (powiadomienie o spotkaniu, klikniecie w powiadomienie na telefonie) otwiera rozmowe
+   * z ta osoba na dowolnej stronie. Parametr znika z adresu, zeby odswiezenie strony nie otwieralo jej znowu.
+   */
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const params = new URLSearchParams(location.search);
+    const kto = params.get('czat');
+    if (!kto) {
+      return;
+    }
+    params.delete('czat');
+    const reszta = params.toString();
+    navigate({ pathname: location.pathname, search: reszta ? `?${reszta}` : '', hash: location.hash }, { replace: true });
+    openChat(kto);
+  }, [user, location.search, location.pathname, location.hash, navigate, openChat]);
 
   const value = useMemo(() => ({
     open,

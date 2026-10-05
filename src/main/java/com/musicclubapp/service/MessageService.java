@@ -2,8 +2,11 @@ package com.musicclubapp.service;
 
 import com.musicclubapp.dto.ConversationResponse;
 import com.musicclubapp.dto.ConversationSyncResponse;
+import com.musicclubapp.dto.MeetingRequest;
+import com.musicclubapp.dto.MeetingResponse;
 import com.musicclubapp.dto.MessageResponse;
 import com.musicclubapp.dto.SendMessageRequest;
+import com.musicclubapp.entity.Meeting;
 import com.musicclubapp.entity.Message;
 import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.User;
@@ -19,17 +22,20 @@ import com.musicclubapp.repository.MessageRepository;
 import com.musicclubapp.repository.UnreadRow;
 import com.musicclubapp.repository.UserRepository;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,6 +55,7 @@ public class MessageService {
     private final TypingRegistry typing;
     private final BlockService blocks;
     private final GifService gifs;
+    private final MeetingService meetings;
 
     public MessageService(MessageRepository messageRepository,
                           UserRepository userRepository,
@@ -57,7 +64,9 @@ public class MessageService {
                           PresenceService presence,
                           TypingRegistry typing,
                           BlockService blocks,
-                          GifService gifs) {
+                          GifService gifs,
+                          MeetingService meetings) {
+        this.meetings = meetings;
         this.blocks = blocks;
         this.gifs = gifs;
         this.messageRepository = messageRepository;
@@ -107,6 +116,35 @@ public class MessageService {
         return messageMapper.toResponse(saved, sender);
     }
 
+    /**
+     * Wysyla spotkanie: wiadomosc bez tresci, ktora niesie miejsce, czas i przypomnienie. Te same zasady co przy
+     * zwyklej wiadomosci (tylko do znajomych, zakaz pisania blokuje).
+     */
+    @Transactional
+    public MessageResponse sendMeeting(String senderUsername, String recipientUsername, MeetingRequest request) {
+        User sender = requireUser(senderUsername);
+        User recipient = requireFriend(sender, recipientUsername);
+        if (sender.isBanned(BanKind.MESSAGING)) {
+            throw OperationNotAllowedException.banned(BanKind.MESSAGING, sender.bannedUntil(BanKind.MESSAGING));
+        }
+        Meeting meeting = meetings.create(sender, recipient, null, request);
+        Message message = new Message(sender, recipient, null);
+        message.attachMeeting(meeting);
+        Message saved = messageRepository.save(message);
+        typing.stoppedTyping(sender.getId(), recipient.getId());
+        return messageMapper.toResponse(saved, sender, meetings.toResponse(meeting, sender, true));
+    }
+
+    /** Wiadomosci w postaci dla ogladajacego - spotkania z nich jednym zapytaniem o odpowiedzi. */
+    private List<MessageResponse> map(List<Message> list, User viewer, boolean canWrite) {
+        Map<Long, MeetingResponse> spotkania = meetings.toResponses(
+            list.stream().map(Message::getMeeting).filter(Objects::nonNull).distinct().toList(), viewer, canWrite);
+        return list.stream()
+            .map(m -> messageMapper.toResponse(m, viewer,
+                m.getMeeting() == null ? null : spotkania.get(m.getMeeting().getId())))
+            .toList();
+    }
+
     /** Podpina nagranie - razem z tytulem i miniaturka. */
     private void applyMusic(Message message, ParsedMusicLink link, Integer startSeconds) {
         if (link == null) {
@@ -131,9 +169,9 @@ public class MessageService {
         User viewer = requireUser(me);
         User partner = requirePartner(viewer, partnerUsername);
 
-        return messageRepository
-            .conversation(viewer.getId(), partner.getId(), pageable)
-            .map(message -> messageMapper.toResponse(message, viewer));
+        Page<Message> strona = messageRepository.conversation(viewer.getId(), partner.getId(), pageable);
+        List<MessageResponse> tresc = map(strona.getContent(), viewer, canWriteTo(viewer, partner));
+        return new PageImpl<>(tresc, strona.getPageable(), strona.getTotalElements());
     }
 
     /**
@@ -146,7 +184,13 @@ public class MessageService {
         Message message = messageRepository.findById(messageId)
             .filter(m -> m.getSender().getId().equals(viewer.getId()) && !m.isHiddenForSender())
             .orElseThrow(() -> new NoSuchElementFoundException("message", messageId));
+        Meeting spotkanie = message.getMeeting();
         message.deleteForEveryone(LocalDateTime.now());
+        if (spotkanie != null) {
+            // Spotkanie znika razem z wiadomoscia - przypomnienia nie przyjda, a odpowiedzi i powiadomienia kasuje baza
+            messageRepository.flush();
+            meetings.deleteWithMessage(spotkanie);
+        }
         return messageMapper.toResponse(message, viewer);
     }
 
@@ -174,9 +218,8 @@ public class MessageService {
             afterId == null ? 0L : afterId,
             PageRequest.of(0, MAX_SYNC_BATCH));
 
-        List<MessageResponse> messages = fresh.stream()
-            .map(message -> messageMapper.toResponse(message, viewer))
-            .toList();
+        boolean canWrite = canWriteTo(viewer, partner);
+        List<MessageResponse> messages = map(fresh, viewer, canWrite);
 
         boolean somethingToRead = fresh.stream()
             .anyMatch(message -> message.getRecipient().getId().equals(viewer.getId()));
@@ -188,6 +231,9 @@ public class MessageService {
 
         List<Long> usuniete = changedSince == null ? List.of()
             : messageRepository.deletedSince(viewer.getId(), partner.getId(), changedSince.minus(ZAPAS_USUNIEC));
+        List<MeetingResponse> zmienione = changedSince == null ? List.of()
+            : meetings.changedInConversation(viewer, partner,
+                changedSince.minus(ZAPAS_USUNIEC).atZone(ZoneId.systemDefault()).toInstant(), canWrite);
 
         return new ConversationSyncResponse(
             messages,
@@ -195,9 +241,10 @@ public class MessageService {
             blocks.eitherWay(viewer.getId(), partner.getId()) ? presence.hidden() : presence.of(partner),
             messageRepository.countUnread(viewer.getId()),
             messageRepository.lastReadOutgoingId(viewer.getId(), partner.getId()),
-            canWriteTo(viewer, partner),
+            canWrite,
             usuniete,
-            teraz);
+            teraz,
+            zmienione);
     }
 
     /** Oznacza cala rozmowe jako przeczytana. */
@@ -282,7 +329,9 @@ public class MessageService {
                     ? null
                     : PostMapper.UPLOADS_PATH + partner.getAvatarFileName(),
                 ukryci.contains(partner.getId()) ? presence.hidden() : presence.of(partner),
-                last == null ? null : messageMapper.toResponse(last, viewer),
+                last == null ? null : last.getMeeting() == null ? messageMapper.toResponse(last, viewer)
+                    : messageMapper.toResponse(last, viewer,
+                        meetings.toResponse(last.getMeeting(), viewer, friendIds.contains(partner.getId()))),
                 unreadBySender.getOrDefault(partner.getId(), 0L),
                 friendIds.contains(partner.getId())));
         }
@@ -318,6 +367,8 @@ public class MessageService {
         messageRepository.hideSentTo(viewer.getId(), partner.getId());
         messageRepository.hideReceivedFrom(viewer.getId(), partner.getId());
         messageRepository.deleteHiddenByBothSides();
+        // Spotkania z rozmowy, ktorej juz nikt nie widzi - bez przypomnien o nich
+        meetings.deleteOrphans();
     }
 
     /* ------------------------------------------------------------------ */

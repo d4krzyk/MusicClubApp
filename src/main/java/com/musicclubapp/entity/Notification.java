@@ -82,6 +82,12 @@ public class Notification {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Comment comment;
 
+    /** Spotkanie z czatu - przy przypomnieniu i odwolaniu. Znika razem ze spotkaniem. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meeting_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Meeting meeting;
+
     /** Ile dni zostalo do wydarzenia w chwili przypomnienia: 0 = dzis, 1 = jutro. */
     @Column(name = "days_left")
     private Integer daysLeft;
@@ -181,6 +187,27 @@ public class Notification {
         return n;
     }
 
+    /**
+     * Przypomnienie o spotkaniu. Sprawca to druga strona rozmowy (z nia jest spotkanie, do niej prowadzi klikniecie),
+     * przy spotkaniu klanu - nikt, a klan jest wpisany.
+     */
+    public static Notification meetingReminder(User recipient, Meeting meeting) {
+        User other = meeting.getClan() != null ? null
+            : meeting.getCreator().getId().equals(recipient.getId()) ? meeting.getPartner() : meeting.getCreator();
+        Notification n = new Notification(recipient, other, NotificationType.MEETING_REMINDER);
+        n.meeting = meeting;
+        n.clan = meeting.getClan();
+        return n;
+    }
+
+    /** Odwolanie spotkania - dla potwierdzonych, z zakladajacym jako sprawca. */
+    public static Notification meetingCancelled(User recipient, User creator, Meeting meeting) {
+        Notification n = new Notification(recipient, creator, NotificationType.MEETING_CANCELLED);
+        n.meeting = meeting;
+        n.clan = meeting.getClan();
+        return n;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -231,6 +258,10 @@ public class Notification {
 
     public Clan getClan() {
         return clan;
+    }
+
+    public Meeting getMeeting() {
+        return meeting;
     }
 
     public Comment getComment() {

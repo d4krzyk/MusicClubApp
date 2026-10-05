@@ -116,6 +116,20 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
            """)
     void deleteReminders(@Param("recipientId") Long recipientId, @Param("eventId") Long eventId);
 
+    /** Przypomnienie o spotkaniu przestalo byc prawdziwe (osoba juz nie potwierdza). */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.recipient.id = :recipientId AND n.meeting.id = :meetingId
+             AND n.type = com.musicclubapp.entity.NotificationType.MEETING_REMINDER
+           """)
+    void deleteMeetingReminders(@Param("recipientId") Long recipientId, @Param("meetingId") Long meetingId);
+
+    /** Spotkanie odwolane - jego przypomnienia znikaja ze wszystkich dzwonkow. */
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.meeting.id = :meetingId")
+    void deleteByMeetingId(@Param("meetingId") Long meetingId);
+
     /** Zaproszenie do klanu przestalo czekac (przyjete, odrzucone, cofniete) - znika z dzwonka. */
     @Modifying
     @Query("""

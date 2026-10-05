@@ -3,6 +3,7 @@ package com.musicclubapp.service;
 import com.musicclubapp.dto.NotificationResponse;
 import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.Comment;
+import com.musicclubapp.entity.Meeting;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
 import com.musicclubapp.entity.NotificationType;
@@ -16,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 
 /** Powiadomienia: powstawanie, czytanie i sprzatanie. */
@@ -25,13 +28,16 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationMapper notificationMapper;
     private final PushService push;
+    private final Clock clock;
 
     public NotificationService(NotificationRepository notificationRepository,
                                NotificationMapper notificationMapper,
-                               PushService push) {
+                               PushService push,
+                               Clock clock) {
         this.notificationRepository = notificationRepository;
         this.notificationMapper = notificationMapper;
         this.push = push;
+        this.clock = clock;
     }
 
     /**
@@ -77,8 +83,26 @@ public class NotificationService {
                 "push.commentReply.body", new Object[] {kto}, link, "comment-reply-" + n.getComment().getId());
             case COMMENT_MENTION -> new PushService.Message("push.commentMention.title", null,
                 "push.commentMention.body", new Object[] {kto}, link, "comment-mention-" + n.getComment().getId());
+            case MEETING_REMINDER -> spotkanie(n, link);
+            case MEETING_CANCELLED -> new PushService.Message("push.meetingCancelled.title", null,
+                "push.meetingCancelled.body", new Object[] {n.getMeeting().getPlace(), kto}, link,
+                "meeting-" + n.getMeeting().getId());
             case REACTION -> null;
         };
+    }
+
+    /**
+     * "Spotkanie za 30 min" / "Pod Progresja" - minuty liczone w chwili wysylki, bez godziny (serwer nie zna strefy
+     * czasowej telefonu). Ten sam znacznik co odwolanie: telefon pokazuje najnowsze o tym spotkaniu.
+     */
+    private PushService.Message spotkanie(Notification n, String link) {
+        Meeting m = n.getMeeting();
+        long minuty = Math.max(0, (Duration.between(clock.instant(), m.getStartsAt()).getSeconds() + 59) / 60);
+        String tytul = minuty == 0 ? "push.meeting.now" : minuty < 90 ? "push.meeting.minutes" : "push.meeting.hours";
+        long ile = minuty < 90 ? minuty : Math.round(minuty / 60.0);
+        return new PushService.Message(tytul, new Object[] {ile},
+            m.getNote() == null ? "push.meeting.body" : "push.meeting.bodyNote",
+            new Object[] {m.getPlace(), m.getNote()}, link, "meeting-" + m.getId());
     }
 
     /** "Jutro: Nocny koncert" / "Progresja · 20:00". Jeden znacznik na wydarzenie - "jutro" zastepuje "za 3 dni". */
@@ -240,6 +264,31 @@ public class NotificationService {
     @Transactional
     public void eventRemindersGone(Long recipientId, Long eventId) {
         notificationRepository.deleteReminders(recipientId, eventId);
+    }
+
+    /** Przypomnienie o spotkaniu, na ktore odbiorca potwierdzil - w dzwonku i na telefonie. */
+    @Transactional
+    public void meetingReminder(User recipient, Meeting meeting) {
+        notificationRepository.deleteMeetingReminders(recipient.getId(), meeting.getId());
+        zapisz(Notification.meetingReminder(recipient, meeting));
+    }
+
+    /** Spotkanie odwolane - dla potwierdzonych (bez zakladajacego). */
+    @Transactional
+    public void meetingCancelled(User recipient, User creator, Meeting meeting) {
+        zapisz(Notification.meetingCancelled(recipient, creator, meeting));
+    }
+
+    /** Osoba juz nie potwierdza - przypomnienie w jej dzwonku przestaje byc prawdziwe. */
+    @Transactional
+    public void meetingRemindersGone(Long recipientId, Long meetingId) {
+        notificationRepository.deleteMeetingReminders(recipientId, meetingId);
+    }
+
+    /** Spotkanie odwolane - wczesniejsze przypomnienia o nim znikaja u wszystkich. */
+    @Transactional
+    public void meetingNotificationsGone(Long meetingId) {
+        notificationRepository.deleteByMeetingId(meetingId);
     }
 
     /** Znajomosc doszla do skutku - powiadamiamy te osobe, ktora czekala. */

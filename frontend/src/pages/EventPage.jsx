@@ -14,6 +14,7 @@ import {
 import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
 import EventReasons from '../components/EventReasons';
+import MapaPunktu, { adresTrasy } from '../components/mapa/MapaPunktu';
 import Post from '../components/Post';
 import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
@@ -194,6 +195,23 @@ function Szczegoly({
         </ul>
 
         <Udzial w={w} onZmiana={onZmianaUdzialu} t={t} />
+
+        {w.latitude != null && w.longitude != null && (
+          <section className="mb-4 wydarzenie-mapa" aria-labelledby="wydarzenie-gdzie">
+            <h2 id="wydarzenie-gdzie" className="h6 wydarzenie-sekcja">{t('events.whereTitle')}</h2>
+            <MapaPunktu lat={w.latitude} lon={w.longitude} podpis={w.venueName} />
+            <div className="mapa-akcje">
+              <Button as="a" size="sm" variant="outline-primary" href={adresTrasy(w.latitude, w.longitude, w.venueName)}
+                target="_blank" rel="noopener noreferrer">
+                {t('map.directions')} <IconExternal size={11} />
+              </Button>
+              <Button as="a" size="sm" variant="outline-secondary" href={adresMapy(w)} target="_blank"
+                rel="noopener noreferrer">
+                {t('map.openInMaps')} <IconExternal size={11} />
+              </Button>
+            </div>
+          </section>
+        )}
 
         {w.ticketUrl && (
           <Button

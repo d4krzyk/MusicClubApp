@@ -123,6 +123,8 @@ public class DataExportService {
     private final com.musicclubapp.repository.ProfilePhotoRepository profilePhotos;
     private final com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts;
     private final com.musicclubapp.repository.DiscoverSwipeRepository swipes;
+    private final com.musicclubapp.repository.MeetingRepository meetings;
+    private final com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees;
     private final ObjectMapper mapper;
     private final Clock clock;
     private final Map<Long, Instant> ostatnie = new ConcurrentHashMap<>();
@@ -142,7 +144,11 @@ public class DataExportService {
                              FileStorageService fileStorage, ObjectMapper mapper, Clock clock,
                              com.musicclubapp.repository.ProfilePhotoRepository profilePhotos,
                              com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts,
-                             com.musicclubapp.repository.DiscoverSwipeRepository swipes) {
+                             com.musicclubapp.repository.DiscoverSwipeRepository swipes,
+                             com.musicclubapp.repository.MeetingRepository meetings,
+                             com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees) {
+        this.meetings = meetings;
+        this.meetingAttendees = meetingAttendees;
         this.comments = comments;
         this.commentMentions = commentMentions;
         this.clanReactions = clanReactions;
@@ -202,6 +208,7 @@ public class DataExportService {
         dane.put("reactions", reakcje(id));
         dane.put("comments", komentarze(id));
         dane.put("messages", wiadomosci(id));
+        dane.put("meetings", spotkania(id));
         dane.put("friends", user.getFriends().stream().map(User::getUsername).sorted().toList());
         dane.put("friendRequests", zaproszenia(id));
         dane.put("blocks", blocks.blockedBy(username).stream()
@@ -391,8 +398,27 @@ public class DataExportService {
                 "gif", gif(m.getGif()),
                 "music", m.getMusicExternalId() == null ? null : mapa("provider", m.getMusicProvider(),
                     "title", m.getMusicTitle()),
+                "meetingId", m.getMeeting() == null ? null : m.getMeeting().getId(),
                 "readAt", m.getReadAt()))
             .collect(java.util.stream.Collectors.toList());
+    }
+
+    /** Spotkania, ktore zalozylam/em (z miejscem, punktem i notatka), i moje odpowiedzi na cudze. */
+    private Map<String, Object> spotkania(Long userId) {
+        return mapa(
+            "created", meetings.findByCreatorIdOrderByIdAsc(userId).stream()
+                .map(m -> mapa("id", m.getId(),
+                    "with", m.getClan() != null ? "clan: " + m.getClan().getName() : m.getPartner().getUsername(),
+                    "place", m.getPlace(), "latitude", m.getLatitude(), "longitude", m.getLongitude(),
+                    "note", m.getNote(), "startsAt", m.getStartsAt(), "endsAt", m.getEndsAt(),
+                    "remindMinutes", m.getRemindMinutes(), "cancelledAt", m.getCancelledAt(),
+                    "createdAt", m.getCreatedAt()))
+                .collect(java.util.stream.Collectors.toList()),
+            "responses", meetingAttendees.ofUser(userId).stream()
+                .map(a -> mapa("meetingId", a.getMeeting().getId(), "place", a.getMeeting().getPlace(),
+                    "startsAt", a.getMeeting().getStartsAt(), "status", a.getStatus(),
+                    "remindedAt", a.getRemindedAt(), "at", a.getUpdatedAt()))
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     private List<Object> zaproszenia(Long userId) {
@@ -421,7 +447,7 @@ public class DataExportService {
         ClanMember m = clanMembers.findByUserId(userId).orElse(null);
         List<Object> wiadomosci = clanMessages.writtenBy(userId).stream()
             .map(x -> mapa("clan", x.getClan().getName(), "at", x.getCreatedAt(), "content", x.getContent(),
-                "gif", gif(x.getGif())))
+                "gif", gif(x.getGif()), "meetingId", x.getMeeting() == null ? null : x.getMeeting().getId()))
             .collect(java.util.stream.Collectors.toList());
         return mapa(
             "membership", m == null ? null : mapa("clan", m.getClan().getName(), "tag", m.getClan().getTag(),
@@ -504,7 +530,8 @@ public class DataExportService {
             Konto: %1$s
             Ten plik ZIP zawiera Twoje dane z serwisu MusicClub (art. 15 i 20 RODO):
               dane.json  - dane konta, profil i karta profilu, posty, reakcje, wiadomosci,
-                           znajomi, blokady, decyzje z trybu Poznawaj, zapisy na wydarzenia,
+                           spotkania z czatu i odpowiedzi na nie, znajomi, blokady,
+                           decyzje z trybu Poznawaj, zapisy na wydarzenia,
                            powiadomienia, klan, urzadzenia powiadomien i zgloszenia;
                            w formacie JSON, do odczytu maszynowego,
               zdjecia/   - Twoje zdjecie profilowe, zdjecia z galerii profilu i z Twoich postow.
@@ -515,7 +542,8 @@ public class DataExportService {
             Account: %1$s
             This ZIP contains your data from MusicClub (GDPR Art. 15 and 20):
               dane.json  - account data, profile and profile card, posts, reactions, messages,
-                           friends, blocks, Discover decisions, event sign-ups, notifications,
+                           chat meetings and your responses to them, friends, blocks,
+                           Discover decisions, event sign-ups, notifications,
                            clan, notification devices and reports; machine-readable JSON,
               zdjecia/   - your profile photo, your profile gallery and the photos from your posts.
             Messages contain the words of both sides of a conversation. There is no password

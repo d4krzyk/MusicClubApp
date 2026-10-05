@@ -29,6 +29,8 @@ public record ClanMessageResponse(
     Integer musicStartSeconds,
     String musicUrl,
     /** Wiadomosc usunieta - zostaje slad bez tresci. */
-    boolean deleted
+    boolean deleted,
+    /** Spotkanie, ktore niesie wiadomosc - albo {@code null}. */
+    MeetingResponse meeting
 ) {
 }

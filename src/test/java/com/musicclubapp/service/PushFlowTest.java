@@ -197,6 +197,26 @@ class PushFlowTest {
         mvc.perform(get("/api/push").with(user("pf_ala"))).andExpect(jsonPath("$.devices").value(1));
     }
 
+    /**
+     * Harmonogram wola {@code scheduled()}, a ta - {@code run()} wewnatrz tej samej klasy: adnotacja transakcji na
+     * {@code run()} wtedy nie dziala, a zaliczony prog musi i tak trafic do bazy - inaczej przypomnienie szloby co godzine.
+     */
+    @Test
+    @DisplayName("przypomnienia z harmonogramu: prog zapisany w bazie, drugi przebieg niczego nie wysyla")
+    void scheduledRunPersists() throws Exception {
+        User ala = konto("pf_ala");
+        MusicEvent jutro = wydarzenie("PFH", 1);
+        idzie(ala, jutro);
+        zapisz("pf_ala", adres("/push/ala"), P256DH).andExpect(status().isNoContent());
+
+        reminders.scheduled();
+        assertThat(czekajNa(1)).hasSize(1);
+        assertThat(jdbc.queryForObject("SELECT reminded_days FROM event_participations WHERE user_id = ?",
+            Integer.class, ala.getId())).isEqualTo(1);
+        reminders.scheduled();
+        assertThat(czekajNa(2)).as("drugi przebieg - nic nowego").hasSize(1);
+    }
+
     @Test
     @DisplayName("przypomnienia: za 3 dni i jutro, raz na prog; w dzwonku i na telefonie, zaszyfrowane i podpisane")
     void reminders() throws Exception {

@@ -367,6 +367,9 @@ function preview(message, t) {
   if (message.gif) {
     return `${prefix}${t('chat.gifPreview')}`;
   }
+  if (message.meeting) {
+    return `${prefix}📍 ${t('meetings.preview', { place: message.meeting.place })}`;
+  }
   // Wiadomosc bez tekstu i bez GIF-a to sam utwor - pokazujemy jego tytul
   return `${prefix}♪ ${message.musicTitle ?? t(`posts.musicKinds.${message.musicKind}`)}`;
 }

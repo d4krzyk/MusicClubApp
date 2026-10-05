@@ -7,8 +7,12 @@ import Avatar from '../Avatar';
 import GifObrazek from '../gif/GifObrazek';
 import GifPicker from '../gif/GifPicker';
 import MusicCard from '../MusicCard';
+import KartaSpotkania from '../spotkanie/KartaSpotkania';
+import SpotkanieForm from '../spotkanie/SpotkanieForm';
 import TekstWiadomosci from '../TekstWiadomosci';
-import { IconBell, IconCross, IconGif, IconReply, IconSend, IconSmile, IconTrash } from '../Icons';
+import {
+  IconBell, IconCross, IconGif, IconPin, IconReply, IconSend, IconSmile, IconTrash,
+} from '../Icons';
 import useGify from '../../hooks/useGify';
 import useOdswiezanie from '../../hooks/useOdswiezanie';
 import { timeAgo } from '../../utils/dates';
@@ -40,6 +44,7 @@ export default function KlanCzat({ klan, onZmiana }) {
   const gify = useGify();
   const [gif, setGif] = useState(null);
   const [gifOtwarty, setGifOtwarty] = useState(false);
+  const [spotkanieOtwarte, setSpotkanieOtwarte] = useState(false);
   const pole = useRef(null);
   const okno = useRef(null);
   const naDole = useRef(true);
@@ -61,6 +66,13 @@ export default function KlanCzat({ klan, onZmiana }) {
       const dodane = nowe.filter((m) => !znane.has(m.id));
       return dodane.length === 0 ? stare : [...stare, ...dodane];
     });
+  }, []);
+
+  /** Nowy stan spotkania (odpowiedz, odwolanie - moje albo z odswiezania) w wiadomosci, ktora je niesie. */
+  const podmienSpotkanie = useCallback((s) => {
+    setWiadomosci((stare) => (stare.some((m) => m.meeting?.id === s.id)
+      ? stare.map((m) => (m.meeting?.id === s.id ? { ...m, meeting: s } : m))
+      : stare));
   }, []);
 
   useEffect(() => {
@@ -122,6 +134,9 @@ export default function KlanCzat({ klan, onZmiana }) {
         }));
         setOdpowiedzNa((o) => (o && ids.has(o.id) ? null : o));
       }
+      if (czasUsuniec.current && usun.meetings?.length > 0) {
+        usun.meetings.forEach(podmienSpotkanie);
+      }
       czasUsuniec.current = usun.serverTime;
       // Odpowiedz opisuje reakcje calego zakresu: wiadomosc, ktorej w niej nie ma, nie ma reakcji
       const wg = new Map(reakcje.map((r) => [r.messageId, r.reactions]));
@@ -163,6 +178,17 @@ export default function KlanCzat({ klan, onZmiana }) {
   }
 
   const nicDoWyslania = !tekst.trim() && !gif;
+
+  async function wyslijSpotkanie(dane) {
+    try {
+      const nowa = await klany.wyslijSpotkanie(klan.id, dane);
+      setSpotkanieOtwarte(false);
+      naDole.current = true;
+      dopiszNowe([nowa]);
+    } catch (problem) {
+      throw new Error(describeError(problem).message);
+    }
+  }
 
   async function wyslij(e) {
     e.preventDefault();
@@ -302,6 +328,7 @@ export default function KlanCzat({ klan, onZmiana }) {
                         title={t('clans.chat.goToMessage')}>
                         <span className="klan-cytat-autor">{m.replyTo.senderUsername}</span>
                         <span className="klan-cytat-tekst">
+                          {m.replyTo.meeting && !m.replyTo.deleted && <IconPin size={11} className="me-1" />}
                           {m.replyTo.deleted ? t('chat.messageDeleted')
                             : m.replyTo.excerpt || (m.replyTo.gif ? t('chat.gifPreview') : '')}
                         </span>
@@ -318,6 +345,7 @@ export default function KlanCzat({ klan, onZmiana }) {
                       <TekstWiadomosci tekst={m.content} ukryjSamLink={Boolean(m.musicEmbedUrl)} />
                       <GifObrazek gif={m.gif} />
                       {m.musicEmbedUrl && <MusicCard message={m} />}
+                      {m.meeting && <KartaSpotkania spotkanie={m.meeting} onZmiana={podmienSpotkanie} />}
                     </>
                   )}
 
@@ -385,6 +413,11 @@ export default function KlanCzat({ klan, onZmiana }) {
           ))}
         </div>
 
+        {mozePisac && spotkanieOtwarte && (
+          <div className="chat-spotkanie-panel">
+            <SpotkanieForm idPrefix="klan-spotkanie" onWyslij={wyslijSpotkanie} onZamknij={() => setSpotkanieOtwarte(false)} />
+          </div>
+        )}
         {mozePisac ? (
           <form className="chat-composer" onSubmit={wyslij}>
             {blad && <div className="chat-error">{blad}</div>}
@@ -392,7 +425,11 @@ export default function KlanCzat({ klan, onZmiana }) {
               <div className="klan-odpowiadasz">
                 <span className="klan-odpowiadasz-tekst">
                   <strong>{t('clans.chat.replyingTo', { username: odpowiedzNa.senderUsername })}</strong>
-                  <span>{odpowiedzNa.content || (odpowiedzNa.gif ? t('chat.gifPreview') : '')}</span>
+                  <span>
+                    {odpowiedzNa.content
+                      || (odpowiedzNa.meeting ? odpowiedzNa.meeting.place : '')
+                      || (odpowiedzNa.gif ? t('chat.gifPreview') : '')}
+                  </span>
                 </span>
                 <button type="button" className="klan-akcja" onClick={() => setOdpowiedzNa(null)}
                   aria-label={t('clans.chat.cancelReply')} title={t('clans.chat.cancelReply')}>
@@ -418,11 +455,21 @@ export default function KlanCzat({ klan, onZmiana }) {
               />
             )}
             <div className="chat-composer-row">
+              <button
+                type="button"
+                className={`chat-music-toggle chat-spotkanie-toggle${spotkanieOtwarte ? ' is-open' : ''}`}
+                onClick={() => { setSpotkanieOtwarte((bylo) => !bylo); setGifOtwarty(false); }}
+                aria-pressed={spotkanieOtwarte}
+                aria-label={t('meetings.attach')}
+                title={t('meetings.attach')}
+              >
+                <IconPin size={16} />
+              </button>
               {gify.wlaczone && (
                 <button
                   type="button"
                   className={`chat-music-toggle chat-gif-toggle${gifOtwarty ? ' is-open' : ''}`}
-                  onClick={() => setGifOtwarty((bylo) => !bylo)}
+                  onClick={() => { setGifOtwarty((bylo) => !bylo); setSpotkanieOtwarte(false); }}
                   aria-pressed={gifOtwarty}
                   aria-label={t('chat.attachGif')}
                   title={t('chat.attachGif')}
@@ -465,6 +512,6 @@ export default function KlanCzat({ klan, onZmiana }) {
 /** Slad po usunietej wiadomosci - to samo, co oddaje serwer. */
 function jakoUsunieta(m) {
   return {
-    ...m, deleted: true, content: '', gif: null, musicEmbedUrl: null, reactions: [], canDelete: false,
+    ...m, deleted: true, content: '', gif: null, musicEmbedUrl: null, reactions: [], canDelete: false, meeting: null,
   };
 }

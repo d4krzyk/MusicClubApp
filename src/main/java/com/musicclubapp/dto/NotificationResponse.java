@@ -30,6 +30,11 @@ public record NotificationResponse(
 
     /** Zaproszenie do klanu albo wyrzucenie: ktory klan. */
     Long clanId,
-    String clanName
+    String clanName,
+
+    /** Spotkanie z czatu (przypomnienie, odwolanie): ktore, gdzie i kiedy sie zaczyna. */
+    Long meetingId,
+    String meetingPlace,
+    java.time.Instant meetingStartsAt
 ) {
 }

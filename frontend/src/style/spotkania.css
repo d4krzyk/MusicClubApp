@@ -1,0 +1,246 @@
+/* =========================================================================
+   SPOTKANIA - karta spotkania w dymku czatu i formularz nad polem pisania.
+   Komponenty: components/spotkanie/KartaSpotkania.jsx, SpotkanieForm.jsx.
+   ========================================================================= */
+
+.spotkanie {
+  width: 20rem;
+  max-width: 100%;
+  margin-top: .35rem;
+  padding: .55rem .65rem;
+  border-radius: .75rem;
+  background: rgba(255, 255, 255, .14);
+}
+
+.bubble-row:not(.is-mine) .spotkanie {
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+}
+
+.spotkanie-glowa {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.spotkanie-znak {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--mc-gradient);
+  color: #fff;
+}
+
+.spotkanie-stan {
+  margin-left: auto;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  letter-spacing: 0;
+  text-transform: none;
+  background: rgba(0, 0, 0, .12);
+}
+
+.spotkanie-stan.is-trwa {
+  background: #16a34a;
+  color: #fff;
+}
+
+.spotkanie-stan.is-odwolane {
+  background: #dc2626;
+  color: #fff;
+}
+
+.spotkanie-miejsce {
+  margin-top: .3rem;
+  font-size: .98rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.spotkanie.is-odwolane .spotkanie-miejsce {
+  text-decoration: line-through;
+  opacity: .75;
+}
+
+.spotkanie-czas {
+  font-size: .82rem;
+  opacity: .9;
+}
+
+.spotkanie-notatka {
+  margin: .35rem 0 0;
+  font-size: .85rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.spotkanie-mapa {
+  margin-top: .45rem;
+}
+
+.spotkanie-ludzie {
+  margin-top: .4rem;
+  font-size: .78rem;
+  opacity: .9;
+}
+
+.spotkanie-odpowiedz {
+  display: flex;
+  gap: .35rem;
+  margin-top: .45rem;
+}
+
+.spotkanie-przycisk {
+  flex: 1 1 0;
+  padding: .3rem .5rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: .8rem;
+  font-weight: 600;
+  opacity: .9;
+}
+
+.spotkanie-przycisk.is-wybrany {
+  background: #fff;
+  color: var(--mc-2, #c026d3);
+  border-color: #fff;
+  opacity: 1;
+}
+
+.bubble-row:not(.is-mine) .spotkanie-przycisk.is-wybrany {
+  background: var(--mc-gradient);
+  color: #fff;
+  border-color: transparent;
+}
+
+.spotkanie-akcje {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .75rem;
+  margin-top: .45rem;
+}
+
+.spotkanie-link {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: .78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.spotkanie-link.is-odwolaj {
+  margin-left: auto;
+}
+
+.spotkanie-przypomnienie,
+.spotkanie-blad {
+  margin-top: .35rem;
+  font-size: .72rem;
+  opacity: .85;
+}
+
+.spotkanie-blad {
+  color: #fecaca;
+  opacity: 1;
+}
+
+.bubble-row:not(.is-mine) .spotkanie-blad {
+  color: var(--bs-danger);
+}
+
+/* --- Formularz nad polem pisania ------------------------------------------ */
+
+/* Panel stoi miedzy rozmowa a polem pisania (poza formularzem wiadomosci - formularze sie nie zagniezdzaja) */
+.chat-spotkanie-panel {
+  flex: 0 0 auto;
+  padding: .5rem .6rem 0;
+  border-top: 1px solid var(--bs-border-color);
+  background: var(--bs-body-bg);
+}
+
+.chat-spotkanie-panel + .chat-composer {
+  border-top: 0;
+}
+
+.spotkanie-form {
+  max-height: min(60vh, 34rem);
+  overflow-y: auto;
+  margin-bottom: .5rem;
+  padding: .6rem .7rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: .9rem;
+  background: var(--bs-tertiary-bg);
+  animation: fade-in-up .22s var(--mc-ease) backwards;
+}
+
+.spotkanie-form-glowa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .4rem;
+}
+
+.spotkanie-koncerty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .3rem;
+  margin-bottom: .5rem;
+}
+
+.spotkanie-koncert {
+  padding: .15rem .55rem;
+  border: 1px solid rgba(var(--bs-primary-rgb), .45);
+  border-radius: 999px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-size: .76rem;
+  font-weight: 600;
+}
+
+.spotkanie-punkt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35rem;
+  margin-bottom: .4rem;
+}
+
+.spotkanie-czasy {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: .4rem;
+  margin-bottom: .3rem;
+}
+
+/*
+   Trzy przyciski zalacznikow (nagranie, GIF, spotkanie) i "wyslij" zostawialy przy 320 px tylko 99 px na pisanie
+   (zmierzone). Na waskich ekranach przyciski zalacznikow sa nieco mniejsze, a odstepy ciasniejsze: ~145 px.
+*/
+@media (max-width: 374.98px) {
+  .chat-composer-row {
+    gap: .3rem;
+  }
+
+  .chat-composer-row .chat-music-toggle {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+}

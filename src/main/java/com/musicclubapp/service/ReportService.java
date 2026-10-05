@@ -278,9 +278,23 @@ public class ReportService {
             report.addEvidence(new ReportEvidence(
                 message.getSender().getUsername(),
                 // Wiadomosc bywa samym nagraniem - wtedy dowodem jest jego tytul
-                withGif(message.getContent() != null ? message.getContent() : musicLabel(message), message.getGif()),
+                message.getMeeting() != null ? meetingLabel(message.getMeeting())
+                    : withGif(message.getContent() != null ? message.getContent() : musicLabel(message), message.getGif()),
                 message.getCreatedAt()));
         }
+    }
+
+    /** Spotkanie w dowodzie: miejsce, punkt, czas (UTC - jak w bazie) i notatka. */
+    static String meetingLabel(com.musicclubapp.entity.Meeting m) {
+        StringBuilder b = new StringBuilder("[SPOTKANIE] ").append(m.getPlace());
+        if (m.getLatitude() != null) {
+            b.append(" (").append(m.getLatitude()).append(", ").append(m.getLongitude()).append(')');
+        }
+        b.append(", ").append(m.getStartsAt()).append(" - ").append(m.getEndsAt());
+        if (m.getNote() != null) {
+            b.append(": ").append(m.getNote());
+        }
+        return b.toString();
     }
 
     /** Dowod ma pokazac tez GIF - sam adres i opis, bo pliku nie przechowujemy. */

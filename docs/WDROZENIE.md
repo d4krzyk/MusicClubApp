@@ -1036,6 +1036,32 @@ Przy usuwaniu wiadomości i podglądzie linków w czacie (październik 2026, mig
 - znalezione przy sprawdzaniu: pomiar karty od razu po otwarciu szuflady czatu na telefonie dawał „wystaje poza okno”
   — szuflada jeszcze wjeżdżała; mierzone po animacji.
 
+Przy spotkaniach w czacie i mapie (październik 2026, migracja V20):
+
+- migracja V20 na **pustej** bazie (V1 → V20, profil `prod`) — schemat zgodny co do joty z tym, co buduje Hibernate
+  (te same tabele, kolumny, nazwy ograniczeń i indeksów), i na bazie z danymi po V19 (wiadomości i czat klanu zostają,
+  backend wstaje z `validate`);
+- `mvnw clean test` → 753 testy (nowe: `MeetingFlowTest` — 12 przebiegów przez API: zakładanie, walidacja czasu, punktu,
+  przypomnienia i miejsca, limit 20, odpowiedzi i ich cofanie, odświeżanie rozmowy, odwołanie z powiadomieniem i linkiem
+  do rozmowy, przypomnienia na przestawianym zegarze, spóźnione i po zerwaniu znajomości, usunięcie z wiadomością,
+  zgłoszenie i skasowanie rozmowy, eksport i usunięcie konta, klan z odejściem i rozwiązaniem;
+  `MeetingReminderSchedulingTest` i `PushFlowTest.scheduledRunPersists` — przypomnienia wołane przez harmonogram);
+  `npm test` → 31 (stan spotkania, godziny domyślne, przez północ, walidacja, `.ics`);
+- **błąd znaleziony w Chromium**: przypomnienie z harmonogramu nie zapisywało znacznika „wysłane” — `scheduled()` wołało
+  `run()` z tej samej klasy, więc adnotacja transakcji nie działała, a powiadomienie (osobna transakcja) szło przy każdym
+  przebiegu. Ten sam błąd miały przypomnienia o koncertach od V8. Najpierw dwa czerwone testy, potem `@Transactional`
+  na `scheduled()` — zielone;
+- Chromium (`spotkania-e2e`, 48 sprawdzeń, dwie osoby w osobnych kartach, strefa Europe/Warsaw, prawdziwy harmonogram):
+  formularz poza formularzem wiadomości, walidacja bez zapytania do serwera, „Moja lokalizacja” (udostępniona pozycja
+  przeglądarki) daje pinezkę, w bazie czas w UTC zgodny z polskim, karta z miejscem, godzinami, notatką, mapą i trasą,
+  karta i odpowiedzi dochodzą do drugiej osoby bez przeładowania (~1,8 s), cofanie odpowiedzi, plik `.ics`, podgląd na
+  liście rozmów, odwołanie (przekreślone, powiadomienie w dzwonku, kliknięcie otwiera rozmowę i zdejmuje `?czat=`),
+  przypomnienie z harmonogramu dla obu potwierdzonych po ~2 min z godziną polską w dzwonku, usunięcie wiadomości ze
+  spotkaniem, czat klanu (karta, odpowiedź, cytat z pinezką), telefon 320 i 360 px (formularz z mapą bez przelewu, karta
+  w dymku, pole pisania 137 / 177 px), ciemny motyw, zero błędów w konsoli. Dwa przebiegi pod rząd zielone;
+- znalezione przy sprawdzaniu: przy 320 px trzy przyciski załączników zostawiały 99 px na pisanie — mniejsze przyciski
+  poniżej 375 px; pierwsza wersja testu sprawdzała listę rozmów, zanim się odświeżyła (test czeka na tekst).
+
 ---
 
 ## Co dalej, żeby aplikacja trafiła na Google Play

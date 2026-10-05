@@ -27,6 +27,8 @@ public record MessageResponse(
     boolean mine,
     boolean read,
     /** Nadawca usunal wiadomosc - zostaje tylko slad (bez tresci i zalacznikow). */
-    boolean deleted
+    boolean deleted,
+    /** Spotkanie, ktore niesie wiadomosc (miejsce, czas, kto bedzie) - albo {@code null}. */
+    MeetingResponse meeting
 ) {
 }

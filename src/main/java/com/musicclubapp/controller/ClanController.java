@@ -220,6 +220,14 @@ public class ClanController {
             .body(chat.send(id, auth.getName(), payload.content(), payload.replyTo(), payload.gif()));
     }
 
+    @PostMapping("/{id}/chat/meeting")
+    @Operation(summary = "Wysyla na czat klanu spotkanie (miejsce, czas, przypomnienie)")
+    public ResponseEntity<ClanMessageResponse> sendMeeting(@PathVariable Long id,
+                                                           @Valid @RequestBody com.musicclubapp.dto.MeetingRequest payload,
+                                                           Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(chat.sendMeeting(id, auth.getName(), payload));
+    }
+
     @DeleteMapping("/{id}/chat/{messageId}")
     @Operation(summary = "Usuwa wiadomosc z czatu klanu")
     public ResponseEntity<Void> deleteMessage(@PathVariable Long id, @PathVariable Long messageId, Authentication auth) {
@@ -228,7 +236,7 @@ public class ClanController {
     }
 
     @GetMapping("/{id}/chat/changes")
-    @Operation(summary = "Zmiany w juz wczytanych wiadomosciach od podanej chwili (czas serwera z poprzedniej odpowiedzi): usuniete")
+    @Operation(summary = "Zmiany w juz wczytanych wiadomosciach od podanej chwili (czas serwera z poprzedniej odpowiedzi): usuniete i spotkania")
     public ResponseEntity<ClanChatService.ClanChatChanges> chatChanges(
             @PathVariable Long id,
             @RequestParam(required = false)

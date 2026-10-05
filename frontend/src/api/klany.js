@@ -106,6 +106,12 @@ export async function usunWiadomosc(id, idWiadomosci) {
   await client.delete(`/clans/${id}/chat/${idWiadomosci}`);
 }
 
+/** Spotkanie na czacie klanu - oddaje wiadomosc, ktora je niesie. */
+export async function wyslijSpotkanie(id, spotkanie) {
+  const { data } = await client.post(`/clans/${id}/chat/meeting`, spotkanie);
+  return data;
+}
+
 /**
  * Wiadomosci usuniete od podanej chwili ({ deletedIds, serverTime }). Bez "od" - tylko czas serwera, od ktorego
  * zaczniemy pytac.

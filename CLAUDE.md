@@ -22,7 +22,8 @@ z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie kla
 (galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i ikona
 obejmujących się osób zamiast serduszek, wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie — oraz
 animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu — wszyscy / znajomi / tylko Poznawaj (V18),
-usuwanie własnych wiadomości i podgląd linków w czacie (V19).
+usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w czacie — miejsce, punkt na mapie, czas,
+„Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -635,6 +636,53 @@ bierze komunikat z adnotacji); sam GIF = `content` `""`. Cytat odpowiedzi ma `gi
 - **Pułapki z tej rundy**: szuflada czatu na telefonie wjeżdża z animacją — pomiar położenia od razu po otwarciu dawał
   kartę „poza oknem”; mierzyć po animacji. Test, w którym osoba odpowiada na wiadomość, ma zerowy licznik
   nieprzeczytanych (wysłanie przesuwa znacznik „przeczytane”).
+
+## Spotkania w czacie (V20) i mapa
+
+Spotkanie to wiadomość bez treści, która niesie `Meeting` (`messages.meeting_id` / `clan_messages.meeting_id`, `ON DELETE
+SET NULL`): miejsce (tekst, 100), opcjonalny punkt (`latitude`/`longitude` — oba albo żaden), `starts_at`/`ends_at`
+(**`Instant`, `timestamptz`** — przeglądarka wysyła chwilę w UTC, karta pokazuje czas telefonu), notatka (200),
+przypomnienie 0/15/30/60/120/1440 min. Odpowiedzi w `meeting_attendees` (GOING / NOT_GOING, CHECK — wpis
+w `EnumConstraintRefresher`; brak wiersza = bez odpowiedzi). `MeetingService`, `MeetingReminderService`,
+`MeetingController` (`/api/meetings/{id}`, `/rsvp`, `/cancel`); wysyłanie: `POST /api/messages/with/{login}/meeting`
+i `POST /api/clans/{id}/chat/meeting`.
+
+- **Zasady** (serwer i `utils/spotkania.js` tak samo): start najwyżej 5 min w przeszłość i 60 dni naprzód, koniec po
+  starcie, najwyżej doba (dokładnie doba wolno); „do” wcześniej niż „od” w formularzu = przez północ. Najwyżej 20
+  nadchodzących spotkań na osobę (odwołane i zakończone się nie liczą). Zakaz pisania blokuje wysłanie.
+- **Kto**: widzi ten, kto widzi wiadomość (strony rozmowy; członkowie klanu i administrator aplikacji), obcy = 404.
+  Odpowiadać mogą strony rozmowy, które **nadal są znajomymi**, i członkowie klanu (`canRespond`); zakładający jest od razu
+  „Będę” i zamiast odpowiadać — odwołuje (tylko on). Odwołanie: stan „Odwołane” u wszystkich, powiadomienie
+  `MEETING_CANCELLED` (z push) dla potwierdzonych, wcześniejsze przypomnienia znikają z dzwonków.
+- **Przypomnienie** (`MEETING_REMINDER`, push): co minutę (`app.meetings.reminders.cron`, w testach `-`), raz na osobę
+  (`reminded_at`), także dla zakładającego; nie po końcu, nie dla odwołanych, nie dla kogoś, kto przestał być znajomym albo
+  odszedł z klanu (odejście kasuje jego odpowiedzi — `ClanCleanup.ofMembership`). „Będę” po porze przypomnienia od razu
+  liczy się jako przypomniane; „Nie dam rady” zdejmuje przypomnienie z dzwonka. Push ma minuty/godziny do startu, bez
+  godziny (serwer nie zna strefy telefonu); dzwonek formatuje godzinę w przeglądarce (`meetingStartsAt`).
+- **Link powiadomienia**: rozmowa → `/?czat={login drugiej strony}` (sprawcą przypomnienia jest druga strona rozmowy;
+  `ChatContext` otwiera rozmowę i zdejmuje parametr z adresu), klan → `/klan` (zakładka czatu jest domyślna).
+- **Usunięcie wiadomości kasuje spotkanie** (odpowiedzi i powiadomienia kaskadą w bazie); rozmowa skasowana przez obie
+  strony zabiera swoje spotkania (`deleteOrphans`); rozwiązanie klanu — kaskada `clan_id`; usunięcie konta —
+  `meetings.deleteAllOf` (założone i z jego rozmów, krok 6a w `AccountDeletionService`). Eksport: `meetings.created`
+  (z punktem) i `meetings.responses`; zgłoszenie rozmowy: `[SPOTKANIE] miejsce (lat, lon), od - do: notatka`.
+- **Odświeżanie**: odpowiedzi i odwołania dochodzą tym samym odpytywaniem co usunięte wiadomości — `sync` oddaje
+  `meetings` zmienione od `changedSince`, `/chat/changes` w klanie też (`updated_at` spotkania, ten sam zapas 30 s).
+- **Frontend**: przycisk z pinezką obok muzyki/GIF-a; `SpotkanieForm` stoi **nad** formularzem wiadomości (formularze się
+  nie zagnieżdżają): miejsce, „Moja lokalizacja” (jednorazowo, na kliknięcie, zgoda przeglądarki), „Wskaż na mapie”,
+  szybkie „przed koncertem” z moich wydarzeń, dzień/od/do, przypomnienie, notatka. `KartaSpotkania` w dymku: stan liczony
+  co 30 s, mapka, kto będzie, „Będę” / „Nie dam rady” (drugie kliknięcie cofa), trasa (Mapy Google), plik `.ics`, „Odwołaj”.
+  Cytat w klanie ma pinezkę i miejsce (`ClanReplyPreview.meeting`). Poniżej 375 px przyciski załączników są mniejsze —
+  przy trzech pole pisania miało 99 px (zmierzone), teraz 137 px.
+- **Mapa** (`components/mapa/MapaPunktu.jsx`, Leaflet 1.9 + kafelki OpenStreetMap, ładowana dopiero, gdy wjedzie na
+  ekran): pod wydarzeniem z współrzędnymi i w spotkaniach. Na telefonie jeden palec przewija stronę, nie mapę; ciemny
+  motyw przyciemnia kafelki filtrem. Polityka wymienia OpenStreetMap jako odbiorcę (IP, oglądany obszar).
+- **Pułapka z tej rundy — `@Transactional` na metodzie wołanej z tej samej klasy nie działa.** `scheduled()` wołało
+  `run()` (z adnotacją) bezpośrednio, więc przy wywołaniu z harmonogramu nie było transakcji: powiadomienie zapisywało
+  się (własna transakcja `NotificationService`), a znacznik „przypomniane” — nie, i przypomnienie szłoby **co przebieg**.
+  Ten sam błąd miał `EventReminderService` od V8 (przypomnienia o koncertach co godzinę 9–21). Testy wołały `run()`
+  przez pośrednika, więc były zielone; wyszło dopiero w Chromium na prawdziwym harmonogramie. Teraz `@Transactional`
+  jest na `scheduled()`, a testy `MeetingReminderSchedulingTest` i `PushFlowTest.scheduledRunPersists` wołają
+  `scheduled()` bez transakcji testu (oba zaczerwieniły się przed poprawką).
 
 ## Karta profilu i tryb Poznawaj (V17)
 

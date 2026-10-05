@@ -31,12 +31,15 @@ public class ClanCleanup {
     private final ClanTitleRepository titles;
     private final ClanMemberTitleRepository memberTitles;
     private final ClanJoinRequestRepository requests;
+    private final com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees;
 
     public ClanCleanup(ClanRepository clans, ClanMessageReactionRepository chatReactions,
                        ClanTrackRepository tracks, ClanTrackVoteRepository trackVotes,
                        ClanPollRepository polls, ClanPollVoteRepository pollVotes,
                        ClanTitleRepository titles, ClanMemberTitleRepository memberTitles,
-                       ClanJoinRequestRepository requests) {
+                       ClanJoinRequestRepository requests,
+                       com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees) {
+        this.meetingAttendees = meetingAttendees;
         this.clans = clans;
         this.chatReactions = chatReactions;
         this.tracks = tracks;
@@ -81,5 +84,7 @@ public class ClanCleanup {
     /** Odejscie albo wyrzucenie z klanu: tytuly z tego klanu przestaja miec wlasciciela. */
     public void ofMembership(Long userId, Long clanId) {
         memberTitles.deleteByUserIdAndClanId(userId, clanId);
+        // Odpowiedzi na spotkania klanu: kto odszedl, nie dostanie o nich przypomnienia (spotkania zostaja w czacie)
+        meetingAttendees.deleteInClan(userId, clanId);
     }
 }

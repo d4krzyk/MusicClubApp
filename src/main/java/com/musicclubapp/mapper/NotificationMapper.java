@@ -1,6 +1,7 @@
 package com.musicclubapp.mapper;
 
 import com.musicclubapp.dto.NotificationResponse;
+import com.musicclubapp.entity.Meeting;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
 import com.musicclubapp.entity.Post;
@@ -21,6 +22,7 @@ public class NotificationMapper {
         Post post = notification.getPost();
         User actor = notification.getActor();
         MusicEvent event = notification.getEvent();
+        Meeting meeting = notification.getMeeting();
 
         return new NotificationResponse(
             notification.getId(),
@@ -38,7 +40,10 @@ public class NotificationMapper {
             event != null ? event.getName() : null,
             notification.getDaysLeft(),
             notification.getClan() != null ? notification.getClan().getId() : null,
-            notification.getClan() != null ? notification.getClan().getName() : null);
+            notification.getClan() != null ? notification.getClan().getName() : null,
+            meeting != null ? meeting.getId() : null,
+            meeting != null ? meeting.getPlace() : null,
+            meeting != null ? meeting.getStartsAt() : null);
     }
 
     private String avatarUrl(User user) {
@@ -67,6 +72,10 @@ public class NotificationMapper {
             // Zglaszajacy trafia na wlasna liste zgloszen, a nie do panelu admina
             case REPORT_RESOLVED -> "/moje-zgloszenia";
             case CLAN_INVITE, CLAN_KICKED, CLAN_JOIN_REQUEST, CLAN_REQUEST_ACCEPTED -> "/klan";
+            // Spotkanie z rozmowy otwiera rozmowe z druga strona (sprawca), spotkanie klanu - czat klanu
+            case MEETING_REMINDER, MEETING_CANCELLED -> notification.getClan() == null && notification.getActor() != null
+                ? "/?czat=" + URLEncoder.encode(notification.getActor().getUsername(), StandardCharsets.UTF_8)
+                : "/klan";
             case EVENT_REMINDER -> notification.getEvent() != null
                 ? "/wydarzenia/" + notification.getEvent().getId()
                 : "/wydarzenia?widok=moje";

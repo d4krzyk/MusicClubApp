@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
+import { describeError } from '../api/client';
 import {
-  historia, nowsze, oznaczPrzeczytane, pisze, usunWiadomosc, wyslij,
+  historia, nowsze, oznaczPrzeczytane, pisze, usunWiadomosc, wyslij, wyslijSpotkanie,
 } from '../api/czat';
 import { useChat } from '../chat/ChatContext';
 import useGify from '../hooks/useGify';
@@ -11,9 +12,11 @@ import GifObrazek from './gif/GifObrazek';
 import GifPicker from './gif/GifPicker';
 import MusicCard from './MusicCard';
 import MusicPicker from './MusicPicker';
+import KartaSpotkania from './spotkanie/KartaSpotkania';
+import SpotkanieForm from './spotkanie/SpotkanieForm';
 import TekstWiadomosci from './TekstWiadomosci';
 import {
-  IconCross, IconGif, IconNote, IconSend, IconTrash,
+  IconCross, IconGif, IconNote, IconPin, IconSend, IconTrash,
 } from './Icons';
 import { timeAgo } from '../utils/dates';
 import { linkError } from '../utils/musicLinks';
@@ -57,6 +60,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   /* GIF wybrany z przegladarki (caly wynik z tokenem) i czy przegladarka jest otwarta */
   const [gif, setGif] = useState(null);
   const [gifOpen, setGifOpen] = useState(false);
+  const [meetingOpen, setMeetingOpen] = useState(false);
 
   const [partnerTyping, setPartnerTyping] = useState(false);
 
@@ -143,10 +147,22 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   /*  Odpytywanie o nowosci                                            */
   /* ---------------------------------------------------------------- */
 
+  /** Nowy stan spotkania w wiadomosci, ktora je niesie (moja odpowiedz albo zmiana z odpytywania). */
+  const podmienSpotkanie = useCallback((s) => {
+    setMessages((current) => (current.some((m) => m.meeting?.id === s.id)
+      ? current.map((m) => (m.meeting?.id === s.id ? { ...m, meeting: s } : m))
+      : current));
+  }, []);
+
   const sync = useCallback(async () => {
     try {
       const data = await nowsze(username, lastId.current, czasSerwera.current);
       czasSerwera.current = data.serverTime ?? czasSerwera.current;
+
+      // Spotkania z nowymi odpowiedziami albo odwolane - nowy stan karty
+      if (data.meetings?.length) {
+        data.meetings.forEach(podmienSpotkanie);
+      }
 
       // Usuniete u drugiej strony (albo w innej karcie) - zostaje slad
       if (data.deletedIds?.length) {
@@ -187,7 +203,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     } catch {
       /* Cisza. */
     }
-  }, [username, setUnread]);
+  }, [username, setUnread, podmienSpotkanie]);
 
   useEffect(() => {
     sync();
@@ -279,6 +295,17 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     }
   }
 
+  async function wyslijSpotkanieDo(dane) {
+    try {
+      const data = await wyslijSpotkanie(username, dane);
+      setMessages((current) => [...current, data]);
+      lastId.current = data.id;
+      setMeetingOpen(false);
+    } catch (problem) {
+      throw new Error(describeError(problem).message);
+    }
+  }
+
   async function usun(message) {
     if (!window.confirm(t('chat.deleteMessageConfirm'))) {
       return;
@@ -349,6 +376,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
                   <TekstWiadomosci tekst={message.content} ukryjSamLink={Boolean(message.musicEmbedUrl)} />
                   <GifObrazek gif={message.gif} />
                   {message.musicEmbedUrl && <MusicCard message={message} />}
+                  {message.meeting && <KartaSpotkania spotkanie={message.meeting} onZmiana={podmienSpotkanie} />}
                 </>
               )}
 
@@ -391,6 +419,12 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
           <p className="mb-0 small text-body-secondary">{t('chat.friendsOnly')}</p>
         </div>
       ) : (
+      <>
+      {meetingOpen && (
+        <div className="chat-spotkanie-panel">
+          <SpotkanieForm idPrefix="czat-spotkanie" onWyslij={wyslijSpotkanieDo} onZamknij={() => setMeetingOpen(false)} />
+        </div>
+      )}
       <form className="chat-composer" onSubmit={send}>
         {error && <div className="chat-error">{error}</div>}
 
@@ -431,7 +465,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
           <button
             type="button"
             className={`chat-music-toggle${musicOpen ? ' is-open' : ''}`}
-            onClick={() => { setMusicOpen((was) => !was); setGifOpen(false); }}
+            onClick={() => { setMusicOpen((was) => !was); setGifOpen(false); setMeetingOpen(false); }}
             aria-pressed={musicOpen}
             aria-label={t('chat.attachMusic')}
             title={t('chat.attachMusic')}
@@ -443,7 +477,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
             <button
               type="button"
               className={`chat-music-toggle chat-gif-toggle${gifOpen ? ' is-open' : ''}`}
-              onClick={() => { setGifOpen((was) => !was); setMusicOpen(false); }}
+              onClick={() => { setGifOpen((was) => !was); setMusicOpen(false); setMeetingOpen(false); }}
               aria-pressed={gifOpen}
               aria-label={t('chat.attachGif')}
               title={t('chat.attachGif')}
@@ -451,6 +485,17 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
               <IconGif size={18} />
             </button>
           )}
+
+          <button
+            type="button"
+            className={`chat-music-toggle chat-spotkanie-toggle${meetingOpen ? ' is-open' : ''}`}
+            onClick={() => { setMeetingOpen((was) => !was); setMusicOpen(false); setGifOpen(false); }}
+            aria-pressed={meetingOpen}
+            aria-label={t('meetings.attach')}
+            title={t('meetings.attach')}
+          >
+            <IconPin size={16} />
+          </button>
 
           <textarea
             ref={input}
@@ -475,6 +520,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
           </button>
         </div>
       </form>
+      </>
       )}
     </div>
   );
@@ -484,6 +530,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 function jakoUsunieta(m) {
   return {
     ...m, deleted: true, content: null, gif: null, musicEmbedUrl: null, musicTitle: null, musicThumbnailUrl: null,
+    meeting: null,
   };
 }
 

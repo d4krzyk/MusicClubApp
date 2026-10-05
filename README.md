@@ -212,7 +212,7 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V19 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V20 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
@@ -271,7 +271,12 @@ frontend/                          # React + Vite (PWA)
 | DELETE | `/api/profile/posts` | kasuje **wszystkie własne posty** — wymaga hasła w treści |
 | DELETE | `/api/messages/with/{username}` | usuwa rozmowę **tylko u siebie** |
 | DELETE | `/api/messages/{id}` | usuwa **moją** wiadomość u obu stron — zostaje ślad „wiadomość usunięta” |
-| GET | `/api/clans/{id}/chat/changes?since=` | zmiany w czacie klanu od podanego czasu serwera (numery usuniętych wiadomości) |
+| POST | `/api/messages/with/{username}/meeting` | wysyła znajomemu spotkanie: miejsce, opcjonalny punkt na mapie, czas od–do, przypomnienie, notatka |
+| GET | `/api/clans/{id}/chat/changes?since=` | zmiany w czacie klanu od podanego czasu serwera (numery usuniętych wiadomości, spotkania z nowymi odpowiedziami) |
+| POST | `/api/clans/{id}/chat/meeting` | spotkanie na czacie klanu |
+| GET | `/api/meetings/{id}` | spotkanie (strona rozmowy albo członek klanu) |
+| PUT | `/api/meetings/{id}/rsvp` | „Będę” / „Nie dam rady” / cofnięcie odpowiedzi (`status: null`) |
+| POST | `/api/meetings/{id}/cancel` | odwołanie (tylko zakładający; potwierdzeni dostają powiadomienie) |
 | GET | `/api/reports/admin?status=` | lista zgłoszeń — **tylko administrator** |
 | GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |

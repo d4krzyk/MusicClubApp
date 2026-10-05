@@ -323,6 +323,29 @@ public class OperationNotAllowedException extends RuntimeException {
         return new OperationNotAllowedException("Za duzo otwartych ankiet", "error.clan.poll.limit", max);
     }
 
+    /** Spotkanie z niepoprawnym czasem, punktem albo przypomnieniem - klucz mowi, co jest nie tak. */
+    public static OperationNotAllowedException meetingInvalid(String messageKey) {
+        return new OperationNotAllowedException("Niepoprawne spotkanie", messageKey);
+    }
+
+    public static OperationNotAllowedException meetingLimit(int max) {
+        return new OperationNotAllowedException("Za duzo nadchodzacych spotkan", "error.meeting.limit", max);
+    }
+
+    /** Spotkanie odwolane albo juz zakonczone - nie ma na co odpowiadac. */
+    public static OperationNotAllowedException meetingClosed() {
+        return new OperationNotAllowedException("Spotkanie jest zamkniete", "error.meeting.closed");
+    }
+
+    /** Odpowiadac moga strony rozmowy, ktore sa znajomymi, i czlonkowie klanu. */
+    public static OperationNotAllowedException meetingCannotRespond() {
+        return new OperationNotAllowedException("Nie mozna odpowiedziec na to spotkanie", "error.meeting.cannotRespond");
+    }
+
+    public static OperationNotAllowedException meetingNotCreator() {
+        return new OperationNotAllowedException("Spotkanie odwoluje tylko zakladajacy", "error.meeting.notCreator");
+    }
+
     public static OperationNotAllowedException clanPollClosed() {
         return new OperationNotAllowedException("Ankieta zamknieta", "error.clan.poll.closed");
     }

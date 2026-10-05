@@ -5,12 +5,15 @@ import com.musicclubapp.dto.ClanMessageResponse;
 import com.musicclubapp.dto.ClanReactionCount;
 import com.musicclubapp.dto.ClanReplyPreview;
 import com.musicclubapp.dto.ClanUnreadResponse;
+import com.musicclubapp.dto.MeetingRequest;
+import com.musicclubapp.dto.MeetingResponse;
 import com.musicclubapp.entity.BanKind;
 import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.ClanEmoji;
 import com.musicclubapp.entity.ClanMember;
 import com.musicclubapp.entity.ClanMessage;
 import com.musicclubapp.entity.ClanMessageReaction;
+import com.musicclubapp.entity.Meeting;
 import com.musicclubapp.entity.MusicAttachment;
 import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
@@ -41,6 +44,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Czat klanu - jedna wspolna rozmowa dla wszystkich czlonkow.
@@ -74,12 +78,14 @@ public class ClanChatService {
     private final PushService push;
     private final GifService gifs;
     private final MusicMetadataService musicMetadata;
+    private final MeetingService meetings;
     private final Clock clock;
 
     public ClanChatService(ClanMessageRepository messages, ClanMessageReactionRepository reactions,
                            ClanMemberRepository members, UserRepository users, ClanService clans,
                            BlockService blocks, PushService push, GifService gifs,
-                           MusicMetadataService musicMetadata, Clock clock) {
+                           MusicMetadataService musicMetadata, MeetingService meetings, Clock clock) {
+        this.meetings = meetings;
         this.gifs = gifs;
         this.musicMetadata = musicMetadata;
         this.messages = messages;
@@ -129,8 +135,12 @@ public class ClanChatService {
             reactions.summaries(clanId, od, viewer.getId(), ukryci).stream()
                 .filter(r -> r.getMessageId() <= doNumeru).toList());
         Collection<Long> ukryciSet = ukryci;
+        Map<Long, MeetingResponse> spotkania = meetings.toResponses(
+            wiadomosci.stream().map(ClanMessage::getMeeting).filter(Objects::nonNull).distinct().toList(),
+            viewer, clan.hasMember(viewer.getId()));
         return wiadomosci.stream()
-            .map(m -> toResponse(m, viewer, clan, reakcje.getOrDefault(m.getId(), List.of()), ukryciSet))
+            .map(m -> toResponse(m, viewer, clan, reakcje.getOrDefault(m.getId(), List.of()), ukryciSet,
+                m.getMeeting() == null ? null : spotkania.get(m.getMeeting().getId())))
             .toList();
     }
 
@@ -172,7 +182,25 @@ public class ClanChatService {
         members.findByUserId(sender.getId()).ifPresent(m -> m.markChatRead(message.getId()));
         powiadom(clan, sender, message);
 
-        return toResponse(message, sender, clan, List.of(), ukryci);
+        return toResponse(message, sender, clan, List.of(), ukryci, null);
+    }
+
+    /** Spotkanie na czacie klanu: wiadomosc bez tresci, ktora niesie miejsce, czas i przypomnienie. Tylko czlonek. */
+    @Transactional
+    public ClanMessageResponse sendMeeting(Long clanId, String username, MeetingRequest request) {
+        Clan clan = clans.requireMember(username, clanId);
+        User sender = user(username);
+        if (sender.isBanned(BanKind.MESSAGING)) {
+            throw OperationNotAllowedException.banned(BanKind.MESSAGING, sender.bannedUntil(BanKind.MESSAGING));
+        }
+        Meeting meeting = meetings.create(sender, null, clan, request);
+        ClanMessage nowa = new ClanMessage(clan, sender, "", null);
+        nowa.attachMeeting(meeting);
+        ClanMessage message = messages.save(nowa);
+        members.findByUserId(sender.getId()).ifPresent(m -> m.markChatRead(message.getId()));
+        powiadom(clan, sender, message);
+        return toResponse(message, sender, clan, List.of(), blocks.hiddenForQuery(sender.getId()),
+            meetings.toResponse(meeting, sender, true));
     }
 
     /**
@@ -208,7 +236,13 @@ public class ClanChatService {
         }
         // Reakcje wprost - nie liczymy na kaskade bazy, gdy w tej samej sesji sa juz zapisane
         reactions.deleteByMessageId(messageId);
+        Meeting spotkanie = message.getMeeting();
         message.delete(LocalDateTime.now(clock));
+        if (spotkanie != null) {
+            // Spotkanie znika razem z wiadomoscia (odpowiedzi i powiadomienia kasuje baza)
+            messages.flush();
+            meetings.deleteWithMessage(spotkanie);
+        }
     }
 
     /** Zapas przy pytaniu o usuniete - patrz {@link MessageService#ZAPAS_USUNIEC}. */
@@ -218,14 +252,21 @@ public class ClanChatService {
     @Transactional(readOnly = true)
     public ClanChatChanges changesSince(Long clanId, String viewerName, LocalDateTime since) {
         User viewer = user(viewerName);
-        clans.requireAccess(viewer, clanId);
+        Clan clan = clans.requireAccess(viewer, clanId);
         LocalDateTime teraz = LocalDateTime.now(clock);
         List<Long> ids = since == null ? List.of() : messages.deletedSince(clanId, since.minus(ZAPAS_USUNIEC));
-        return new ClanChatChanges(ids, teraz);
+        // Czas serwera liczy zegar aplikacji (UTC) - spotkania zapisuja chwile, wiec przeliczamy tym samym zegarem
+        List<MeetingResponse> zmienione = since == null ? List.of()
+            : meetings.changedInClan(clanId, viewer, since.minus(ZAPAS_USUNIEC).atZone(clock.getZone()).toInstant(),
+                clan.hasMember(viewer.getId()));
+        return new ClanChatChanges(ids, teraz, zmienione);
     }
 
-    /** Zmiany w wiadomosciach od podanej chwili (usuniete) i czas serwera do nastepnego pytania. */
-    public record ClanChatChanges(List<Long> deletedIds, LocalDateTime serverTime) {
+    /**
+     * Zmiany w wiadomosciach od podanej chwili (usuniete, spotkania z nowymi odpowiedziami albo odwolane) i czas
+     * serwera do nastepnego pytania.
+     */
+    public record ClanChatChanges(List<Long> deletedIds, LocalDateTime serverTime, List<MeetingResponse> meetings) {
     }
 
     /* ------------------------------------------------------------------ */
@@ -352,14 +393,17 @@ public class ClanChatService {
     }
 
     private ClanMessageResponse toResponse(ClanMessage m, User viewer, Clan clan,
-                                           List<ClanReactionCount> reakcje, Collection<Long> ukryci) {
+                                           List<ClanReactionCount> reakcje, Collection<Long> ukryci,
+                                           MeetingResponse spotkanie) {
         ClanMessage cel = m.getReplyTo();
         ClanReplyPreview podglad = null;
         if (cel != null && !ukryci.contains(cel.getSender().getId())) {
-            String tresc = cel.getContent();
+            // Spotkanie nie ma tresci - skrotem jest jego miejsce
+            String tresc = cel.getMeeting() != null && cel.getContent().isEmpty()
+                ? cel.getMeeting().getPlace() : cel.getContent();
             podglad = new ClanReplyPreview(cel.getId(), cel.getSender().getUsername(),
                 tresc.length() > SKROT ? tresc.substring(0, SKROT - 1) + "…" : tresc, cel.getGif() != null,
-                cel.isDeleted());
+                cel.isDeleted(), cel.getMeeting() != null);
         }
         MusicAttachment n = m.getMusic();
         boolean nagranie = n != null && n.getProvider() != null && n.getExternalId() != null;
@@ -375,7 +419,8 @@ public class ClanChatService {
             nagranie ? n.getThumbnailUrl() : null,
             nagranie ? n.getStartSeconds() : null,
             nagranie ? MusicEmbed.canonicalUrl(n.getProvider(), n.getKind(), n.getExternalId()) : null,
-            m.isDeleted());
+            m.isDeleted(),
+            spotkanie);
     }
 
     private User user(String username) {

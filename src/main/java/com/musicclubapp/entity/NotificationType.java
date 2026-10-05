@@ -40,5 +40,9 @@ public enum NotificationType {
     /** Ktos oznaczyl mnie w komentarzu (@login). */
     COMMENT_MENTION,
     /** Wzajemne "tak" w trybie Poznawaj - jestesmy znajomymi. Dostaja je obie osoby. Prowadzi na profil. */
-    DISCOVER_MATCH
+    DISCOVER_MATCH,
+    /** Spotkanie z czatu, na ktore potwierdzilem, zaraz sie zaczyna. Prowadzi do rozmowy albo czatu klanu. */
+    MEETING_REMINDER,
+    /** Zakladajacy odwolal spotkanie, na ktore potwierdzilem. */
+    MEETING_CANCELLED
 }

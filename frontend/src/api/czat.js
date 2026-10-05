@@ -43,6 +43,12 @@ export async function wyslij(login, wiadomosc) {
   return data;
 }
 
+/** Wysyla spotkanie (miejsce, czas, przypomnienie) - oddaje wiadomosc, ktora je niesie. */
+export async function wyslijSpotkanie(login, spotkanie) {
+  const { data } = await client.post(`${rozmowaZ(login)}/meeting`, spotkanie);
+  return data;
+}
+
 /** Sygnal "pisze" dla drugiej strony. */
 export async function pisze(login) {
   await client.post(`${rozmowaZ(login)}/typing`);

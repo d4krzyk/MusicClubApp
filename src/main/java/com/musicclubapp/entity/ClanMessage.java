@@ -68,6 +68,12 @@ public class ClanMessage {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
+    /** Spotkanie, ktore niesie ta wiadomosc - albo {@code null}. Usuniecie wiadomosci kasuje spotkanie. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meeting_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Meeting meeting;
+
     protected ClanMessage() {
         // wymagany przez JPA
     }
@@ -138,7 +144,16 @@ public class ClanMessage {
         content = "";
         gif = null;
         music = null;
+        meeting = null;
         deletedAt = now;
+    }
+
+    public Meeting getMeeting() {
+        return meeting;
+    }
+
+    public void attachMeeting(Meeting meeting) {
+        this.meeting = meeting;
     }
 
     public boolean isDeleted() {

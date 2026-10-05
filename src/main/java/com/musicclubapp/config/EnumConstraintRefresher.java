@@ -74,6 +74,7 @@ public class EnumConstraintRefresher implements ApplicationRunner {
 
         /* TA kolumna jest powodem, dla ktorego lista przestala byc wybiorcza. */
         new EnumColumn("notifications", "type", NotificationType.class),
+        new EnumColumn("meeting_attendees", "status", com.musicclubapp.entity.MeetingStatus.class),
         new EnumColumn("notifications", "reaction_type", ReactionType.class),
 
         new EnumColumn("reactions", "type", ReactionType.class),

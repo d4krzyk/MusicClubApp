@@ -13,6 +13,8 @@ public record ConversationSyncResponse(
     /** Wiadomosci tej rozmowy usuniete od czasu podanego w zapytaniu - przegladarka podmienia je na "usunieta". */
     List<Long> deletedIds,
     /** Czas serwera - przegladarka odsyla go przy nastepnym odpytaniu jako "zmiany od". */
-    java.time.LocalDateTime serverTime
+    java.time.LocalDateTime serverTime,
+    /** Spotkania tej rozmowy zmienione od czasu podanego w zapytaniu (odpowiedzi, odwolanie) - w nowym stanie. */
+    List<MeetingResponse> meetings
 ) {
 }

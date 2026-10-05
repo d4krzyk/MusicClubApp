@@ -1,0 +1,80 @@
+/* =========================================================================
+   MAPA - punkt na mapie (OpenStreetMap przez Leaflet): miejsce koncertu,
+   miejsce spotkania. Komponent: components/mapa/MapaPunktu.jsx.
+   ========================================================================= */
+
+.mapa-punktu {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--mc-radius, 1rem);
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+  /* Mapa jest pod oknami dialogowymi i menu - Leaflet ustawia wlasne z-indexy do 1000 */
+  isolation: isolate;
+  z-index: 0;
+}
+
+.mapa-punktu-plotno {
+  position: absolute;
+  inset: 0;
+  font: inherit;
+  background: var(--bs-tertiary-bg);
+}
+
+.mapa-punktu .leaflet-control-attribution {
+  font-size: .65rem;
+  background: rgba(255, 255, 255, .8);
+}
+
+.mapa-punktu .leaflet-bar a {
+  color: var(--bs-body-color);
+}
+
+/* Pinezka w kolorze marki; Leaflet domyslnie daje divIcon biale tlo i ramke - tu ich nie ma */
+.mapa-pinezka {
+  --mc-pinezka: var(--mc-2, #c026d3);
+  background: none;
+  border: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .35));
+}
+
+.mapa-pinezka svg {
+  display: block;
+}
+
+.mapa-punktu-brak {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  font-size: .85rem;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+}
+
+/* Pod mapa: miejsce i przyciski nawigacji */
+.mapa-akcje {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .5rem;
+}
+
+/* Ciemny motyw: kafelki OSM sa jasne - odwracamy je, zeby mapa nie oslepiala (pinezka zostaje w kolorze) */
+[data-bs-theme='dark'] .mapa-punktu .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.8);
+}
+
+[data-bs-theme='dark'] .mapa-punktu .leaflet-control-attribution {
+  background: rgba(20, 16, 28, .8);
+  color: var(--bs-secondary-color);
+}
+
+[data-bs-theme='dark'] .mapa-punktu .leaflet-bar a {
+  background: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+}

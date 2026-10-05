@@ -141,6 +141,18 @@ export default function NotificationsBell() {
     }
   }
 
+  /** "18:30" albo "pt 18:30", gdy nie dzis - w jezyku i strefie czasowej przegladarki. */
+  function godzina(chwila) {
+    if (!chwila) {
+      return '';
+    }
+    const d = new Date(chwila);
+    const dzis = d.toDateString() === new Date().toDateString();
+    return new Intl.DateTimeFormat(i18n.language, dzis
+      ? { hour: '2-digit', minute: '2-digit' }
+      : { weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(d);
+  }
+
   /** Tresc powiadomienia. */
   function text(notification) {
     switch (notification.type) {
@@ -177,6 +189,17 @@ export default function NotificationsBell() {
         return t('notifications.commentReply', { username: notification.actorUsername });
       case 'COMMENT_MENTION':
         return t('notifications.commentMention', { username: notification.actorUsername });
+      // Godzina w strefie telefonu - serwer zna tylko chwile
+      case 'MEETING_REMINDER':
+        return notification.clanName
+          ? t('notifications.meetingReminderClan', {
+            place: notification.meetingPlace, time: godzina(notification.meetingStartsAt), name: notification.clanName,
+          })
+          : t('notifications.meetingReminder', {
+            place: notification.meetingPlace, time: godzina(notification.meetingStartsAt), username: notification.actorUsername,
+          });
+      case 'MEETING_CANCELLED':
+        return t('notifications.meetingCancelled', { username: notification.actorUsername, place: notification.meetingPlace });
       case 'EVENT_REMINDER':
         if (notification.daysLeft === 0) {
           return t('notifications.reminderToday', { name: notification.eventName });
