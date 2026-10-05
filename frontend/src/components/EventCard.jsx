@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import EventReasons from './EventReasons';
-import { IconCalendar, IconClock, IconPin } from './Icons';
+import { IconCalendar, IconClock, IconFriends, IconPin } from './Icons';
 import {
   godzina, nazwaMiasta, plakietka, wykonawcySpozaNazwy,
 } from '../utils/wydarzenia';
@@ -84,6 +84,14 @@ export default function EventCard({ wydarzenie, pokazPowody = false, indeks = 0 
 
         {spolecznosc.length > 0 && (
           <div className="wydarzenie-spolecznosc">{spolecznosc.join(' · ')}</div>
+        )}
+
+        {/* Ekipy - czy ktos szuka towarzystwa na ten koncert (albo czy mam juz swoja) */}
+        {(wydarzenie.myCrewId || wydarzenie.crews > 0) && (
+          <div className={`wydarzenie-ekipy${wydarzenie.myCrewId ? ' is-moja' : ''}`}>
+            <IconFriends size={12} />
+            {wydarzenie.myCrewId ? t('crews.inCrew') : t('crews.count', { count: wydarzenie.crews })}
+          </div>
         )}
 
         {(wydarzenie.withdrawn || wydarzenie.status !== 'SCHEDULED'

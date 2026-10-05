@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "MusicClub",
-    "tagline": "Meet people who share your taste in music"
+    "tagline": "Don’t go to concerts alone — find a crew with similar taste"
   },
   "menu": {
     "users": "Users",
@@ -420,7 +420,12 @@
     "postComment": "{{username}} commented on your post",
     "commentReply": "{{username}} replied to your comment",
     "commentMention": "{{username}} mentioned you in a comment",
-    "discoverMatch": "A mutual “yes” with {{username}} — you're friends now"
+    "discoverMatch": "A mutual “yes” with {{username}} — you're friends now",
+    "crewJoinRequest": "{{username}} asks for a seat in your crew for {{name}}",
+    "crewRequestAccepted": "You’re in the crew for {{name}} — request accepted",
+    "crewMemberJoined": "{{username}} joins your crew for {{name}}",
+    "crewKicked": "You are no longer in the crew for {{name}}",
+    "meetingReminderCrew": "Crew meetup at {{time}}: {{place}}"
   },
   "playlists": {
     "title": "Playlist showcase",
@@ -699,7 +704,7 @@
       "label": "Write about this event",
       "placeholder": "Looking for company? Say where you're coming from or where to meet before the show…",
       "emptyTitle": "No posts yet",
-      "emptyText": "Looking for people to go with? Write a post — everyone who opens this event will see it, and it shows up in the feed too."
+      "emptyText": "Something to say about this concert — a spare ticket, a setlist question, photos afterwards? Write a post — everyone who opens this event will see it, and it shows up in the feed too. People to go with are in the crews above."
     },
     "forYouNearHint": "Concerts from your area come first.",
     "nearEmptyTitle": "Nothing within {{km}} km of {{city}}",
@@ -1656,6 +1661,107 @@
       "tooLong": "A meeting can last at most a day.",
       "concertFailed": "Couldn’t load the concert.",
       "sendFailed": "Couldn’t send the meeting."
+    }
+  },
+  "crews": {
+    "title": "Crews for this concert",
+    "lead": "Don’t go alone — join people who are going too, or start a crew and travel together.",
+    "create": "Start a crew",
+    "createFirst": "Start the first crew",
+    "empty": "Nobody has started a crew for this concert yet. Go first — others will join when they see where you’re coming from.",
+    "emptyPast": "There were no crews for this concert.",
+    "defaultName": "{{username}}’s crew",
+    "yours": "Yours",
+    "approvalShort": "on approval",
+    "seats": "{{members}}/{{capacity}} people",
+    "from": "from {{city}}",
+    "nearYou": "near you",
+    "friendsInside_one": "{{count}} friend inside",
+    "friendsInside_other": "{{count}} friends inside",
+    "whoIsIn": "Who is in the crew",
+    "open": "Open crew",
+    "requested": "Your request is waiting",
+    "cancelRequest": "Withdraw request",
+    "declined": "This crew turned down your request",
+    "join": "Join",
+    "ask": "Ask for a seat",
+    "askPlaceholder": "A few words about you (optional) — e.g. where you’re coming from",
+    "askLabel": "Message to the person who started the crew",
+    "askSend": "Send request",
+    "closed": "Not taking anyone new",
+    "full": "Full",
+    "notFound": "This crew no longer exists or you don’t have access to it.",
+    "toEvents": "Go to events",
+    "leaveConfirm": "Leave the crew? You stay signed up for the concert.",
+    "leaveFounderConfirm": "Leave the crew? The person who has been in it longest will take it over.",
+    "leaveLastConfirm": "You are alone in this crew — leaving disbands it together with the chat. Continue?",
+    "backToEvent": "Back to the event",
+    "crewFor": "Concert crew",
+    "members": "Who is going",
+    "founder": "started it",
+    "kick": "Remove from crew",
+    "kickConfirm": "Remove {{username}} from the crew?",
+    "requests_one": "Request for a seat ({{count}})",
+    "requests_other": "Requests for a seat ({{count}})",
+    "accept": "Accept",
+    "decline": "Decline",
+    "edit": "Edit description and rules",
+    "reopen": "Open to new people",
+    "close": "Stop taking people",
+    "leave": "Leave the crew",
+    "policy": {
+      "OPEN": "Anyone joins straight away",
+      "APPROVAL": "With my approval"
+    },
+    "form": {
+      "title": "New crew",
+      "editTitle": "Edit crew",
+      "name": "Name (optional)",
+      "namePlaceholder": "e.g. 3:40 pm train from Poznań",
+      "description": "How you’re getting there",
+      "descriptionPlaceholder": "Where from and how, when you meet up, whether you’re looking for someone with a ticket…",
+      "city": "Leaving from",
+      "cityPlaceholder": "City",
+      "capacity": "How many people",
+      "people_one": "{{count}} person",
+      "people_other": "{{count}} people",
+      "policy": "How people join",
+      "create": "Start crew",
+      "save": "Save"
+    },
+    "chat": {
+      "title": "Crew chat",
+      "empty": "Agree where and when you meet — the pin button sends a meeting point with a reminder.",
+      "meetingPoint": "Meeting point",
+      "placeholder": "Write to the crew…",
+      "closed": "The concert is over — the chat is read-only now."
+    },
+    "home": {
+      "title": "Your concerts",
+      "all": "All",
+      "emptyTitle": "Don’t go to a concert alone",
+      "emptyText": "Find a concert, sign up and join a crew — or start your own.",
+      "findConcert": "Find a concert",
+      "findCrew": "Find a crew",
+      "yourCrew": "Your crew · {{members}}/{{capacity}}"
+    },
+    "count_one": "{{count}} crew",
+    "count_other": "{{count}} crews",
+    "inCrew": "You have a crew"
+  },
+  "about": {
+    "headline": "Don’t go to a concert alone",
+    "find": {
+      "title": "Find a concert",
+      "text": "Concerts in Poland and abroad, with the ones that match your taste at the top."
+    },
+    "crew": {
+      "title": "Join a crew",
+      "text": "People who are going too: where they’re coming from, how many seats are left, whether your friends are in."
+    },
+    "meet": {
+      "title": "Meet up",
+      "text": "A crew chat with the meeting point on a map and a reminder before you head out."
     }
   }
 }

@@ -82,6 +82,12 @@ public class Notification {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Comment comment;
 
+    /** Ekipa na koncert - przy prosbach, dolaczeniu i spotkaniach ekipy. Znika razem z ekipa. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "crew_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Crew crew;
+
     /** Spotkanie z czatu - przy przypomnieniu i odwolaniu. Znika razem ze spotkaniem. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meeting_id")
@@ -179,6 +185,18 @@ public class Notification {
         return n;
     }
 
+    /**
+     * Ekipa na koncert: prosba (do zakladajacego, sprawca proszacy), przyjecie (do proszacego), dolaczenie (do
+     * zakladajacego, sprawca nowa osoba), usuniecie z ekipy (bez sprawcy, jak w klanie). Zawsze z wydarzeniem - po nim
+     * dzwonek pisze, na jaki koncert.
+     */
+    public static Notification crew(NotificationType type, User recipient, User actor, Crew crew) {
+        Notification n = new Notification(recipient, actor, type);
+        n.crew = crew;
+        n.event = crew.getEvent();
+        return n;
+    }
+
     /** Komentarz, odpowiedz albo oznaczenie - {@code type} mowi, ktore z trzech. */
     public static Notification comment(NotificationType type, User recipient, User actor, Post post, Comment comment) {
         Notification n = new Notification(recipient, actor, type);
@@ -189,14 +207,15 @@ public class Notification {
 
     /**
      * Przypomnienie o spotkaniu. Sprawca to druga strona rozmowy (z nia jest spotkanie, do niej prowadzi klikniecie),
-     * przy spotkaniu klanu - nikt, a klan jest wpisany.
+     * przy spotkaniu klanu albo ekipy - nikt, a klan albo ekipa jest wpisana.
      */
     public static Notification meetingReminder(User recipient, Meeting meeting) {
-        User other = meeting.getClan() != null ? null
+        User other = meeting.getClan() != null || meeting.getCrew() != null ? null
             : meeting.getCreator().getId().equals(recipient.getId()) ? meeting.getPartner() : meeting.getCreator();
         Notification n = new Notification(recipient, other, NotificationType.MEETING_REMINDER);
         n.meeting = meeting;
         n.clan = meeting.getClan();
+        n.crew = meeting.getCrew();
         return n;
     }
 
@@ -205,6 +224,7 @@ public class Notification {
         Notification n = new Notification(recipient, creator, NotificationType.MEETING_CANCELLED);
         n.meeting = meeting;
         n.clan = meeting.getClan();
+        n.crew = meeting.getCrew();
         return n;
     }
 
@@ -262,6 +282,10 @@ public class Notification {
 
     public Meeting getMeeting() {
         return meeting;
+    }
+
+    public Crew getCrew() {
+        return crew;
     }
 
     public Comment getComment() {

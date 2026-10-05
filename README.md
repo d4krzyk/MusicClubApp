@@ -1,6 +1,10 @@
 # MusicClub
 
-Aplikacja społecznościowa dla ludzi, którzy kochają muzykę. Poznajesz osoby o podobnym guście — **najpierw z Twojej
+**Nie idź na koncert sam.** MusicClub pomaga znaleźć koncert, ludzi, którzy też na niego idą, i umówić się na wspólne
+wyjście: pod każdym wydarzeniem są **ekipy** — skąd jadą, ile mają miejsc, czy są w nich Twoi znajomi — a w ekipie czat
+z miejscem zbiórki na mapie i przypomnieniem.
+
+Poza tym to aplikacja społecznościowa dla ludzi, którzy kochają muzykę. Poznajesz osoby o podobnym guście — **najpierw z Twojej
 okolicy** — znajdujesz koncerty i klany, piszesz posty, komentujesz (z oznaczaniem osób i odpowiedziami), wysyłasz
 GIF-y i rozmawiasz ze znajomymi. Działa w przeglądarce i jako aplikacja instalowana na telefonie (PWA); wersja na
 Androida (TWA) do Google Play jest w przygotowaniu.
@@ -14,6 +18,7 @@ wypuścić na świat.
 
 | | |
 |---|---|
+| **Ekipy na koncert** | pod każdym wydarzeniem: dołączasz od razu albo prosisz o miejsce, ekipy z Twojej okolicy wyżej; czat ekipy z miejscem zbiórki i przypomnieniem; na starcie „Twoje koncerty” — z ekipą albo z „Znajdź ekipę” |
 | **Tablica „Dla ciebie”** | znajomi zawsze na górze, pod nimi publiczne posty obcych ułożone według okolicy, wspólnego gustu i reakcji — z podpisem, *dlaczego* dany post jest wysoko |
 | **Okolica** | miasto w profilu (bez adresu i bez lokalizacji z telefonu) podnosi ludzi, koncerty i klany z Twojego regionu; zasięg od 30 km do całego kraju |
 | **Znajomi z gustem** | proponowani znajomi liczeni ze wspólnych artystów, gatunków i znajomych |
@@ -212,7 +217,7 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V21 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V22 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
@@ -329,6 +334,13 @@ z opisami: Swagger (adres niżej).
 |--------|---------|------|
 | GET | `/api/events?view=&city=&q=&radius=` | lista wydarzeń (`FOR_YOU`, `UPCOMING`, `MINE`); `radius` (km) zawęża do okolicy miasta z profilu |
 | GET | `/api/events/{id}` | wydarzenie z uczestnikami, powodami „Dla ciebie”, składem (gatunki i linki wykonawców) i danymi od organizatora (ceny, start sprzedaży, wiek, dostępność, ważne uwagi) |
+| GET / POST | `/api/events/{id}/crews` | ekipy wydarzenia (moja pierwsza, potem wolne od najbliższej) / założenie ekipy (`title`, `description`, `capacity` 2–12, `joinPolicy` OPEN/APPROVAL, `departureCity`) — zapisuje na koncert |
+| GET | `/api/crews/mine` | moje ekipy na nadchodzące koncerty z liczbą nowych wiadomości |
+| GET / PUT | `/api/crews/{id}` | strona ekipy (skład, prośby dla zakładającego, czat otwarty?) / zmiana (zakładający) |
+| POST / DELETE | `/api/crews/{id}/join` / `/api/crews/{id}/request` | dołącz albo poproś o miejsce (`message`) / cofnij prośbę |
+| POST | `/api/crews/{id}/requests/{requestId}/accept` i `/decline` | rozpatrzenie prośby (zakładający) |
+| DELETE | `/api/crews/{id}/members/me` / `/api/crews/{id}/members/{login}` | odejście (zakładający przekazuje ekipę) / usunięcie z ekipy |
+| GET / POST | `/api/crews/{id}/chat` | czat ekipy (`after`, `before`, `limit`) / nowa wiadomość; `…/chat/meeting` — miejsce zbiórki; `…/chat/changes?since=` — usunięte i zmienione spotkania; `…/chat/read` — przeczytane do |
 | GET | `/api/artists/profile?name=&lang=` | „Kim jest” wykonawca z koncertu: opis, słuchacze i podobni z Last.fm (zapamiętane na 30 dni) i jego linki |
 | PUT / DELETE | `/api/events/{id}/participation` | „Zainteresowany” / „Biorę udział” / rezygnacja |
 | GET | `/api/posts?event={id}` | posty pod wydarzeniem („szukam ekipy”) |

@@ -8,6 +8,7 @@ import Alert from 'react-bootstrap/Alert';
 import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
 import Field from '../components/Field';
+import OAplikacji from '../components/OAplikacji';
 import SprawdzSkrzynke from '../components/SprawdzSkrzynke';
 
 export default function RegisterPage() {
@@ -78,86 +79,89 @@ export default function RegisterPage() {
   }
 
   return (
-    <Card className="mx-auto" style={{ maxWidth: 420 }}>
-      <Card.Body className="p-4">
-        <Card.Title as="h1" className="h4 mb-3">
-          {t('register.title')}
-        </Card.Title>
+    <>
+      <OAplikacji />
+      <Card className="mx-auto" style={{ maxWidth: 420 }}>
+        <Card.Body className="p-4">
+          <Card.Title as="h1" className="h4 mb-3">
+            {t('register.title')}
+          </Card.Title>
 
-        {generalError && <Alert variant="danger">{generalError}</Alert>}
+          {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={submit} noValidate className="tiles-in-form">
-          <Field
-            id="username"
-            label={t('register.username')}
-            value={data.username}
-            onChange={(v) => ustaw('username', v)}
-            error={fieldErrors.username}
-            suggestion={t('register.usernameHint')}
-            autoComplete="username"
-          />
-
-          <Field
-            id="email"
-            label={t('register.email')}
-            typ="email"
-            value={data.email}
-            onChange={(v) => ustaw('email', v)}
-            error={fieldErrors.email}
-            autoComplete="email"
-          />
-
-          <Field
-            id="password"
-            label={t('register.password')}
-            typ="password"
-            value={data.password}
-            onChange={(v) => ustaw('password', v)}
-            error={fieldErrors.password}
-            suggestion={t('register.passwordHint')}
-            autoComplete="new-password"
-          />
-
-          <Field
-            id="confirmPassword"
-            label={t('register.confirmPassword')}
-            typ="password"
-            value={data.confirmPassword}
-            onChange={(v) => ustaw('confirmPassword', v)}
-            error={fieldErrors.confirmPassword}
-            autoComplete="new-password"
-          />
-
-          {/* Zgoda na regulamin i potwierdzenie zapoznania sie z polityka - bez niej serwer konta nie zaklada */}
-          <Form.Group className="mb-3" controlId="acceptTerms">
-            <Form.Check
-              type="checkbox"
-              checked={data.acceptTerms}
-              onChange={(e) => ustaw('acceptTerms', e.target.checked)}
-              isInvalid={Boolean(fieldErrors.acceptTerms)}
-              label={(
-                <Trans
-                  i18nKey="register.acceptTerms"
-                  components={[
-                    <Link key="r" to="/regulamin" target="_blank" rel="noopener noreferrer" />,
-                    <Link key="p" to="/polityka-prywatnosci" target="_blank" rel="noopener noreferrer" />,
-                  ]}
-                />
-              )}
-              feedback={fieldErrors.acceptTerms}
-              feedbackType="invalid"
+          <Form onSubmit={submit} noValidate className="tiles-in-form">
+            <Field
+              id="username"
+              label={t('register.username')}
+              value={data.username}
+              onChange={(v) => ustaw('username', v)}
+              error={fieldErrors.username}
+              suggestion={t('register.usernameHint')}
+              autoComplete="username"
             />
-          </Form.Group>
 
-          <Button type="submit" className="w-100" disabled={wysylanie}>
-            {wysylanie ? t('register.submitting') : t('register.submit')}
-          </Button>
-        </Form>
+            <Field
+              id="email"
+              label={t('register.email')}
+              typ="email"
+              value={data.email}
+              onChange={(v) => ustaw('email', v)}
+              error={fieldErrors.email}
+              autoComplete="email"
+            />
 
-        <p className="text-center text-body-secondary small mt-3 mb-0">
-          {t('register.haveAccount')} <Link to="/login">{t('register.goToLogin')}</Link>
-        </p>
-      </Card.Body>
-    </Card>
+            <Field
+              id="password"
+              label={t('register.password')}
+              typ="password"
+              value={data.password}
+              onChange={(v) => ustaw('password', v)}
+              error={fieldErrors.password}
+              suggestion={t('register.passwordHint')}
+              autoComplete="new-password"
+            />
+
+            <Field
+              id="confirmPassword"
+              label={t('register.confirmPassword')}
+              typ="password"
+              value={data.confirmPassword}
+              onChange={(v) => ustaw('confirmPassword', v)}
+              error={fieldErrors.confirmPassword}
+              autoComplete="new-password"
+            />
+
+            {/* Zgoda na regulamin i potwierdzenie zapoznania sie z polityka - bez niej serwer konta nie zaklada */}
+            <Form.Group className="mb-3" controlId="acceptTerms">
+              <Form.Check
+                type="checkbox"
+                checked={data.acceptTerms}
+                onChange={(e) => ustaw('acceptTerms', e.target.checked)}
+                isInvalid={Boolean(fieldErrors.acceptTerms)}
+                label={(
+                  <Trans
+                    i18nKey="register.acceptTerms"
+                    components={[
+                      <Link key="r" to="/regulamin" target="_blank" rel="noopener noreferrer" />,
+                      <Link key="p" to="/polityka-prywatnosci" target="_blank" rel="noopener noreferrer" />,
+                    ]}
+                  />
+                )}
+                feedback={fieldErrors.acceptTerms}
+                feedbackType="invalid"
+              />
+            </Form.Group>
+
+            <Button type="submit" className="w-100" disabled={wysylanie}>
+              {wysylanie ? t('register.submitting') : t('register.submit')}
+            </Button>
+          </Form>
+
+          <p className="text-center text-body-secondary small mt-3 mb-0">
+            {t('register.haveAccount')} <Link to="/login">{t('register.goToLogin')}</Link>
+          </p>
+        </Card.Body>
+      </Card>
+    </>
   );
 }

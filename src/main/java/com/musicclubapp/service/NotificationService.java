@@ -3,6 +3,7 @@ package com.musicclubapp.service;
 import com.musicclubapp.dto.NotificationResponse;
 import com.musicclubapp.entity.Clan;
 import com.musicclubapp.entity.Comment;
+import com.musicclubapp.entity.Crew;
 import com.musicclubapp.entity.Meeting;
 import com.musicclubapp.entity.MusicEvent;
 import com.musicclubapp.entity.Notification;
@@ -87,7 +88,14 @@ public class NotificationService {
             case MEETING_CANCELLED -> new PushService.Message("push.meetingCancelled.title", null,
                 "push.meetingCancelled.body", new Object[] {n.getMeeting().getPlace(), kto}, link,
                 "meeting-" + n.getMeeting().getId());
-            case REACTION -> null;
+            case CREW_JOIN_REQUEST -> new PushService.Message("push.crewRequest.title", null,
+                "push.crewRequest.body", new Object[] {kto, n.getEvent().getName()}, link, "crew-request-" + n.getCrew().getId());
+            case CREW_REQUEST_ACCEPTED -> new PushService.Message("push.crewAccepted.title", null,
+                "push.crewAccepted.body", new Object[] {n.getEvent().getName()}, link, "crew-" + n.getCrew().getId());
+            case CREW_KICKED -> new PushService.Message("push.crewKicked.title", null,
+                "push.crewKicked.body", new Object[] {n.getEvent().getName()}, link, "crew-" + n.getCrew().getId());
+            // Dolaczenie do otwartej ekipy - tylko dzwonek: przy popularnym koncercie telefon brzeczalby co chwile
+            case CREW_MEMBER_JOINED, REACTION -> null;
         };
     }
 
@@ -289,6 +297,39 @@ public class NotificationService {
     @Transactional
     public void meetingNotificationsGone(Long meetingId) {
         notificationRepository.deleteByMeetingId(meetingId);
+    }
+
+    /** Prosba o miejsce w ekipie - dla zakladajacego (w dzwonku i na telefonie). */
+    @Transactional
+    public void crewJoinRequested(User founder, User requester, Crew crew) {
+        notificationRepository.deleteCrewRequests(requester.getId(), crew.getId());
+        zapisz(Notification.crew(NotificationType.CREW_JOIN_REQUEST, founder, requester, crew));
+    }
+
+    /** Prosba przestala czekac - znika z dzwonka zakladajacego. */
+    @Transactional
+    public void crewRequestGone(Long requesterId, Long crewId) {
+        notificationRepository.deleteCrewRequests(requesterId, crewId);
+    }
+
+    /** Prosba przyjeta - dla proszacego. */
+    @Transactional
+    public void crewRequestAccepted(User requester, Crew crew) {
+        zapisz(Notification.crew(NotificationType.CREW_REQUEST_ACCEPTED, requester, null, crew));
+    }
+
+    /** Ktos dolaczyl do otwartej ekipy - dla zakladajacego. */
+    @Transactional
+    public void crewMemberJoined(User founder, User member, Crew crew) {
+        if (!founder.getId().equals(member.getId())) {
+            zapisz(Notification.crew(NotificationType.CREW_MEMBER_JOINED, founder, member, crew));
+        }
+    }
+
+    /** Zakladajacy usunal z ekipy - bez sprawcy. */
+    @Transactional
+    public void crewKicked(User member, Crew crew) {
+        zapisz(Notification.crew(NotificationType.CREW_KICKED, member, null, crew));
     }
 
     /** Znajomosc doszla do skutku - powiadamiamy te osobe, ktora czekala. */

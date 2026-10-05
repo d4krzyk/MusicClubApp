@@ -24,7 +24,10 @@ obejmujących się osób zamiast serduszek, wspólny edytor zdjęć — kadr i o
 animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu — wszyscy / znajomi / tylko Poznawaj (V18),
 usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w czacie — miejsce, punkt na mapie, czas,
 „Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji),
-„Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21).
+„Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21), **ekipy na koncert** — aplikacja przebudowana
+wokół „nie idź na koncert sam” (V22).
+Uwaga na kierunek: **rdzeniem aplikacji są ekipy na koncert** — kilka osób, które idą na to samo wydarzenie razem.
+Nowe funkcje mają je wzmacniać (start, strona wydarzenia, czat ekipy), a nie konkurować z nimi o uwagę.
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -717,6 +720,53 @@ Strona wydarzenia ma sekcję „Kto gra” (`components/wydarzenie/Wykonawcy.jsx
   porównania tekstu w Playwrighcie ją normalizują. `locator('.wykonawca', { hasText: 'Hey' })` łapał też Kulta, bo „Hey”
   stoi na jego liście podobnych — filtr po `.wykonawca-nazwa` z `exact`. Miarka przelewu liczy przycinających przodków
   tylko do `<main>` — `body` ma `overflow-x: hidden` i inaczej wszystko wychodziło „przycięte”, a wynik był pusty.
+
+## Ekipy na koncert (V22) — rdzeń aplikacji
+
+Ekipa = 2–12 osób jadących razem na jedno wydarzenie (`Crew`, `CrewMember`, `CrewRequest`, `CrewMessage`;
+`CrewService`, `CrewChatService`, `CrewController`, `CrewRequestCleanup`). Strona wydarzenia ma sekcję „Ekipy na ten
+koncert” **zaraz pod „Biorę udział”** (`#ekipy`), `/ekipy/:id` to strona ekipy z czatem, tablica zaczyna się od „Twoje
+koncerty” (`MojeKoncerty`), karty listy wydarzeń mają „N ekip” / „Masz ekipę” (`EventCardResponse.crews/myCrewId`),
+ikona Wydarzeń w pasku ma liczbę nowych wiadomości z czatów ekip, a logowanie i rejestracja zaczynają się od „Nie idź
+na koncert sam” w trzech krokach (`OAplikacji`).
+
+- **Jedna ekipa na osobę i koncert** — unikalne `(event_id, user_id)` w `crew_members` (stąd zduplikowane `event_id`;
+  dwa równoległe dołączenia nie dadzą dwóch wierszy). Najwyżej 10 prowadzonych ekip na nadchodzące koncerty
+  (`MAX_FOUNDED`). Na minione i wycofane wydarzenie nie da się założyć ani dołączyć.
+- **Wejście = „Biorę udział”** (`enter` woła `participate(GOING)`), a w ekipie **nie da się zrezygnować ani przejść na
+  „zainteresowany”** (`EventParticipationService`, `crewLeaveFirst`) — ekipa nie zostanie z kimś, kto nie jedzie.
+  Odejście z ekipy zapisu nie zdejmuje. Dzięki temu wydarzenie z ekipą zawsze ma zapisy, więc import je wycofuje,
+  a nie kasuje; miesiąc po dacie znika razem z ekipami (kaskada w bazie: członkowie, prośby, czat, spotkania,
+  powiadomienia).
+- **Nabór**: `OPEN` — od razu (powiadomienie `CREW_MEMBER_JOINED` tylko w dzwonku), `APPROVAL` — prośba ≤ 200 znaków
+  (`CREW_JOIN_REQUEST` z push), przyjęcie (`CREW_REQUEST_ACCEPTED` z push), odmowa bez powiadomienia, tydzień karencji
+  (`DECLINED` na karcie). Wejście do ekipy kasuje pozostałe prośby tej osoby na ten koncert. `closed` — założyciel
+  zamyka nabór. Limit miejsc nie mniejszy niż skład.
+- **Założyciel** zmienia opis, limit, nabór i miasto wyjazdu, przyjmuje prośby, usuwa ludzi (`CREW_KICKED` z push,
+  link do wydarzenia `#ekipy`); odchodząc przekazuje ekipę osobie najdłużej obecnej, ostatnia osoba = rozwiązanie
+  (`CrewRepository.deleteRow` — zapytaniem, **bez** `clearAutomatically`: usuwanie konta działa dalej na encji konta).
+- **Lista pod wydarzeniem**: moja pierwsza, potem te, do których można wejść, wśród nich bliżej mojego miasta
+  (`LocationScore` z miasta wyjazdu — miasto z listy, jak w profilu), potem ze znajomymi w środku; pełne/zamknięte na
+  końcu. Ekipa założyciela z blokady (w obie strony) = niewidoczna i 404; osoby z blokad poza podglądem, ale w liczniku.
+  Skład ekipy widzą wszyscy zalogowani — **także osoby ukryte na liście uczestników** (polityka to mówi).
+- **Czat ekipy** jak klanu: odpytywanie co 4 s, `chat_read_id`, nieprzeczytane bez własnych, usuniętych i z blokad, push
+  bez treści dla tych bez nieprzeczytanych (`toNotify`) i bez blokad (`crew-chat-…` cichy, gdy aplikacja na ekranie —
+  `sw.js`), usuwanie = ślad (autor albo założyciel), `/chat/changes` z 30 s zapasu. Otwarty do **dwóch dni po
+  koncercie**, potem tylko do czytania. Administrator aplikacji **nie** ma wglądu (nadużycia — zgłoszenie profilu).
+- **Spotkania ekipy** (miejsce zbiórki): `meetings.crew_id` z kaskadą; widzą i odpowiadają tylko członkowie; odejście
+  zdejmuje odpowiedzi (`leftCrew`); powiadomienia spotkań ekipy prowadzą do `/ekipy/{id}`. `MeetingRepository.deleteOrphans`
+  **musi** znać każdy czat ze spotkaniami — bez `crew_messages` skasowanie dowolnej rozmowy zabierałoby spotkania ekip.
+- **Sprzątanie**: `CrewRequestCleanup` raz na dobę — odrzucone po tygodniu, czekające na minione koncerty (z dzwonka
+  też). Usunięcie konta: `crews.deleteAllOf` (przed spotkaniami — `AccountDeletionServiceTest` pilnuje kolejności):
+  przekazanie albo rozwiązanie, wiadomości i prośby. Eksport: `crews` (członkostwa, opis tylko własnych, prośby,
+  wiadomości). Regulamin (pkt 5) mówi też o bezpieczeństwie spotkań z obcymi.
+- **Pułapki z tej rundy**: zbiorcze `DELETE` próśb (`deleteForEvent`) zostawiało w pamięci przyjmowaną prośbę jako żywą —
+  drugie „przyjmij” w tej samej sesji dawało `OptimisticLockException`; teraz przyjmowana jest kasowana wprost przed
+  zbiorczym. Pierwsza wersja sortowania stawiała pełną ekipę z mojego miasta nad wolną z okolicy — na górze nic by nie
+  dała. Test push „nikt nie dostaje przy drugiej wiadomości” musi pamiętać, że **piszący wcześniej** nie ma nic
+  nieprzeczytanego, więc przy cudzej wiadomości dostaje push. Skrypt e2e ekip rejestruje konta — świeża baza
+  (`backend-n3.sh`). Zrzut całej strony zaraz po przejściu łapał stronę ekipy w połowie animacji (wyblakłą) — oceniać
+  zrzuty zrobione po chwili albo z `reducedMotion`.
 
 ## Karta profilu i tryb Poznawaj (V17)
 

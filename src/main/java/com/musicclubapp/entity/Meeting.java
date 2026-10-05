@@ -19,8 +19,9 @@ import java.util.Objects;
 
 /**
  * Spotkanie wyslane na czacie: miejsce (tekst i opcjonalnie punkt na mapie), czas od-do i przypomnienie dla osob,
- * ktore potwierdzily. Nalezy do rozmowy dwoch osob ({@code partner}) albo do czatu klanu ({@code clan}) - dokladnie
- * jedno z dwojga. Wiadomosc, ktora je niesie, wskazuje na nie kolumna {@code meeting_id}.
+ * ktore potwierdzily. Nalezy do rozmowy dwoch osob ({@code partner}), do czatu klanu ({@code clan}) albo do czatu
+ * ekipy na koncert ({@code crew}) - dokladnie jednego z nich. Wiadomosc, ktora je niesie, wskazuje na nie kolumna
+ * {@code meeting_id}.
  *
  * <p>Czas to chwile (UTC): przegladarka wysyla czas lokalny zamieniony na UTC, a przypomnienie liczy sie od chwili,
  * nie od godziny na zegarze serwera.</p>
@@ -29,6 +30,7 @@ import java.util.Objects;
 @Table(name = "meetings", indexes = {
     @Index(name = "idx_meetings_remind", columnList = "remind_at"),
     @Index(name = "idx_meetings_clan", columnList = "clan_id, updated_at"),
+    @Index(name = "idx_meetings_crew", columnList = "crew_id, updated_at"),
     @Index(name = "idx_meetings_creator", columnList = "creator_id, ends_at")
 })
 public class Meeting {
@@ -59,6 +61,12 @@ public class Meeting {
     @JoinColumn(name = "clan_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Clan clan;
+
+    /** Czat ekipy: ta ekipa (miejsce zbiorki). Znika razem z ekipa. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "crew_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Crew crew;
 
     @Column(nullable = false, length = MAX_PLACE)
     private String place;
@@ -115,6 +123,11 @@ public class Meeting {
         this.updatedAt = now;
     }
 
+    /** Spotkanie z czatu ekipy - ustawiane przed zapisem, zamiast rozmowy i klanu. */
+    public void inCrew(Crew crew) {
+        this.crew = crew;
+    }
+
     public void cancel(Instant now) {
         if (cancelledAt == null) {
             cancelledAt = now;
@@ -154,6 +167,10 @@ public class Meeting {
 
     public Clan getClan() {
         return clan;
+    }
+
+    public Crew getCrew() {
+        return crew;
     }
 
     public String getPlace() {

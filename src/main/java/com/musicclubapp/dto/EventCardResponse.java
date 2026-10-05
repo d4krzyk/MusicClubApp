@@ -65,6 +65,12 @@ public record EventCardResponse(
     boolean withdrawn,
 
     @Schema(description = "Ile km od miasta z mojego profilu; 0 = to samo miasto, pusty = nie wiadomo albo nie mam miasta")
-    Integer distanceKm
+    Integer distanceKm,
+
+    @Schema(description = "Ile ekip na koncert jest pod tym wydarzeniem", example = "2")
+    long crews,
+
+    @Schema(description = "Moja ekipa na ten koncert; pusta, gdy w zadnej nie jestem")
+    Long myCrewId
 ) {
 }

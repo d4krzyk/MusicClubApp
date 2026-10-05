@@ -3,6 +3,7 @@ package com.musicclubapp.service;
 import com.musicclubapp.dto.MeetingRequest;
 import com.musicclubapp.dto.MeetingResponse;
 import com.musicclubapp.entity.Clan;
+import com.musicclubapp.entity.Crew;
 import com.musicclubapp.entity.Meeting;
 import com.musicclubapp.entity.MeetingAttendee;
 import com.musicclubapp.entity.MeetingStatus;
@@ -10,6 +11,7 @@ import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
+import com.musicclubapp.repository.CrewMemberRepository;
 import com.musicclubapp.repository.MeetingAttendeeRepository;
 import com.musicclubapp.repository.MeetingRepository;
 import com.musicclubapp.repository.UserRepository;
@@ -32,9 +34,10 @@ import java.util.stream.Collectors;
  * Spotkania wysylane na czacie: zakladanie (razem z wiadomoscia robia to {@link MessageService} i
  * {@link ClanChatService}), odpowiedzi "bede" / "nie dam rady", odwolanie i to, jak spotkanie widzi ogladajacy.
  *
- * <p>Widzi je ten, kto widzi wiadomosc: strony rozmowy albo czlonkowie klanu (i administrator aplikacji przy klanie -
- * czyta, nie odpowiada). Odpowiadac moga strony rozmowy, ktore nadal sa znajomymi (blokada zrywa znajomosc), i
- * czlonkowie klanu. Obcy dostaje 404 - spotkanie nie zdradza, ze istnieje.</p>
+ * <p>Widzi je ten, kto widzi wiadomosc: strony rozmowy, czlonkowie klanu (i administrator aplikacji przy klanie -
+ * czyta, nie odpowiada) albo czlonkowie ekipy na koncert. Odpowiadac moga strony rozmowy, ktore nadal sa znajomymi
+ * (blokada zrywa znajomosc), czlonkowie klanu i czlonkowie ekipy. Obcy dostaje 404 - spotkanie nie zdradza, ze
+ * istnieje.</p>
  */
 @Service
 public class MeetingService {
@@ -49,15 +52,18 @@ public class MeetingService {
     private final MeetingRepository meetings;
     private final MeetingAttendeeRepository attendees;
     private final UserRepository users;
+    private final CrewMemberRepository crewMembers;
     private final BlockService blocks;
     private final NotificationService notifications;
     private final Clock clock;
 
     public MeetingService(MeetingRepository meetings, MeetingAttendeeRepository attendees, UserRepository users,
-                          BlockService blocks, NotificationService notifications, Clock clock) {
+                          CrewMemberRepository crewMembers, BlockService blocks, NotificationService notifications,
+                          Clock clock) {
         this.meetings = meetings;
         this.attendees = attendees;
         this.users = users;
+        this.crewMembers = crewMembers;
         this.blocks = blocks;
         this.notifications = notifications;
         this.clock = clock;
@@ -69,15 +75,27 @@ public class MeetingService {
      */
     @Transactional
     public Meeting create(User creator, User partner, Clan clan, MeetingRequest request) {
+        return create(creator, partner, clan, null, request);
+    }
+
+    /** Spotkanie na czacie ekipy - zwykle miejsce zbiorki przed koncertem. */
+    @Transactional
+    public Meeting create(User creator, Crew crew, MeetingRequest request) {
+        return create(creator, null, null, crew, request);
+    }
+
+    private Meeting create(User creator, User partner, Clan clan, Crew crew, MeetingRequest request) {
         Instant now = Instant.now(clock);
         check(request, now);
         if (meetings.countOpenBy(creator.getId(), now) >= MAX_OPEN) {
             throw OperationNotAllowedException.meetingLimit(MAX_OPEN);
         }
         String note = request.note() == null || request.note().isBlank() ? null : request.note().strip();
-        Meeting meeting = meetings.save(new Meeting(creator, partner, clan, request.place().strip(), note,
+        Meeting meeting = new Meeting(creator, partner, clan, request.place().strip(), note,
             round(request.latitude()), round(request.longitude()), request.startsAt(), request.endsAt(),
-            request.remindMinutes(), now));
+            request.remindMinutes(), now);
+        meeting.inCrew(crew);
+        meeting = meetings.save(meeting);
         attendees.save(new MeetingAttendee(meeting, creator, MeetingStatus.GOING, now));
         return meeting;
     }
@@ -200,6 +218,12 @@ public class MeetingService {
         attendees.deleteInClan(userId, clanId);
     }
 
+    /** Odejscie z ekipy (albo wyrzucenie): odpowiedzi na spotkania ekipy znikaja razem z przypomnieniami. */
+    @Transactional
+    public void leftCrew(Long userId, Long crewId) {
+        attendees.deleteInCrew(userId, crewId);
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Zmiany do odswiezania czatu                                        */
     /* ------------------------------------------------------------------ */
@@ -216,6 +240,13 @@ public class MeetingService {
     public List<MeetingResponse> changedInClan(Long clanId, User viewer, Instant since, boolean member) {
         List<Meeting> list = meetings.changedInClan(clanId, since);
         return new ArrayList<>(toResponses(list, viewer, member).values());
+    }
+
+    /** I dla czatu ekipy ({@code canWrite}: czat ekipy jest jeszcze otwarty). */
+    @Transactional(readOnly = true)
+    public List<MeetingResponse> changedInCrew(Long crewId, User viewer, Instant since, boolean canWrite) {
+        List<Meeting> list = meetings.changedInCrew(crewId, since);
+        return new ArrayList<>(toResponses(list, viewer, canWrite).values());
     }
 
     /* ------------------------------------------------------------------ */
@@ -271,7 +302,9 @@ public class MeetingService {
     private Meeting visible(Long id, User viewer) {
         Meeting meeting = meetings.findById(id)
             .orElseThrow(() -> new NoSuchElementFoundException("meeting", id));
-        boolean sees = meeting.getClan() != null
+        boolean sees = meeting.getCrew() != null
+            ? crewMembers.findByCrewIdAndUserId(meeting.getCrew().getId(), viewer.getId()).isPresent()
+            : meeting.getClan() != null
             ? meeting.getClan().hasMember(viewer.getId()) || viewer.getRole() == Role.ADMIN
             : meeting.isBetween(viewer.getId());
         if (!sees) {
@@ -280,13 +313,19 @@ public class MeetingService {
         return meeting;
     }
 
-    /** Odpowiadac moze strona rozmowy, ktora nadal jest znajomoscia, albo czlonek klanu (nie administrator z zewnatrz). */
+    /**
+     * Odpowiadac moze strona rozmowy, ktora nadal jest znajomoscia, czlonek klanu (nie administrator z zewnatrz) albo
+     * czlonek ekipy.
+     */
     private boolean canRespond(Meeting meeting, User viewer) {
         return stillIn(meeting, viewer);
     }
 
-    /** Czy osoba nadal "nalezy" do spotkania: czlonek klanu albo znajomy drugiej strony rozmowy. */
+    /** Czy osoba nadal "nalezy" do spotkania: czlonek ekipy, czlonek klanu albo znajomy drugiej strony rozmowy. */
     boolean stillIn(Meeting meeting, User who) {
+        if (meeting.getCrew() != null) {
+            return crewMembers.findByCrewIdAndUserId(meeting.getCrew().getId(), who.getId()).isPresent();
+        }
         if (meeting.getClan() != null) {
             return meeting.getClan().hasMember(who.getId());
         }

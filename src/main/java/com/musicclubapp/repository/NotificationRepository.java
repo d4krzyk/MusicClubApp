@@ -130,6 +130,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Query("DELETE FROM Notification n WHERE n.meeting.id = :meetingId")
     void deleteByMeetingId(@Param("meetingId") Long meetingId);
 
+    /** Prosba o miejsce w ekipie przestala czekac (przyjeta, odrzucona, cofnieta) - znika z dzwonka zakladajacego. */
+    @Modifying
+    @Query("""
+           DELETE FROM Notification n
+           WHERE n.actor.id = :requesterId AND n.crew.id = :crewId
+             AND n.type = com.musicclubapp.entity.NotificationType.CREW_JOIN_REQUEST
+           """)
+    void deleteCrewRequests(@Param("requesterId") Long requesterId, @Param("crewId") Long crewId);
+
     /** Zaproszenie do klanu przestalo czekac (przyjete, odrzucone, cofniete) - znika z dzwonka. */
     @Modifying
     @Query("""

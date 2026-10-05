@@ -71,6 +71,8 @@ const pl = {
         'Informacje o koncertach pochodzą z serwisu Ticketmaster i mają charakter informacyjny. Nie gwarantujemy ich aktualności — o terminie, miejscu i cenie decyduje organizator. Bilety kupujesz u organizatora lub sprzedawcy, a nie w Serwisie.',
         'Oznaczenie „Zainteresowany” lub „Biorę udział” nie jest rezerwacją. Przypomnienia o wydarzeniach są dodatkiem i nie zastępują sprawdzenia terminu u organizatora. Na liście uczestników możesz się ukryć — liczysz się wtedy tylko do licznika.',
         'Posty pod wydarzeniem działają jak zwykłe posty (widoczność, blokady, zgłoszenia).',
+        'Pod wydarzeniem możesz założyć ekipę na koncert albo dołączyć do cudzej (od razu albo za zgodą osoby, która ją założyła). Na jeden koncert jesteś w najwyżej jednej ekipie, a dołączenie zapisuje Cię jako „Biorę udział”. Osoba zakładająca zmienia opis i limit miejsc, przyjmuje prośby i może usunąć kogoś z ekipy; odchodząc, przekazuje ekipę osobie najdłużej w niej obecnej. Ekipa znika miesiąc po koncercie razem z czatem.',
+        'Ekipy służą umawianiu się na wspólne wyjście. Serwis nie organizuje tych spotkań i nie sprawdza tożsamości użytkowników — spotkania z osobami poznanymi w Serwisie odbywają się na Twoją odpowiedzialność. Umawiaj się w miejscach publicznych, a nadużycia zgłaszaj (zgłoszenie profilu).',
       ],
     },
     {
@@ -200,6 +202,8 @@ const en = {
         'Concert information comes from Ticketmaster and is informational only. We don’t guarantee it is up to date — the organiser decides the date, place and price. You buy tickets from the organiser or seller, not in the Service.',
         '“Interested” or “Going” is not a reservation. Event reminders are an extra and don’t replace checking the date with the organiser. You can hide yourself on the attendee list — you then count only in the total.',
         'Posts under an event work like ordinary posts (visibility, blocks, reports).',
+        'Under an event you can start a concert crew or join someone else’s (straight away or with the approval of the person who started it). For one concert you are in at most one crew, and joining signs you up as “Going”. The person who started the crew changes its description and seat limit, handles requests and may remove someone from the crew; when they leave, the crew passes to the person who has been in it longest. A crew disappears a month after the concert together with its chat.',
+        'Crews are for arranging to go together. The Service does not organise these meetups and does not verify users’ identity — meeting people you got to know in the Service is at your own risk. Meet in public places and report abuse (report the profile).',
       ],
     },
     {

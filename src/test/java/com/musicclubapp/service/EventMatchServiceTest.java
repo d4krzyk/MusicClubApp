@@ -46,6 +46,8 @@ class EventMatchServiceTest {
 
     @Autowired private LocationService location;
     @Autowired private BlockService blocks;
+    @Autowired private com.musicclubapp.repository.CrewMemberRepository crewMembers;
+    @Autowired private com.musicclubapp.repository.CrewRepository crewRepository;
     @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository eventRepository;
     @Autowired private EventParticipationRepository participationRepository;
@@ -71,10 +73,11 @@ class EventMatchServiceTest {
         EventImportService importer = WydarzeniaTestowe.importer(new TicketmasterClient("", "http://127.0.0.1:9", 500), eventRepository,
             participationRepository, performerTagService, userRepository, transactionManager, zegar);
         zapisy = new EventParticipationService(participationRepository, eventRepository, userRepository,
-            importer, zegar, blocks,
+            importer, zegar, blocks, crewMembers,
             new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         events = new EventService(eventRepository, participationRepository, userRepository, importer,
-            matchService, zapisy, performerTagService, location);
+            matchService, zapisy, performerTagService, location,
+            crewRepository, crewMembers);
 
         /* Gust Ali: dwoch ulubionych artystow z tagami Last.fm i jeden utwor */
         User ala = userRepository.save(new User("ala", "ala@example.com", "hash"));

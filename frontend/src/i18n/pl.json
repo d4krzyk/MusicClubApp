@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "MusicClub",
-    "tagline": "Poznawaj ludzi o podobnym guście muzycznym"
+    "tagline": "Nie idź na koncert sam — znajdź ekipę ludzi o podobnym guście"
   },
   "menu": {
     "users": "Użytkownicy",
@@ -443,7 +443,12 @@
     "postComment": "{{username}} komentuje Twój post",
     "commentReply": "{{username}} odpowiada na Twój komentarz",
     "commentMention": "{{username}} oznacza Cię w komentarzu",
-    "discoverMatch": "Wzajemne „tak” z {{username}} — jesteście znajomymi"
+    "discoverMatch": "Wzajemne „tak” z {{username}} — jesteście znajomymi",
+    "crewJoinRequest": "{{username}} prosi o miejsce w twojej ekipie na {{name}}",
+    "crewRequestAccepted": "Jesteś w ekipie na {{name}} — prośba przyjęta",
+    "crewMemberJoined": "{{username}} dołącza do twojej ekipy na {{name}}",
+    "crewKicked": "Nie jesteś już w ekipie na {{name}}",
+    "meetingReminderCrew": "Zbiórka ekipy o {{time}}: {{place}}"
   },
   "playlists": {
     "title": "Gablotka playlist",
@@ -736,7 +741,7 @@
       "label": "Napisz pod wydarzeniem",
       "placeholder": "Szukasz ekipy? Napisz, skąd jedziesz, gdzie się spotkać przed koncertem…",
       "emptyTitle": "Nikt jeszcze nic nie napisał",
-      "emptyText": "Szukasz ekipy na ten koncert? Napisz post — zobaczy go każdy, kto zajrzy na to wydarzenie, a do tego trafi na tablicę."
+      "emptyText": "Masz coś do powiedzenia o tym koncercie — bilet na zbyciu, pytanie o setlistę, zdjęcia po? Napisz post — zobaczy go każdy, kto zajrzy na to wydarzenie, a do tego trafi na tablicę. Ludzi do wspólnego wyjścia znajdziesz wyżej, w ekipach."
     },
     "forYouNearHint": "Koncerty z twojej okolicy są wyżej.",
     "nearEmptyTitle": "Nic w promieniu {{km}} km od: {{city}}",
@@ -1751,6 +1756,115 @@
       "tooLong": "Spotkanie może trwać najwyżej dobę.",
       "concertFailed": "Nie udało się wczytać koncertu.",
       "sendFailed": "Nie udało się wysłać spotkania."
+    }
+  },
+  "crews": {
+    "title": "Ekipy na ten koncert",
+    "lead": "Nie idź sam — dołącz do ludzi, którzy też się wybierają, albo załóż ekipę i umówcie się na wspólny dojazd.",
+    "create": "Załóż ekipę",
+    "createFirst": "Załóż pierwszą ekipę",
+    "empty": "Nikt jeszcze nie zebrał ekipy na ten koncert. Zacznij — inni dołączą, gdy zobaczą, skąd jedziesz.",
+    "emptyPast": "Na ten koncert nie było ekip.",
+    "defaultName": "Ekipa {{username}}",
+    "yours": "Twoja",
+    "approvalShort": "za zgodą",
+    "seats": "{{members}}/{{capacity}} osób",
+    "from": "z: {{city}}",
+    "nearYou": "blisko ciebie",
+    "friendsInside_one": "{{count}} znajomy w środku",
+    "friendsInside_few": "{{count}} znajomych w środku",
+    "friendsInside_many": "{{count}} znajomych w środku",
+    "friendsInside_other": "{{count}} znajomych w środku",
+    "whoIsIn": "Kto jest w ekipie",
+    "open": "Otwórz ekipę",
+    "requested": "Prośba czeka na odpowiedź",
+    "cancelRequest": "Cofnij prośbę",
+    "declined": "Ta ekipa odrzuciła twoją prośbę",
+    "join": "Dołącz",
+    "ask": "Poproś o miejsce",
+    "askPlaceholder": "Napisz kilka słów o sobie (opcjonalnie) — np. skąd jedziesz",
+    "askLabel": "Wiadomość do osoby, która założyła ekipę",
+    "askSend": "Wyślij prośbę",
+    "closed": "Nabór zamknięty",
+    "full": "Komplet",
+    "notFound": "Tej ekipy już nie ma albo nie masz do niej dostępu.",
+    "toEvents": "Przejdź do wydarzeń",
+    "leaveConfirm": "Odejść z ekipy? Na koncert dalej będziesz zapisany.",
+    "leaveFounderConfirm": "Odejść z ekipy? Przejmie ją osoba, która jest w niej najdłużej.",
+    "leaveLastConfirm": "Jesteś w ekipie sam(a) — odejście ją rozwiąże razem z czatem. Kontynuować?",
+    "backToEvent": "Wróć do wydarzenia",
+    "crewFor": "Ekipa na koncert",
+    "members": "Kto jedzie",
+    "founder": "zakłada",
+    "kick": "Usuń z ekipy",
+    "kickConfirm": "Usunąć {{username}} z ekipy?",
+    "requests_one": "Prośba o miejsce ({{count}})",
+    "requests_few": "Prośby o miejsce ({{count}})",
+    "requests_many": "Prośby o miejsce ({{count}})",
+    "requests_other": "Prośby o miejsce ({{count}})",
+    "accept": "Przyjmij",
+    "decline": "Odrzuć",
+    "edit": "Zmień opis i zasady",
+    "reopen": "Otwórz nabór",
+    "close": "Zamknij nabór",
+    "leave": "Odejdź z ekipy",
+    "policy": {
+      "OPEN": "Każdy dołącza od razu",
+      "APPROVAL": "Za moją zgodą"
+    },
+    "form": {
+      "title": "Nowa ekipa",
+      "editTitle": "Zmiana ekipy",
+      "name": "Nazwa (opcjonalnie)",
+      "namePlaceholder": "np. Pociąg z Poznania o 15:40",
+      "description": "Jak jedziecie",
+      "descriptionPlaceholder": "Skąd i czym jedziecie, kiedy zbiórka, czy szukacie kogoś z biletem…",
+      "city": "Skąd wyruszacie",
+      "cityPlaceholder": "Miasto",
+      "capacity": "Ile osób",
+      "people_one": "{{count}} osoba",
+      "people_few": "{{count}} osoby",
+      "people_many": "{{count}} osób",
+      "people_other": "{{count}} osoby",
+      "policy": "Jak się dołącza",
+      "create": "Załóż ekipę",
+      "save": "Zapisz"
+    },
+    "chat": {
+      "title": "Czat ekipy",
+      "empty": "Ustalcie, gdzie i o której się spotykacie — przycisk z pinezką wyśle miejsce zbiórki z przypomnieniem.",
+      "meetingPoint": "Miejsce zbiórki",
+      "placeholder": "Napisz do ekipy…",
+      "closed": "Koncert się skończył — czat jest już tylko do czytania."
+    },
+    "home": {
+      "title": "Twoje koncerty",
+      "all": "Wszystkie",
+      "emptyTitle": "Nie idź na koncert sam",
+      "emptyText": "Znajdź koncert, zapisz się i dołącz do ekipy — albo załóż własną.",
+      "findConcert": "Znajdź koncert",
+      "findCrew": "Znajdź ekipę",
+      "yourCrew": "Twoja ekipa · {{members}}/{{capacity}}"
+    },
+    "count_one": "{{count}} ekipa",
+    "count_few": "{{count}} ekipy",
+    "count_many": "{{count}} ekip",
+    "count_other": "{{count}} ekipy",
+    "inCrew": "Masz ekipę"
+  },
+  "about": {
+    "headline": "Nie idź na koncert sam",
+    "find": {
+      "title": "Znajdź koncert",
+      "text": "Koncerty w Polsce i za granicą, z tymi, które pasują do Twojego gustu, na górze."
+    },
+    "crew": {
+      "title": "Dołącz do ekipy",
+      "text": "Ludzie, którzy też idą: skąd jadą, ile mają miejsc, czy są wśród nich Twoi znajomi."
+    },
+    "meet": {
+      "title": "Umówcie się",
+      "text": "Czat ekipy z miejscem zbiórki na mapie i przypomnieniem przed wyjściem."
     }
   }
 }

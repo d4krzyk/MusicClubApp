@@ -48,6 +48,7 @@ public class AccountDeletionService {
     private final DiscoverService discover;
     private final ProfileCardService cards;
     private final MeetingService meetings;
+    private final CrewService crews;
 
     public AccountDeletionService(UserRepository userRepository,
                                   PasswordEncoder passwordEncoder,
@@ -68,8 +69,10 @@ public class AccountDeletionService {
                                   CommentRepository comments,
                                   DiscoverService discover,
                                   ProfileCardService cards,
-                                  MeetingService meetings) {
+                                  MeetingService meetings,
+                                  CrewService crews) {
         this.meetings = meetings;
+        this.crews = crews;
         this.discover = discover;
         this.cards = cards;
         this.comments = comments;
@@ -182,7 +185,11 @@ public class AccountDeletionService {
         // 6. Wiadomosci z czatu - wyslane i otrzymane
         messages.deleteAllOf(id);
 
-        // 6a. Spotkania zalozone przez to konto i spotkania z jego rozmow (odpowiedzi i powiadomienia kaskada w bazie)
+        // 6a. Ekipy na koncert: zalozone przechodza na najdluzej obecna osobe (sama - znikaja), wiadomosci i prosby
+        //     znikaja. Przed spotkaniami - odejscie z ekipy zdejmuje odpowiedzi na jej spotkania
+        crews.deleteAllOf(id);
+
+        // 6b. Spotkania zalozone przez to konto i spotkania z jego rozmow (odpowiedzi i powiadomienia kaskada w bazie)
         meetings.deleteAllOf(id);
 
         // 7. Historia adresow sieciowych

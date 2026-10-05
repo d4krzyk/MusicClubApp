@@ -40,6 +40,8 @@ class EventServiceTest {
 
     @Autowired private LocationService location;
     @Autowired private BlockService blocks;
+    @Autowired private com.musicclubapp.repository.CrewMemberRepository crewMembers;
+    @Autowired private com.musicclubapp.repository.CrewRepository crewRepository;
     @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository repository;
     @Autowired private EventParticipationRepository participationRepository;
@@ -66,10 +68,11 @@ class EventServiceTest {
         importer = WydarzeniaTestowe.importer(ticketmaster, repository, participationRepository,
             performerTagService, userRepository, transactionManager, zegar);
         participations = new EventParticipationService(participationRepository, repository,
-            userRepository, importer, zegar, blocks,
+            userRepository, importer, zegar, blocks, crewMembers,
             new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         events = new EventService(repository, participationRepository, userRepository, importer,
-            matchService, participations, performerTagService, location);
+            matchService, participations, performerTagService, location,
+            crewRepository, crewMembers);
 
         importer.runImport();
     }

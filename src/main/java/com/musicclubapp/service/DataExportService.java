@@ -124,6 +124,7 @@ public class DataExportService {
     private final com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts;
     private final com.musicclubapp.repository.DiscoverSwipeRepository swipes;
     private final com.musicclubapp.repository.MeetingRepository meetings;
+    private final CrewService crews;
     private final com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees;
     private final ObjectMapper mapper;
     private final Clock clock;
@@ -146,7 +147,9 @@ public class DataExportService {
                              com.musicclubapp.repository.ProfilePromptAnswerRepository profilePrompts,
                              com.musicclubapp.repository.DiscoverSwipeRepository swipes,
                              com.musicclubapp.repository.MeetingRepository meetings,
-                             com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees) {
+                             com.musicclubapp.repository.MeetingAttendeeRepository meetingAttendees,
+                             CrewService crews) {
+        this.crews = crews;
         this.meetings = meetings;
         this.meetingAttendees = meetingAttendees;
         this.comments = comments;
@@ -209,6 +212,7 @@ public class DataExportService {
         dane.put("comments", komentarze(id));
         dane.put("messages", wiadomosci(id));
         dane.put("meetings", spotkania(id));
+        dane.put("crews", crews.exportOf(id));
         dane.put("friends", user.getFriends().stream().map(User::getUsername).sorted().toList());
         dane.put("friendRequests", zaproszenia(id));
         dane.put("blocks", blocks.blockedBy(username).stream()
@@ -530,7 +534,8 @@ public class DataExportService {
             Konto: %1$s
             Ten plik ZIP zawiera Twoje dane z serwisu MusicClub (art. 15 i 20 RODO):
               dane.json  - dane konta, profil i karta profilu, posty, reakcje, wiadomosci,
-                           spotkania z czatu i odpowiedzi na nie, znajomi, blokady,
+                           spotkania z czatu i odpowiedzi na nie, ekipy na koncerty
+                           (z prosbami i wiadomosciami), znajomi, blokady,
                            decyzje z trybu Poznawaj, zapisy na wydarzenia,
                            powiadomienia, klan, urzadzenia powiadomien i zgloszenia;
                            w formacie JSON, do odczytu maszynowego,
@@ -542,7 +547,8 @@ public class DataExportService {
             Account: %1$s
             This ZIP contains your data from MusicClub (GDPR Art. 15 and 20):
               dane.json  - account data, profile and profile card, posts, reactions, messages,
-                           chat meetings and your responses to them, friends, blocks,
+                           chat meetings and your responses to them, concert crews
+                           (with requests and messages), friends, blocks,
                            Discover decisions, event sign-ups, notifications,
                            clan, notification devices and reports; machine-readable JSON,
               zdjecia/   - your profile photo, your profile gallery and the photos from your posts.

@@ -5,7 +5,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import * as powiadomienia from '../api/powiadomienia';
 import Avatar from './Avatar';
 import DoladujWiecej from './DoladujWiecej';
-import { IconBell, IconCalendar, IconClan, IconCross } from './Icons';
+import { IconBell, IconCalendar, IconClan, IconCross, IconFriends } from './Icons';
 import { timeAgo } from '../utils/dates';
 import useOdswiezanie from '../hooks/useOdswiezanie';
 
@@ -190,7 +190,20 @@ export default function NotificationsBell() {
       case 'COMMENT_MENTION':
         return t('notifications.commentMention', { username: notification.actorUsername });
       // Godzina w strefie telefonu - serwer zna tylko chwile
+      case 'CREW_JOIN_REQUEST':
+        return t('notifications.crewJoinRequest', { username: notification.actorUsername, name: notification.eventName });
+      case 'CREW_REQUEST_ACCEPTED':
+        return t('notifications.crewRequestAccepted', { name: notification.eventName });
+      case 'CREW_MEMBER_JOINED':
+        return t('notifications.crewMemberJoined', { username: notification.actorUsername, name: notification.eventName });
+      case 'CREW_KICKED':
+        return t('notifications.crewKicked', { name: notification.eventName });
       case 'MEETING_REMINDER':
+        if (notification.crewId) {
+          return t('notifications.meetingReminderCrew', {
+            place: notification.meetingPlace, time: godzina(notification.meetingStartsAt),
+          });
+        }
         return notification.clanName
           ? t('notifications.meetingReminderClan', {
             place: notification.meetingPlace, time: godzina(notification.meetingStartsAt), name: notification.clanName,
@@ -271,7 +284,8 @@ export default function NotificationsBell() {
                   />
                 ) : (
                   <span className="bell-item-icon" aria-hidden="true">
-                    {notification.clanId ? <IconClan size={16} /> : <IconCalendar size={16} />}
+                    {notification.crewId ? <IconFriends size={16} />
+                      : notification.clanId ? <IconClan size={16} /> : <IconCalendar size={16} />}
                   </span>
                 )}
 

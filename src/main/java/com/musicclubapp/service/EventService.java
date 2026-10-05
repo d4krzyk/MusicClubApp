@@ -17,6 +17,8 @@ import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.repository.EventCardRow;
 import com.musicclubapp.repository.EventCountRow;
+import com.musicclubapp.repository.CrewMemberRepository;
+import com.musicclubapp.repository.CrewRepository;
 import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
 import com.musicclubapp.repository.ParticipationCountRow;
@@ -61,6 +63,8 @@ public class EventService {
     private final EventMatchService matcher;
     private final EventParticipationService participationService;
     private final PerformerTagService performerTags;
+    private final CrewRepository crews;
+    private final CrewMemberRepository crewMembers;
     private final LocationService location;
 
     public EventService(MusicEventRepository repository,
@@ -70,8 +74,12 @@ public class EventService {
                         EventMatchService matcher,
                         EventParticipationService participationService,
                         PerformerTagService performerTags,
-                        LocationService location) {
+                        LocationService location,
+                        CrewRepository crews,
+                        CrewMemberRepository crewMembers) {
         this.location = location;
+        this.crews = crews;
+        this.crewMembers = crewMembers;
         this.repository = repository;
         this.participations = participations;
         this.users = users;
@@ -228,6 +236,11 @@ public class EventService {
             ? Map.of()
             : toMap(participations.countFriends(ids, friendIds));
         LocationService.Origin origin = originOf(viewer);
+        // Ekipy: ile ich jest i czy mam swoja - karta mowi, gdzie ktos szuka towarzystwa
+        Map<Long, Long> ekipy = crews.countByEvents(ids).stream()
+            .collect(Collectors.toMap(CrewRepository.EventCountRow::getEventId, CrewRepository.EventCountRow::getTotal));
+        Map<Long, Long> mojeEkipy = viewer == null ? Map.of() : crewMembers.mineAmong(viewer, ids).stream()
+            .collect(Collectors.toMap(CrewMemberRepository.MyCrewRow::getEventId, CrewMemberRepository.MyCrewRow::getCrewId));
 
         return ids.stream()
             .filter(byId::containsKey)
@@ -257,7 +270,9 @@ public class EventService {
                     reasons.getOrDefault(id, List.of()),
                     e.isWithdrawn(),
                     LocationService.rounded(
-                        location.distanceKm(origin, e.getLatitude(), e.getLongitude(), e.getCityKey())));
+                        location.distanceKm(origin, e.getLatitude(), e.getLongitude(), e.getCityKey())),
+                    ekipy.getOrDefault(id, 0L),
+                    mojeEkipy.get(id));
             })
             .toList();
     }

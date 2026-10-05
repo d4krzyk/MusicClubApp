@@ -24,6 +24,7 @@ import NotificationsBell from './NotificationsBell';
 import ThemeToggle from './ThemeToggle';
 import { scrollToTop } from '../utils/scroll';
 import { nieprzeczytane as klanNieprzeczytane } from '../api/klany';
+import { moje as mojeEkipy } from '../api/ekipy';
 import { ODSWIEZ_LICZNIK } from '../utils/klan';
 import useOdswiezanie from '../hooks/useOdswiezanie';
 
@@ -42,6 +43,7 @@ export default function Layout({ children }) {
 
   /* Ile nieprzeczytanych wiadomosci czeka na czacie mojego klanu. */
   const [klanNowe, setKlanNowe] = useState(0);
+  const [ekipyNowe, setEkipyNowe] = useState(0);
 
   /* Czy strona jest przewinieta. */
   const [scrolled, setScrolled] = useState(false);
@@ -73,11 +75,16 @@ export default function Layout({ children }) {
   const odswiezKlan = useCallback(() => {
     if (!user) {
       setKlanNowe(0);
+      setEkipyNowe(0);
       return;
     }
     klanNieprzeczytane()
       .then((odpowiedz) => setKlanNowe(odpowiedz.unread))
       .catch(() => setKlanNowe(0));   // licznik to dodatek, nie psujemy menu
+    // Nowe wiadomosci w czatach moich ekip - liczba na ikonie Wydarzen
+    mojeEkipy()
+      .then((lista) => setEkipyNowe(lista.reduce((suma, e) => suma + e.unreadChat, 0)))
+      .catch(() => setEkipyNowe(0));
   }, [user]);
 
   useEffect(() => { odswiezKlan(); }, [odswiezKlan, location.pathname]);
@@ -164,7 +171,7 @@ export default function Layout({ children }) {
                 <IconFriends size={20} />
               </NavIcon>
 
-              <NavIcon to="/wydarzenia" label={t('menu.events')}>
+              <NavIcon to="/wydarzenia" label={t('menu.events')} badge={ekipyNowe}>
                 <IconCalendar size={20} />
               </NavIcon>
 

@@ -9,6 +9,7 @@ import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.mapper.PostMapper;
+import com.musicclubapp.repository.CrewMemberRepository;
 import com.musicclubapp.repository.EventParticipationRepository;
 import com.musicclubapp.repository.MusicEventRepository;
 import com.musicclubapp.repository.ParticipationCountRow;
@@ -35,6 +36,7 @@ public class EventParticipationService {
     private final EventImportService importer;
     private final Clock clock;
     private final BlockService blocks;
+    private final CrewMemberRepository crewMembers;
     private final EventReminderService reminders;
 
     public EventParticipationService(EventParticipationRepository participations,
@@ -43,8 +45,10 @@ public class EventParticipationService {
                                      EventImportService importer,
                                      Clock clock,
                                      BlockService blocks,
+                                     CrewMemberRepository crewMembers,
                                      EventReminderService reminders) {
         this.reminders = reminders;
+        this.crewMembers = crewMembers;
         this.blocks = blocks;
         this.participations = participations;
         this.events = events;
@@ -74,6 +78,10 @@ public class EventParticipationService {
 
         LocalDateTime now = LocalDateTime.now(clock);
         Optional<EventParticipation> mine = participations.findMine(eventId, username);
+        // Kto jedzie z ekipa, ten idzie - "tylko zainteresowany" zostawilby ekipe z kims, kto nie jedzie
+        if (status != ParticipationStatus.GOING && inCrew(eventId, username)) {
+            throw OperationNotAllowedException.crewLeaveFirst();
+        }
         /*
          * Bez podanego "ukryj mnie": przy zmianie zostaje jak bylo, przy nowym
          * zapisie - domyslne z ustawien prywatnosci.
@@ -97,12 +105,21 @@ public class EventParticipationService {
         if (!events.existsById(eventId)) {
             throw new NoSuchElementFoundException("event", eventId);
         }
+        if (inCrew(eventId, username)) {
+            throw OperationNotAllowedException.crewLeaveFirst();
+        }
         participations.findMine(eventId, username).ifPresent(p -> {
             reminders.cancelled(p.getUser().getId(), eventId);
             participations.delete(p);
         });
         participations.flush();
         return summary(eventId, username);
+    }
+
+    private boolean inCrew(Long eventId, String username) {
+        return users.findByUsername(username)
+            .map(u -> crewMembers.existsByEventIdAndUserId(eventId, u.getId()))
+            .orElse(false);
     }
 
     /** Moj zapis i liczniki jednego wydarzenia. */

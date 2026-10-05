@@ -21,7 +21,7 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     /** Spotkania rozmowy dwoch osob zmienione po podanej chwili (odpowiedzi, odwolanie) - do odswiezania czatu. */
     @Query("""
         SELECT m FROM Meeting m
-        WHERE m.clan IS NULL AND m.updatedAt > :since
+        WHERE m.clan IS NULL AND m.crew IS NULL AND m.updatedAt > :since
           AND ((m.creator.id = :a AND m.partner.id = :b) OR (m.creator.id = :b AND m.partner.id = :a))
         """)
     List<Meeting> changedInConversation(@Param("a") Long a, @Param("b") Long b, @Param("since") Instant since);
@@ -29,6 +29,10 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
     /** To samo dla czatu klanu. */
     @Query("SELECT m FROM Meeting m WHERE m.clan.id = :clanId AND m.updatedAt > :since")
     List<Meeting> changedInClan(@Param("clanId") Long clanId, @Param("since") Instant since);
+
+    /** I dla czatu ekipy. */
+    @Query("SELECT m FROM Meeting m WHERE m.crew.id = :crewId AND m.updatedAt > :since")
+    List<Meeting> changedInCrew(@Param("crewId") Long crewId, @Param("since") Instant since);
 
     /** Zalozone przez osobe - do eksportu danych. */
     List<Meeting> findByCreatorIdOrderByIdAsc(Long creatorId);
@@ -43,13 +47,15 @@ public interface MeetingRepository extends JpaRepository<Meeting, Long> {
 
     /**
      * Spotkania, ktorych nie niesie juz zadna wiadomosc (rozmowa skasowana przez obie strony) - nikt ich nie zobaczy,
-     * wiec nie ma po co ich trzymac ani o nich przypominac.
+     * wiec nie ma po co ich trzymac ani o nich przypominac. Kazdy czat ze spotkaniami musi tu byc - inaczej skasowanie
+     * dowolnej rozmowy zabieraloby jego spotkania.
      */
     @Modifying
     @Query(value = """
         DELETE FROM meetings m
         WHERE NOT EXISTS (SELECT 1 FROM messages x WHERE x.meeting_id = m.id)
           AND NOT EXISTS (SELECT 1 FROM clan_messages c WHERE c.meeting_id = m.id)
+          AND NOT EXISTS (SELECT 1 FROM crew_messages e WHERE e.meeting_id = m.id)
         """, nativeQuery = true)
     int deleteOrphans();
 }

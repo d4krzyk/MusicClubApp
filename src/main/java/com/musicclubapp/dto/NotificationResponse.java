@@ -35,6 +35,9 @@ public record NotificationResponse(
     /** Spotkanie z czatu (przypomnienie, odwolanie): ktore, gdzie i kiedy sie zaczyna. */
     Long meetingId,
     String meetingPlace,
-    java.time.Instant meetingStartsAt
+    java.time.Instant meetingStartsAt,
+
+    /** Ekipa na koncert (prosba, dolaczenie, spotkanie ekipy) - wydarzenie jest w eventId/eventName. */
+    Long crewId
 ) {
 }

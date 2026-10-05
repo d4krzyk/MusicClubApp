@@ -1077,6 +1077,25 @@ Przy spotkaniach w czacie i mapie (październik 2026, migracja V20):
   rady»”, a jeden mutant był źle zapisany (nic nie zmieniał). Po dopisaniu testów (`MeetingFlowTest` 12 → 14,
   `mvnw clean test` → 755) wszystkie 42 zabite.
 
+Przy ekipach na koncert (październik 2026, migracja V22):
+
+- migracja V22 na **pustej** bazie (V1 → V22, profil `prod`) — te same tabele, kolumny, ograniczenia i indeksy co
+  w schemacie z Hibernate (porównane zbiorami kolumn — kolejność kolumn w starszych tabelach różni się od zawsze po
+  `ALTER … ADD COLUMN`), i na bazie z danymi po V21 (backend wstaje z `validate`);
+- `mvnw clean test` → 778 testów (nowe: `CrewFlowTest` — 12 przebiegów przez API: zakładanie z walidacją, limit
+  ekip, dołączanie od razu i za zgodą, odmowa na tydzień, przyjęcie, wyścig „już w innej ekipie”, zarząd zakładającego,
+  przekazanie i rozwiązanie, blokady, czat z nieprzeczytanymi, pushami i usuwaniem, zamknięcie czatu po koncercie,
+  spotkania ekipy z przypomnieniem i odwołaniem, eksport, usunięcie konta, kaskada z wydarzeniem, sprzątanie próśb,
+  kolejność listy, liczniki na kartach wydarzeń);
+- **błędy znalezione testami**: drugie „przyjmij” w tej samej sesji rzucało `OptimisticLockException` (prośba usunięta
+  zbiorczo, a w pamięci żywa) — teraz kasowana wprost; pełna ekipa z mojego miasta stała nad wolną — teraz pełne na końcu;
+- Chromium (`ekipy-e2e`, 46 sprawdzeń, trzy osoby w osobnych kontekstach): opis „Nie idź na koncert sam” na logowaniu
+  i rejestracji, „Twoje koncerty” na starcie, sekcja ekip pod „Biorę udział” i przed mapą, zakładanie z formularza
+  (miasto z profilu), zapis „idę”, „1 ekipa” na liście, karta z „blisko ciebie”, dołączenie, czat ekipy w obie strony bez
+  przeładowania (1,5–2,7 s), licznik na ikonie Wydarzeń i jego zniknięcie po przeczytaniu, miejsce zbiórki z „Będę”,
+  nabór za zgodą z wiadomością, dzwonek u obu stron, klik w powiadomienie, blokada rezygnacji w ekipie, odejście,
+  telefon 320 i 390 px (ciemny) bez przelewu, zero błędów w konsoli. Dwa przebiegi na świeżej bazie zielone.
+
 Przy „Kim jest” wykonawca i „Od organizatora” (październik 2026, migracja V21):
 
 - migracja V21 na **pustej** bazie (V1 → V21, profil `prod`) — schemat zgodny z tym, co buduje Hibernate (różnice tylko

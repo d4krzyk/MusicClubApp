@@ -53,4 +53,12 @@ public interface MeetingAttendeeRepository extends JpaRepository<MeetingAttendee
         WHERE a.user.id = :userId AND a.meeting.id IN (SELECT m.id FROM Meeting m WHERE m.clan.id = :clanId)
         """)
     int deleteInClan(@Param("userId") Long userId, @Param("clanId") Long clanId);
+
+    /** Odejscie z ekipy: odpowiedzi na spotkania tej ekipy znikaja. */
+    @Modifying
+    @Query("""
+        DELETE FROM MeetingAttendee a
+        WHERE a.user.id = :userId AND a.meeting.id IN (SELECT m.id FROM Meeting m WHERE m.crew.id = :crewId)
+        """)
+    int deleteInCrew(@Param("userId") Long userId, @Param("crewId") Long crewId);
 }

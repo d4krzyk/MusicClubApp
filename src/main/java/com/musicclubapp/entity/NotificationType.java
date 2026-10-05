@@ -44,5 +44,13 @@ public enum NotificationType {
     /** Spotkanie z czatu, na ktore potwierdzilem, zaraz sie zaczyna. Prowadzi do rozmowy albo czatu klanu. */
     MEETING_REMINDER,
     /** Zakladajacy odwolal spotkanie, na ktore potwierdzilem. */
-    MEETING_CANCELLED
+    MEETING_CANCELLED,
+    /** Prosba o miejsce w ekipie na koncert - dla zakladajacego. */
+    CREW_JOIN_REQUEST,
+    /** Prosba przyjeta - dla proszacego. */
+    CREW_REQUEST_ACCEPTED,
+    /** Ktos dolaczyl do ekipy z otwartym naborem - dla zakladajacego (tylko w dzwonku). */
+    CREW_MEMBER_JOINED,
+    /** Zakladajacy usunal z ekipy - zeby nikt nie jechal w przekonaniu, ze jest w ekipie. */
+    CREW_KICKED
 }

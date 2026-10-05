@@ -15,6 +15,7 @@ import ReportsPage from './pages/ReportsPage';
 import MojeZgloszeniaPage from './pages/MojeZgloszeniaPage';
 import EventsPage from './pages/EventsPage';
 import EventPage from './pages/EventPage';
+import CrewPage from './pages/CrewPage';
 import ClanPage from './pages/ClanPage';
 import KlanyPage from './pages/KlanyPage';
 import PrawnaPage from './pages/PrawnaPage';
@@ -102,6 +103,15 @@ export default function App() {
                 element={
                   <RequireAuth>
                     <EventPage />
+                  </RequireAuth>
+                }
+              />
+              {/* Ekipa na koncert: kto jedzie, skad, czat z miejscem zbiorki */}
+              <Route
+                path="/ekipy/:id"
+                element={
+                  <RequireAuth>
+                    <CrewPage />
                   </RequireAuth>
                 }
               />

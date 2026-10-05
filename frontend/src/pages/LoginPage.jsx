@@ -9,6 +9,7 @@ import { useAuth } from '../auth/AuthContext';
 import { describeError } from '../api/client';
 import Field from '../components/Field';
 import SprawdzSkrzynke from '../components/SprawdzSkrzynke';
+import OAplikacji from '../components/OAplikacji';
 import useInfoSerwera from '../hooks/useInfoSerwera';
 
 export default function LoginPage() {
@@ -78,63 +79,66 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="mx-auto" style={{ maxWidth: 420 }}>
-      <Card.Body className="p-4">
-        <Card.Title as="h1" className="h4 mb-3">
-          {t('login.title')}
-        </Card.Title>
+    <>
+      <OAplikacji />
+      <Card className="mx-auto" style={{ maxWidth: 420 }}>
+        <Card.Body className="p-4">
+          <Card.Title as="h1" className="h4 mb-3">
+            {t('login.title')}
+          </Card.Title>
 
-        {messageAfterRegister && <Alert variant="success">{t('login.registered')}</Alert>}
-        {location.state?.verified && <Alert variant="success">{t('login.verified')}</Alert>}
-        {location.state?.passwordReset && <Alert variant="success">{t('login.passwordReset')}</Alert>}
-        {generalError && <Alert variant="danger">{generalError}</Alert>}
+          {messageAfterRegister && <Alert variant="success">{t('login.registered')}</Alert>}
+          {location.state?.verified && <Alert variant="success">{t('login.verified')}</Alert>}
+          {location.state?.passwordReset && <Alert variant="success">{t('login.passwordReset')}</Alert>}
+          {generalError && <Alert variant="danger">{generalError}</Alert>}
 
-        <Form onSubmit={submit} noValidate className="tiles-in-form">
-          <Field
-            id="username"
-            label={t('login.username')}
-            value={username}
-            onChange={setUsername}
-            error={fieldErrors.username}
-            autoComplete="username"
-          />
+          <Form onSubmit={submit} noValidate className="tiles-in-form">
+            <Field
+              id="username"
+              label={t('login.username')}
+              value={username}
+              onChange={setUsername}
+              error={fieldErrors.username}
+              autoComplete="username"
+            />
 
-          <Field
-            id="password"
-            label={t('login.password')}
-            typ="password"
-            value={password}
-            onChange={setPassword}
-            error={fieldErrors.password}
-            autoComplete="current-password"
-          />
+            <Field
+              id="password"
+              label={t('login.password')}
+              typ="password"
+              value={password}
+              onChange={setPassword}
+              error={fieldErrors.password}
+              autoComplete="current-password"
+            />
 
-          {/* Bez poczty link nie mialby jak dojsc - wtedy nie kusimy */}
-          {info?.mailEnabled && (
-            <div className="text-end small mb-2 mt-n2">
-              <Link to="/reset-hasla">{t('login.forgot')}</Link>
-            </div>
-          )}
+            {/* Bez poczty link nie mialby jak dojsc - wtedy nie kusimy */}
+            {info?.mailEnabled && (
+              <div className="text-end small mb-2 mt-n2">
+                <Link to="/reset-hasla">{t('login.forgot')}</Link>
+              </div>
+            )}
 
-          {/* Wymaganie nr 17 - "zapamietaj mnie" */}
-          <Form.Check
-            className="mb-3"
-            id="rememberMe"
-            label={t('login.rememberMe')}
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-          />
+            {/* Wymaganie nr 17 - "zapamietaj mnie" */}
+            <Form.Check
+              className="mb-3"
+              id="rememberMe"
+              label={t('login.rememberMe')}
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+            />
 
-          {/* disabled podczas wysylania chroni przed podwojnym klinieciem */}
-          <Button type="submit" className="w-100" disabled={wysylanie}>
-            {wysylanie ? t('login.submitting') : t('login.submit')}
-          </Button>
-        </Form>
+            {/* disabled podczas wysylania chroni przed podwojnym klinieciem */}
+            <Button type="submit" className="w-100" disabled={wysylanie}>
+              {wysylanie ? t('login.submitting') : t('login.submit')}
+            </Button>
+          </Form>
 
-        <p className="text-center text-body-secondary small mt-3 mb-0">
-          {t('login.noAccount')} <Link to="/register">{t('login.goToRegister')}</Link>
-        </p>
-      </Card.Body>
-    </Card>
+          <p className="text-center text-body-secondary small mt-3 mb-0">
+            {t('login.noAccount')} <Link to="/register">{t('login.goToRegister')}</Link>
+          </p>
+        </Card.Body>
+      </Card>
+    </>
   );
 }

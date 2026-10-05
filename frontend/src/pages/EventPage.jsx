@@ -17,6 +17,7 @@ import EventReasons from '../components/EventReasons';
 import MapaPunktu, { adresTrasy } from '../components/mapa/MapaPunktu';
 import OdOrganizatora from '../components/wydarzenie/OdOrganizatora';
 import Wykonawcy from '../components/wydarzenie/Wykonawcy';
+import EkipyWydarzenia from '../components/ekipa/EkipyWydarzenia';
 import Post from '../components/Post';
 import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
@@ -121,6 +122,7 @@ export default function EventPage() {
             rozwiniety={rozwiniety}
             onRozwin={() => setRozwiniety((r) => !r)}
             onZmianaUdzialu={poZmianieUdzialu}
+            onOdswiez={odswiezPoCichu}
             t={t}
             jezyk={i18n.language}
           />
@@ -132,7 +134,7 @@ export default function EventPage() {
 }
 
 function Szczegoly({
-  w, rozwiniety, onRozwin, onZmianaUdzialu, t, jezyk,
+  w, rozwiniety, onRozwin, onZmianaUdzialu, onOdswiez, t, jezyk,
 }) {
   const { dzien, miesiac } = plakietka(w.date, jezyk);
   const miasto = nazwaMiasta(w.cityKey, w.city, jezyk);
@@ -197,6 +199,9 @@ function Szczegoly({
         </ul>
 
         <Udzial w={w} onZmiana={onZmianaUdzialu} t={t} />
+
+        {/* Ekipy zaraz pod "Biore udzial" - po to jest ta aplikacja: zeby nie isc na koncert samemu */}
+        <EkipyWydarzenia w={w} onUdzial={onOdswiez} />
 
         {w.latitude != null && w.longitude != null && (
           <section className="mb-4 wydarzenie-mapa" aria-labelledby="wydarzenie-gdzie">

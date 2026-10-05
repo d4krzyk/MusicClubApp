@@ -43,7 +43,8 @@ public class NotificationMapper {
             notification.getClan() != null ? notification.getClan().getName() : null,
             meeting != null ? meeting.getId() : null,
             meeting != null ? meeting.getPlace() : null,
-            meeting != null ? meeting.getStartsAt() : null);
+            meeting != null ? meeting.getStartsAt() : null,
+            notification.getCrew() != null ? notification.getCrew().getId() : null);
     }
 
     private String avatarUrl(User user) {
@@ -72,10 +73,19 @@ public class NotificationMapper {
             // Zglaszajacy trafia na wlasna liste zgloszen, a nie do panelu admina
             case REPORT_RESOLVED -> "/moje-zgloszenia";
             case CLAN_INVITE, CLAN_KICKED, CLAN_JOIN_REQUEST, CLAN_REQUEST_ACCEPTED -> "/klan";
-            // Spotkanie z rozmowy otwiera rozmowe z druga strona (sprawca), spotkanie klanu - czat klanu
-            case MEETING_REMINDER, MEETING_CANCELLED -> notification.getClan() == null && notification.getActor() != null
+            // Spotkanie ekipy otwiera ekipe, spotkanie z rozmowy - rozmowe z druga strona (sprawca), klanu - czat klanu
+            case MEETING_REMINDER, MEETING_CANCELLED -> notification.getCrew() != null
+                ? "/ekipy/" + notification.getCrew().getId()
+                : notification.getClan() == null && notification.getActor() != null
                 ? "/?czat=" + URLEncoder.encode(notification.getActor().getUsername(), StandardCharsets.UTF_8)
                 : "/klan";
+            case CREW_JOIN_REQUEST, CREW_REQUEST_ACCEPTED, CREW_MEMBER_JOINED -> notification.getCrew() != null
+                ? "/ekipy/" + notification.getCrew().getId()
+                : "/wydarzenia?widok=moje";
+            // Usuniety z ekipy nie wejdzie juz do niej - trafia na wydarzenie, gdzie sa inne ekipy
+            case CREW_KICKED -> notification.getEvent() != null
+                ? "/wydarzenia/" + notification.getEvent().getId() + "#ekipy"
+                : "/wydarzenia";
             case EVENT_REMINDER -> notification.getEvent() != null
                 ? "/wydarzenia/" + notification.getEvent().getId()
                 : "/wydarzenia?widok=moje";

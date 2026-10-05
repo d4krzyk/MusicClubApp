@@ -12,6 +12,7 @@ import Post from '../components/Post';
 import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
 import EmptyState from '../components/EmptyState';
+import MojeKoncerty from '../components/ekipa/MojeKoncerty';
 import useLiveReactions from '../hooks/useLiveReactions';
 import useWskaznik from '../hooks/useWskaznik';
 import {
@@ -192,6 +193,9 @@ export default function FeedPage() {
             )}
           </Button>
         </div>
+
+        {/* Na samej gorze to, po co tu jestes: najblizsze koncerty i ekipy na nie */}
+        <MojeKoncerty />
 
         <div ref={zakres} className="segmented mb-3" role="group" aria-label={t('posts.scope.label')}>
           <button

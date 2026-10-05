@@ -745,3 +745,18 @@
 .wydarzenia-zasieg {
   max-width: 14rem;
 }
+
+/* "2 ekipy" / "Masz ekipe" na karcie listy - gdzie ktos szuka towarzystwa */
+.wydarzenie-ekipy {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  margin-top: .25rem;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--bs-success);
+}
+
+.wydarzenie-ekipy.is-moja {
+  color: var(--bs-primary);
+}

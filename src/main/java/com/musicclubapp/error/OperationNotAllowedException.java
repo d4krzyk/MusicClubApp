@@ -173,6 +173,54 @@ public class OperationNotAllowedException extends RuntimeException {
     /*  Klany                                                              */
     /* ------------------------------------------------------------------ */
 
+    /* --- ekipy na koncert --- */
+
+    /** Jedna ekipa na osobe i wydarzenie. */
+    public static OperationNotAllowedException crewAlreadyIn() {
+        return new OperationNotAllowedException("Jestes juz w ekipie na ten koncert", "error.crew.alreadyIn");
+    }
+
+    public static OperationNotAllowedException crewTooMany(int max) {
+        return new OperationNotAllowedException("Za duzo zalozonych ekip", "error.crew.tooMany", max);
+    }
+
+    public static OperationNotAllowedException crewFull(int max) {
+        return new OperationNotAllowedException("Ekipa jest pelna", "error.crew.full", max);
+    }
+
+    public static OperationNotAllowedException crewClosed() {
+        return new OperationNotAllowedException("Nabor do ekipy jest zamkniety", "error.crew.closed");
+    }
+
+    public static OperationNotAllowedException crewCapacityBelowMembers(int members) {
+        return new OperationNotAllowedException("Limit mniejszy niz liczba osob w ekipie", "error.crew.capacityBelow", members);
+    }
+
+    public static OperationNotAllowedException crewRequestAlready() {
+        return new OperationNotAllowedException("Prosba juz czeka", "error.crew.requestAlready");
+    }
+
+    public static OperationNotAllowedException crewRequestDeclined() {
+        return new OperationNotAllowedException("Prosba niedawno odrzucona", "error.crew.requestDeclined");
+    }
+
+    public static OperationNotAllowedException crewMemberElsewhere() {
+        return new OperationNotAllowedException("Ta osoba jest juz w innej ekipie", "error.crew.memberElsewhere");
+    }
+
+    public static OperationNotAllowedException crewNotFounder() {
+        return new OperationNotAllowedException("Tylko zakladajacy ekipe", "error.crew.notFounder");
+    }
+
+    public static OperationNotAllowedException crewChatClosed() {
+        return new OperationNotAllowedException("Czat ekipy jest juz tylko do czytania", "error.crew.chatClosed");
+    }
+
+    /** Rezygnacja z koncertu (albo zmiana na "zainteresowany") w trakcie bycia w ekipie. */
+    public static OperationNotAllowedException crewLeaveFirst() {
+        return new OperationNotAllowedException("Najpierw odejdz z ekipy", "error.crew.leaveFirst");
+    }
+
     public static OperationNotAllowedException clanNameInvalid() {
         return new OperationNotAllowedException("Niepoprawna nazwa klanu", "error.clan.name.invalid");
     }

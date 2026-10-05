@@ -151,11 +151,11 @@ self.addEventListener('push', (event) => {
   });
 
   /*
-     Czat klanu: gdy aplikacja jest na ekranie, nowa wiadomosc i tak widac - brzeczyk
+     Czat klanu i ekipy: gdy aplikacja jest na ekranie, nowa wiadomosc i tak widac - brzeczyk
      bylby tylko halasem. Reszta powiadomien (zaproszenia, przypomnienia) idzie zawsze.
   */
-  const czatKlanu = typeof dane.tag === 'string' && dane.tag.startsWith('clan-chat-');
-  if (!czatKlanu) {
+  const czat = typeof dane.tag === 'string' && (dane.tag.startsWith('clan-chat-') || dane.tag.startsWith('crew-chat-'));
+  if (!czat) {
     event.waitUntil(pokaz());
     return;
   }

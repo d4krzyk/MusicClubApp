@@ -53,6 +53,8 @@ class EventCountryTest {
 
     @Autowired private LocationService location;
     @Autowired private BlockService blocks;
+    @Autowired private com.musicclubapp.repository.CrewMemberRepository crewMembers;
+    @Autowired private com.musicclubapp.repository.CrewRepository crewRepository;
     @Autowired private NotificationService notificationService;
     @Autowired private MusicEventRepository repository;
     @Autowired private EventParticipationRepository participationRepository;
@@ -99,10 +101,11 @@ class EventCountryTest {
 
     private EventService events(EventImportService importer) {
         EventParticipationService zapisy = new EventParticipationService(participationRepository, repository,
-            userRepository, importer, zegar, blocks,
+            userRepository, importer, zegar, blocks, crewMembers,
             new EventReminderService(participationRepository, notificationService, importer, "3,1"));
         return new EventService(repository, participationRepository, userRepository, importer,
-            matchService, zapisy, performerTagService, location);
+            matchService, zapisy, performerTagService, location,
+            crewRepository, crewMembers);
     }
 
     private List<String> nazwy(EventService events, String kto) {
