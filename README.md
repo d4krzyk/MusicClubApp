@@ -65,7 +65,7 @@ dotyczy właśnie Ciebie. Przy poście stoi powód: „Z twojej okolicy”, „P
 | | | |
 |:---:|:---:|:---:|
 | <img src="docs/zrzuty/poznawaj-telefon.jpg" alt="Talia kart w trybie Poznawaj" width="250"> | <img src="docs/zrzuty/poznawaj-szczegoly.jpg" alt="Szczegóły karty: co was łączy, opis, pytania" width="250"> | <img src="docs/zrzuty/poznawaj-para.jpg" alt="Wzajemne tak — jesteście znajomymi" width="250"> |
-| Talia: od najbardziej podobnego gustu, w zasięgu z ustawień; w prawo (albo „+”) — chcę poznać | Kartę przewija się w górę: co was łączy, „O mnie”, „Szukam”, pytania | Wzajemne „tak” — „Nowa znajomość!” 🫂, od razu można pisać |
+| Talia: od najbardziej podobnego gustu, w zasięgu z ustawień; w prawo (albo „+”) — chcę poznać | Kartę przewija się w górę: co was łączy, „O mnie”, „Szukam”, pytania | Wzajemne „tak” — „Nowa znajomość!”, od razu można pisać |
 
 <p align="center">
   <img src="docs/zrzuty/karta-ustawienia.jpg" alt="Twoja karta w ustawieniach" width="520">
@@ -761,9 +761,10 @@ samodzielnie albo razem z tekstem, także jako odpowiedź na cudzy komentarz.
 
 W zakładce **Znajomi** obok zwykłej listy jest tryb **Poznawaj**: karty osób z okolicy, jedna po drugiej. Przesunięcie
 w prawo (przycisk „+” albo →) znaczy „chcę poznać”, w lewo (✕, ←) — „nie teraz”. Znajomymi zostajecie dopiero wtedy,
-gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wyskakuje „Nowa znajomość!” z przytulającymi
-się ludzikami 🫂 i przyciskiem „Napisz wiadomość”, a obie osoby dostają powiadomienie i push. Bez serduszek — to aplikacja
-do poznawania ludzi, nie randkowa.
+gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wyskakuje „Nowa znajomość!” z ikoną dwóch
+obejmujących się osób i przyciskiem „Napisz wiadomość”, a obie osoby dostają powiadomienie i push. Bez serduszek — to
+aplikacja do poznawania ludzi, nie randkowa. Ikona (`IconHug`) jest narysowana w stylu Bootstrap Icons, jak reszta —
+kolorowy emotikon odstawał od wyglądu aplikacji.
 
 - **Kto jest w talii.** Tylko osoby, które same włączyły tryb (domyślnie jest wyłączony — karta ze zdjęciami dla obcych
   to świadoma decyzja). Bez znajomych, blokad, oczekujących zaproszeń, osób z zakazem publikowania i już ocenionych
@@ -1591,8 +1592,7 @@ zgłoszenie złożone przez kogoś innego. Zabezpieczenia sprawdzamy też od dru
 kodzie (mutacja) ma zaczerwienić jakiś test.
 
 **Czego stąd nie widać** (i co trzeba zobaczyć po wdrożeniu): prawdziwe usługi push (Google, Apple), prawdziwy KLIPY lub
-GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie (gest przesuwania kart i kadrowanie zdjęć były sprawdzone dotykiem udawanym przez Chromium;
-emotikon 🫂 na Windows 10 i starych Androidach zastępuje ikona dwóch osób — sprawdzone na udawanym braku emotikonu). Szczegóły i kroki
+GIPHY (kształt odpowiedzi jest sprawdzony tylko na udawanym serwerze), PWA na prawdziwym telefonie (gest przesuwania kart i kadrowanie zdjęć były sprawdzone dotykiem udawanym przez Chromium). Szczegóły i kroki
 kontrolne są w [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
 
 **Co dalej:** stały adres → sprawdzenie PWA na telefonie → aplikacja na Androida jako TWA (Bubblewrap) → Google Play.

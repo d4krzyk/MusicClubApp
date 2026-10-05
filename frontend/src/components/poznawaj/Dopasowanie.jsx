@@ -1,23 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Avatar from '../Avatar';
-import { czyEmojiDziala } from '../../utils/emoji';
-import { IconChat, IconFriends } from '../Icons';
-
-/** Przytulajace sie ludziki - to aplikacja do poznawania ludzi, nie randkowa, wiec bez serduszek. */
-const PRZYTULAS = '\u{1FAC2}';
+import { IconChat, IconHug } from '../Icons';
 
 /**
  * "Nowa znajomosc!" - wzajemne "tak". Od tej chwili jestescie znajomymi, wiec mozna od razu napisac.
- * Miedzy awatarami przytulajace sie ludziki; gdzie system ich nie ma (Windows 10, stare Androidy) -
- * ikona dwoch osob zamiast pustego prostokata.
+ * Miedzy awatarami dwie osoby, ktore sie obejmuja (IconHug) - to aplikacja do poznawania ludzi, nie randkowa,
+ * wiec bez serduszek. Wlasne SVG zamiast emotikonu: kolorowy emotikon odstawal od reszty ikon, a na Windows 10
+ * i starych Androidach w ogole go nie ma.
  * Okienko zamyka Esc, klikniecie w tlo i "Przegladaj dalej".
  */
 export default function Dopasowanie({ ja, on, onNapisz, onZamknij }) {
   const { t } = useTranslation();
   const glowny = useRef(null);
-  const [emoji] = useState(() => czyEmojiDziala(PRZYTULAS));
 
   useEffect(() => {
     glowny.current?.focus();
@@ -36,9 +32,7 @@ export default function Dopasowanie({ ja, on, onNapisz, onZamknij }) {
       <div className="pz-dopasowanie-okno" onClick={(e) => e.stopPropagation()}>
         <div className="pz-dopasowanie-awatary" aria-hidden="true">
           <span className="pz-dopasowanie-awatar is-lewy"><Avatar avatarUrl={ja.avatarUrl} username={ja.username} size={96} /></span>
-          <span className={`pz-dopasowanie-znak${emoji ? ' is-emoji' : ''}`}>
-            {emoji ? PRZYTULAS : <IconFriends size={24} />}
-          </span>
+          <span className="pz-dopasowanie-znak"><IconHug size={30} /></span>
           <span className="pz-dopasowanie-awatar is-prawy"><Avatar avatarUrl={on.avatarUrl} username={on.username} size={96} /></span>
         </div>
         <h2 id="pz-dopasowanie-tytul" className="pz-dopasowanie-tytul">{t('discover.match.title')}</h2>

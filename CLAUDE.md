@@ -19,8 +19,8 @@ e-mail (niżej), automatyczne uzupełnianie gatunków ulubionych artystów, klan
 z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12), miasto w profilu
 i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i komentarze
 z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie klanu (V16), karta profilu
-(galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i 🫂 zamiast
-serduszek oraz wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie (bez migracji).
+(galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i ikona
+obejmujących się osób zamiast serduszek oraz wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie (bez migracji).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -652,9 +652,11 @@ Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z ta
 ## Edytor zdjęć i „nie randka” (bez migracji)
 
 - **Bez serduszek** — to aplikacja do poznawania ludzi. Przycisk „tak” w Poznawaj i krok na ekranie startowym to
-  `IconPlus`; przy wzajemnym „tak” tytuł „Nowa znajomość!” i 🫂 (U+1FAC2) na białym kole. `utils/emoji.js` rysuje znak
-  na płótnie i sprawdza kolorowe piksele — gdzie systemu nie ma emotikonu (Windows 10, stare Androidy), jest
-  `IconFriends`. `IconHeart` usunięty; po angielsku pieczątka „NOPE” → „SKIP”.
+  `IconPlus`; przy wzajemnym „tak” tytuł „Nowa znajomość!” i `IconHug` (dwie osoby, jedna obejmuje drugą ramieniem)
+  na gradiencie. Najpierw był emotikon 🫂 — użytkownik odrzucił go, bo niebieski odstawał od reszty ikon. `IconHug` to
+  własne SVG w stylu Bootstrap Icons (Bootstrap nie ma ikony przytulenia): odstępy między nakładającymi się kształtami
+  to **wycięcia maską** (`<mask>` z `useId` — kreska „w kolorze tła” byłaby widać na gradiencie); e2e sprawdza maskę
+  po pikselach (przerwy przezroczyste, ramię i plecy pełne). `IconHeart` usunięty; po angielsku „NOPE” → „SKIP”.
 - **Edytor** (`components/obraz/EdytorZdjecia.jsx`, proporcje w `rodzajeKadru.js`): awatar 1:1 w kółku (otwiera się
   od razu), post — przycisk na miniaturze, proporcje do wyboru; karta 3:4 — kolejka po wybraniu kilku plików („Pomiń”,
   zamknięcie = koniec kolejki; wgrywanie w tle po kolei); ikona klanu 1:1; zdjęcie klanu 3:1 / 16:9 / dowolne.

@@ -409,7 +409,7 @@ Nic do ustawiania — działa od razu. Kilka rzeczy, o których warto wiedzieć 
    przez użytkownika” widoczne dla innych; w ankiecie treści (IARC) zaznacza się kontakt między użytkownikami.
    Aplikacja do poznawania ludzi musi mieć zgłaszanie i blokowanie z poziomu karty — są (pod opisem na karcie).
    Przy kategorii w sklepie: to aplikacja społecznościowa do poznawania ludzi, **nie randkowa** — w interfejsie nie ma
-   serduszek (przycisk „tak” to plusik, przy nowej znajomości są przytulające się ludziki 🫂).
+   serduszek (przycisk „tak” to plusik, przy nowej znajomości — ikona dwóch obejmujących się osób).
 5. **Edytor zdjęć** (kadr i obrót) działa w całości w przeglądarce — serwer dostaje zwykły plik JPEG/WebP/PNG/GIF jak
    wcześniej i niczego nie trzeba ustawiać. Po przycięciu dłuższy bok ma najwyżej 2048 px.
 
@@ -927,7 +927,8 @@ Przy edytorze zdjęć i plusiku zamiast serca (październik 2026, bez migracji, 
   granice; 20 000 losowych przypadków, puszczone też z czterema innymi ziarnami), macierz obrotu płótna zgodna
   z obrotem kadru, liczenie klatek GIF-a (także na prawdziwych plikach z PIL); `mvnw clean test` → 725 testów;
 - Chromium na prawdziwym PostgreSQL (baza z migracji V1–V17, 94 + 6 sprawdzeń): plusik w przycisku „tak” i na ekranie
-  startowym, nigdzie ścieżki serca; „Nowa znajomość!” z 🫂, a przy udawanym braku emotikonu — ikona dwóch osób;
+  startowym, nigdzie ścieżki serca; „Nowa znajomość!” z ikoną obejmujących się osób (emotikon 🫂 zastąpiony
+  później własnym SVG — wycięcia maski sprawdzone po pikselach);
   awatar (kadr 1:1 w kółku, obrót, wynik na serwerze sprawdzony **po pikselach** — ćwiartki w dobrych miejscach,
   ponowna edycja od oryginału, Esc, zepsuty plik → „Użyj bez edycji”, plik tekstowy → komunikat bez edytora); post
   (zdjęcie z EXIF-em obrotu, „bez zmian” = ten sam plik, proporcje, uchwyty myszą do krawędzi i za przeciwległy róg,

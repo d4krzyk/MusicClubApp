@@ -748,21 +748,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.5rem;
+  height: 3.5rem;
   border-radius: 50%;
   color: #fff;
   background: var(--mc-gradient);
   box-shadow: 0 0 0 4px #1c1530, var(--mc-glow);
   animation: pz-znak .6s .2s var(--mc-ease) backwards;
-}
-
-/* Kolorowy emotikon na jasnym kole - na gradiencie jego szaroniebieskie ludziki ginely */
-.pz-dopasowanie-znak.is-emoji {
-  background: #fff;
-  font-size: 1.85rem;
-  line-height: 1;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
 
 @keyframes pz-znak {

@@ -1,5 +1,7 @@
 /** Ikony jako male, wbudowane obrazki SVG. */
 
+import { useId } from 'react';
+
 function Svg({ children, size = 16, ...rest }) {
   return (
     <svg
@@ -412,6 +414,43 @@ export function IconSmile(props) {
       <path fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" d="M5.3 9.7a3 3 0 0 0 5.4 0" />
       <circle cx="6" cy="6.6" r=".95" />
       <circle cx="10" cy="6.6" r=".95" />
+    </Svg>
+  );
+}
+
+/*
+ * Dwie osoby, jedna obejmuje druga ramieniem - nowa znajomosc w Poznawaj. W Bootstrap Icons takiej nie ma,
+ * wiec jest narysowana w tym samym stylu (pelne ksztalty, siatka 16x16, zaokraglony dol jak w "people-fill").
+ * Odstepy miedzy nakladajacymi sie ksztaltami to wyciecia (maska), a nie kreski w kolorze tla - ikona lezy na
+ * gradiencie, wiec kreska "w kolorze tla" bylaby widoczna. Kazda ikona ma wlasne id maski (useId), bo dwie
+ * ikony na jednej stronie z tym samym id dzielilyby maske.
+ */
+const HUG_GLOWA_L = [5.4, 5.2, 2.25];
+const HUG_GLOWA_P = [10.9, 4.8, 2.3];
+const HUG_CIALO_L = 'M0.8 13.5V12.6C0.8 10.4 2.6 8.8 5 8.8S9.2 10.4 9.2 12.6V13.5a1 1 0 0 1-1 1H1.8a1 1 0 0 1-1-1Z';
+const HUG_CIALO_P = 'M8.3 13.5V12.6C8.3 10.4 9.7 8.8 11.7 8.8S15.2 10.4 15.2 12.6V13.5a1 1 0 0 1-1 1H9.3a1 1 0 0 1-1-1Z';
+const HUG_RAMIE = 'M2.1 10.4C4.4 8.4 7.6 8.2 10.6 9.6';
+
+export function IconHug(props) {
+  const maska = `przytulas-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  return (
+    <Svg {...props}>
+      <defs>
+        <mask id={maska} maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
+          <rect width="16" height="16" fill="#fff" />
+          <path d={HUG_CIALO_P} stroke="#000" strokeWidth="1.5" strokeLinejoin="round" />
+          <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} stroke="#000" strokeWidth="1.5" />
+          <path d={HUG_RAMIE} fill="none" stroke="#000" strokeWidth="3.7" strokeLinecap="round" />
+        </mask>
+      </defs>
+      {/* Osoba z tylu - wycieta tam, gdzie zaslania ja ta z przodu i obejmujace ramie */}
+      <g mask={`url(#${maska})`}>
+        <circle cx={HUG_GLOWA_L[0]} cy={HUG_GLOWA_L[1]} r={HUG_GLOWA_L[2]} />
+        <path d={HUG_CIALO_L} />
+      </g>
+      <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} />
+      <path d={HUG_CIALO_P} />
+      <path d={HUG_RAMIE} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </Svg>
   );
 }
