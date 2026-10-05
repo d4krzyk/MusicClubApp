@@ -966,6 +966,19 @@ Przy animacjach i ikonie z dwiema rękami (październik 2026, bez migracji, bez 
 - **czego nie sprawdzono:** płynności na słabym telefonie (animacje są tylko na `transform`/`opacity`, ale klatki na
   prawdziwym urządzeniu trzeba zobaczyć).
 
+Przy ikonie w układzie „E4” (dolna ręka wysoko na plecach) z gładkimi krawędziami:
+
+- E4 w powiększeniu miała trzy nierówności: przerwa nad górną ręką ścinała od dołu głowę osoby z tyłu (dwa ostre rogi),
+  przy końcu górnej ręki zostawał cienki sierp barku osoby z przodu z haczykiem, a początek dolnej ręki wystawał guzkiem
+  w grubą (1,0) przerwę. Przesuwanie rąk przenosiło szpic w inne miejsce — przyczyna była w geometrii (przerwa przecina
+  łuk barku pod ostrym kątem), więc kształt jest teraz wyliczany: `frontend/scripts/ikona-przytulas.py` (shapely) odejmuje
+  przerwy i zaokrągla wszystkie rogi; ikona nie ma już masek. Pomiar „drzazg” (piksele cieńsze niż ~0,6 jednostki przy
+  256 px): E4 161, wynik 31 (reszta to zaokrąglone końce);
+- `ruch-e2e` 40/40 (piksele ikony w punktach policzonych z krzywych rąk, w tym bark osoby z przodu nad dolną ręką; brak
+  masek; plusik obraca się o 90° — test czeka teraz, aż podpowiedź o mieście przestanie przesuwać przyciski, bo raz
+  kursor zszedł z przycisku w trakcie pomiaru), edytor 93/93; skrypt w repozytorium daje dokładnie to, co jest
+  w `Icons.jsx` (porównane znak po znaku).
+
 ---
 
 ## Co dalej, żeby aplikacja trafiła na Google Play

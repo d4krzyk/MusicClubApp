@@ -765,7 +765,9 @@ gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wysk
 obejmujących się osób i przyciskiem „Napisz wiadomość”, a obie osoby dostają powiadomienie i push. Bez serduszek — to
 aplikacja do poznawania ludzi, nie randkowa. Ikona (`IconHug`) jest narysowana w stylu Bootstrap Icons, jak reszta
 (kolorowy emotikon odstawał od wyglądu aplikacji): obie osoby wyciągają rękę — jedna kładzie ramię na barkach drugiej
-(łuk w górę), druga obejmuje ją w pasie (łuk w dół). Na ekranie nowej znajomości obie ręce rysują się po kolei.
+(łuk w górę), druga obejmuje ją wysoko na plecach (łuk w dół). Sylwetki są wyliczone skryptem
+(`frontend/scripts/ikona-przytulas.py`) z zaokrąglonymi wszystkimi rogami, więc przy styku rąk nie ma szpiców. Na ekranie
+nowej znajomości obie ręce rysują się po kolei.
 
 - **Kto jest w talii.** Tylko osoby, które same włączyły tryb (domyślnie jest wyłączony — karta ze zdjęciami dla obcych
   to świadoma decyzja). Bez znajomych, blokad, oczekujących zaproszeń, osób z zakazem publikowania i już ocenionych

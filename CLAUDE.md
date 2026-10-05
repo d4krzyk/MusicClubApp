@@ -655,12 +655,18 @@ Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z ta
 - **Bez serduszek** — to aplikacja do poznawania ludzi. Przycisk „tak” w Poznawaj i krok na ekranie startowym to
   `IconPlus`; przy wzajemnym „tak” tytuł „Nowa znajomość!” i `IconHug` na gradiencie. Najpierw był emotikon 🫂 —
   użytkownik odrzucił go, bo niebieski odstawał od reszty ikon; potem chciał, żeby **obie** osoby wyciągały rękę:
-  ramię osoby z przodu na barkach drugiej (łuk ∩, `HUG_RAMIE_GORA`) i ręka osoby z tyłu w pasie (łuk ∪,
-  `HUG_RAMIE_DOL`); wariant wybrany z kilku wyrenderowanych obok siebie. Własne SVG w stylu Bootstrap Icons (Bootstrap
-  nie ma ikony przytulenia): odstępy między nakładającymi się kształtami to **wycięcia maską** (`<mask>` z `useId`,
-  dwie maski: osoba z tyłu i osoba z przodu). **Kształty w masce muszą mieć jawne `fill="#000"`** — inaczej dziedziczą
-  `fill="currentColor"` z `<svg>`, wychodzą w masce białe (= widoczne) i spod osoby z przodu wystaje pasek osoby z tyłu
-  (było niewidoczne przy jednej ręce, wyszło przy drugiej). e2e sprawdza maskę po pikselach, także w miejscu tego paska.
+  ramię osoby z przodu na barkach drugiej (łuk ∩, `HUG_RAMIE_GORA`) i ręka osoby z tyłu **wysoko** na plecach osoby
+  z przodu (łuk ∪, `HUG_RAMIE_DOL`) — użytkownik wybrał ten układ („E4”) spośród wyrenderowanych obok siebie, a nie
+  rękę w połowie pleców. Własne SVG w stylu Bootstrap Icons (Bootstrap nie ma ikony przytulenia).
+- **Ikona jest wyliczana, nie rysowana** (`frontend/scripts/ikona-przytulas.py`, shapely — tylko narzędzie, aplikacja
+  go nie potrzebuje): barki minus przerwy 0,6 wokół rąk i między osobami, potem „otwarcie” (promień 0,45 — znikają
+  drzazgi, ostre rogi się zaokrąglają) i „zamknięcie” (0,2). Wynik to dwie ścieżki (`HUG_TYL`, `HUG_PRZOD`) + koła głów
+  + kreski rąk; **żadnych masek**. Wcześniej przerwy były maskami i przy stykach rąk zostawały szpice i cienkie sierpy
+  barku (zmierzone: drzazg 161 px → 31 px przy 256 px ikony), a kształty w `<mask>` dziedziczyły `fill="currentColor"`
+  (białe w masce = widoczne). Zasady, które wyszły przy strojeniu: osoba z przodu jest wyższa (bark 8,2 zamiast 8,8),
+  bo przy wysoko poprowadzonej dolnej ręce nad nią zostawał tylko sierp; początek dolnej ręki przykrywa róg barku
+  osoby z tyłu; głowa osoby z tyłu stoi tak, żeby przerwa nad ręką jej nie ścinała. Zmieniasz kształt — zmieniasz
+  parametry w skrypcie i wklejasz jego wynik; e2e sprawdza piksele w punktach policzonych z krzywych rąk.
   `IconHeart` usunięty; po angielsku „NOPE” → „SKIP”.
 - **Edytor** (`components/obraz/EdytorZdjecia.jsx`, proporcje w `rodzajeKadru.js`): awatar 1:1 w kółku (otwiera się
   od razu), post — przycisk na miniaturze, proporcje do wyboru; karta 3:4 — kolejka po wybraniu kilku plików („Pomiń”,

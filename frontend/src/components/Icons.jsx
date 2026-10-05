@@ -1,7 +1,5 @@
 /** Ikony jako male, wbudowane obrazki SVG. */
 
-import { useId } from 'react';
-
 function Svg({ children, size = 16, ...rest }) {
   return (
     <svg
@@ -420,52 +418,31 @@ export function IconSmile(props) {
 
 /*
  * Dwie osoby, ktore sie obejmuja - nowa znajomosc w Poznawaj. Obie wyciagaja reke: ta z przodu kladzie ramie
- * na barkach drugiej (luk w gore), ta z tylu obejmuje ja w pasie (luk w dol). W Bootstrap Icons takiej ikony nie ma,
- * wiec jest narysowana w tym samym stylu (pelne ksztalty, siatka 16x16, zaokraglony dol jak w "people-fill").
+ * na barkach drugiej (luk w gore), ta z tylu obejmuje ja wysoko, na plecach (luk w dol). Styl Bootstrap Icons
+ * (pelne ksztalty, siatka 16x16), bo Bootstrap nie ma ikony przytulenia.
  *
- * Odstepy miedzy nakladajacymi sie ksztaltami to wyciecia maska, a nie kreski w kolorze tla - ikona lezy na
- * gradiencie, wiec kreska "w kolorze tla" bylaby widoczna. Ksztalty w masce maja jawne fill="#000": bez tego
- * dziedzicza fill="currentColor" z <svg>, w masce wychodza biale (= widoczne) i spod osoby z przodu
- * wystaje pasek osoby z tylu. Kazda ikona ma wlasne id maski (useId), bo dwie ikony z tym samym id dzielilyby maske.
+ * Sylwetki (bez glow) sa WYLICZONE, a nie rysowane recznie: barki z odstepami 0,6 wokol rak i miedzy osobami,
+ * a potem kazdy ostry rog i kazda drzazga zaokraglone promieniem 0,45 (geometria w shapely: odjecie przerw,
+ * "otwarcie" i "zamkniecie" ksztaltu). Reczne wycinanie maska zostawialo przy stykach rak szpice i sierpy -
+ * dlatego tu nie ma zadnej maski. Zmiana ksztaltu = ponowne wyliczenie (frontend/scripts/ikona-przytulas.py),
+ * nie poprawianie liczb w sciezkach.
+ *
+ * Rece sa osobnymi kreskami z zaokraglonymi koncami (pathLength=1 - na ekranie nowej znajomosci rysuja sie po kolei).
  */
-const HUG_GLOWA_L = [5.4, 3.6, 2.2];
-const HUG_GLOWA_P = [10.9, 3.2, 2.25];
-const HUG_CIALO_L = 'M0.8 14V11C0.8 8.8 2.6 7.2 5 7.2S9.2 8.8 9.2 11V14a1 1 0 0 1-1 1H1.8a1 1 0 0 1-1-1Z';
-const HUG_CIALO_P = 'M8.3 14V11C8.3 8.8 9.62 7.2 11.7 7.2S15.2 8.8 15.2 11V14a1 1 0 0 1-1 1H9.3a1 1 0 0 1-1-1Z';
+const HUG_TYL = 'M1.42 11.69L1.10 11.65L1.01 11.66L0.90 11.69L0.82 11.74L0.75 11.82L0.70 11.90L0.66 12.00L0.65 12.10L0.65 13.64L0.66 13.77L0.68 13.87L0.72 14.01L0.76 14.10L0.88 14.28L0.95 14.36L1.03 14.43L1.20 14.54L1.34 14.60L1.43 14.63L1.66 14.65L7.17 14.65L7.32 14.63L7.43 14.57L7.53 14.48L7.59 14.37L7.62 14.26L7.62 14.15L7.56 13.84L7.55 13.65L7.55 11.95L7.56 11.60L7.61 11.15L7.68 10.71L7.79 10.27L7.94 9.79L7.95 9.70L7.93 9.59L7.87 9.46L7.76 9.36L7.63 9.29L7.49 9.27L6.85 9.30L6.31 9.37L5.78 9.47L5.28 9.60L4.81 9.76L4.46 9.91L4.03 10.12L3.72 10.31L3.42 10.51L3.14 10.73L2.87 10.97L2.48 11.36L2.32 11.48L2.22 11.53L2.07 11.60L1.97 11.64L1.70 11.69L1.59 11.70Z';
+const HUG_PRZOD = 'M9.08 12.84L8.69 12.70L8.62 12.69L8.54 12.70L8.46 12.72L8.38 12.75L8.32 12.79L8.26 12.85L8.21 12.92L8.17 13.00L8.15 13.11L8.15 13.73L8.17 13.87L8.23 14.05L8.31 14.18L8.39 14.30L8.52 14.42L8.66 14.52L8.79 14.58L8.96 14.63L9.16 14.65L14.04 14.65L14.17 14.64L14.32 14.61L14.45 14.56L14.60 14.48L14.74 14.37L14.84 14.27L14.93 14.12L14.98 14.01L15.03 13.84L15.05 13.64L15.05 12.85L15.04 12.74L14.99 12.63L14.91 12.53L14.80 12.45L14.68 12.41L14.56 12.41L14.45 12.43L14.09 12.60L13.70 12.76L13.38 12.88L12.98 12.99L12.66 13.07L12.36 13.12L11.95 13.18L11.64 13.20L11.31 13.21L10.89 13.20L10.56 13.17L10.14 13.11L9.81 13.05L9.40 12.94ZM9.02 9.04L8.97 9.14L8.94 9.26L8.95 9.38L8.99 9.49L9.04 9.57L9.10 9.64L9.38 9.81L9.61 9.93L9.86 10.04L10.03 10.10L10.28 10.18L10.53 10.24L10.79 10.28L11.04 10.30L11.30 10.31L11.73 10.28L12.16 10.21L12.58 10.09L12.91 9.95L13.15 9.84L13.37 9.71L13.84 9.38L13.91 9.32L13.97 9.22L14.00 9.13L14.01 9.04L14.00 8.93L13.96 8.84L13.92 8.76L13.80 8.62L13.60 8.42L13.40 8.24L13.18 8.08L13.01 7.97L12.79 7.85L12.62 7.77L12.28 7.65L12.11 7.61L11.93 7.58L11.74 7.56L11.56 7.55L11.37 7.56L11.19 7.57L11.01 7.60L10.84 7.65L10.50 7.77L10.17 7.93L9.87 8.13L9.73 8.24L9.53 8.42L9.27 8.70Z';
 /** Reka osoby z przodu na barkach osoby z tylu. */
-const HUG_RAMIE_GORA = 'M2.1 8.8C4.4 6.8 7.6 6.6 11 8.1';
-/** Reka osoby z tylu wokol pasa osoby z przodu. */
-const HUG_RAMIE_DOL = 'M7 11C9.2 13 12.2 13 14.1 10.8';
+const HUG_RAMIE_GORA = 'M1.55 10.25C3.75 7.85 7.45 7.25 11.05 8.35';
+/** Reka osoby z tylu wokol plecow osoby z przodu. */
+const HUG_RAMIE_DOL = 'M7.45 10.15C9.45 12.15 12.45 12.25 14.55 10.65';
 
 export function IconHug(props) {
-  const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
-  const tyl = `przytulas-tyl-${id}`;
-  const przod = `przytulas-przod-${id}`;
   return (
     <Svg {...props}>
-      <defs>
-        {/* Osoba z tylu: wycieta tam, gdzie zaslania ja ta z przodu i jej reka na barkach */}
-        <mask id={tyl} maskUnits="userSpaceOnUse" x="-1" y="-1" width="18" height="18">
-          <rect x="-1" y="-1" width="18" height="18" fill="#fff" />
-          <path d={HUG_CIALO_P} fill="#000" stroke="#000" strokeWidth="1.5" strokeLinejoin="round" />
-          <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} fill="#000" stroke="#000" strokeWidth="1.5" />
-          <path d={HUG_RAMIE_GORA} fill="none" stroke="#000" strokeWidth="3.2" strokeLinecap="round" />
-        </mask>
-        {/* Osoba z przodu: wycieta wokol reki, ktora obejmuje ja w pasie */}
-        <mask id={przod} maskUnits="userSpaceOnUse" x="-1" y="-1" width="18" height="18">
-          <rect x="-1" y="-1" width="18" height="18" fill="#fff" />
-          <path d={HUG_RAMIE_DOL} fill="none" stroke="#000" strokeWidth="2.9" strokeLinecap="round" />
-        </mask>
-      </defs>
-      <g mask={`url(#${tyl})`}>
-        <circle cx={HUG_GLOWA_L[0]} cy={HUG_GLOWA_L[1]} r={HUG_GLOWA_L[2]} />
-        <path d={HUG_CIALO_L} />
-      </g>
-      <g mask={`url(#${przod})`}>
-        <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} />
-        <path d={HUG_CIALO_P} />
-      </g>
-      {/* pathLength=1: animacja rysowania rak (style/ruch.css) liczy w ulamkach dlugosci */}
+      <circle cx="5.25" cy="3.95" r="2.25" />
+      <circle cx="10.75" cy="3.65" r="2.3" />
+      <path fillRule="evenodd" d={HUG_TYL} />
+      <path fillRule="evenodd" d={HUG_PRZOD} />
       <path className="ikona-reka is-gora" d={HUG_RAMIE_GORA} pathLength="1" fill="none" stroke="currentColor"
         strokeWidth="1.7" strokeLinecap="round" />
       <path className="ikona-reka is-dol" d={HUG_RAMIE_DOL} pathLength="1" fill="none" stroke="currentColor"
