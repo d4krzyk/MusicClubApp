@@ -705,7 +705,41 @@
     "nearEmptyTitle": "Nothing within {{km}} km of {{city}}",
     "nearEmptyText": "Try a larger range or show concerts from the whole country.",
     "nearEmptyForYou": "Nothing in your area matches your taste. Increase the range or show the whole country.",
-    "whereTitle": "Where"
+    "whereTitle": "Where",
+    "artist": {
+      "who": "Who is it?",
+      "hide": "Hide",
+      "favorite": "One of your favourite artists",
+      "noBio": "We don’t have a description of this artist yet.",
+      "listeners_one": "{{liczba}} listener on Last.fm",
+      "listeners_other": "{{liczba}} listeners on Last.fm",
+      "similar": "Similar",
+      "readMore": "Read more on Last.fm",
+      "license": "description: Last.fm, CC BY-SA licence",
+      "links": {
+        "HOMEPAGE": "Website",
+        "SPOTIFY": "Spotify",
+        "YOUTUBE": "YouTube",
+        "INSTAGRAM": "Instagram",
+        "FACEBOOK": "Facebook",
+        "TIKTOK": "TikTok",
+        "BANDCAMP": "Bandcamp",
+        "SOUNDCLOUD": "SoundCloud",
+        "WIKI": "Wikipedia"
+      }
+    },
+    "organizer": {
+      "title": "From the organiser",
+      "promoter": "Organiser",
+      "prices": "Tickets",
+      "priceRange": "{{od}} to {{do}}",
+      "priceFrom": "from {{od}}",
+      "salesStart": "Sales start",
+      "age": "Age",
+      "adultsOnly": "adults only (18+)",
+      "accessibility": "Accessibility",
+      "note": "Important"
+    }
   },
   "verify": {
     "checkTitle": "Check your inbox",

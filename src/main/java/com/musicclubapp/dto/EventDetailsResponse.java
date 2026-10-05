@@ -55,6 +55,21 @@ public record EventDetailsResponse(
     List<AttendeeResponse> attendees,
 
     @Schema(description = "Ile km od miasta z mojego profilu; 0 = to samo miasto, pusty = nie wiadomo")
-    Integer distanceKm
+    Integer distanceKm,
+
+    @Schema(description = "Sklad z gatunkami (Last.fm), linkami wykonawcow i zaznaczonymi moimi ulubionymi")
+    List<LineupEntry> lineup,
+
+    @Schema(description = "Wazne uwagi od organizatora (np. zasady wejscia)")
+    String pleaseNote,
+    String promoter,
+    Double priceMin,
+    Double priceMax,
+    String priceCurrency,
+    @Schema(description = "Tylko dla pelnoletnich")
+    boolean ageRestricted,
+    @Schema(description = "Kiedy rusza sprzedaz biletow (gdy jeszcze nie ruszyla)")
+    java.time.Instant salesStart,
+    String accessibility
 ) {
 }

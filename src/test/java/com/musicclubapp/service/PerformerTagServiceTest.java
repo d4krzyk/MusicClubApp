@@ -40,6 +40,7 @@ class PerformerTagServiceTest {
         "{\"error\":6,\"message\":\"The artist you supplied could not be found\"}";
 
     @Autowired private PerformerTagsRepository repository;
+    @Autowired private com.musicclubapp.repository.PerformerLinkRepository links;
     @Autowired private PlatformTransactionManager transactionManager;
 
     private TestHttpServer lastFmServer;
@@ -66,7 +67,7 @@ class PerformerTagServiceTest {
     }
 
     private PerformerTagService serwis(LastFmService lastFm) {
-        return new PerformerTagService(lastFm, repository, transactionManager,
+        return new PerformerTagService(lastFm, repository, links, transactionManager,
             Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC), 0);
     }
 

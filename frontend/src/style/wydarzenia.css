@@ -369,6 +369,164 @@
   border-color: rgba(var(--bs-primary-rgb), .5);
 }
 
+/* --- Sklad: kim sa wykonawcy ---------------------------------------------- */
+
+.wykonawcy {
+  display: grid;
+  gap: .5rem;
+  margin: 0;
+}
+
+.wykonawca {
+  border: 1px solid var(--bs-border-color);
+  border-radius: .9rem;
+  padding: .5rem .6rem;
+  background: var(--bs-body-bg);
+}
+
+.wykonawca.is-pierwszy {
+  border-color: rgba(var(--bs-primary-rgb), .45);
+}
+
+.wykonawca-glowa {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  min-width: 0;
+}
+
+.wykonawca-inicjal {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--mc-gradient);
+  color: #fff;
+  font-weight: 700;
+}
+
+.wykonawca-opis {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.wykonawca-nazwa {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.wykonawca.is-pierwszy .wykonawca-nazwa {
+  font-weight: 700;
+}
+
+.wykonawca-ulubiony {
+  margin-left: .35rem;
+  color: #f59e0b;
+}
+
+.wykonawca-tagi {
+  font-size: .78rem;
+  color: var(--bs-secondary-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wykonawca-przycisk {
+  flex: 0 0 auto;
+  font-size: .8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.wykonawca-panel {
+  margin: .5rem 0 .1rem;
+  padding-top: .5rem;
+  border-top: 1px dashed var(--bs-border-color);
+  animation: fade-in-up .25s var(--mc-ease) backwards;
+}
+
+.wykonawca-bio {
+  font-size: .9rem;
+  margin-bottom: .5rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.wykonawca-fakty {
+  font-size: .82rem;
+  color: var(--bs-secondary-color);
+  margin-bottom: .4rem;
+}
+
+.wykonawca-linki {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+}
+
+.wykonawca-link {
+  padding: .15rem .6rem;
+  font-size: .78rem;
+  font-weight: 600;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--bs-body-color);
+}
+
+.wykonawca-link:hover {
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+}
+
+.wykonawca-szkielet {
+  height: 3.2rem;
+  border-radius: .5rem;
+  background: linear-gradient(90deg, var(--bs-secondary-bg) 25%, var(--bs-tertiary-bg) 37%, var(--bs-secondary-bg) 63%);
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+/* --- Od organizatora ------------------------------------------------------ */
+
+.od-organizatora-fakty {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: .5rem .9rem;
+  margin: 0 0 .6rem;
+}
+
+.od-organizatora-fakt dt {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.od-organizatora-fakt dd {
+  margin: 0;
+  font-size: .92rem;
+  overflow-wrap: anywhere;
+}
+
+.od-organizatora-uwaga {
+  padding: .55rem .75rem;
+  border-left: 3px solid #f59e0b;
+  border-radius: .4rem;
+  background: rgba(245, 158, 11, .08);
+  font-size: .88rem;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 /* Opis przychodzi jako zwykly tekst z przejsciami do nowej linii - zachowujemy je. */
 .wydarzenie-opis {
   white-space: pre-line;

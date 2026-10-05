@@ -386,12 +386,16 @@ public class EventImportService {
                 event.inCountry(e.countryCode() != null ? e.countryCode() : kraj);
                 repository.save(event);
             }
+            performerTags.saveLinks(events);
             return events.size();
         });
     }
 
     private void apply(MusicEvent event, TicketmasterClient.Event e, LocalDateTime seenAt) {
         event.describe(e.name(), e.description(), e.status(), e.genre(), e.subGenre());
+        TicketmasterClient.Organizer o = e.organizer() == null ? TicketmasterClient.Organizer.NONE : e.organizer();
+        event.organizer(o.pleaseNote(), o.promoter(), o.priceMin(), o.priceMax(), o.priceCurrency(),
+            o.ageRestricted(), o.salesStart(), o.accessibility());
         event.schedule(e.date(), e.time());
         event.place(e.venueExternalId(), e.venueName(), e.city(), cityKey(e.city()),
             e.address(), e.latitude(), e.longitude());

@@ -23,7 +23,8 @@ z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie kla
 obejmujących się osób zamiast serduszek, wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie — oraz
 animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu — wszyscy / znajomi / tylko Poznawaj (V18),
 usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w czacie — miejsce, punkt na mapie, czas,
-„Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji).
+„Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji),
+„Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -683,6 +684,39 @@ i `POST /api/clans/{id}/chat/meeting`.
   przez pośrednika, więc były zielone; wyszło dopiero w Chromium na prawdziwym harmonogramie. Teraz `@Transactional`
   jest na `scheduled()`, a testy `MeetingReminderSchedulingTest` i `PushFlowTest.scheduledRunPersists` wołają
   `scheduled()` bez transakcji testu (oba zaczerwieniły się przed poprawką).
+
+## „Kim jest” wykonawca i „Od organizatora” (V21)
+
+Strona wydarzenia ma sekcję „Kto gra” (`components/wydarzenie/Wykonawcy.jsx`) i „Od organizatora” (`OdOrganizatora.jsx`).
+
+- **Skład** (`EventDetailsResponse.lineup`, `LineupEntry`): każdy wykonawca z gatunkami (`performer_tags`, do 3), linkami
+  z importu i gwiazdką, gdy jest wśród moich ulubionych. Opis **nie** idzie z wydarzeniem — dopiero po „Kim jest?”
+  (`GET /api/artists/profile?name=&lang=`, `ArtistProfileService`), żeby otwarcie strony nie pytało Last.fm o każdego.
+- **Opis z Last.fm** (`LastFmService.artistInfo`, `artist.getInfo` z `autocorrect` i `lang`): streszczenie jako zwykły
+  tekst (`bioText` — bez odnośnika „Read more on Last.fm”, znaczniki w zdaniu znikają bez śladu, blokowe dzielą słowa,
+  encje rozkodowane **po** zdjęciu znaczników, ≤ 1200 znaków na granicy słowa), słuchacze, do 5 podobnych, adres strony
+  tylko z `https://www.last.fm/`. Zapamiętany w `artist_profiles` na 30 dni **osobno na język**; brak polskiego opisu =
+  angielski. Awaria Last.fm nie jest zapamiętywana (zostaje stary opis albo same linki). Opis dostają tylko nazwy, które
+  grają na jakimś wydarzeniu (`isPerformer`) — to nie jest darmowa wyszukiwarka Last.fm przez nasz serwer; 30 rozwinięć
+  na minutę na osobę (`app.artists.profiles-per-minute`, 429). Licencja: pod opisem link do Last.fm i „CC BY-SA”.
+- **Linki wykonawców** (`performer_links`, `PerformerLinkKind`, CHECK — wpis w `EnumConstraintRefresher`): z
+  `attractions[].externalLinks` Ticketmastera (strona, Spotify, YouTube, Instagram, Facebook, TikTok, Bandcamp,
+  SoundCloud, Wikipedia), jeden zestaw na nazwę (`NameKeys`), tylko http(s) z hostem i bez danych logowania w adresie,
+  ≤ 500 znaków. W przeglądarce
+  `rel="noopener noreferrer nofollow"`.
+- **Od organizatora** (kolumny `music_events`): `pleaseNote` (1000), organizator (`promoter` albo pierwszy z `promoters`),
+  ceny (najpierw `standard`, inaczej wszystkie; `price_min/max/currency`), `age_restricted`
+  (`ageRestrictions.legalAgeEnforced`), start sprzedaży (`sales.public.startDateTime`, bez `startTBD`) i dostępność
+  (`accessibility.info`). Sekcji nie ma, gdy nic z tego nie przyszło. Start sprzedaży widać tylko, gdy jest w przyszłości.
+- **Nie sprawdzone na żywo**: z tego środowiska Last.fm i Ticketmaster są zablokowane — kształt odpowiedzi według
+  dokumentacji, testy na udawanym serwerze (`LastFmArtistInfoTest`, `TicketmasterOrganizerTest`, `ArtistProfileFlowTest`).
+- Dane o wykonawcach i wydarzeniach, **żadnych danych użytkowników** — eksport, usuwanie konta i polityka bez zmian.
+- **Pułapki z tej rundy**: `similar` to w PostgreSQL słowo zastrzeżone (H2 je przyjmował; wyszło dopiero przy porównaniu
+  schematu z migracją) — kolumna `similar_artists`. Zamiana **każdego** znacznika na spację dawała „w Warszawie .”
+  (wyszło w Chromium, nie w teście jednostkowym). Liczby po polsku (`toLocaleString('pl')`) mają twardą spację U+00A0 —
+  porównania tekstu w Playwrighcie ją normalizują. `locator('.wykonawca', { hasText: 'Hey' })` łapał też Kulta, bo „Hey”
+  stoi na jego liście podobnych — filtr po `.wykonawca-nazwa` z `exact`. Miarka przelewu liczy przycinających przodków
+  tylko do `<main>` — `body` ma `overflow-x: hidden` i inaczej wszystko wychodziło „przycięte”, a wynik był pusty.
 
 ## Karta profilu i tryb Poznawaj (V17)
 

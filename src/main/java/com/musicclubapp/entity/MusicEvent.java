@@ -152,6 +152,32 @@ public class MusicEvent {
     private LocalDateTime withdrawnAt;
 
     /** Sklad w kolejnosci z plakatu: najpierw gwiazda, potem support. */
+    /* --- Od organizatora (Ticketmaster: pleaseNote, promoter, priceRanges, ageRestrictions, sales, accessibility) --- */
+
+    @Column(name = "please_note", length = 1000)
+    private String pleaseNote;
+
+    @Column(length = 200)
+    private String promoter;
+
+    @Column(name = "price_min")
+    private Double priceMin;
+
+    @Column(name = "price_max")
+    private Double priceMax;
+
+    @Column(name = "price_currency", length = 3)
+    private String priceCurrency;
+
+    @Column(name = "age_restricted", nullable = false, columnDefinition = "boolean not null default false")
+    private boolean ageRestricted;
+
+    @Column(name = "sales_start")
+    private java.time.Instant salesStart;
+
+    @Column(length = 500)
+    private String accessibility;
+
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "music_event_performers", joinColumns = @JoinColumn(name = "event_id"))
     @OrderColumn(name = "performer_order")
@@ -174,6 +200,51 @@ public class MusicEvent {
         this.status = status == null ? EventStatus.SCHEDULED : status;
         this.genre = genre;
         this.subGenre = subGenre;
+    }
+
+    /** Uwagi, organizator, ceny, wiek, sprzedaz i dostepnosc - za kazdym importem od nowa (puste = nie ma). */
+    public void organizer(String pleaseNote, String promoter, Double priceMin, Double priceMax, String priceCurrency,
+                          boolean ageRestricted, java.time.Instant salesStart, String accessibility) {
+        this.pleaseNote = pleaseNote;
+        this.promoter = promoter;
+        this.priceMin = priceMin;
+        this.priceMax = priceMax;
+        this.priceCurrency = priceCurrency;
+        this.ageRestricted = ageRestricted;
+        this.salesStart = salesStart;
+        this.accessibility = accessibility;
+    }
+
+    public String getPleaseNote() {
+        return pleaseNote;
+    }
+
+    public String getPromoter() {
+        return promoter;
+    }
+
+    public Double getPriceMin() {
+        return priceMin;
+    }
+
+    public Double getPriceMax() {
+        return priceMax;
+    }
+
+    public String getPriceCurrency() {
+        return priceCurrency;
+    }
+
+    public boolean isAgeRestricted() {
+        return ageRestricted;
+    }
+
+    public java.time.Instant getSalesStart() {
+        return salesStart;
+    }
+
+    public String getAccessibility() {
+        return accessibility;
     }
 
     public void schedule(LocalDate startDate, LocalTime startTime) {

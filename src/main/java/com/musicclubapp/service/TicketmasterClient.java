@@ -1,6 +1,7 @@
 package com.musicclubapp.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.musicclubapp.entity.PerformerLinkKind;
 import com.musicclubapp.entity.EventStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Czytanie koncertow z Ticketmaster Discovery API.
@@ -86,8 +88,23 @@ public class TicketmasterClient {
         return !key.isEmpty();
     }
 
-    /** Wykonawca ze skladu. */
-    public record Performer(String externalId, String name) { }
+    /** Wykonawca ze skladu - z linkami (strona, Spotify...), gdy Ticketmaster je zna. */
+    public record Performer(String externalId, String name, Map<PerformerLinkKind, String> links) {
+
+        public Performer(String externalId, String name) {
+            this(externalId, name, Map.of());
+        }
+    }
+
+    /**
+     * To, co organizator mowi poza nazwa i data: wazne uwagi, kto organizuje, ceny biletow, ograniczenie wiekowe,
+     * kiedy rusza sprzedaz, dostepnosc. Kazde pole bywa puste.
+     */
+    public record Organizer(String pleaseNote, String promoter, Double priceMin, Double priceMax, String priceCurrency,
+                            boolean ageRestricted, Instant salesStart, String accessibility) {
+
+        public static final Organizer NONE = new Organizer(null, null, null, null, null, false, null, null);
+    }
 
     /** Jedno wydarzenie w postaci, ktora rozumie reszta aplikacji. */
     public record Event(
@@ -110,7 +127,8 @@ public class TicketmasterClient {
         String subGenre,
         List<Performer> performers,
         /* Kraj z adresu miejsca - moze byc pusty, wtedy import bierze kraj z zapytania. */
-        String countryCode
+        String countryCode,
+        Organizer organizer
     ) { }
 
     /** Jedna strona wynikow. */
@@ -214,7 +232,7 @@ public class TicketmasterClient {
         for (JsonNode a : e.path("_embedded").path("attractions")) {
             String performerName = clean(text(a, "name"), 200);
             if (performerName != null) {
-                performers.add(new Performer(clean(text(a, "id"), 64), performerName));
+                performers.add(new Performer(clean(text(a, "id"), 64), performerName, links(a.path("externalLinks"))));
             }
         }
 
@@ -243,7 +261,79 @@ public class TicketmasterClient {
             genreName(classification.path("genre")),
             genreName(classification.path("subGenre")),
             performers,
-            countryCode(text(venue.path("country"), "countryCode")));
+            countryCode(text(venue.path("country"), "countryCode")),
+            organizer(e));
+    }
+
+    /** Uwagi, organizator, ceny, wiek, sprzedaz i dostepnosc - wszystko jako zwykly tekst albo liczba. */
+    static Organizer organizer(JsonNode e) {
+        String promoter = text(e.path("promoter"), "name");
+        if (promoter == null) {
+            promoter = text(first(e.path("promoters")), "name");
+        }
+        JsonNode cena = null;
+        for (JsonNode p : e.path("priceRanges")) {
+            if (cena == null || "standard".equals(text(p, "type"))) {
+                cena = p;
+            }
+        }
+        Double min = cena == null ? null : price(cena.get("min"));
+        Double max = cena == null ? null : price(cena.get("max"));
+        String waluta = cena == null ? null : text(cena, "currency");
+        if (waluta != null && !waluta.matches("[A-Za-z]{3}")) {
+            waluta = null;
+        }
+        Instant sprzedaz = null;
+        String start = text(e.path("sales").path("public"), "startDateTime");
+        if (start != null && !e.path("sales").path("public").path("startTBD").asBoolean(false)) {
+            try {
+                sprzedaz = Instant.parse(start);
+            } catch (java.time.format.DateTimeParseException ex) {
+                sprzedaz = null;
+            }
+        }
+        return new Organizer(
+            clean(text(e, "pleaseNote"), 1000),
+            clean(promoter, 200),
+            min, max == null || min == null || max >= min ? max : null,
+            (min == null && max == null) || waluta == null ? null : waluta.toUpperCase(Locale.ROOT),
+            e.path("ageRestrictions").path("legalAgeEnforced").asBoolean(false),
+            sprzedaz,
+            clean(text(e.path("accessibility"), "info"), 500));
+    }
+
+    private static Double price(JsonNode value) {
+        return value != null && value.isNumber() && value.asDouble() >= 0 && value.asDouble() < 1_000_000
+            ? value.asDouble() : null;
+    }
+
+    /**
+     * Linki wykonawcy z {@code externalLinks}: {"spotify": [{"url": ...}], ...}. Pierwszy adres danego rodzaju, tylko
+     * http(s) z nazwa hosta i najwyzej 500 znakow - adres trafia jako odnosnik na strone wydarzenia.
+     */
+    static Map<PerformerLinkKind, String> links(JsonNode externalLinks) {
+        Map<PerformerLinkKind, String> wynik = new java.util.EnumMap<>(PerformerLinkKind.class);
+        externalLinks.fields().forEachRemaining(pole -> {
+            PerformerLinkKind rodzaj = PerformerLinkKind.fromTicketmaster(pole.getKey());
+            String adres = text(first(pole.getValue()), "url");
+            if (rodzaj != null && !wynik.containsKey(rodzaj) && safeLink(adres)) {
+                wynik.put(rodzaj, adres.strip());
+            }
+        });
+        return wynik;
+    }
+
+    static boolean safeLink(String adres) {
+        if (adres == null || adres.length() > 500 || adres.strip().chars().anyMatch(Character::isWhitespace)) {
+            return false;
+        }
+        try {
+            java.net.URI u = new java.net.URI(adres.strip());
+            return ("https".equalsIgnoreCase(u.getScheme()) || "http".equalsIgnoreCase(u.getScheme()))
+                && u.getHost() != null && u.getUserInfo() == null;
+        } catch (java.net.URISyntaxException ex) {
+            return false;
+        }
     }
 
     private static String countryCode(String code) {

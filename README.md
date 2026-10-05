@@ -212,7 +212,7 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V20 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V21 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
@@ -328,7 +328,8 @@ z opisami: Swagger (adres niżej).
 | Metoda | Ścieżka | Opis |
 |--------|---------|------|
 | GET | `/api/events?view=&city=&q=&radius=` | lista wydarzeń (`FOR_YOU`, `UPCOMING`, `MINE`); `radius` (km) zawęża do okolicy miasta z profilu |
-| GET | `/api/events/{id}` | wydarzenie z uczestnikami i powodami „Dla ciebie” |
+| GET | `/api/events/{id}` | wydarzenie z uczestnikami, powodami „Dla ciebie”, składem (gatunki i linki wykonawców) i danymi od organizatora (ceny, start sprzedaży, wiek, dostępność, ważne uwagi) |
+| GET | `/api/artists/profile?name=&lang=` | „Kim jest” wykonawca z koncertu: opis, słuchacze i podobni z Last.fm (zapamiętane na 30 dni) i jego linki |
 | PUT / DELETE | `/api/events/{id}/participation` | „Zainteresowany” / „Biorę udział” / rezygnacja |
 | GET | `/api/posts?event={id}` | posty pod wydarzeniem („szukam ekipy”) |
 | GET / POST | `/api/posts/{id}/comments` | komentarze pierwszego poziomu (od najnowszych, `page`, `size`) / dodanie komentarza lub odpowiedzi (`content`, `parentId`) |
@@ -1487,7 +1488,7 @@ dostawców opisuje [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
 
 | Zmienna | Potrzebna do | Bez niej |
 |---|---|---|
-| `LASTFM_API_KEY` | import historii słuchania z Last.fm i gatunki artystów | przycisk importu się nie pokazuje, gatunki z ogólnych etykiet Ticketmastera |
+| `LASTFM_API_KEY` | import historii słuchania z Last.fm, gatunki artystów i opisy wykonawców („Kim jest?”) | przycisk importu się nie pokazuje, gatunki z ogólnych etykiet Ticketmastera, przy wykonawcach same linki |
 | `TICKETMASTER_API_KEY` | koncerty w zakładce Wydarzenia | zakładka jest pusta |
 | `GIF_API_KEY`, `GIF_PROVIDER` | przeglądarka GIF-ów (KLIPY albo GIPHY) | przycisk GIF się nie pokazuje |
 | `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `APP_PUBLIC_URL` | potwierdzanie adresu e-mail, reset hasła, zmiana adresu | konta działają od razu, bez resetu hasła |

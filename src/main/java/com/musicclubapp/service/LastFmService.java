@@ -173,6 +173,102 @@ public class LastFmService {
         }
     }
 
+    /** Opis wykonawcy z Last.fm: nazwa po poprawce, krotkie bio (zwykly tekst), adres strony, sluchacze, podobni. */
+    public record ArtistInfo(String name, String bio, String url, Long listeners, List<String> similar) { }
+
+    /** Ile znakow opisu zostawiamy - to podglad, pelny opis jest pod linkiem. */
+    static final int MAX_BIO = 1200;
+
+    /**
+     * {@code artist.getInfo} w danym jezyku. Pusty Optional = Last.fm nie odpowiedzial (albo nie ma klucza) - tego nie
+     * zapamietujemy; "nie ma takiego wykonawcy" to odpowiedz bez opisu.
+     */
+    public Optional<ArtistInfo> artistInfo(String artistName, String lang) {
+        if (!available() || artistName == null || artistName.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            UriComponentsBuilder b = UriComponentsBuilder.fromUriString(api)
+                .queryParam("method", "artist.getinfo")
+                .queryParam("artist", artistName)
+                .queryParam("api_key", key)
+                .queryParam("format", "json")
+                .queryParam("autocorrect", 1);
+            if (lang != null && !"en".equals(lang)) {
+                b.queryParam("lang", lang);
+            }
+            JsonNode response = restClient.get().uri(b.build().toUriString()).retrieve().body(JsonNode.class);
+            if (response == null) {
+                return Optional.empty();
+            }
+            if (response.has("error")) {
+                return response.path("error").asInt() == LASTFM_BRAK_ARTYSTY
+                    ? Optional.of(new ArtistInfo(artistName, null, null, null, List.of()))
+                    : Optional.empty();
+            }
+            JsonNode a = response.path("artist");
+            if (a.isMissingNode()) {
+                log.warn("Last.fm artist.getInfo: nie rozpoznano odpowiedzi dla '{}'", artistName);
+                return Optional.empty();
+            }
+            List<String> podobni = new ArrayList<>();
+            for (JsonNode s : a.path("similar").path("artist")) {
+                String n = text(s, "name");
+                if (n != null && !n.isBlank() && podobni.size() < 5) {
+                    podobni.add(n.strip());
+                }
+            }
+            String nazwa = text(a, "name");
+            String adres = text(a, "url");
+            return Optional.of(new ArtistInfo(
+                nazwa == null || nazwa.isBlank() ? artistName : nazwa.strip(),
+                bioText(a.path("bio").path("summary").asText(null)),
+                adres != null && adres.startsWith("https://www.last.fm/") && adres.length() <= 500 ? adres : null,
+                listeners(a.path("stats").path("listeners").asText(null)),
+                podobni));
+        } catch (Exception e) {
+            log.warn("Nie udalo sie pobrac opisu '{}': {}", artistName, bezKlucza(e.getMessage()));
+            return Optional.empty();
+        }
+    }
+
+    private static Long listeners(String value) {
+        try {
+            return value == null ? null : Long.valueOf(value.strip());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * Streszczenie z Last.fm to HTML z odnosnikiem "Read more on Last.fm" na koncu. Zostawiamy zwykly tekst: bez
+     * odnosnika, bez znacznikow, z rozkodowanymi encjami i z jedna spacja zamiast odstepow. Za dlugi - ucinany na
+     * granicy slowa. Pusty = null.
+     */
+    static String bioText(String html) {
+        if (html == null || html.isBlank()) {
+            return null;
+        }
+        // Znaczniki blokowe (akapit, nowy wiersz, punkt) dziela slowa; pozostale (<b>, <a>...) stoja w srodku zdania
+        // i znikaja bez sladu - inaczej "w <b>Warszawie</b>." dawalo "Warszawie ."
+        String bezZnacznikow = html.replaceAll("(?is)<a\\b[^>]*>[^<]*last\\.fm[^<]*</a>", " ")
+            .replaceAll("(?i)<(br|/?p|/?div|/?li|/?ul|/?ol|/?h[1-6]|/?blockquote|/?tr|/?td)\\b[^>]*>", " ")
+            .replaceAll("(?s)<[^>]*>", "");
+        // Encje (&amp;, &oacute;, &#322;...) dopiero po zdjeciu znacznikow - "&lt;b&gt;" zostaje tekstem "<b>"
+        String t = org.springframework.web.util.HtmlUtils.htmlUnescape(bezZnacznikow)
+            .replace('\u00a0', ' ')
+            .replaceAll("\\s+", " ")
+            .strip();
+        if (t.isEmpty()) {
+            return null;
+        }
+        if (t.length() > MAX_BIO) {
+            int spacja = t.lastIndexOf(' ', MAX_BIO - 1);
+            t = t.substring(0, spacja > MAX_BIO / 2 ? spacja : MAX_BIO - 1).stripTrailing() + "…";
+        }
+        return t;
+    }
+
     private String bezKlucza(String tekst) {
         return tekst == null || key.isEmpty() ? tekst : tekst.replace(key, "***");
     }

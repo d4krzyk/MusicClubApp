@@ -47,6 +47,7 @@ public class PerformerTagService {
 
     private final LastFmService lastFm;
     private final PerformerTagsRepository repository;
+    private final com.musicclubapp.repository.PerformerLinkRepository links;
     private final TransactionTemplate transactions;
     private final Clock clock;
     private final long przerwaMs;
@@ -54,11 +55,13 @@ public class PerformerTagService {
     @Autowired
     public PerformerTagService(LastFmService lastFm,
                                PerformerTagsRepository repository,
+                               com.musicclubapp.repository.PerformerLinkRepository links,
                                PlatformTransactionManager transactionManager,
                                Clock clock,
                                @Value("${app.events.tags.pause-ms:250}") long przerwaMs) {
         this.lastFm = lastFm;
         this.repository = repository;
+        this.links = links;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.przerwaMs = przerwaMs;
@@ -125,6 +128,61 @@ public class PerformerTagService {
                 checked, Math.max(0, byKey.size() - known.size() - checked));
         }
         return checked;
+    }
+
+    /**
+     * Linki wykonawcow z importu (strona, Spotify, Instagram...) - jeden zestaw na klucz nazwy. Nowe dopisujemy, zmienione
+     * poprawiamy; nie kasujemy tych, ktorych tym razem nie bylo (inny koncert tego wykonawcy moze ich nie podawac).
+     * Wolane w transakcji importu.
+     */
+    public void saveLinks(Collection<TicketmasterClient.Event> events) {
+        Map<String, Map<com.musicclubapp.entity.PerformerLinkKind, String>> wg = new LinkedHashMap<>();
+        for (TicketmasterClient.Event e : events) {
+            for (TicketmasterClient.Performer p : e.performers()) {
+                String key = NameKeys.of(p.name());
+                if (key.isEmpty() || key.length() > 200 || p.links().isEmpty()) {
+                    continue;
+                }
+                Map<com.musicclubapp.entity.PerformerLinkKind, String> m = wg.computeIfAbsent(key,
+                    k -> new java.util.EnumMap<>(com.musicclubapp.entity.PerformerLinkKind.class));
+                p.links().forEach(m::putIfAbsent);
+            }
+        }
+        if (wg.isEmpty()) {
+            return;
+        }
+        Map<String, com.musicclubapp.entity.PerformerLink> znane = new HashMap<>();
+        for (com.musicclubapp.entity.PerformerLink l : links.findByNameKeyIn(wg.keySet())) {
+            znane.put(l.getNameKey() + "|" + l.getKind(), l);
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        wg.forEach((key, m) -> m.forEach((kind, url) -> {
+            com.musicclubapp.entity.PerformerLink l = znane.get(key + "|" + kind);
+            if (l == null) {
+                links.save(new com.musicclubapp.entity.PerformerLink(key, kind, url, now));
+            } else {
+                l.update(url, now);
+            }
+        }));
+    }
+
+    /** Gatunki wykonawcow tak, jak przyszly z Last.fm (do pokazania przy skladzie): klucz nazwy -> gatunki. */
+    public Map<String, List<String>> genresOf(Collection<String> nameKeys) {
+        Map<String, List<String>> result = new HashMap<>();
+        for (PerformerTags tags : repository.findAllById(nameKeys)) {
+            result.put(tags.getNameKey(), List.copyOf(tags.getGenres()));
+        }
+        return result;
+    }
+
+    /** Linki wykonawcow: klucz nazwy -> linki w kolejnosci rodzajow. */
+    public Map<String, List<com.musicclubapp.dto.PerformerLinkView>> linksOf(Collection<String> nameKeys) {
+        Map<String, List<com.musicclubapp.dto.PerformerLinkView>> result = new HashMap<>();
+        links.findByNameKeyIn(nameKeys).stream()
+            .sorted(java.util.Comparator.comparing(com.musicclubapp.entity.PerformerLink::getKind))
+            .forEach(l -> result.computeIfAbsent(l.getNameKey(), k -> new java.util.ArrayList<>())
+                .add(new com.musicclubapp.dto.PerformerLinkView(l.getKind(), l.getUrl())));
+        return result;
     }
 
     /** Znane tagi wykonawcow: klucz nazwy -> tagi w postaci do porownywania. */

@@ -184,6 +184,14 @@ wykonawców (reszta w kolejnych przebiegach) i pamięta wynik przez 60 dni. Bez
 klucza „Dla ciebie" dalej działa, ale gatunki porównuje tylko z ogólnymi
 etykietami Ticketmastera („Rock", „Hip-Hop/Rap").
 
+**I trzeci raz — „Kim jest?” przy wykonawcach.** Po rozwinięciu serwer pyta
+Last.fm o opis wykonawcy (`artist.getInfo`) i pamięta go 30 dni. Bez klucza
+przy wykonawcach są tylko gatunki i linki z Ticketmastera. Po pierwszym
+uruchomieniu z kluczem warto rozwinąć „Kim jest?” przy kilku znanych
+wykonawcach — kształt odpowiedzi jest przepisany z dokumentacji, nie
+sprawdzony na żywym serwisie. Gdy opis się nie pokazuje, a w logu stoi
+„Nie udalo sie pobrac opisu”, za nim jest przyczyna.
+
 #### Gdy import się nie udaje
 
 ```bash
@@ -1068,6 +1076,27 @@ Przy spotkaniach w czacie i mapie (październik 2026, migracja V20):
   „odwołanie zostawia przypomnienia”, „lista bez filtra blokad”, „przypomnienie po końcu”, „przypomnienie dla «nie dam
   rady»”, a jeden mutant był źle zapisany (nic nie zmieniał). Po dopisaniu testów (`MeetingFlowTest` 12 → 14,
   `mvnw clean test` → 755) wszystkie 42 zabite.
+
+Przy „Kim jest” wykonawca i „Od organizatora” (październik 2026, migracja V21):
+
+- migracja V21 na **pustej** bazie (V1 → V21, profil `prod`) — schemat zgodny z tym, co buduje Hibernate (różnice tylko
+  w zapisie CHECK-ów, które i tak przepisuje `EnumConstraintRefresher` — po ujednoliceniu identyczne), i na bazie
+  z danymi po V20 (wydarzenia zostają, backend wstaje z `validate`). Porównanie wyłapało kolumnę `similar` — w H2 przeszła,
+  w PostgreSQL to słowo zastrzeżone; teraz `similar_artists`;
+- `mvnw clean test` → 766 testów (nowe: `TicketmasterOrganizerTest` — uwagi, organizator, ceny z `standard`, wiek,
+  sprzedaż bez `startTBD`, dostępność, linki tylko http(s); `LastFmArtistInfoTest` — opis jako tekst, encje, przycinanie,
+  adres tylko z last.fm, błędy; `ArtistProfileFlowTest` — pamięć 30 dni na język, angielski zamiast brakującego
+  polskiego, awaria bez zapamiętania, tylko wykonawcy z wydarzeń, limit na minutę);
+- Chromium (`wykonawcy-e2e`, 22 sprawdzenia, udawany Last.fm): skład z gatunkami i bez zapytania do Last.fm przed
+  rozwinięciem, opis po polsku jako zwykły tekst, słuchacze i podobni, przypisanie CC BY-SA, linki z `nofollow`,
+  ponowne rozwinięcie i przeładowanie bez drugiego zapytania (opis z bazy), nieznany i awaria Last.fm („Nie mamy jeszcze
+  opisu”, nic nie zapisane), sekcja organizatora (ceny po polsku, start sprzedaży, 18+, dostępność, ważne), wydarzenie
+  bez tych danych bez sekcji, telefon 320 i 390 px (ciemny) bez przelewu, zero błędów w konsoli. Dwa przebiegi zielone;
+- **błąd znaleziony w Chromium**: opis wychodził „…w Warszawie .” — każdy znacznik HTML zamieniany na spację, także
+  `<b>` w środku zdania. Najpierw czerwony test w `LastFmArtistInfoTest`, potem poprawka (spacja tylko za znacznikami
+  blokowymi);
+- znalezione przy sprawdzaniu (w samym teście): miarka przelewu uznawała wszystko za „przycięte”, bo `body` ma
+  `overflow-x: hidden` — wynik był pusty; teraz liczy przodków do `<main>` i sprawdza, że coś zmierzyła.
 
 ---
 

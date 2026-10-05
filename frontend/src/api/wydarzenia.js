@@ -61,3 +61,12 @@ export async function uczestnicy(id, strona = 0, rozmiar = 30) {
   const { data } = await client.get(`/events/${id}/attendees`, { params: { page: strona, size: rozmiar } });
   return data;
 }
+
+/**
+ * Kim jest wykonawca: krotkie bio (Last.fm, w jezyku interfejsu, gdy jest), sluchacze, podobni i linki.
+ * Serwer trzyma odpowiedz w bazie - Last.fm pytany jest raz na kilka tygodni na wykonawce.
+ */
+export async function profilArtysty(nazwa, jezyk) {
+  const { data } = await client.get('/artists/profile', { params: { name: nazwa, lang: jezyk } });
+  return data;
+}

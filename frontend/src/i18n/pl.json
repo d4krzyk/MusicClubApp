@@ -742,7 +742,43 @@
     "nearEmptyTitle": "Nic w promieniu {{km}} km od: {{city}}",
     "nearEmptyText": "Spróbuj większego zasięgu albo pokaż koncerty z całego kraju.",
     "nearEmptyForYou": "W twojej okolicy nic nie pasuje do twojego gustu. Zwiększ zasięg albo pokaż cały kraj.",
-    "whereTitle": "Gdzie"
+    "whereTitle": "Gdzie",
+    "artist": {
+      "who": "Kim jest?",
+      "hide": "Zwiń",
+      "favorite": "Twój ulubiony wykonawca",
+      "noBio": "Nie mamy jeszcze opisu tego wykonawcy.",
+      "listeners_one": "{{liczba}} słuchacz na Last.fm",
+      "listeners_few": "{{liczba}} słuchaczy na Last.fm",
+      "listeners_many": "{{liczba}} słuchaczy na Last.fm",
+      "listeners_other": "{{liczba}} słuchacza na Last.fm",
+      "similar": "Podobni",
+      "readMore": "Czytaj więcej na Last.fm",
+      "license": "opis: Last.fm, licencja CC BY-SA",
+      "links": {
+        "HOMEPAGE": "Strona",
+        "SPOTIFY": "Spotify",
+        "YOUTUBE": "YouTube",
+        "INSTAGRAM": "Instagram",
+        "FACEBOOK": "Facebook",
+        "TIKTOK": "TikTok",
+        "BANDCAMP": "Bandcamp",
+        "SOUNDCLOUD": "SoundCloud",
+        "WIKI": "Wikipedia"
+      }
+    },
+    "organizer": {
+      "title": "Od organizatora",
+      "promoter": "Organizator",
+      "prices": "Bilety",
+      "priceRange": "od {{od}} do {{do}}",
+      "priceFrom": "od {{od}}",
+      "salesStart": "Sprzedaż rusza",
+      "age": "Wiek",
+      "adultsOnly": "tylko dla pełnoletnich (18+)",
+      "accessibility": "Dostępność",
+      "note": "Ważne"
+    }
   },
   "verify": {
     "checkTitle": "Sprawdź skrzynkę",

@@ -15,6 +15,8 @@ import Avatar from '../components/Avatar';
 import EmptyState from '../components/EmptyState';
 import EventReasons from '../components/EventReasons';
 import MapaPunktu, { adresTrasy } from '../components/mapa/MapaPunktu';
+import OdOrganizatora from '../components/wydarzenie/OdOrganizatora';
+import Wykonawcy from '../components/wydarzenie/Wykonawcy';
 import Post from '../components/Post';
 import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
@@ -239,11 +241,7 @@ function Szczegoly({
         {w.performers.length > 0 && (
           <section className="mb-4">
             <h2 className="h6 wydarzenie-sekcja">{t('events.lineup')}</h2>
-            <ul className="wydarzenie-sklad-lista list-unstyled">
-              {w.performers.map((nazwa, i) => (
-                <li key={`${nazwa}-${i}`} className={i === 0 ? 'is-pierwszy' : ''}>{nazwa}</li>
-              ))}
-            </ul>
+            <Wykonawcy sklad={w.lineup?.length ? w.lineup : w.performers.map((name) => ({ name }))} />
           </section>
         )}
 
@@ -259,6 +257,8 @@ function Szczegoly({
             )}
           </section>
         )}
+
+        <OdOrganizatora w={w} />
 
         {(w.genre || w.subGenre) && (
           <div className="mb-4 d-flex gap-1 flex-wrap">

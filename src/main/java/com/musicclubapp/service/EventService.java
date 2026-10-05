@@ -315,7 +315,32 @@ public class EventService {
             reasons,
             attendees,
             LocationService.rounded(location.distanceKm(originOf(viewer),
-                event.getLatitude(), event.getLongitude(), event.getCityKey())));
+                event.getLatitude(), event.getLongitude(), event.getCityKey())),
+            lineup(performers, taste),
+            event.getPleaseNote(),
+            event.getPromoter(),
+            event.getPriceMin(),
+            event.getPriceMax(),
+            event.getPriceCurrency(),
+            event.isAgeRestricted(),
+            event.getSalesStart(),
+            event.getAccessibility());
+    }
+
+    /** Sklad do strony wydarzenia: gatunki i linki z bazy (bez pytania Last.fm), ulubieni ogladajacego zaznaczeni. */
+    private List<com.musicclubapp.dto.LineupEntry> lineup(List<String> performers, EventMatchService.Taste taste) {
+        List<String> klucze = performers.stream().map(NameKeys::of).toList();
+        Map<String, List<String>> gatunki = performerTags.genresOf(klucze);
+        Map<String, List<com.musicclubapp.dto.PerformerLinkView>> linki = performerTags.linksOf(klucze);
+        List<com.musicclubapp.dto.LineupEntry> wynik = new java.util.ArrayList<>();
+        for (int i = 0; i < performers.size(); i++) {
+            String k = klucze.get(i);
+            wynik.add(new com.musicclubapp.dto.LineupEntry(performers.get(i),
+                gatunki.getOrDefault(k, List.of()).stream().limit(3).toList(),
+                linki.getOrDefault(k, List.of()),
+                taste.artists().containsKey(k)));
+        }
+        return wynik;
     }
 
     /**

@@ -85,6 +85,7 @@ public class EnumConstraintRefresher implements ApplicationRunner {
 
         /* Ticketmaster moze kiedys wprowadzic nowy stan wydarzenia - wtedy przybedzie stala. */
         new EnumColumn("music_events", "status", EventStatus.class),
+        new EnumColumn("performer_links", "kind", com.musicclubapp.entity.PerformerLinkKind.class),
         new EnumColumn("event_participations", "status", ParticipationStatus.class),
         new EnumColumn("email_tokens", "purpose", TokenPurpose.class),
         new EnumColumn("users", "clan_invites_from", ClanInvitePolicy.class),
