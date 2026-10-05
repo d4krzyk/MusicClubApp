@@ -25,6 +25,8 @@ public record MessageResponse(
     String musicUrl,
     LocalDateTime createdAt,
     boolean mine,
-    boolean read
+    boolean read,
+    /** Nadawca usunal wiadomosc - zostaje tylko slad (bez tresci i zalacznikow). */
+    boolean deleted
 ) {
 }

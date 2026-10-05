@@ -51,7 +51,7 @@ public class ClanActivityCounter {
     Map<Long, Counts> counts(Long clanId, LocalDateTime since) {
         Map<Long, long[]> wynik = new HashMap<>();
         zbierz(wynik, 0, "SELECT m.sender.id, COUNT(m) FROM ClanMessage m "
-            + "WHERE m.clan.id = :c AND m.createdAt >= :s GROUP BY m.sender.id", clanId, since);
+            + "WHERE m.clan.id = :c AND m.createdAt >= :s AND m.deletedAt IS NULL GROUP BY m.sender.id", clanId, since);
         zbierz(wynik, 1, "SELECT p.author.id, COUNT(p) FROM Post p "
             + "WHERE p.clan.id = :c AND p.createdAt >= :s GROUP BY p.author.id", clanId, since);
         zbierz(wynik, 2, "SELECT t.proposer.id, COUNT(t) FROM ClanTrack t "

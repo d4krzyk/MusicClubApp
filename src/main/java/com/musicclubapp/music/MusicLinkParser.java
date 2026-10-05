@@ -32,7 +32,33 @@ public final class MusicLinkParser {
     private static final Pattern APPLE = Pattern.compile(
         "music\\.apple\\.com/([a-z]{2})/(album|playlist|artist|song)/([^?\\s]+)(\\?i=(\\d+))?");
 
+    /**
+     * Film ze zwyklego YouTube'a: youtube.com/watch?v=, youtu.be/, /shorts/, /live/ (takze m. i www.). Przyjmujemy go
+     * TYLKO jako link wklejony w tresc rozmowy ({@link #findInChat}) - w postach muzyka ma byc muzyka.
+     */
+    private static final Pattern YT_VIDEO = Pattern.compile(
+        "(?:^|[^\\w.])(?:(?:www\\.|m\\.)?youtube\\.com/(?:watch\\?(?:[^\\s]*&)?v=|shorts/|live/)|youtu\\.be/)([\\w-]{11})(?![\\w-])");
+
     private MusicLinkParser() {
+    }
+
+    /**
+     * Pierwszy rozpoznany link w tresci wiadomosci na czacie: wszystko to, co {@link #parse}, a do tego zwykly film
+     * z YouTube'a (rozmowa to nie post - znajomi wymieniaja sie teledyskami). Odtwarzacz i podglad sa te same.
+     */
+    public static Optional<ParsedMusicLink> findInChat(String text) {
+        if (text == null || text.isBlank()) {
+            return Optional.empty();
+        }
+        Optional<ParsedMusicLink> muzyka = parse(text);
+        if (muzyka.isPresent()) {
+            return muzyka;
+        }
+        Matcher film = YT_VIDEO.matcher(text);
+        if (film.find()) {
+            return Optional.of(new ParsedMusicLink(MusicProvider.YOUTUBE, MusicKind.TRACK, film.group(1)));
+        }
+        return Optional.empty();
     }
 
     public static Optional<ParsedMusicLink> parse(String url) {

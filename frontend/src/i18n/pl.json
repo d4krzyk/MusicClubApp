@@ -503,7 +503,13 @@
     "conversationDeleted": "Rozmowa usunięta",
     "deleteConversationFailed": "Nie udało się usunąć rozmowy",
     "attachGif": "Dodaj GIF",
-    "gifPreview": "GIF"
+    "gifPreview": "GIF",
+    "messageDeleted": "Wiadomość usunięta",
+    "deleteMessage": "Usuń wiadomość",
+    "deleteMessageConfirm": "Usunąć tę wiadomość? Zniknie u wszystkich, a w rozmowie zostanie ślad „Wiadomość usunięta”.",
+    "deleteMessageFailed": "Nie udało się usunąć wiadomości",
+    "playVideo": "Odtwórz film: {{title}}",
+    "youtube": "YouTube"
   },
   "reports": {
     "report": "Zgłoś",

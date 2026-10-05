@@ -101,6 +101,13 @@ public class Message {
             columnDefinition = "boolean not null default false")
     private boolean hiddenForRecipient;
 
+    /**
+     * Kiedy nadawca usunal wiadomosc - u obu stron. Tresc i zalaczniki znikaja od razu, a wiersz zostaje jako slad
+     * "wiadomosc usunieta" (inaczej druga strona widzialaby dziure w rozmowie i nie wiedziala, co sie stalo).
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     protected Message() {
     }
 
@@ -150,6 +157,25 @@ public class Message {
     /** Czy wiadomosc ma podpiete jakiekolwiek nagranie. */
     public boolean hasMusic() {
         return musicProvider != null && musicExternalId != null;
+    }
+
+    /** Usuwa tresc i zalaczniki u obu stron; zostaje slad z data. Drugie usuniecie niczego nie zmienia. */
+    public void deleteForEveryone(LocalDateTime now) {
+        if (deletedAt != null) {
+            return;
+        }
+        content = null;
+        applyMusic(null, null, null, null);
+        gif = null;
+        deletedAt = now;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
     }
 
     /** Oznacza jako przeczytana. */
@@ -205,6 +231,10 @@ public class Message {
 
     public LocalDateTime getReadAt() {
         return readAt;
+    }
+
+    public boolean isHiddenForSender() {
+        return hiddenForSender;
     }
 
     public boolean isRead() {

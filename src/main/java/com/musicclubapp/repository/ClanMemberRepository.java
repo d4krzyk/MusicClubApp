@@ -43,7 +43,7 @@ public interface ClanMemberRepository extends JpaRepository<ClanMember, Long> {
            WHERE m.clan.id = :clanId AND m.user.id <> :senderId AND m.chatMuted = false
              AND NOT EXISTS (SELECT 1 FROM ClanMessage x
                              WHERE x.clan.id = m.clan.id AND x.id > COALESCE(m.chatReadId, 0)
-                               AND x.id < :newId AND x.sender.id <> m.user.id)
+                               AND x.id < :newId AND x.sender.id <> m.user.id AND x.deletedAt IS NULL)
            """)
     List<ClanMember> toNotify(@Param("clanId") Long clanId, @Param("senderId") Long senderId,
                               @Param("newId") Long newId);

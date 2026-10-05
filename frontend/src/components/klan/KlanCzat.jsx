@@ -6,6 +6,8 @@ import * as klany from '../../api/klany';
 import Avatar from '../Avatar';
 import GifObrazek from '../gif/GifObrazek';
 import GifPicker from '../gif/GifPicker';
+import MusicCard from '../MusicCard';
+import TekstWiadomosci from '../TekstWiadomosci';
 import { IconBell, IconCross, IconGif, IconReply, IconSend, IconSmile, IconTrash } from '../Icons';
 import useGify from '../../hooks/useGify';
 import useOdswiezanie from '../../hooks/useOdswiezanie';
@@ -41,6 +43,8 @@ export default function KlanCzat({ klan, onZmiana }) {
   const pole = useRef(null);
   const okno = useRef(null);
   const naDole = useRef(true);
+  /* Czas serwera z ostatniego pytania o usuniete - od niego serwer liczy nastepne */
+  const czasUsuniec = useRef(null);
   const mozePisac = klan.myRole != null;
 
   /* Kreska "nowe wiadomosci" - stoi tam, gdzie skonczyla sie poprzednia wizyta, nawet gdy juz przeczytane */
@@ -62,6 +66,10 @@ export default function KlanCzat({ klan, onZmiana }) {
   useEffect(() => {
     let anulowane = false;
     setLadowanie(true);
+    czasUsuniec.current = null;
+    // Czas serwera sprzed wczytania listy: usuniecie zrobione w trakcie wczytywania tez do nas dojdzie
+    klany.usuniete(klan.id).then((u) => { if (!anulowane && !czasUsuniec.current) czasUsuniec.current = u.serverTime; })
+      .catch(() => {});
     klany.czat(klan.id)
       .then((lista) => {
         if (!anulowane) {
@@ -98,11 +106,23 @@ export default function KlanCzat({ klan, onZmiana }) {
     const ostatnie = wiadomosci.length > 0 ? wiadomosci[wiadomosci.length - 1].id : 0;
     const pierwsza = wiadomosci.length > 0 ? wiadomosci[0].id : 0;
     try {
-      const [nowe, reakcje] = await Promise.all([
+      const [nowe, reakcje, usun] = await Promise.all([
         klany.czat(klan.id, { po: ostatnie }),
         klany.reakcjeOd(klan.id, pierwsza),
+        klany.usuniete(klan.id, czasUsuniec.current),
       ]);
       dopiszNowe(nowe);
+      if (czasUsuniec.current && usun.deletedIds.length > 0) {
+        const ids = new Set(usun.deletedIds);
+        setWiadomosci((stare) => stare.map((m) => {
+          if (ids.has(m.id)) {
+            return jakoUsunieta(m);
+          }
+          return m.replyTo && ids.has(m.replyTo.id) ? { ...m, replyTo: { ...m.replyTo, deleted: true, excerpt: '' } } : m;
+        }));
+        setOdpowiedzNa((o) => (o && ids.has(o.id) ? null : o));
+      }
+      czasUsuniec.current = usun.serverTime;
       // Odpowiedz opisuje reakcje calego zakresu: wiadomosc, ktorej w niej nie ma, nie ma reakcji
       const wg = new Map(reakcje.map((r) => [r.messageId, r.reactions]));
       setWiadomosci((stare) => stare.map((m) => (
@@ -167,12 +187,18 @@ export default function KlanCzat({ klan, onZmiana }) {
   }
 
   async function usun(id) {
-    if (!window.confirm(t('common.confirmDelete'))) {
+    if (!window.confirm(t('chat.deleteMessageConfirm'))) {
       return;
     }
     try {
       await klany.usunWiadomosc(klan.id, id);
-      setWiadomosci((stare) => stare.filter((m) => m.id !== id));
+      // Zostaje slad "wiadomosc usunieta" - tak samo zobacza ja pozostali
+      setWiadomosci((stare) => stare.map((m) => {
+        if (m.id === id) {
+          return jakoUsunieta(m);
+        }
+        return m.replyTo?.id === id ? { ...m, replyTo: { ...m.replyTo, deleted: true, excerpt: '' } } : m;
+      }));
       setOdpowiedzNa((o) => (o?.id === id ? null : o));
     } catch (problem) {
       setBlad(describeError(problem).message);
@@ -267,7 +293,7 @@ export default function KlanCzat({ klan, onZmiana }) {
                     {zaczynaSerie(i) && <Avatar avatarUrl={m.senderAvatarUrl} username={m.senderUsername} size={26} />}
                   </span>
                 )}
-                <div className="bubble">
+                <div className={`bubble${m.deleted ? ' is-usunieta' : ''}`}>
                   {!m.mine && zaczynaSerie(i) && <span className="klan-czat-autor">{m.senderUsername}</span>}
 
                   {m.replyToId != null && (
@@ -276,7 +302,8 @@ export default function KlanCzat({ klan, onZmiana }) {
                         title={t('clans.chat.goToMessage')}>
                         <span className="klan-cytat-autor">{m.replyTo.senderUsername}</span>
                         <span className="klan-cytat-tekst">
-                          {m.replyTo.excerpt || (m.replyTo.gif ? t('chat.gifPreview') : '')}
+                          {m.replyTo.deleted ? t('chat.messageDeleted')
+                            : m.replyTo.excerpt || (m.replyTo.gif ? t('chat.gifPreview') : '')}
                         </span>
                       </button>
                     ) : (
@@ -284,8 +311,15 @@ export default function KlanCzat({ klan, onZmiana }) {
                     )
                   )}
 
-                  {m.content && <p className="bubble-text">{m.content}</p>}
-                  <GifObrazek gif={m.gif} />
+                  {m.deleted ? (
+                    <p className="bubble-usunieta">{t('chat.messageDeleted')}</p>
+                  ) : (
+                    <>
+                      <TekstWiadomosci tekst={m.content} ukryjSamLink={Boolean(m.musicEmbedUrl)} />
+                      <GifObrazek gif={m.gif} />
+                      {m.musicEmbedUrl && <MusicCard message={m} />}
+                    </>
+                  )}
 
                   {(m.reactions ?? []).length > 0 && (
                     <div className="klan-reakcje">
@@ -309,7 +343,7 @@ export default function KlanCzat({ klan, onZmiana }) {
 
                   <span className="bubble-time">
                     {timeAgo(m.createdAt, i18n.language)}
-                    {mozePisac && (
+                    {mozePisac && !m.deleted && (
                       <>
                         <button type="button" className="klan-akcja" onClick={() => { setOdpowiedzNa(m); }}
                           aria-label={t('clans.chat.reply')} title={t('clans.chat.reply')}>
@@ -426,4 +460,11 @@ export default function KlanCzat({ klan, onZmiana }) {
       </div>
     </section>
   );
+}
+
+/** Slad po usunietej wiadomosci - to samo, co oddaje serwer. */
+function jakoUsunieta(m) {
+  return {
+    ...m, deleted: true, content: '', gif: null, musicEmbedUrl: null, reactions: [], canDelete: false,
+  };
 }

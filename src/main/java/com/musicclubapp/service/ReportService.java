@@ -272,6 +272,9 @@ public class ReportService {
         Collections.reverse(ordered);
 
         for (Message message : ordered) {
+            if (message.isDeleted()) {
+                continue; // tresci juz nie ma - dowodem bylby pusty wiersz
+            }
             report.addEvidence(new ReportEvidence(
                 message.getSender().getUsername(),
                 // Wiadomosc bywa samym nagraniem - wtedy dowodem jest jego tytul

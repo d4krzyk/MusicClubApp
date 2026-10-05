@@ -1009,6 +1009,33 @@ Przy wyborze, kto widzi kartę na profilu (październik 2026, migracja V18):
   (próba czerwona na wersji bez poprawki: w bazie `FRIENDS` przy wybranym „tylko Poznawaj”) — zapisy idą teraz po
   kolei, a ekran słucha tylko odpowiedzi na ostatni wybór.
 
+Przy usuwaniu wiadomości i podglądzie linków w czacie (październik 2026, migracja V19):
+
+- **odtworzenie przed poprawką** (Chromium, prawdziwy PostgreSQL): film z YouTube'a w dymku rozmowy po kliknięciu miał
+  **104×59 px** (dymek o szerokości tekstu „posłuchaj tego”), miniatura 480×360 z czarnymi pasami była przycinana do
+  kwadratu 36 px, a zwykły link YouTube wklejony w tekst był nieklikalnym tekstem łamanym w pół adresu. Po poprawce:
+  258×145 (komputer) i 289×162 (390 px), 16:9, miniatura bez pasów, link klikalny i skrócony, film rusza po kliknięciu;
+- migracja V19 na **pustej** bazie (V1 → V19, profil `prod`) i na bazie z danymi po V17 (V17 → V18 → V19); kolumny,
+  nazwy ograniczeń i treść CHECK-ów `clan_messages_music_*` identyczne z tym, co buduje Hibernate;
+- `mvnw clean test` → 739 testów (nowa klasa `ChatDeleteAndLinksFlowTest`: parser linków w czacie, podgląd w rozmowie
+  i w klanie, usuwanie własnej / cudzej / z rozmowy skasowanej u siebie, z zakazem pisania, nieprzeczytane, przekazanie
+  usunięcia przy odpytywaniu z zapasem 30 s, zgłoszenie i eksport bez usuniętych, ślad w odpowiedzi w klanie, brak
+  reakcji i odpowiedzi na usuniętą); `npm test` → 23 (podział tekstu na linki, nawiasy, kropka na końcu, `javascript:`);
+- testy z mutacjami: 29 mutantów (warunki usuwania — cudza, ukryta u siebie, bez wiersza; czyszczenie treści, GIF-a
+  i nagrania; pomijanie usuniętych w nieprzeczytanych, pushu, rankingu, aktywności, eksporcie i zgłoszeniu; zapas
+  30 s; wykrywanie linku i granice adresu w parserze; reakcje i odpowiedzi na usuniętą). Przeżył jeden: przycisk usuwania
+  przy śladzie w klanie — test patrzył oczami zwykłego członka, który i tak nie mógłby usunąć cudzej wiadomości.
+  Dopisane sprawdzenie oczami autorki-założycielki zabija go;
+- Chromium (`czat-e2e`, 34 sprawdzenia, dwie osoby w osobnych kartach): kosz tylko przy własnych, anulowanie okna
+  potwierdzenia, awaria serwera (komunikat, wiadomość zostaje), ślad „Wiadomość usunięta” u mnie i u drugiej osoby
+  **bez przeładowania** (~2,3 s w rozmowie, przy następnym odpytaniu w klanie), podgląd na liście rozmów, dwa linki
+  w treści (nowa karta, `noopener`), playlista Spotify i sam link YouTube (sama karta, bez surowego adresu), HTML w treści
+  zostaje tekstem (`<img onerror>` się nie wykonuje), czat klanu: karta wideo, odpowiedź, usunięcie z cytatem „usunięta”
+  u obu osób, telefon 320 i 360 px bez przelewu, ciemny motyw, zero błędów w konsoli. Skrypt zaczerwienił się na celowej
+  usterce (przeglądarka ignoruje `deletedIds` — 2 czerwone), dwa przebiegi pod rząd zielone;
+- znalezione przy sprawdzaniu: pomiar karty od razu po otwarciu szuflady czatu na telefonie dawał „wystaje poza okno”
+  — szuflada jeszcze wjeżdżała; mierzone po animacji.
+
 ---
 
 ## Co dalej, żeby aplikacja trafiła na Google Play

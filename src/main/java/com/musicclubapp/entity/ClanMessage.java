@@ -57,6 +57,17 @@ public class ClanMessage {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    /** Nagranie rozpoznane w tresci (link do YouTube, Spotify albo Apple Music) - albo {@code null}. */
+    @Embedded
+    private MusicAttachment music;
+
+    /**
+     * Kiedy wiadomosc usunieto (autor, zarzad klanu albo administrator aplikacji). Tresc i zalaczniki znikaja, a wiersz
+     * zostaje jako slad "wiadomosc usunieta" - odpowiedzi na nia nie traca sensu, a pozostali widza, ze cos zniknelo.
+     */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     protected ClanMessage() {
         // wymagany przez JPA
     }
@@ -109,5 +120,32 @@ public class ClanMessage {
 
     public void attachGif(GifAttachment gif) {
         this.gif = gif;
+    }
+
+    public MusicAttachment getMusic() {
+        return music;
+    }
+
+    public void attachMusic(MusicAttachment music) {
+        this.music = music;
+    }
+
+    /** Usuwa tresc i zalaczniki; zostaje slad z data. Drugie usuniecie niczego nie zmienia. */
+    public void delete(LocalDateTime now) {
+        if (deletedAt != null) {
+            return;
+        }
+        content = "";
+        gif = null;
+        music = null;
+        deletedAt = now;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
     }
 }

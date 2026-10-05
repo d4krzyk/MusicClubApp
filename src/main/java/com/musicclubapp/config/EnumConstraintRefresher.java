@@ -101,7 +101,9 @@ public class EnumConstraintRefresher implements ApplicationRunner {
         new EnumColumn("clan_titles", "metric", ClanActivityMetric.class),
         new EnumColumn("profile_prompts", "prompt", com.musicclubapp.entity.ProfilePrompt.class),
         new EnumColumn("discover_swipes", "decision", com.musicclubapp.entity.SwipeDecision.class),
-        new EnumColumn("users", "card_visibility", com.musicclubapp.entity.CardVisibility.class)
+        new EnumColumn("users", "card_visibility", com.musicclubapp.entity.CardVisibility.class),
+        new EnumColumn("clan_messages", "music_kind", MusicKind.class),
+        new EnumColumn("clan_messages", "music_provider", MusicProvider.class)
     );
 
     /** Kolumny objete odswiezaniem, jako "tabela.kolumna". */

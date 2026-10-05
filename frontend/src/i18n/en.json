@@ -480,7 +480,13 @@
     "conversationDeleted": "Conversation deleted",
     "deleteConversationFailed": "Could not delete the conversation",
     "attachGif": "Add a GIF",
-    "gifPreview": "GIF"
+    "gifPreview": "GIF",
+    "messageDeleted": "Message deleted",
+    "deleteMessage": "Delete message",
+    "deleteMessageConfirm": "Delete this message? It disappears for everyone and leaves a “Message deleted” note in the conversation.",
+    "deleteMessageFailed": "Could not delete the message",
+    "playVideo": "Play video: {{title}}",
+    "youtube": "YouTube"
   },
   "reports": {
     "report": "Report",

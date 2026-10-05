@@ -21,7 +21,8 @@ i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i 
 z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie klanu (V16), karta profilu
 (galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i ikona
 obejmujących się osób zamiast serduszek, wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie — oraz
-animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu — wszyscy / znajomi / tylko Poznawaj (V18).
+animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu — wszyscy / znajomi / tylko Poznawaj (V18),
+usuwanie własnych wiadomości i podgląd linków w czacie (V19).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -606,6 +607,34 @@ Te same pięć kolumn `gif_*` co w komentarzach i wiadomościach, w `clan_messag
 i ten sam walidator co wiadomości (`MessageHasContent` z własnym komunikatem `validation.clanMessage.empty` — walidator
 bierze komunikat z adnotacji); sam GIF = `content` `""`. Cytat odpowiedzi ma `gif: true`, a przeglądarka pisze wtedy
 „GIF”. Eksport ma `gif` przy wiadomościach klanu. Push z czatu bez zmian (bez treści).
+
+## Usuwanie wiadomości i linki w czacie (V19)
+
+- **Usuwanie = ślad, nie dziura.** `messages.deleted_at`, `clan_messages.deleted_at`: treść, GIF i nagranie czyszczone od
+  razu, wiersz zostaje i obie strony widzą „Wiadomość usunięta” (przerywana ramka, bez gradientu marki). W rozmowie
+  usuwa tylko nadawca (`DELETE /api/messages/{id}`; cudza, nieistniejąca albo z rozmowy skasowanej u siebie = 404,
+  wolno też z zakazem pisania), w klanie jak dotąd autor, zarząd i administrator aplikacji — tylko że zamiast kasować
+  wiersz (`ClanChatService.delete`), zostawia ślad i kasuje reakcje. Na usuniętą nie odpowiesz i nie zareagujesz (404).
+- **Druga strona dostaje usunięcia przy odpytywaniu**: rozmowa — `sync?changedSince=` (czas serwera z poprzedniej
+  odpowiedzi, pole `serverTime`) → `deletedIds`; klan — `GET /chat/changes?since=`. Zapytanie bierze 30 s zapasu
+  (`ZAPAS_USUNIEC`): usunięcie zatwierdzone tuż po odczytaniu zegaru przez poprzednie odpytanie ma datę sprzed tego
+  odczytu. Powtórki nic nie psują.
+- **Usunięte nie liczą się nigdzie**: nieprzeczytane (rozmowy, licznik klanu, `toNotify` dla pushy), ranking klanu
+  (`ClanActivityCounter`), aktywność w przeglądarce klanów, eksport danych, dowód w zgłoszeniu rozmowy. Nowa kwerenda
+  na wiadomościach ma pamiętać o `deletedAt IS NULL`, jeśli coś liczy.
+- **Linki w treści**: `MusicLinkParser.findInChat` — wszystko to, co `parse`, plus **zwykły YouTube** (`watch?v=`,
+  `youtu.be/`, `/shorts/`, `/live/`; tylko w czacie — w postach muzyka zostaje muzyką). Link w treści dostaje kartę
+  z tytułem i miniaturą z oEmbed; nagranie z przycisku ma pierwszeństwo. Czat klanu dostał te same sześć kolumn
+  `music_*` (`@Embeddable MusicAttachment`, CHECK-i w `EnumConstraintRefresher`). Przeglądarka robi z adresów http(s)
+  odnośniki (`TekstWiadomosci`, `utils/linki.js` — tylko elementy Reacta, żadnego HTML-a; adres skrócony, pełny
+  w podpowiedzi), a gdy cała treść to sam link z kartą — pokazuje samą kartę.
+- **Kadrowanie YouTube** (`MusicCard`): dymek dopasowuje się do treści, więc odtwarzacz z „100%” zwijał się do szerokości
+  podpisu — zmierzone 104×59 px. Teraz karta i odtwarzacz mają własną szerokość (`20rem`, najwyżej cały dymek):
+  258×145 na komputerze, 289×162 przy 390 px. Miniatura z oEmbed to 480×360 z czarnymi pasami — kadr 16:9
+  z `object-fit: cover` ucina dokładnie pasy (wcześniej kwadrat 36 px). Po kliknięciu film startuje sam (`autoplay=1`).
+- **Pułapki z tej rundy**: szuflada czatu na telefonie wjeżdża z animacją — pomiar położenia od razu po otwarciu dawał
+  kartę „poza oknem”; mierzyć po animacji. Test, w którym osoba odpowiada na wiadomość, ma zerowy licznik
+  nieprzeczytanych (wysłanie przesuwa znacznik „przeczytane”).
 
 ## Karta profilu i tryb Poznawaj (V17)
 

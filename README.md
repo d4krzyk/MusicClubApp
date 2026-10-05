@@ -212,7 +212,7 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V18 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V19 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
@@ -261,8 +261,8 @@ frontend/                          # React + Vite (PWA)
 | GET | `/api/messages/conversations` | wszyscy znajomi z ostatnią wiadomością i licznikiem |
 | GET | `/api/messages/unread-count` | liczba nieprzeczytanych (to ona wisi przy ikonie czatu) |
 | GET | `/api/messages/with/{username}` | historia rozmowy, od najnowszej |
-| POST | `/api/messages/with/{username}` | wysłanie wiadomości (tekst i/albo nagranie) |
-| GET | `/api/messages/with/{username}/sync?after=` | nowe wiadomości + „pisze" + obecność, jedną odpowiedzią |
+| POST | `/api/messages/with/{username}` | wysłanie wiadomości (tekst i/albo nagranie; link do YouTube, Spotify albo Apple Music w treści dostaje podgląd z odtwarzaczem) |
+| GET | `/api/messages/with/{username}/sync?after=&changedSince=` | nowe wiadomości + „pisze" + obecność + numery wiadomości usuniętych od `changedSince` (czas serwera z poprzedniej odpowiedzi), jedną odpowiedzią |
 | POST | `/api/messages/with/{username}/read` | oznacza rozmowę jako przeczytaną |
 | POST | `/api/messages/with/{username}/typing` | sygnał „właśnie piszę" (żyje 5 s, w pamięci) |
 | POST | `/api/reports/on/{username}` | zgłasza użytkownika (powód, kontekst, opis) |
@@ -270,6 +270,8 @@ frontend/                          # React + Vite (PWA)
 | DELETE | `/api/profile` | kasuje **własne konto** — wymaga hasła w treści |
 | DELETE | `/api/profile/posts` | kasuje **wszystkie własne posty** — wymaga hasła w treści |
 | DELETE | `/api/messages/with/{username}` | usuwa rozmowę **tylko u siebie** |
+| DELETE | `/api/messages/{id}` | usuwa **moją** wiadomość u obu stron — zostaje ślad „wiadomość usunięta” |
+| GET | `/api/clans/{id}/chat/changes?since=` | zmiany w czacie klanu od podanego czasu serwera (numery usuniętych wiadomości) |
 | GET | `/api/reports/admin?status=` | lista zgłoszeń — **tylko administrator** |
 | GET | `/api/reports/admin/{id}` | jedno zgłoszenie z migawką dowodów |
 | GET | `/api/reports/admin/open-count` | ile czeka na decyzję (liczba przy ikonie) |

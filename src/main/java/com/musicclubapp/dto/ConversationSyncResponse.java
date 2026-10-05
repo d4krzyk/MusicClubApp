@@ -9,6 +9,10 @@ public record ConversationSyncResponse(
     PresenceResponse presence,
     long unread,
     Long lastReadOutgoingId,
-    boolean friend
+    boolean friend,
+    /** Wiadomosci tej rozmowy usuniete od czasu podanego w zapytaniu - przegladarka podmienia je na "usunieta". */
+    List<Long> deletedIds,
+    /** Czas serwera - przegladarka odsyla go przy nastepnym odpytaniu jako "zmiany od". */
+    java.time.LocalDateTime serverTime
 ) {
 }

@@ -51,17 +51,23 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     @Query("""
            SELECT COUNT(m) FROM ClanMessage m
            WHERE m.clan.id = :clanId AND m.id > :readId AND m.sender.id <> :userId AND m.sender.id NOT IN :hidden
+             AND m.deletedAt IS NULL
            """)
     long unread(@Param("clanId") Long clanId, @Param("readId") long readId, @Param("userId") Long userId,
                 @Param("hidden") Collection<Long> hidden);
 
     /** Ile wiadomosci napisano w tym klanie od podanej chwili. */
-    @Query("SELECT COUNT(m) FROM ClanMessage m WHERE m.clan.id = :clanId AND m.createdAt >= :since")
+    @Query("SELECT COUNT(m) FROM ClanMessage m WHERE m.clan.id = :clanId AND m.createdAt >= :since AND m.deletedAt IS NULL")
     long countSince(@Param("clanId") Long clanId, @Param("since") java.time.LocalDateTime since);
 
     /** Ile wiadomosci napisano w kazdym klanie od podanej chwili - poziom aktywnosci w przegladarce klanow. */
-    @Query("SELECT m.clan.id AS clanId, COUNT(m) AS total FROM ClanMessage m WHERE m.createdAt >= :since GROUP BY m.clan.id")
+    @Query("SELECT m.clan.id AS clanId, COUNT(m) AS total FROM ClanMessage m WHERE m.createdAt >= :since AND m.deletedAt IS NULL"
+        + " GROUP BY m.clan.id")
     List<ClanCountRow> countsSince(@Param("since") java.time.LocalDateTime since);
+
+    /** Numery wiadomosci klanu usunietych po podanej chwili - do odswiezania otwartego czatu. */
+    @Query("SELECT m.id FROM ClanMessage m WHERE m.clan.id = :clanId AND m.deletedAt > :since")
+    List<Long> deletedSince(@Param("clanId") Long clanId, @Param("since") java.time.LocalDateTime since);
 
     @Modifying
     @Query("DELETE FROM ClanMessage m WHERE m.clan.id = :clanId")
@@ -71,7 +77,7 @@ public interface ClanMessageRepository extends JpaRepository<ClanMessage, Long> 
     @Query("DELETE FROM ClanMessage m WHERE m.sender.id = :userId")
     void deleteBySenderId(@Param("userId") Long userId);
 
-    /** Wiadomosci na czatach klanow napisane przez te osobe. */
-    @Query("SELECT m FROM ClanMessage m JOIN FETCH m.clan WHERE m.sender.id = :userId ORDER BY m.id")
+    /** Wiadomosci na czatach klanow napisane przez te osobe (bez usunietych - nie ma w nich juz tresci). */
+    @Query("SELECT m FROM ClanMessage m JOIN FETCH m.clan WHERE m.sender.id = :userId AND m.deletedAt IS NULL ORDER BY m.id")
     List<ClanMessage> writtenBy(@Param("userId") Long userId);
 }

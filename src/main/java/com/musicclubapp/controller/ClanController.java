@@ -227,6 +227,17 @@ public class ClanController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/chat/changes")
+    @Operation(summary = "Zmiany w juz wczytanych wiadomosciach od podanej chwili (czas serwera z poprzedniej odpowiedzi): usuniete")
+    public ResponseEntity<ClanChatService.ClanChatChanges> chatChanges(
+            @PathVariable Long id,
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime since,
+            Authentication auth) {
+        return ResponseEntity.ok(chat.changesSince(id, auth.getName(), since));
+    }
+
     @PostMapping("/{id}/chat/read")
     @Operation(summary = "Oznacza czat jako przeczytany do podanej wiadomosci wlacznie")
     public ResponseEntity<Void> markRead(@PathVariable Long id, @Valid @RequestBody ClanReadRequest payload,

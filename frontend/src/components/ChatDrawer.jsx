@@ -358,6 +358,9 @@ function preview(message, t) {
 
   const prefix = message.mine ? `${t('chat.you')}: ` : '';
 
+  if (message.deleted) {
+    return <span className="chat-row-nothing">{prefix}{t('chat.messageDeleted')}</span>;
+  }
   if (message.content) {
     return `${prefix}${message.content}`;
   }

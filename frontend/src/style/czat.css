@@ -534,10 +534,123 @@
   color: inherit;
 }
 
-/* Odtwarzacz w dymku nie ma marginesu gornego posta - jest ciasniej */
+/*
+   Odtwarzacz w dymku nie ma marginesu gornego posta - jest ciasniej. Szerokosc jest WLASNA (20rem, najwyzej caly
+   dymek): dymek dopasowuje sie do tresci, wiec "100%" liczone od dymka z krotkim tekstem dawalo film 104x59 px.
+*/
+.chat-player,
+.music-card.is-wideo {
+  width: 20rem;
+  max-width: 100%;
+}
+
 .chat-player {
   margin-top: .35rem;
   margin-bottom: 0;
+}
+
+/* --- Film z YouTube'a: kadr 16:9 z przyciskiem odtwarzania --------------- */
+
+.music-card.is-wideo {
+  flex-direction: column;
+  gap: 0;
+}
+
+/*
+   Miniatura z oEmbed ma 4:3 z czarnymi pasami u gory i u dolu (hqdefault 480x360). Kadr 16:9 z object-fit: cover
+   ucina dokladnie te pasy - kwadrat 36 px pokazywal je razem z polowa obrazu.
+*/
+.music-card-kadr {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 0;
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.music-card-kadr img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--mc-slow, .3s);
+}
+
+.music-card-kadr:hover img,
+.music-card-kadr:focus-visible img {
+  transform: scale(1.03);
+}
+
+.music-card-kadr-pusty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, .6);
+}
+
+.music-card-odtworz {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .62);
+  color: #fff;
+  transform: translate(-50%, -50%);
+  transition: transform .25s var(--mc-sprezyna, ease), background-color .2s;
+}
+
+.music-card-kadr:hover .music-card-odtworz,
+.music-card-kadr:focus-visible .music-card-odtworz {
+  background: #e11d48;
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.music-card-podpis {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.music-card-podpis .music-card-text {
+  flex: 1 1 auto;
+  padding: .35rem .5rem;
+}
+
+/* --- Linki w tresci i wiadomosc usunieta ---------------------------------- */
+
+.bubble-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.bubble-row:not(.is-mine) .bubble-link {
+  color: var(--bs-link-color);
+}
+
+/* Slad po usunietej wiadomosci: przygaszony, bez tla marki - zeby nie udawal tresci */
+.bubble.is-usunieta,
+.bubble-row.is-mine .bubble.is-usunieta {
+  background: transparent;
+  color: var(--bs-secondary-color);
+  border: 1px dashed var(--bs-border-color);
+}
+
+.bubble-usunieta {
+  margin: 0;
+  font-style: italic;
 }
 
 /* --- Pole pisania -------------------------------------------------------- */

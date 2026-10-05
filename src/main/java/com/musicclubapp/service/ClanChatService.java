@@ -11,12 +11,15 @@ import com.musicclubapp.entity.ClanEmoji;
 import com.musicclubapp.entity.ClanMember;
 import com.musicclubapp.entity.ClanMessage;
 import com.musicclubapp.entity.ClanMessageReaction;
+import com.musicclubapp.entity.MusicAttachment;
 import com.musicclubapp.entity.Role;
 import com.musicclubapp.entity.User;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.error.OperationNotAllowedException;
 import com.musicclubapp.gif.GifService;
 import com.musicclubapp.mapper.ClanMapper;
+import com.musicclubapp.music.MusicEmbed;
+import com.musicclubapp.music.MusicLinkParser;
 import com.musicclubapp.repository.ClanMemberRepository;
 import com.musicclubapp.repository.ClanMessageReactionRepository;
 import com.musicclubapp.repository.ClanMessageRepository;
@@ -70,12 +73,15 @@ public class ClanChatService {
     private final BlockService blocks;
     private final PushService push;
     private final GifService gifs;
+    private final MusicMetadataService musicMetadata;
     private final Clock clock;
 
     public ClanChatService(ClanMessageRepository messages, ClanMessageReactionRepository reactions,
                            ClanMemberRepository members, UserRepository users, ClanService clans,
-                           BlockService blocks, PushService push, GifService gifs, Clock clock) {
+                           BlockService blocks, PushService push, GifService gifs,
+                           MusicMetadataService musicMetadata, Clock clock) {
         this.gifs = gifs;
+        this.musicMetadata = musicMetadata;
         this.messages = messages;
         this.reactions = reactions;
         this.members = members;
@@ -144,7 +150,8 @@ public class ClanChatService {
         if (replyToId != null) {
             // Odpowiedziec mozna na wiadomosc z tego samego klanu, ktora nadawca widzi (nie od osoby z blokady)
             replyTo = messages.findById(replyToId)
-                .filter(m -> m.getClan().getId().equals(clanId) && !ukryci.contains(m.getSender().getId()))
+                .filter(m -> m.getClan().getId().equals(clanId) && !ukryci.contains(m.getSender().getId())
+                    && !m.isDeleted())
                 .orElseThrow(() -> new NoSuchElementFoundException("clan message", replyToId));
         }
         String tresc = content == null ? "" : content.strip();
@@ -154,6 +161,11 @@ public class ClanChatService {
         if (tresc.isEmpty() && nowa.getGif() == null) {
             throw OperationNotAllowedException.emptyClanMessage();
         }
+        // Link z YouTube'a, Spotify albo Apple Music w tresci dostaje podglad z odtwarzaczem - jak w rozmowach
+        MusicLinkParser.findInChat(tresc).ifPresent(link -> {
+            MusicMetadataService.Metadata opis = musicMetadata.fetch(link);
+            nowa.attachMusic(new MusicAttachment(link, opis.title(), opis.thumbnailUrl()));
+        });
         ClanMessage message = messages.save(nowa);
 
         // Kto pisze, ten widzial rozmowe - jego wlasne wiadomosci nie zostawiaja mu nieprzeczytanych
@@ -180,7 +192,10 @@ public class ClanChatService {
         }
     }
 
-    /** Usuwa autor wiadomosci, zalozyciel i administratorzy klanu oraz administrator aplikacji. */
+    /**
+     * Usuwa autor wiadomosci, zalozyciel i administratorzy klanu oraz administrator aplikacji. Zostaje slad
+     * "wiadomosc usunieta" (bez tresci, GIF-a, nagrania i reakcji), a pozostali dostaja to przy odpytywaniu.
+     */
     @Transactional
     public void delete(Long clanId, Long messageId, String username) {
         User user = user(username);
@@ -193,7 +208,24 @@ public class ClanChatService {
         }
         // Reakcje wprost - nie liczymy na kaskade bazy, gdy w tej samej sesji sa juz zapisane
         reactions.deleteByMessageId(messageId);
-        messages.delete(message);
+        message.delete(LocalDateTime.now(clock));
+    }
+
+    /** Zapas przy pytaniu o usuniete - patrz {@link MessageService#ZAPAS_USUNIEC}. */
+    static final java.time.Duration ZAPAS_USUNIEC = java.time.Duration.ofSeconds(30);
+
+    /** Zmiany od podanej chwili (czas serwera z poprzedniej odpowiedzi) - do odswiezania otwartego czatu. */
+    @Transactional(readOnly = true)
+    public ClanChatChanges changesSince(Long clanId, String viewerName, LocalDateTime since) {
+        User viewer = user(viewerName);
+        clans.requireAccess(viewer, clanId);
+        LocalDateTime teraz = LocalDateTime.now(clock);
+        List<Long> ids = since == null ? List.of() : messages.deletedSince(clanId, since.minus(ZAPAS_USUNIEC));
+        return new ClanChatChanges(ids, teraz);
+    }
+
+    /** Zmiany w wiadomosciach od podanej chwili (usuniete) i czas serwera do nastepnego pytania. */
+    public record ClanChatChanges(List<Long> deletedIds, LocalDateTime serverTime) {
     }
 
     /* ------------------------------------------------------------------ */
@@ -292,7 +324,8 @@ public class ClanChatService {
     private ClanMessage visibleMessage(Long clanId, Long messageId, User viewer) {
         List<Long> ukryci = blocks.hiddenForQuery(viewer.getId());
         return messages.findById(messageId)
-            .filter(m -> m.getClan().getId().equals(clanId) && !ukryci.contains(m.getSender().getId()))
+            .filter(m -> m.getClan().getId().equals(clanId) && !ukryci.contains(m.getSender().getId())
+                && !m.isDeleted())
             .orElseThrow(() -> new NoSuchElementFoundException("clan message", messageId));
     }
 
@@ -325,13 +358,24 @@ public class ClanChatService {
         if (cel != null && !ukryci.contains(cel.getSender().getId())) {
             String tresc = cel.getContent();
             podglad = new ClanReplyPreview(cel.getId(), cel.getSender().getUsername(),
-                tresc.length() > SKROT ? tresc.substring(0, SKROT - 1) + "…" : tresc, cel.getGif() != null);
+                tresc.length() > SKROT ? tresc.substring(0, SKROT - 1) + "…" : tresc, cel.getGif() != null,
+                cel.isDeleted());
         }
+        MusicAttachment n = m.getMusic();
+        boolean nagranie = n != null && n.getProvider() != null && n.getExternalId() != null;
         return new ClanMessageResponse(m.getId(), m.getSender().getUsername(),
             ClanMapper.avatarUrl(m.getSender()), m.getContent(),
             m.getGif() == null ? null : m.getGif().toView(), m.getCreatedAt(),
-            m.getSender().getId().equals(viewer.getId()), canDelete(m, viewer, clan),
-            cel == null ? null : cel.getId(), podglad, reakcje);
+            m.getSender().getId().equals(viewer.getId()), !m.isDeleted() && canDelete(m, viewer, clan),
+            cel == null ? null : cel.getId(), podglad, m.isDeleted() ? List.of() : reakcje,
+            nagranie ? MusicEmbed.embedUrl(n.getProvider(), n.getKind(), n.getExternalId(), n.getStartSeconds()) : null,
+            nagranie ? n.getProvider() : null,
+            nagranie ? n.getKind() : null,
+            nagranie ? n.getTitle() : null,
+            nagranie ? n.getThumbnailUrl() : null,
+            nagranie ? n.getStartSeconds() : null,
+            nagranie ? MusicEmbed.canonicalUrl(n.getProvider(), n.getKind(), n.getExternalId()) : null,
+            m.isDeleted());
     }
 
     private User user(String username) {

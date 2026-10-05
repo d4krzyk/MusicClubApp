@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
 import {
-  historia, nowsze, oznaczPrzeczytane, pisze, wyslij,
+  historia, nowsze, oznaczPrzeczytane, pisze, usunWiadomosc, wyslij,
 } from '../api/czat';
 import { useChat } from '../chat/ChatContext';
 import useGify from '../hooks/useGify';
@@ -11,8 +11,9 @@ import GifObrazek from './gif/GifObrazek';
 import GifPicker from './gif/GifPicker';
 import MusicCard from './MusicCard';
 import MusicPicker from './MusicPicker';
+import TekstWiadomosci from './TekstWiadomosci';
 import {
-  IconCross, IconGif, IconNote, IconSend,
+  IconCross, IconGif, IconNote, IconSend, IconTrash,
 } from './Icons';
 import { timeAgo } from '../utils/dates';
 import { linkError } from '../utils/musicLinks';
@@ -75,6 +76,8 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
   }, [onPresence, onRead]);
   /* Ostatni znany identyfikator trzymamy TAKZE w ref, a nie tylko w stanie. */
   const lastId = useRef(null);
+  /* Czas serwera z ostatniego odpytania - od niego serwer liczy usuniete wiadomosci. */
+  const czasSerwera = useRef(null);
 
   /* ---------------------------------------------------------------- */
   /*  Historia                                                         */
@@ -86,6 +89,7 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     setLoading(true);
     setMessages([]);
     lastId.current = null;
+    czasSerwera.current = null;
 
     historia(username, 0, PAGE_SIZE)
       .then((data) => {
@@ -141,7 +145,16 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
 
   const sync = useCallback(async () => {
     try {
-      const data = await nowsze(username, lastId.current);
+      const data = await nowsze(username, lastId.current, czasSerwera.current);
+      czasSerwera.current = data.serverTime ?? czasSerwera.current;
+
+      // Usuniete u drugiej strony (albo w innej karcie) - zostaje slad
+      if (data.deletedIds?.length) {
+        const usuniete = new Set(data.deletedIds);
+        setMessages((current) => (current.some((m) => usuniete.has(m.id) && !m.deleted)
+          ? current.map((m) => (usuniete.has(m.id) ? jakoUsunieta(m) : m))
+          : current));
+      }
 
       setPartnerTyping(data.partnerTyping);
       setCanWrite(data.friend);
@@ -266,6 +279,19 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
     }
   }
 
+  async function usun(message) {
+    if (!window.confirm(t('chat.deleteMessageConfirm'))) {
+      return;
+    }
+    setError(null);
+    try {
+      const data = await usunWiadomosc(message.id);
+      setMessages((current) => current.map((m) => (m.id === message.id ? { ...m, ...data } : m)));
+    } catch {
+      setError(t('chat.deleteMessageFailed'));
+    }
+  }
+
   /** Enter wysyla, Shift+Enter przechodzi do nowej linii. */
   function onKeyDown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -315,15 +341,27 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
               </span>
             )}
 
-            <div className="bubble">
-              {message.content && <p className="bubble-text">{message.content}</p>}
-              <GifObrazek gif={message.gif} />
-              {message.musicEmbedUrl && <MusicCard message={message} />}
+            <div className={`bubble${message.deleted ? ' is-usunieta' : ''}`}>
+              {message.deleted ? (
+                <p className="bubble-usunieta">{t('chat.messageDeleted')}</p>
+              ) : (
+                <>
+                  <TekstWiadomosci tekst={message.content} ukryjSamLink={Boolean(message.musicEmbedUrl)} />
+                  <GifObrazek gif={message.gif} />
+                  {message.musicEmbedUrl && <MusicCard message={message} />}
+                </>
+              )}
 
               <span className="bubble-time">
                 {timeAgo(message.createdAt, i18n.language)}
                 {/* Ptaszek widzi tylko nadawca - odbiorcy nic by nie mowil */}
-                {message.mine && message.read && ' · ✓✓'}
+                {message.mine && message.read && !message.deleted && ' · ✓✓'}
+                {message.mine && !message.deleted && (
+                  <button type="button" className="klan-akcja czat-usun" onClick={() => usun(message)}
+                    aria-label={t('chat.deleteMessage')} title={t('chat.deleteMessage')}>
+                    <IconTrash size={11} />
+                  </button>
+                )}
               </span>
             </div>
           </div>
@@ -440,6 +478,13 @@ export default function ChatThread({ username, avatarUrl, friend = true, onPrese
       )}
     </div>
   );
+}
+
+/** Slad po usunietej wiadomosci - to samo, co oddaje serwer (bez tresci i zalacznikow). */
+function jakoUsunieta(m) {
+  return {
+    ...m, deleted: true, content: null, gif: null, musicEmbedUrl: null, musicTitle: null, musicThumbnailUrl: null,
+  };
 }
 
 /** Czy ta wiadomosc zaczyna nowa serie od tej samej osoby. */

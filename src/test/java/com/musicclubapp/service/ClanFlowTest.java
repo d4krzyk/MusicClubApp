@@ -419,8 +419,14 @@ class ClanFlowTest {
         wyslij("PUT", "cl_cyd", "/api/blocks/cl_ala", null).andExpect(status().isNoContent());
         em.flush();
         em.clear();
-        get_("cl_cyd", "/api/clans/" + id + "/chat").andExpect(jsonPath("$.length()").value(0));
-        get_("cl_bob", "/api/clans/" + id + "/chat").andExpect(jsonPath("$.length()").value(2));
+        // Usunieta wiadomosc Boba zostaje jako slad (bez tresci) - Ali u Cyda nie widac wcale
+        get_("cl_cyd", "/api/clans/" + id + "/chat").andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value(wiadomoscBoba))
+            .andExpect(jsonPath("$[0].deleted").value(true))
+            .andExpect(jsonPath("$[0].content").value(""));
+        // Bob widzi obie wiadomosci Ali i slad po swojej
+        get_("cl_bob", "/api/clans/" + id + "/chat").andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[?(@.deleted == true)].id").value(org.hamcrest.Matchers.contains((int) wiadomoscBoba)));
     }
 
     @Test

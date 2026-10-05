@@ -19,6 +19,16 @@ public record ClanMessageResponse(
     Long replyToId,
     /** Skrot tamtej wiadomosci; null, gdy nie ma odpowiedzi albo tamtej nie widac (np. blokada). */
     ClanReplyPreview replyTo,
-    List<ClanReactionCount> reactions
+    List<ClanReactionCount> reactions,
+    /** Nagranie rozpoznane w tresci - te same pola co w rozmowach ({@link MessageResponse}); bez nagrania null. */
+    String musicEmbedUrl,
+    com.musicclubapp.music.MusicProvider musicProvider,
+    com.musicclubapp.music.MusicKind musicKind,
+    String musicTitle,
+    String musicThumbnailUrl,
+    Integer musicStartSeconds,
+    String musicUrl,
+    /** Wiadomosc usunieta - zostaje slad bez tresci. */
+    boolean deleted
 ) {
 }

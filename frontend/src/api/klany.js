@@ -106,6 +106,15 @@ export async function usunWiadomosc(id, idWiadomosci) {
   await client.delete(`/clans/${id}/chat/${idWiadomosci}`);
 }
 
+/**
+ * Wiadomosci usuniete od podanej chwili ({ deletedIds, serverTime }). Bez "od" - tylko czas serwera, od ktorego
+ * zaczniemy pytac.
+ */
+export async function usuniete(id, od = null) {
+  const { data } = await client.get(`/clans/${id}/chat/changes`, { params: od ? { since: od } : {} });
+  return data;
+}
+
 /** Ile nieprzeczytanych wiadomosci czeka na czacie mojego klanu ({ clanId, unread }). */
 export async function nieprzeczytane() {
   const { data } = await client.get('/clans/mine/unread');

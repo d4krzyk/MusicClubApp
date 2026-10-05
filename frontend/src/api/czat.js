@@ -19,11 +19,21 @@ export async function historia(login, strona, rozmiar) {
   return data;
 }
 
-/** Co nowego od czasu wiadomosci o podanym numerze. */
-export async function nowsze(login, poNumerze) {
-  const { data } = await client.get(`${rozmowaZ(login)}/sync`, {
-    params: poNumerze ? { after: poNumerze } : {},
-  });
+/**
+ * Co nowego od czasu wiadomosci o podanym numerze. {@code zmianyOd} - czas serwera z poprzedniej odpowiedzi:
+ * serwer odda wtedy tez numery wiadomosci usunietych od tej chwili.
+ */
+export async function nowsze(login, poNumerze, zmianyOd = null) {
+  const params = {};
+  if (poNumerze) params.after = poNumerze;
+  if (zmianyOd) params.changedSince = zmianyOd;
+  const { data } = await client.get(`${rozmowaZ(login)}/sync`, { params });
+  return data;
+}
+
+/** Usuwa moja wiadomosc u obu stron - serwer oddaje ja ze znacznikiem "deleted". */
+export async function usunWiadomosc(id) {
+  const { data } = await client.delete(`/messages/${id}`);
   return data;
 }
 

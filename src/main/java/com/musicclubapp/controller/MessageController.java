@@ -92,10 +92,25 @@ public class MessageController {
     public ResponseEntity<ConversationSyncResponse> sync(
             @PathVariable String username,
             @RequestParam(required = false) Long after,
+            @Parameter(description = "Czas serwera z poprzedniej odpowiedzi - oddamy wiadomosci usuniete od tej chwili")
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            java.time.LocalDateTime changedSince,
             Authentication authentication) {
 
         return ResponseEntity.ok(
-            messageService.sync(authentication.getName(), username, after));
+            messageService.sync(authentication.getName(), username, after, changedSince));
+    }
+
+    /** Usuwa wlasna wiadomosc u obu stron - zostaje slad "wiadomosc usunieta". */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Usuwa moja wiadomosc u obu stron (zostaje slad)")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Usunieta - wiadomosc ze znacznikiem deleted"),
+        @ApiResponse(responseCode = "404", description = "Nie ma takiej wiadomosci albo nie jest moja")
+    })
+    public ResponseEntity<MessageResponse> delete(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(messageService.delete(authentication.getName(), id));
     }
 
     @PostMapping("/with/{username}")

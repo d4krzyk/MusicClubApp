@@ -355,7 +355,7 @@ class ClanExtrasFlowTest {
             }
         }
 
-        // Ala kasuje oryginal - odpowiedz zostaje, bez cytatu
+        // Ala usuwa oryginal - odpowiedz zostaje, a cytat mowi "usunieta" (oryginal jest sladem bez tresci)
         wyslij("DELETE", "ce_ala", "/api/clans/" + klan + "/chat/" + oryginal, null).andExpect(status().isNoContent());
         em.flush();
         em.clear();
@@ -364,8 +364,13 @@ class ClanExtrasFlowTest {
         for (JsonNode m : potem) {
             if (m.get("id").asLong() == odp) {
                 jest = true;
-                assertThat(m.get("replyToId").isNull()).isTrue();
-                assertThat(m.get("replyTo").isNull()).isTrue();
+                assertThat(m.get("replyToId").asLong()).isEqualTo(oryginal);
+                assertThat(m.get("replyTo").get("deleted").asBoolean()).isTrue();
+                assertThat(m.get("replyTo").get("excerpt").asText()).isEmpty();
+            }
+            if (m.get("id").asLong() == oryginal) {
+                assertThat(m.get("deleted").asBoolean()).isTrue();
+                assertThat(m.get("content").asText()).isEmpty();
             }
         }
         assertThat(jest).isTrue();

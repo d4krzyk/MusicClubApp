@@ -91,7 +91,12 @@ public class MessageService {
             : request.content().trim();
 
         Message message = new Message(sender, recipient, content);
-        applyMusic(message, request.musicUrl(), request.musicStartSeconds());
+        if (request.musicUrl() == null || request.musicUrl().isBlank()) {
+            // Link wklejony w tresc (YouTube, Spotify, Apple Music) dostaje ten sam podglad co nagranie z przycisku
+            MusicLinkParser.findInChat(content).ifPresent(link -> applyMusic(message, link, null));
+        } else {
+            applyMusic(message, MusicLinkParser.parse(request.musicUrl()).orElse(null), request.musicStartSeconds());
+        }
         message.attachGif(gifs.attach(request.gif()));
 
         Message saved = messageRepository.save(message);
@@ -103,9 +108,7 @@ public class MessageService {
     }
 
     /** Podpina nagranie - razem z tytulem i miniaturka. */
-    private void applyMusic(Message message, String url, Integer startSeconds) {
-        ParsedMusicLink link = MusicLinkParser.parse(url).orElse(null);
-
+    private void applyMusic(Message message, ParsedMusicLink link, Integer startSeconds) {
         if (link == null) {
             message.applyMusic(null, null, null, null);
             return;
@@ -133,9 +136,36 @@ public class MessageService {
             .map(message -> messageMapper.toResponse(message, viewer));
     }
 
+    /**
+     * Usuwa wlasna wiadomosc u obu stron: tresc i zalaczniki znikaja, zostaje "wiadomosc usunieta". Cudza albo
+     * nieistniejaca = 404 (bez zdradzania, ze taka jest). Wolno takze z zakazem pisania - to sprzatanie, nie pisanie.
+     */
+    @Transactional
+    public MessageResponse delete(String me, Long messageId) {
+        User viewer = requireUser(me);
+        Message message = messageRepository.findById(messageId)
+            .filter(m -> m.getSender().getId().equals(viewer.getId()) && !m.isHiddenForSender())
+            .orElseThrow(() -> new NoSuchElementFoundException("message", messageId));
+        message.deleteForEveryone(LocalDateTime.now());
+        return messageMapper.toResponse(message, viewer);
+    }
+
     /** Co nowego w otwartej rozmowie - jednym zapytaniem. */
     @Transactional
     public ConversationSyncResponse sync(String me, String partnerUsername, Long afterId) {
+        return sync(me, partnerUsername, afterId, null);
+    }
+
+    /**
+     * Zapas przy pytaniu o usuniete wiadomosci: usuniecie zatwierdzone tuz po tym, jak poprzednie odpytanie odczytalo
+     * zegar, ma date sprzed tego odczytu - bez zapasu przegladarka by go nie dostala. Powtorki sa nieszkodliwe.
+     */
+    static final java.time.Duration ZAPAS_USUNIEC = java.time.Duration.ofSeconds(30);
+
+    /** Jak wyzej, a do tego numery wiadomosci usunietych od {@code changedSince} (czas serwera z poprzedniej odpowiedzi). */
+    @Transactional
+    public ConversationSyncResponse sync(String me, String partnerUsername, Long afterId, LocalDateTime changedSince) {
+        LocalDateTime teraz = LocalDateTime.now();
         User viewer = requireUser(me);
         User partner = requirePartner(viewer, partnerUsername);
 
@@ -156,13 +186,18 @@ public class MessageService {
                 viewer.getId(), partner.getId(), LocalDateTime.now());
         }
 
+        List<Long> usuniete = changedSince == null ? List.of()
+            : messageRepository.deletedSince(viewer.getId(), partner.getId(), changedSince.minus(ZAPAS_USUNIEC));
+
         return new ConversationSyncResponse(
             messages,
             typing.isTyping(partner.getId(), viewer.getId()),
             blocks.eitherWay(viewer.getId(), partner.getId()) ? presence.hidden() : presence.of(partner),
             messageRepository.countUnread(viewer.getId()),
             messageRepository.lastReadOutgoingId(viewer.getId(), partner.getId()),
-            canWriteTo(viewer, partner));
+            canWriteTo(viewer, partner),
+            usuniete,
+            teraz);
     }
 
     /** Oznacza cala rozmowe jako przeczytana. */

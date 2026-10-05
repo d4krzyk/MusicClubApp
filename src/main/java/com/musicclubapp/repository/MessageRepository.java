@@ -93,7 +93,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            SELECT new com.musicclubapp.repository.UnreadRow(m.sender.id, COUNT(m))
            FROM Message m
            WHERE m.recipient.id = :me AND m.readAt IS NULL
-             AND m.hiddenForRecipient = false
+             AND m.hiddenForRecipient = false AND m.deletedAt IS NULL
            GROUP BY m.sender.id
            """)
     List<UnreadRow> unreadBySender(@Param("me") Long me);
@@ -112,7 +112,7 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     @Query("""
            SELECT COUNT(m) FROM Message m
            WHERE m.recipient.id = :me AND m.readAt IS NULL
-             AND m.hiddenForRecipient = false
+             AND m.hiddenForRecipient = false AND m.deletedAt IS NULL
            """)
     long countUnread(@Param("me") Long me);
 
@@ -128,6 +128,19 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     int markConversationRead(@Param("me") Long me,
                              @Param("partner") Long partner,
                              @Param("now") LocalDateTime now);
+
+    /** Numery wiadomosci tej rozmowy usunietych po podanej chwili (widocznych dla {@code first}). */
+    @Query("""
+           SELECT m.id FROM Message m
+           WHERE ((m.sender.id = :first  AND m.recipient.id = :second)
+               OR (m.sender.id = :second AND m.recipient.id = :first))
+             AND m.deletedAt > :since
+             AND ((m.sender.id = :first AND m.hiddenForSender = false)
+               OR (m.recipient.id = :first AND m.hiddenForRecipient = false))
+           """)
+    List<Long> deletedSince(@Param("first") Long first,
+                            @Param("second") Long second,
+                            @Param("since") LocalDateTime since);
 
     /** Kasuje wszystkie wiadomosci danego konta - w obie strony. */
     @Modifying
@@ -164,12 +177,14 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     /**
      * Wszystkie wiadomosci tej osoby - wyslane i otrzymane - bez tych z rozmow, ktore skasowala
-     * u siebie (znaczniki hidden): kto skasowal rozmowe, nie chce jej dostac w pobranych danych.
+     * u siebie (znaczniki hidden): kto skasowal rozmowe, nie chce jej dostac w pobranych danych. Usuniete przez nadawce
+     * tez nie - nie ma w nich juz tresci.
      */
     @Query("""
            SELECT m FROM Message m JOIN FETCH m.sender JOIN FETCH m.recipient
-           WHERE (m.sender.id = :userId AND m.hiddenForSender = false)
-              OR (m.recipient.id = :userId AND m.hiddenForRecipient = false)
+           WHERE ((m.sender.id = :userId AND m.hiddenForSender = false)
+              OR (m.recipient.id = :userId AND m.hiddenForRecipient = false))
+             AND m.deletedAt IS NULL
            ORDER BY m.id
            """)
     List<Message> ofUser(@Param("userId") Long userId);

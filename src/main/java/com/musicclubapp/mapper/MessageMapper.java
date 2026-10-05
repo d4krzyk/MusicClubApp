@@ -28,7 +28,8 @@ public class MessageMapper {
             pageUrl(message),
             message.getCreatedAt(),
             sender.getId().equals(viewer.getId()),
-            message.isRead());
+            message.isRead(),
+            message.isDeleted());
     }
 
     private String avatarUrl(User user) {
