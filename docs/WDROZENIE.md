@@ -949,6 +949,23 @@ Przy edytorze zdjęć i plusiku zamiast serca (październik 2026, bez migracji, 
   Chromium) i zdjęć HEIC — przeglądarka bez obsługi HEIC pokaże „Użyj bez edycji”, a serwer i tak przyjmuje tylko
   JPEG/PNG/WebP/GIF.
 
+Przy animacjach i ikonie z dwiema rękami (październik 2026, bez migracji, bez zmian w backendzie):
+
+- ikona nowej znajomości: kilka wariantów drugiej ręki wyrenderowanych obok siebie, wybrany ten, w którym łuki
+  ∩ i ∪ są symetryczne, a ciało osoby z przodu nie jest „zjedzone”; przy powiększeniu wyszła **wada w masce**
+  (kształty w `<mask>` dziedziczyły `fill="currentColor"`, więc spod osoby z przodu wystawał pasek osoby z tyłu —
+  wcześniej przykryty, przy drugiej ręce widoczny) — poprawione jawnym `fill="#000"` i sprawdzone po pikselach;
+- Chromium na prawdziwym PostgreSQL (`ruch-e2e`, 39 sprawdzeń): piksele ikony (obie ręce, obie osoby, pięć przerw, w tym
+  miejsce dawnego paska), ręce rysują się (schowane → całe), plusik obraca się pod kursorem, kreski gustu zapalają się
+  po kolei; pigułka w przełącznikach tablicy, wydarzeń i znajomych — w trakcie jest **pomiędzy** opcjami, po animacji
+  dokładnie pod wybraną, a wybrana opcja nie ma już własnego tła; pyknięcia (ikona w pasku, reakcja, ikona w
+  przełączniku), licznik zaproszeń, karty wydarzeń i klanów wchodzą co 40 ms i po wejściu wszystkie są widoczne;
+  „ogranicz ruch” — karty widoczne od razu, pigułka przeskakuje od razu; brak przelewu na 320/360/390 px (Tablica,
+  Wydarzenia, Znajomi, Klany); zero błędów w konsoli. Wcześniejsze zestawy dalej zielone: edytor 93/93, podwójne
+  stuknięcia 6/6, Poznawaj (wszystko; skrypt dostał zatwierdzanie kolejki edytora przy zdjęciach karty);
+- **czego nie sprawdzono:** płynności na słabym telefonie (animacje są tylko na `transform`/`opacity`, ale klatki na
+  prawdziwym urządzeniu trzeba zobaczyć).
+
 ---
 
 ## Co dalej, żeby aplikacja trafiła na Google Play

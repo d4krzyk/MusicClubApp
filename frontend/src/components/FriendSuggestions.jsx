@@ -83,12 +83,12 @@ export default function FriendSuggestions({ refresh, onChange }) {
       )}
 
       <HorizontalStrip itemWidth={160}>
-        {people.map((o) => {
+        {people.map((o, i) => {
           const state = sent[o.username]
             ?? (o.alreadyFriend ? 'friends' : null);
 
           return (
-            <div key={o.username} className="suggestion-card">
+            <div key={o.username} className="suggestion-card mc-wejscie" style={{ '--i': i }}>
               <Link
                 to={`/profil/${o.username}`}
                 className="text-decoration-none text-body d-block text-center"

@@ -236,7 +236,7 @@ export default function Layout({ children }) {
 
                     {/* Na telefonie licznik zgloszen nie ma juz swojej ikony - siada na awatarze */}
                     {user.admin && openReports > 0 && (
-                      <span className="nav-badge konto-badge d-sm-none">{openReports}</span>
+                      <span key={openReports} className="nav-badge konto-badge d-sm-none">{openReports}</span>
                     )}
 
                     {/* Nieprzeczytane w klanie - sama kropka, liczba jest przy pozycji "Mój klan" */}
@@ -254,7 +254,7 @@ export default function Layout({ children }) {
                   <IconClan className="me-2" />
                   {t('menu.clan')}
                   {klanNowe > 0 && (
-                    <span className="klan-zakladka-licznik" aria-label={t('clans.unread', { count: klanNowe })}>
+                    <span key={klanNowe} className="klan-zakladka-licznik" aria-label={t('clans.unread', { count: klanNowe })}>
                       {klanNowe > 99 ? '99+' : klanNowe}
                     </span>
                   )}
@@ -354,7 +354,8 @@ function NavIcon({ to, end, label, badge = 0, onClick, className = '', children 
       {children}
 
       {/* Liczba oczekujacych zaproszen. */}
-      {badge > 0 && <span className="nav-badge">{badge}</span>}
+      {/* key = liczba: nowa liczba to nowy element, wiec licznik znowu wyskakuje (style/ruch.css) */}
+      {badge > 0 && <span key={badge} className="nav-badge">{badge}</span>}
     </Nav.Link>
   );
 }

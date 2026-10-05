@@ -212,8 +212,8 @@ function Section({ title, items, emptyText, canEdit, limitReached, kind, onAdd, 
       {/* Pasek poziomy zamiast zawijanej siatki. */}
       {items.length > 0 && (
         <HorizontalStrip className="mb-2" itemWidth={132}>
-          {items.map((p) => (
-            <div key={p.externalId} className="favorite-card">
+          {items.map((p, i) => (
+            <div key={p.externalId} className="favorite-card mc-wejscie" style={{ '--i': i }}>
               <Cover url={p.imageUrl} caption={p.name ?? p.title} />
 
               <div className="favorite-caption">

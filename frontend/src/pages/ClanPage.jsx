@@ -158,7 +158,7 @@ function Klan({ klan, ostrzezenie, onOstrzezenie, zakladka, onZakladka, onZmiana
   ].filter(Boolean);
 
   return (
-    <div className="klan-strona mx-auto" style={{ '--klan': klan.colorHex }}>
+    <div className="klan-strona mx-auto tiles-in" style={{ '--klan': klan.colorHex }}>
       <header className="klan-naglowek">
         <div className="klan-zdjecie">{klan.photoUrl && <img src={klan.photoUrl} alt="" />}</div>
         <div className="klan-nagl-cialo">
@@ -344,7 +344,7 @@ function BezKlanu({ zaproszenia, prosby, onZmiana, onZalozony }) {
   }
 
   return (
-    <div className="klan-strona mx-auto">
+    <div className="klan-strona mx-auto tiles-in">
       <div className="d-flex align-items-center flex-wrap gap-2 mb-3">
         <h1 className="h4 mb-0 me-auto">{t('clans.title')}</h1>
         <Link to="/klany" className="btn btn-primary btn-sm">

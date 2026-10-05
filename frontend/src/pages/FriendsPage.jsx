@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Card from 'react-bootstrap/Card';
@@ -17,6 +17,7 @@ import FriendSuggestions from '../components/FriendSuggestions';
 import { IconCards, IconCross, IconList, IconPersonCheck, IconPersonPlus } from '../components/Icons';
 import TrybPoznawaj from '../components/poznawaj/TrybPoznawaj';
 import { formatDate } from '../utils/dates';
+import useWskaznik from '../hooks/useWskaznik';
 
 /** Zapamietany tryb zakladki - kto przeglada karty, wraca do kart. */
 const KLUCZ_TRYBU = 'znajomi.tryb';
@@ -38,6 +39,8 @@ export default function FriendsPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const tryb = params.get('tryb') ?? zapamietanyTryb();
+  const tryby = useRef(null);
+  useWskaznik(tryby, tryb);
 
   function przelacz(nowy) {
     try {
@@ -53,7 +56,7 @@ export default function FriendsPage() {
       <Col lg={tryb === 'poznawaj' ? 10 : 8} xl={tryb === 'poznawaj' ? 9 : 8} className="tiles-in">
         <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
           <h1 className="h4 mb-0">{t('friends.title')}</h1>
-          <div className="znajomi-tryby" role="tablist" aria-label={t('discover.modes')}>
+          <div ref={tryby} className="znajomi-tryby" role="tablist" aria-label={t('discover.modes')}>
             <button type="button" role="tab" id="tryb-lista" aria-selected={tryb === 'lista'}
               aria-controls="tryb-panel" className={tryb === 'lista' ? 'is-aktywny' : ''} onClick={() => przelacz('lista')}>
               <IconList size={14} /> {t('discover.tabList')}

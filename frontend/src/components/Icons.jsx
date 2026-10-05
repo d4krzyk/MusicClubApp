@@ -419,38 +419,57 @@ export function IconSmile(props) {
 }
 
 /*
- * Dwie osoby, jedna obejmuje druga ramieniem - nowa znajomosc w Poznawaj. W Bootstrap Icons takiej nie ma,
+ * Dwie osoby, ktore sie obejmuja - nowa znajomosc w Poznawaj. Obie wyciagaja reke: ta z przodu kladzie ramie
+ * na barkach drugiej (luk w gore), ta z tylu obejmuje ja w pasie (luk w dol). W Bootstrap Icons takiej ikony nie ma,
  * wiec jest narysowana w tym samym stylu (pelne ksztalty, siatka 16x16, zaokraglony dol jak w "people-fill").
- * Odstepy miedzy nakladajacymi sie ksztaltami to wyciecia (maska), a nie kreski w kolorze tla - ikona lezy na
- * gradiencie, wiec kreska "w kolorze tla" bylaby widoczna. Kazda ikona ma wlasne id maski (useId), bo dwie
- * ikony na jednej stronie z tym samym id dzielilyby maske.
+ *
+ * Odstepy miedzy nakladajacymi sie ksztaltami to wyciecia maska, a nie kreski w kolorze tla - ikona lezy na
+ * gradiencie, wiec kreska "w kolorze tla" bylaby widoczna. Ksztalty w masce maja jawne fill="#000": bez tego
+ * dziedzicza fill="currentColor" z <svg>, w masce wychodza biale (= widoczne) i spod osoby z przodu
+ * wystaje pasek osoby z tylu. Kazda ikona ma wlasne id maski (useId), bo dwie ikony z tym samym id dzielilyby maske.
  */
-const HUG_GLOWA_L = [5.4, 5.2, 2.25];
-const HUG_GLOWA_P = [10.9, 4.8, 2.3];
-const HUG_CIALO_L = 'M0.8 13.5V12.6C0.8 10.4 2.6 8.8 5 8.8S9.2 10.4 9.2 12.6V13.5a1 1 0 0 1-1 1H1.8a1 1 0 0 1-1-1Z';
-const HUG_CIALO_P = 'M8.3 13.5V12.6C8.3 10.4 9.7 8.8 11.7 8.8S15.2 10.4 15.2 12.6V13.5a1 1 0 0 1-1 1H9.3a1 1 0 0 1-1-1Z';
-const HUG_RAMIE = 'M2.1 10.4C4.4 8.4 7.6 8.2 10.6 9.6';
+const HUG_GLOWA_L = [5.4, 3.6, 2.2];
+const HUG_GLOWA_P = [10.9, 3.2, 2.25];
+const HUG_CIALO_L = 'M0.8 14V11C0.8 8.8 2.6 7.2 5 7.2S9.2 8.8 9.2 11V14a1 1 0 0 1-1 1H1.8a1 1 0 0 1-1-1Z';
+const HUG_CIALO_P = 'M8.3 14V11C8.3 8.8 9.62 7.2 11.7 7.2S15.2 8.8 15.2 11V14a1 1 0 0 1-1 1H9.3a1 1 0 0 1-1-1Z';
+/** Reka osoby z przodu na barkach osoby z tylu. */
+const HUG_RAMIE_GORA = 'M2.1 8.8C4.4 6.8 7.6 6.6 11 8.1';
+/** Reka osoby z tylu wokol pasa osoby z przodu. */
+const HUG_RAMIE_DOL = 'M7 11C9.2 13 12.2 13 14.1 10.8';
 
 export function IconHug(props) {
-  const maska = `przytulas-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const tyl = `przytulas-tyl-${id}`;
+  const przod = `przytulas-przod-${id}`;
   return (
     <Svg {...props}>
       <defs>
-        <mask id={maska} maskUnits="userSpaceOnUse" x="0" y="0" width="16" height="16">
-          <rect width="16" height="16" fill="#fff" />
-          <path d={HUG_CIALO_P} stroke="#000" strokeWidth="1.5" strokeLinejoin="round" />
-          <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} stroke="#000" strokeWidth="1.5" />
-          <path d={HUG_RAMIE} fill="none" stroke="#000" strokeWidth="3.7" strokeLinecap="round" />
+        {/* Osoba z tylu: wycieta tam, gdzie zaslania ja ta z przodu i jej reka na barkach */}
+        <mask id={tyl} maskUnits="userSpaceOnUse" x="-1" y="-1" width="18" height="18">
+          <rect x="-1" y="-1" width="18" height="18" fill="#fff" />
+          <path d={HUG_CIALO_P} fill="#000" stroke="#000" strokeWidth="1.5" strokeLinejoin="round" />
+          <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} fill="#000" stroke="#000" strokeWidth="1.5" />
+          <path d={HUG_RAMIE_GORA} fill="none" stroke="#000" strokeWidth="3.2" strokeLinecap="round" />
+        </mask>
+        {/* Osoba z przodu: wycieta wokol reki, ktora obejmuje ja w pasie */}
+        <mask id={przod} maskUnits="userSpaceOnUse" x="-1" y="-1" width="18" height="18">
+          <rect x="-1" y="-1" width="18" height="18" fill="#fff" />
+          <path d={HUG_RAMIE_DOL} fill="none" stroke="#000" strokeWidth="2.9" strokeLinecap="round" />
         </mask>
       </defs>
-      {/* Osoba z tylu - wycieta tam, gdzie zaslania ja ta z przodu i obejmujace ramie */}
-      <g mask={`url(#${maska})`}>
+      <g mask={`url(#${tyl})`}>
         <circle cx={HUG_GLOWA_L[0]} cy={HUG_GLOWA_L[1]} r={HUG_GLOWA_L[2]} />
         <path d={HUG_CIALO_L} />
       </g>
-      <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} />
-      <path d={HUG_CIALO_P} />
-      <path d={HUG_RAMIE} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <g mask={`url(#${przod})`}>
+        <circle cx={HUG_GLOWA_P[0]} cy={HUG_GLOWA_P[1]} r={HUG_GLOWA_P[2]} />
+        <path d={HUG_CIALO_P} />
+      </g>
+      {/* pathLength=1: animacja rysowania rak (style/ruch.css) liczy w ulamkach dlugosci */}
+      <path className="ikona-reka is-gora" d={HUG_RAMIE_GORA} pathLength="1" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" />
+      <path className="ikona-reka is-dol" d={HUG_RAMIE_DOL} pathLength="1" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" />
     </Svg>
   );
 }

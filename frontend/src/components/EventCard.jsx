@@ -12,7 +12,7 @@ import {
  * Cala karta jest odnosnikiem - na telefonie trafienie palcem w maly
  * napis "szczegoly" byloby loteria.
  */
-export default function EventCard({ wydarzenie, pokazPowody = false }) {
+export default function EventCard({ wydarzenie, pokazPowody = false, indeks = 0 }) {
   const { t, i18n } = useTranslation();
   const { dzien, miesiac } = plakietka(wydarzenie.date, i18n.language);
   const miasto = nazwaMiasta(wydarzenie.cityKey, wydarzenie.city, i18n.language);
@@ -29,7 +29,8 @@ export default function EventCard({ wydarzenie, pokazPowody = false }) {
   return (
     <Link
       to={`/wydarzenia/${wydarzenie.id}`}
-      className={`wydarzenie-karta${odwolane ? ' is-odwolane' : ''}`}
+      className={`wydarzenie-karta mc-wejscie${odwolane ? ' is-odwolane' : ''}`}
+      style={{ '--i': indeks }}
     >
       <div className="wydarzenie-zdjecie">
         {wydarzenie.thumbUrl ? (

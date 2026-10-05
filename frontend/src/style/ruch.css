@@ -1,0 +1,240 @@
+/* =========================================================================
+   RUCH - animacje elementow i zdarzen
+
+   Jedno miejsce na animacje dodane, zeby aplikacja "zyla": wejscia list,
+   przesuwany wskaznik w przelacznikach, pykniecie ikony po wybraniu,
+   liczniki, ktore wyskakuja, rece rysujace sie na ekranie nowej znajomosci.
+
+   Zasady:
+   - tylko transform i opacity (nie przesuwaja ukladu i nie zmuszaja
+     przegladarki do przeliczania strony w kazdej klatce);
+   - krotko: 0,2-0,5 s; nic, co trzeba przeczekac, zanim da sie kliknac;
+   - jedna rodzina krzywych (--mc-ease, --mc-sprezyna) - te same ruchy w calej
+     aplikacji, a nie kazdy przycisk po swojemu;
+   - "ogranicz ruch" w systemie wylacza wszystko regula na poczatku
+     podstawy2.css (czas i opoznienie do zera, wiec nic nie czeka niewidoczne).
+   ========================================================================= */
+
+:root {
+  /* Lekkie przestrzelenie i powrot - do pykniec i liczników */
+  --mc-sprezyna: cubic-bezier(.34, 1.56, .64, 1);
+  /* Przesuwanie wskaznika: szybki start, miekkie hamowanie, bez przestrzelenia */
+  --mc-plynnie: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* --- Wejscie elementow listy, po kolei ------------------------------------ */
+
+/*
+   Kazdy element listy dostaje --i (numer); kolejne wchodza co 40 ms. Opoznienie
+   jest przyciete do 10 krokow - przy doladowaniu 20 kolejnych kart ostatnia
+   nie moze czekac sekundy niewidoczna.
+*/
+.mc-wejscie {
+  animation: fade-in-up .4s var(--mc-ease) backwards;
+  animation-delay: calc(min(var(--i, 0), 10) * 40ms);
+}
+
+/*
+   W poziomych paskach przewijania (propozycje znajomych, ulubieni) karta nie
+   moze zjezdzac w dol: pasek ma overflow, wiec przesuniety kafelek na chwile
+   powiekszalby obszar przewijania. Tam wchodzi przez lekkie pomniejszenie -
+   pomniejszony kafelek miesci sie w swoim miejscu.
+*/
+@keyframes wejscie-skala {
+  from { opacity: 0; transform: scale(.94); }
+  to { opacity: 1; transform: none; }
+}
+
+.strip-track > .mc-wejscie {
+  animation-name: wejscie-skala;
+}
+
+/* Komentarze i wiersze powiadomien - te same, tylko krocej */
+.komentarz {
+  animation: fade-in-up .3s var(--mc-ease) backwards;
+}
+
+.bell-item-row {
+  animation: fade-in-up .26s var(--mc-ease) backwards;
+  animation-delay: calc(min(var(--i, 0), 8) * 30ms);
+}
+
+/* --- Przesuwany wskaznik w przelacznikach --------------------------------- */
+
+/*
+   Pigulka pod wybrana opcja (hooks/useWskaznik.js mierzy opcje i ustawia
+   zmienne). Dopiero gdy jest pigulka, sama opcja traci tlo - bez niej
+   przelacznik wyglada jak dawniej.
+*/
+.ma-wskaznik {
+  isolation: isolate;
+}
+
+.ma-wskaznik::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: var(--wskaznik-w);
+  height: var(--wskaznik-h);
+  border-radius: 999px;
+  background: var(--mc-gradient);
+  box-shadow: var(--mc-glow);
+  transform: translate(var(--wskaznik-x), var(--wskaznik-y));
+  pointer-events: none;
+}
+
+.wskaznik-plynie::before {
+  transition: transform .42s var(--mc-plynnie), width .42s var(--mc-plynnie), height .42s var(--mc-plynnie);
+}
+
+.ma-wskaznik > .is-active,
+.ma-wskaznik > .is-aktywny {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Lista / Poznawaj ma jasna pigulke z kolorowym napisem, nie gradient */
+.znajomi-tryby.ma-wskaznik::before {
+  background: var(--bs-body-bg);
+  box-shadow: var(--mc-shadow-sm);
+}
+
+/* --- Pykniecie ikony po wybraniu ------------------------------------------ */
+
+@keyframes ikona-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.3); }
+  65% { transform: scale(.92); }
+  100% { transform: scale(1); }
+}
+
+/* Ikona w pasku, do ktorej wlasnie sie przeszlo */
+.nav-icon.active > svg {
+  animation: ikona-pop .45s var(--mc-ease);
+}
+
+/* Reakcja pod postem: wybrany emotikon podskakuje */
+.reaction-button > span[aria-hidden='true'] {
+  display: inline-block;
+}
+
+.reaction-button[aria-pressed='true'] > span[aria-hidden='true'] {
+  animation: ikona-pop .5s var(--mc-ease);
+}
+
+/* "Zainteresowany" / "Biore udzial" i inne przelaczniki z ikona */
+.wydarzenie-udzial-przyciski .btn[aria-pressed='true'] > svg,
+.znajomi-tryby > [aria-selected='true'] > svg,
+.segmented-option.is-active > svg {
+  animation: ikona-pop .45s var(--mc-ease);
+}
+
+/* --- Liczniki ------------------------------------------------------------- */
+
+/*
+   Licznik wyskakuje, gdy sie pojawia i gdy zmienia sie liczba (w kodzie ma
+   key={liczba}, wiec nowa liczba to nowy element i animacja rusza od nowa).
+*/
+@keyframes licznik-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+.nav-badge,
+.bell-badge,
+.chat-launcher-badge,
+.konto-kropka,
+.klan-zakladka-licznik {
+  animation: licznik-pop .42s var(--mc-sprezyna) backwards;
+}
+
+/* --- Okna dialogowe ------------------------------------------------------- */
+
+/*
+   Bootstrap wsuwa okno z gory o 50 px. Krotsza droga z lekkim powiekszeniem
+   wyglada spokojniej i pasuje do menu, ktore tez "wyrastaja" z miejsca.
+*/
+.modal.fade .modal-dialog {
+  transform: translateY(14px) scale(.97);
+  transition: transform .32s var(--mc-plynnie);
+}
+
+.modal.show .modal-dialog {
+  transform: none;
+}
+
+/* --- Puste stany: ikona unosi sie powoli ---------------------------------- */
+
+@keyframes unosi-sie {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.empty-state-icon {
+  animation: licznik-pop .5s var(--mc-sprezyna) backwards, unosi-sie 3.6s ease-in-out .6s infinite;
+}
+
+/* --- Paski postepu wypelniaja sie przy wejsciu ---------------------------- */
+
+@keyframes pasek-rosnie {
+  from { transform: scaleX(0); }
+}
+
+.klan-cel-pasek,
+.klan-ankieta-pasek {
+  transform-origin: left center;
+  animation: pasek-rosnie .7s var(--mc-plynnie) backwards;
+}
+
+/* Kreski dopasowania gustu na karcie Poznawaj zapalaja sie po kolei */
+@keyframes kreska-rosnie {
+  from { transform: scaleY(0); }
+}
+
+.pz-kreski i {
+  transform-origin: bottom center;
+  animation: kreska-rosnie .35s var(--mc-sprezyna) backwards;
+}
+
+.pz-kreski i:nth-child(2) { animation-delay: .06s; }
+.pz-kreski i:nth-child(3) { animation-delay: .12s; }
+.pz-kreski i:nth-child(4) { animation-delay: .18s; }
+
+/* --- Poznawaj ------------------------------------------------------------- */
+
+/* Plusik obraca sie pod kursorem, krzyzyk przechyla - przycisk "odpowiada" */
+.pz-przycisk svg {
+  transition: transform .35s var(--mc-sprezyna);
+}
+
+@media (hover: hover) {
+  .pz-przycisk.is-tak:hover:not(:disabled) svg {
+    transform: rotate(90deg) scale(1.08);
+  }
+
+  .pz-przycisk.is-nie:hover:not(:disabled) svg {
+    transform: rotate(-12deg) scale(1.08);
+  }
+}
+
+/*
+   Nowa znajomosc: obie rece rysuja sie po kolei, kiedy ikona juz wyskoczyla -
+   najpierw ta na barkach, potem ta w pasie. pathLength="1" na sciezkach rak
+   (Icons.jsx) pozwala liczyc w ulamkach dlugosci, niezaleznie od ksztaltu.
+*/
+@keyframes reka-rysuj {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.pz-dopasowanie-znak .ikona-reka {
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1;
+  animation: reka-rysuj .5s var(--mc-plynnie) forwards;
+}
+
+.pz-dopasowanie-znak .ikona-reka.is-gora { animation-delay: .7s; }
+.pz-dopasowanie-znak .ikona-reka.is-dol { animation-delay: .95s; }

@@ -78,7 +78,7 @@ export default function ReportsPage() {
   }, [load]);
 
   return (
-    <div className="reports-page">
+    <div className="reports-page tiles-in">
       {/* Tytul w osobnym wierszu. */}
       <div>
         <h1 className="page-title">{t('reports.panelTitle')}</h1>

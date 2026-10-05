@@ -15,6 +15,7 @@ import PodpowiedzMiasta from '../components/PodpowiedzMiasta';
 import Zasieg from '../components/Zasieg';
 import ZasiegInfo from '../components/ZasiegInfo';
 import useZasieg from '../hooks/useZasieg';
+import useWskaznik from '../hooks/useWskaznik';
 import EmptyState from '../components/EmptyState';
 import EventCard from '../components/EventCard';
 import {
@@ -110,6 +111,10 @@ export default function EventsPage() {
   const zAdresu = wydarzenia.WIDOKI[parametry.get('widok')] ? parametry.get('widok') : null;
   const widok = zAdresu ?? zapamietanyWidok()
     ?? (info ? (info.hasTaste ? 'dla-ciebie' : 'najblizsze') : null);
+
+  /* Przesuwana pigulka pod wybranym widokiem (Dla ciebie / Najblizsze / Moje) */
+  const widoki = useRef(null);
+  useWskaznik(widoki, widok);
 
   /* To, co wpisuje uzytkownik - trafia do adresu dopiero po chwili ciszy. */
   const [wpisane, setWpisane] = useState(fraza);
@@ -320,7 +325,7 @@ export default function EventsPage() {
       )}
 
       {/* Trzy listy. Aktywna ma aria-pressed - czytnik ekranu powie, ktora jest wybrana. */}
-      <div className="wydarzenia-widoki mb-3" role="group" aria-label={t('events.viewsLabel')}>
+      <div ref={widoki} className="wydarzenia-widoki mb-3" role="group" aria-label={t('events.viewsLabel')}>
         {[
           ['dla-ciebie', t('events.views.forYou')],
           ['najblizsze', t('events.views.upcoming')],
@@ -512,7 +517,7 @@ export default function EventsPage() {
               {!dlaCiebie && (i === 0 || lista[i - 1].date !== w.date) && (
                 <h2 className="wydarzenia-dzien">{naglowekDnia(w.date, i18n.language, t)}</h2>
               )}
-              <EventCard wydarzenie={w} pokazPowody={dlaCiebie} />
+              <EventCard wydarzenie={w} pokazPowody={dlaCiebie} indeks={i % ROZMIAR_STRONY} />
             </Fragment>
           ))}
 

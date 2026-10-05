@@ -20,7 +20,8 @@ z przeglądarką, prośbami, tytułami, ankietami i rankingiem (V9–V12), miast
 i okolica w propozycjach/wydarzeniach/klanach (V13), tablica „Dla ciebie” i komentarze
 z oznaczeniami (V14), GIF-y w komentarzach i na czacie (V15), GIF-y w czacie klanu (V16), karta profilu
 (galeria, opis, „szukam”, pytania muzyczne) i tryb Poznawaj — karty w stylu Tindera (V17), plusik i ikona
-obejmujących się osób zamiast serduszek oraz wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie (bez migracji).
+obejmujących się osób zamiast serduszek, wspólny edytor zdjęć — kadr i obrót przy każdym załączanym obrazie — oraz
+animacje w całej aplikacji (bez migracji).
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
 Bubblewrap → Google Play.
 
@@ -652,11 +653,15 @@ Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z ta
 ## Edytor zdjęć i „nie randka” (bez migracji)
 
 - **Bez serduszek** — to aplikacja do poznawania ludzi. Przycisk „tak” w Poznawaj i krok na ekranie startowym to
-  `IconPlus`; przy wzajemnym „tak” tytuł „Nowa znajomość!” i `IconHug` (dwie osoby, jedna obejmuje drugą ramieniem)
-  na gradiencie. Najpierw był emotikon 🫂 — użytkownik odrzucił go, bo niebieski odstawał od reszty ikon. `IconHug` to
-  własne SVG w stylu Bootstrap Icons (Bootstrap nie ma ikony przytulenia): odstępy między nakładającymi się kształtami
-  to **wycięcia maską** (`<mask>` z `useId` — kreska „w kolorze tła” byłaby widać na gradiencie); e2e sprawdza maskę
-  po pikselach (przerwy przezroczyste, ramię i plecy pełne). `IconHeart` usunięty; po angielsku „NOPE” → „SKIP”.
+  `IconPlus`; przy wzajemnym „tak” tytuł „Nowa znajomość!” i `IconHug` na gradiencie. Najpierw był emotikon 🫂 —
+  użytkownik odrzucił go, bo niebieski odstawał od reszty ikon; potem chciał, żeby **obie** osoby wyciągały rękę:
+  ramię osoby z przodu na barkach drugiej (łuk ∩, `HUG_RAMIE_GORA`) i ręka osoby z tyłu w pasie (łuk ∪,
+  `HUG_RAMIE_DOL`); wariant wybrany z kilku wyrenderowanych obok siebie. Własne SVG w stylu Bootstrap Icons (Bootstrap
+  nie ma ikony przytulenia): odstępy między nakładającymi się kształtami to **wycięcia maską** (`<mask>` z `useId`,
+  dwie maski: osoba z tyłu i osoba z przodu). **Kształty w masce muszą mieć jawne `fill="#000"`** — inaczej dziedziczą
+  `fill="currentColor"` z `<svg>`, wychodzą w masce białe (= widoczne) i spod osoby z przodu wystaje pasek osoby z tyłu
+  (było niewidoczne przy jednej ręce, wyszło przy drugiej). e2e sprawdza maskę po pikselach, także w miejscu tego paska.
+  `IconHeart` usunięty; po angielsku „NOPE” → „SKIP”.
 - **Edytor** (`components/obraz/EdytorZdjecia.jsx`, proporcje w `rodzajeKadru.js`): awatar 1:1 w kółku (otwiera się
   od razu), post — przycisk na miniaturze, proporcje do wyboru; karta 3:4 — kolejka po wybraniu kilku plików („Pomiń”,
   zamknięcie = koniec kolejki; wgrywanie w tle po kolei); ikona klanu 1:1; zdjęcie klanu 3:1 / 16:9 / dowolne.
@@ -676,6 +681,30 @@ Zakaz publikowania blokuje zmiany i nowe zdjęcia (usuwać wolno) i wyrzuca z ta
   `useAdresPodgladu`); okno Bootstrapa znika z animacją — w testach `waitFor({ state: 'detached' })`, nie `count() === 0`;
   `backdrop="static"`, bo przeciąganie uchwytu kończące się poza oknem nie może go zamykać. Formularz posta na tablicy
   jest zwinięty (`aria-controls="formularz-postu"`).
+
+## Animacje (bez migracji)
+
+- **Gdzie**: `style/ruch.css` (nowe; ładowany jako ostatni) + wcześniejsze `fade-in-up`, `tiles-in` (`wejscie.css`),
+  `bell-ring`, `menu-in`. Tokeny: `--mc-ease`, `--mc-sprezyna` (pyknięcia), `--mc-plynnie` (przesuwanie). Tylko
+  `transform`/`opacity`, ≤ 0,5 s. „Ogranicz ruch” załatwia jedna reguła na początku `podstawy2.css` (czas **i opóźnienie**
+  na zero) — nowe animacje nic nie muszą robić same.
+- **Wejście list**: klasa `mc-wejscie` + `style={{ '--i': i }}` (opóźnienie `min(--i, 10) × 40 ms`); w `.strip-track`
+  (paski poziome z `overflow-x`) zamiast zjazdu w dół jest pomniejszenie — przesunięty kafelek powiększałby obszar
+  przewijania. Strony bez własnego wejścia dostały `tiles-in` na korzeniu (wydarzenie, klan, zgłoszenia, regulamin).
+  **Nie** robimy przejścia na całym `<main>` — próbowałem Web Animations na kontenerze treści, ale dublowało się
+  z `tiles-in`, a transform na przodku zmienia punkt odniesienia `position: fixed` (np. ekran nowej znajomości).
+- **Przesuwany wskaźnik**: `hooks/useWskaznik(ref, aktywny)` mierzy opcję z `aria-pressed`/`aria-selected`
+  (`offsetLeft`, więc kontener musi mieć pozycję — hook ustawia `relative`), zapisuje zmienne `--wskaznik-*`, dodaje
+  `ma-wskaznik` (dopiero wtedy opcja traci własne tło — bez JS nic nie znika) i klatkę później `wskaznik-plynie`
+  (bez tego pigułka wjeżdżałaby z lewego rogu). `ResizeObserver` pilnuje zmian szerokości (krój, język, licznik
+  w „Moje (n)”). Użyty w: zakres tablicy, widoczność posta, widoki wydarzeń, Lista/Poznawaj.
+- **Liczniki** mają `key={liczba}` — nowa liczba = nowy element = animacja `licznik-pop` od nowa.
+- **Ręce w `IconHug`** mają `pathLength="1"`; na ekranie pary `stroke-dasharray: 1 2` i `stroke-dashoffset` 1 → 0.
+- **Sprawdzanie**: w Playwrighcie `getComputedStyle(el).animationName` / `animationDelay` i `getAnimations()`;
+  położenie pigułki z `getComputedStyle(el, '::before').transform` (w trakcie ma być **pomiędzy**, po — dokładnie pod
+  opcją); kontekst z `reducedMotion: 'reduce'` sprawdza, że nic nie czeka niewidoczne. Skrypt zrzutów do README robi
+  zrzuty z `reducedMotion: 'reduce'` — inaczej łapałby karty w połowie wejścia. Miarka przelewu musi pomijać elementy
+  z `visibility: hidden` (szuflada czatu stoi poza ekranem i dawała „przelew” równy szerokości ekranu).
 
 ## Regulamin i polityka prywatności (V10)
 

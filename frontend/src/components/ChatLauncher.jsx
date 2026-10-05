@@ -20,7 +20,7 @@ export default function ChatLauncher() {
 
       {/* Stale "0" przy ikonie to szum - liczba pojawia sie, gdy jest co liczyc */}
       {unread > 0 && (
-        <span className="chat-launcher-badge">{unread > 99 ? '99+' : unread}</span>
+        <span key={unread} className="chat-launcher-badge">{unread > 99 ? '99+' : unread}</span>
       )}
     </button>
   );

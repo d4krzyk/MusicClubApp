@@ -394,6 +394,8 @@ const kontekst = async (uzytkownik, { szer = 1280, wys = 860, ciemny = false, te
   const ctx = await przegladarka.newContext({
     viewport: { width: szer, height: wys }, deviceScaleFactor: telefon ? 2 : 1, colorScheme: ciemny ? 'dark' : 'light',
     storageState: await uzytkownik.stan(), locale: 'pl-PL',
+    // „Ogranicz ruch": zrzut ma pokazać stan końcowy, a nie kartę w połowie wejścia albo rękę w połowie rysowania
+    reducedMotion: 'reduce',
   });
   if (caly_kraj) {
     // zasięg „w okolicy": 0 = cały kraj (wspólny dla wydarzeń i klanów)

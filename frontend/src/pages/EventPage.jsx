@@ -97,7 +97,7 @@ export default function EventPage() {
   }
 
   return (
-    <div className="wydarzenie-strona mx-auto">
+    <div className="wydarzenie-strona mx-auto tiles-in">
       <Link to="/wydarzenia" onClick={wroc} className="btn btn-outline-secondary btn-sm mb-3">
         <IconArrowLeft /> {t('events.back')}
       </Link>

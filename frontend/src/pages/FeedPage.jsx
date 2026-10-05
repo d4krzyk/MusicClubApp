@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Button from 'react-bootstrap/Button';
@@ -13,6 +13,7 @@ import PostForm from '../components/PostForm';
 import PostSkeleton from '../components/PostSkeleton';
 import EmptyState from '../components/EmptyState';
 import useLiveReactions from '../hooks/useLiveReactions';
+import useWskaznik from '../hooks/useWskaznik';
 import {
   IconCross, IconPlus, IconFriends, IconGlobe, IconInbox, IconStar,
 } from '../components/Icons';
@@ -46,6 +47,8 @@ export default function FeedPage() {
   const [message, setMessage] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
   const [scope, setScope] = useState('ALL');
+  const zakres = useRef(null);
+  useWskaznik(zakres, scope);
   const [porzadek, setPorzadek] = useState(zapamietanyPorzadek);
 
   const fetch = useCallback(async (pageNumber, joined, wantedScope, wantedOrder) => {
@@ -190,7 +193,7 @@ export default function FeedPage() {
           </Button>
         </div>
 
-        <div className="segmented mb-3" role="group" aria-label={t('posts.scope.label')}>
+        <div ref={zakres} className="segmented mb-3" role="group" aria-label={t('posts.scope.label')}>
           <button
             type="button"
             className={`segmented-option${scope === 'ALL' ? ' is-active' : ''}`}

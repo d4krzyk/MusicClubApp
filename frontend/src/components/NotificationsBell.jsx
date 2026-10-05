@@ -202,7 +202,7 @@ export default function NotificationsBell() {
       >
         <IconBell size={18} />
         {unread > 0 && (
-          <span className="bell-badge">{unread > 99 ? '99+' : unread}</span>
+          <span key={unread} className="bell-badge">{unread > 99 ? '99+' : unread}</span>
         )}
       </button>
 
@@ -232,8 +232,8 @@ export default function NotificationsBell() {
             )}
 
             {/* Wiersz sklada sie z DWOCH przyciskow obok siebie, a nie z jednego. */}
-            {!loading && items.map((notification) => (
-              <div key={notification.id} className="bell-item-row">
+            {!loading && items.map((notification, i) => (
+              <div key={notification.id} className="bell-item-row" style={{ '--i': i }}>
               <button
                 type="button"
                 className={`bell-item${notification.read ? '' : ' is-unread'}`}

@@ -205,7 +205,11 @@ export default function KlanyPage() {
       {!ladowanie && lista.length > 0 && (
         <>
           <ul className="klany-lista list-unstyled">
-            {lista.map((k) => <li key={k.id}><KartaKlanu klan={k} jezyk={i18n.language} /></li>)}
+            {lista.map((k, i) => (
+              <li key={k.id} className="mc-wejscie" style={{ '--i': i % 12 }}>
+                <KartaKlanu klan={k} jezyk={i18n.language} />
+              </li>
+            ))}
           </ul>
           <DoladujWiecej
             etykieta={t('clans.directory.loadMore')}

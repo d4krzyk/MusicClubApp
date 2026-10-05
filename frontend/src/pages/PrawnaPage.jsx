@@ -32,7 +32,7 @@ export default function PrawnaPage({ dokument }) {
   const uzupelnione = info && info.controller && info.contactEmail;
 
   return (
-    <article className="prawna-strona mx-auto">
+    <article className="prawna-strona mx-auto tiles-in">
       <h1 className="h3 mb-1">{tresc.tytul}</h1>
       <p className="text-body-secondary small mb-3">
         {t('legal.version', { version: info?.termsVersion ?? '…' })}

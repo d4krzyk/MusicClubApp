@@ -29,7 +29,7 @@ wypuścić na świat.
 | **Prywatność** | posty publiczne albo tylko dla znajomych, blokady, ustawienia widoczności, potwierdzanie e-maila, reset hasła, pobranie własnych danych, regulamin i polityka prywatności |
 | **Moderacja** | zgłoszenia z migawką dowodów, zakazy publikowania i wiadomości, wykrywanie multikont |
 | **Telefon** | PWA (instalacja, szybki start bez zasięgu), powiadomienia push |
-| **Wygląd** | polski i angielski, motyw jasny i ciemny |
+| **Wygląd** | polski i angielski, motyw jasny i ciemny, płynne animacje (wyłączane systemowym „ogranicz ruch”) |
 
 ## Jak to wygląda
 
@@ -763,8 +763,9 @@ W zakładce **Znajomi** obok zwykłej listy jest tryb **Poznawaj**: karty osób 
 w prawo (przycisk „+” albo →) znaczy „chcę poznać”, w lewo (✕, ←) — „nie teraz”. Znajomymi zostajecie dopiero wtedy,
 gdy obie osoby przesuną w prawo; do tej chwili „tak” jest tajne. Wtedy wyskakuje „Nowa znajomość!” z ikoną dwóch
 obejmujących się osób i przyciskiem „Napisz wiadomość”, a obie osoby dostają powiadomienie i push. Bez serduszek — to
-aplikacja do poznawania ludzi, nie randkowa. Ikona (`IconHug`) jest narysowana w stylu Bootstrap Icons, jak reszta —
-kolorowy emotikon odstawał od wyglądu aplikacji.
+aplikacja do poznawania ludzi, nie randkowa. Ikona (`IconHug`) jest narysowana w stylu Bootstrap Icons, jak reszta
+(kolorowy emotikon odstawał od wyglądu aplikacji): obie osoby wyciągają rękę — jedna kładzie ramię na barkach drugiej
+(łuk w górę), druga obejmuje ją w pasie (łuk w dół). Na ekranie nowej znajomości obie ręce rysują się po kolei.
 
 - **Kto jest w talii.** Tylko osoby, które same włączyły tryb (domyślnie jest wyłączony — karta ze zdjęciami dla obcych
   to świadoma decyzja). Bez znajomych, blokad, oczekujących zaproszeń, osób z zakazem publikowania i już ocenionych
@@ -821,6 +822,26 @@ Jeden komponent (`components/obraz/EdytorZdjecia.jsx`) dla każdego miejsca, w k
   podwójne stuknięcie „Pomiń” w kolejce nie przeskakuje dwóch zdjęć. Pamięć: bitmapa jest zwalniana przy zamknięciu,
   a podglądy `blob:` przy zmianie pliku (`hooks/useAdresPodgladu`).
 - Serwer niczego nowego nie dostaje — przyjmuje te same pliki co wcześniej i dalej wycina z nich EXIF.
+
+## Animacje
+
+Jeden plik (`frontend/src/style/ruch.css`) na ruch dodany „dla życia” aplikacji — te same krzywe i czasy wszędzie,
+tylko `transform` i `opacity` (nic nie przesuwa układu), najwyżej pół sekundy:
+
+- **Wejście list po kolei**: karty wydarzeń, klany w przeglądarce, propozycje znajomych, ulubieni, powiadomienia
+  w dzwonku, komentarze (do tego dochodzą wcześniejsze: posty na tablicy i sekcje stron — teraz także wydarzenia,
+  klanu, zgłoszeń i regulaminu). Opóźnienie co 40 ms jest przycięte do 10 kroków; w poziomych paskach kafelek wchodzi
+  przez pomniejszenie, żeby nie powiększał na chwilę obszaru przewijania.
+- **Przesuwany wskaźnik** w przełącznikach (Wszystko / Znajomi, widoczność posta, widoki wydarzeń, Lista / Poznawaj):
+  zamiast przeskoku tła jedna pigułka płynie pod wybraną opcję (`hooks/useWskaznik.js` mierzy opcję, CSS przesuwa).
+- **„Pyknięcia”**: ikona w pasku po przejściu na stronę, wybrana reakcja pod postem, „Zainteresowany” / „Biorę
+  udział”, ikona wybranej opcji w przełączniku; liczniki (zaproszenia, dzwonek, czat, klan) wyskakują przy pojawieniu
+  się i przy każdej zmianie liczby.
+- **Inne**: okna dialogowe wyrastają z miejsca zamiast zjeżdżać z góry, ikona pustego stanu powoli się unosi, paski celu
+  klanu i ankiet wypełniają się przy wejściu, kreski dopasowania na karcie Poznawaj zapalają się po kolei, plusik
+  w Poznawaj obraca się pod kursorem, a na ekranie nowej znajomości obie ręce ikony rysują się po kolei.
+- **„Ogranicz ruch”** w systemie wyłącza wszystko (reguła na początku `podstawy2.css` zeruje czas i opóźnienie, więc nic
+  nie czeka niewidoczne; wskaźnik przeskakuje od razu, ręce są od razu narysowane).
 
 ## Gablotka playlist
 
