@@ -70,6 +70,9 @@ public record EventDetailsResponse(
     boolean ageRestricted,
     @Schema(description = "Kiedy rusza sprzedaz biletow (gdy jeszcze nie ruszyla)")
     java.time.Instant salesStart,
-    String accessibility
+    String accessibility,
+
+    /** Zrodla danych: glowne pierwsze, potem te, ktore uzupelnily braki. */
+    List<EventSourceView> sources
 ) {
 }

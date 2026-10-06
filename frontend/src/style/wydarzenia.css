@@ -679,22 +679,29 @@
 
 /* --- Strona wydarzenia: udzial i uczestnicy -------------------------------- */
 
+/*
+ * Na telefonie przyciski dziela szerokosc, a gdy oba sie nie mieszcza - kazdy dostaje caly wiersz.
+ * Wczesniej byla siatka 1fr 1fr: kolumna nie schodzi ponizej najdluzszego slowa, wiec przy 320 px
+ * "Zainteresowany" wypychalo "Biore udzial" 37 px poza karte, a przy 360-390 px lamalo je na dwie linie.
+ */
 .wydarzenie-udzial-przyciski {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: .5rem;
 }
 
 .wydarzenie-udzial-przyciski .btn {
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 @media (min-width: 576px) {
-  .wydarzenie-udzial-przyciski {
-    display: flex;
+  .wydarzenie-udzial-przyciski .btn {
+    flex: 0 0 auto;
   }
 }
 

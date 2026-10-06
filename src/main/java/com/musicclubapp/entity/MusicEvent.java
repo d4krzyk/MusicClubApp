@@ -151,7 +151,11 @@ public class MusicEvent {
     @Column(name = "withdrawn_at")
     private LocalDateTime withdrawnAt;
 
-    /** Sklad w kolejnosci z plakatu: najpierw gwiazda, potem support. */
+    /** Kto zalozyl wydarzenie - zrodlo, ktorego dane sa glowne. Pozostale zrodla tylko uzupelniaja braki. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16, columnDefinition = "varchar(16) default 'TICKETMASTER' not null")
+    private EventSource source = EventSource.TICKETMASTER;
+
     /* --- Od organizatora (Ticketmaster: pleaseNote, promoter, priceRanges, ageRestrictions, sales, accessibility) --- */
 
     @Column(name = "please_note", length = 1000)
@@ -178,6 +182,7 @@ public class MusicEvent {
     @Column(length = 500)
     private String accessibility;
 
+    /** Sklad w kolejnosci z plakatu: najpierw gwiazda, potem support. */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "music_event_performers", joinColumns = @JoinColumn(name = "event_id"))
     @OrderColumn(name = "performer_order")
@@ -300,6 +305,54 @@ public class MusicEvent {
     public void markSeen(LocalDateTime when) {
         this.lastSeenAt = when;
         this.withdrawnAt = null;
+    }
+
+    /* --- Wiele zrodel --- */
+
+    /**
+     * Zmiana glownego zrodla: Ticketmaster przejmuje wydarzenie zalozone z Bandsintown (bo to ten sam koncert), albo
+     * odwrotnie - Ticketmaster je wycofal, a inne zrodlo dalej je pokazuje.
+     */
+    public void reassign(EventSource source, String externalId) {
+        this.source = source;
+        this.externalId = externalId;
+    }
+
+    public EventSource getSource() {
+        return source;
+    }
+
+    /**
+     * Uzupelnia to, czego glowne zrodlo nie podalo - niczego nie nadpisuje. Kazde pole osobno: godzina z jednego
+     * zrodla, wspolrzedne z innego.
+     */
+    public void fillGaps(EventSourceEntry s) {
+        if (startTime == null) {
+            startTime = s.getStartTime();
+        }
+        if (venueName == null || venueName.isBlank()) {
+            venueName = s.getVenueName();
+        }
+        if (address == null || address.isBlank()) {
+            address = s.getAddress();
+        }
+        if ((latitude == null || longitude == null) && s.getLatitude() != null && s.getLongitude() != null) {
+            latitude = s.getLatitude();
+            longitude = s.getLongitude();
+        }
+        if (ticketUrl == null || ticketUrl.isBlank()) {
+            ticketUrl = s.getTicketUrl();
+        }
+        if ((imageUrl == null || imageUrl.isBlank()) && s.getImageUrl() != null) {
+            imageUrl = s.getImageUrl();
+            thumbUrl = thumbUrl == null ? s.getImageUrl() : thumbUrl;
+        }
+        if (description == null || description.isBlank()) {
+            description = s.getDescription();
+        }
+        if (performers.isEmpty() && !s.getPerformers().isEmpty()) {
+            s.getPerformers().forEach(name -> performers.add(new EventPerformer(null, name)));
+        }
     }
 
     public void withdraw(LocalDateTime when) {

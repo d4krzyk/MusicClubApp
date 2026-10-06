@@ -660,7 +660,7 @@
     "notConfiguredAdmin": "Serwer nie ma klucza Ticketmastera. Dopisz TICKETMASTER_API_KEY do pliku .env i uruchom backend ponownie.",
     "adminImport": "Ostatnie pobranie: {{date}}, wydarzeń: {{count}}",
     "adminImportFailed": "Ostatnie pobranie się nie udało: {{error}}",
-    "source": "Dane o wydarzeniach: Ticketmaster",
+    "source": "Dane o wydarzeniach: Ticketmaster i serwisy podane przy wydarzeniu",
     "back": "Wszystkie wydarzenia",
     "tickets": "Bilety na Ticketmaster",
     "map": "Pokaż na mapie",
@@ -783,7 +783,8 @@
       "adultsOnly": "tylko dla pełnoletnich (18+)",
       "accessibility": "Dostępność",
       "note": "Ważne"
-    }
+    },
+    "sourcesLabel": "Dane o wydarzeniu:"
   },
   "verify": {
     "checkTitle": "Sprawdź skrzynkę",

@@ -116,11 +116,13 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
 
     /**
      * Wydarzenia jednego kraju z zakresu, ktory import przeszedl w calosci,
-     * a ktorych w tym imporcie nie bylo.
+     * a ktorych w tym imporcie nie bylo. Tylko te, ktorych glownym zrodlem
+     * jest Ticketmaster - zalozonych z innych zrodel jego import nie widzi.
      */
     @Query("""
         SELECT e FROM MusicEvent e
          WHERE e.countryCode = :country
+           AND e.source = com.musicclubapp.entity.EventSource.TICKETMASTER
            AND e.startDate >= :today AND e.startDate < :until
            AND e.lastSeenAt < :seenBefore
         """)
@@ -128,6 +130,42 @@ public interface MusicEventRepository extends JpaRepository<MusicEvent, Long> {
                               @Param("today") LocalDate today,
                               @Param("until") LocalDate until,
                               @Param("seenBefore") LocalDateTime seenBefore);
+
+    /** Wydarzenia jednego dnia w kraju - kandydaci do polaczenia z wydarzeniem z innego zrodla (ze skladem). */
+    @Query("""
+        SELECT DISTINCT e FROM MusicEvent e LEFT JOIN FETCH e.performers
+         WHERE e.startDate = :day AND e.countryCode = :country
+        """)
+    List<MusicEvent> onDayIn(@Param("day") LocalDate day, @Param("country") String country);
+
+    /** To samo, gdy zrodlo nie podalo kraju. */
+    @Query("SELECT DISTINCT e FROM MusicEvent e LEFT JOIN FETCH e.performers WHERE e.startDate = :day")
+    List<MusicEvent> onDayAnywhere(@Param("day") LocalDate day);
+
+    default List<MusicEvent> onDay(LocalDate day, String country) {
+        return country == null ? onDayAnywhere(day) : onDayIn(day, country);
+    }
+
+    /** Nadchodzace wydarzenia zalozone z tego zrodla, ktorych dawno nie widzialo - zniknely z niego. */
+    @Query("""
+        SELECT e FROM MusicEvent e
+         WHERE e.source = :source AND e.startDate >= :today AND e.lastSeenAt < :seenBefore
+        """)
+    List<MusicEvent> staleFrom(@Param("source") com.musicclubapp.entity.EventSource source,
+                               @Param("today") LocalDate today,
+                               @Param("seenBefore") LocalDateTime seenBefore);
+
+    /** Wykonawcy nadchodzacych wydarzen zalozonych z tego zrodla - zeby je dalej odswiezac. */
+    @Query("""
+        SELECT DISTINCT p.name FROM MusicEvent e JOIN e.performers p
+         WHERE e.source = :source AND e.startDate >= :today
+        """)
+    List<String> performersFrom(@Param("source") com.musicclubapp.entity.EventSource source,
+                                @Param("today") LocalDate today);
+
+    /** Wpisy zrodel pobocznych wydarzenia - do podpisu "Dane o wydarzeniu". */
+    @Query("SELECT s FROM EventSourceEntry s WHERE s.event.id = :id ORDER BY s.source, s.id")
+    List<com.musicclubapp.entity.EventSourceEntry> sourcesOf(@Param("id") Long id);
 
     /** Wydarzenia, ktore dawno sie odbyly. */
     List<MusicEvent> findByStartDateBefore(LocalDate date);

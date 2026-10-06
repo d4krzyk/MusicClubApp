@@ -25,7 +25,8 @@ animacje w całej aplikacji (bez migracji), wybór, kto widzi kartę na profilu 
 usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w czacie — miejsce, punkt na mapie, czas,
 „Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji),
 „Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21), **ekipy na koncert** — aplikacja przebudowana
-wokół „nie idź na koncert sam” (V22).
+wokół „nie idź na koncert sam” (V22), wiele źródeł wydarzeń z łączeniem duplikatów — Bandsintown i Songkick
+obok Ticketmastera (V23).
 Uwaga na kierunek: **rdzeniem aplikacji są ekipy na koncert** — kilka osób, które idą na to samo wydarzenie razem.
 Nowe funkcje mają je wzmacniać (start, strona wydarzenia, czat ekipy), a nie konkurować z nimi o uwagę.
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
@@ -131,10 +132,14 @@ Opisana w `docs/WDROZENIE.md`. W skrócie:
 ## Wydarzenia
 
 Koncerty w Polsce z **Ticketmaster Discovery API** (darmowy klucz,
-5000 zapytań/dzień, `TICKETMASTER_API_KEY`). Inne źródła sprawdzone i odrzucone:
-Facebook nie daje cudzych wydarzeń od 2018, Songkick tylko płatnie,
-Bandsintown wymaga pisemnej zgody, Eventbrite wyłączył wyszukiwanie w 2020,
-Going./eBilet nie mają API. Ticketmaster zwrócił 801 koncertów w Polsce,
+5000 zapytań/dzień, `TICKETMASTER_API_KEY`) — główne źródło. Od V23 obok niego
+**Bandsintown** i **Songkick** jako źródła poboczne (każde tylko z kluczem —
+niżej, „Wiele źródeł wydarzeń”). Sprawdzone i odrzucone: Facebook nie daje
+cudzych wydarzeń od 2018, Eventbrite wyłączył wyszukiwanie w 2020, **Spotify nie
+ma API koncertów** (koncerty w aplikacji Spotify nie są wystawione w Web API),
+Going./eBilet nie mają publicznego API, a czytanie ich wewnętrznych („ukrytych”)
+API odrzucamy: łamie regulaminy, narusza prawo producenta bazy danych (ustawa
+o ochronie baz danych) i każda zmiana po ich stronie by je psuła. Ticketmaster zwrócił 801 koncertów w Polsce,
 także klubowych (Progresja, Hydrozagadka, Drizzly Grizzly).
 
 Etap 1 (zrobiony): import co 6 h do `music_events` (migracja V2; po nieudanym
@@ -771,6 +776,47 @@ na koncert sam” w trzech krokach (`OAplikacji`).
   w `CrewService.openEvent` nic nie zmienia, bo `enter` woła `participate`, które odrzuca wycofane tym samym komunikatem,
   a transakcja cofa założoną ekipę. Sprawdzenie zostaje (błąd przed zapisem, czytelniej). Zakazy publikowania i pisania
   dopilnował osobny test (`CrewFlowTest.bans`) — w pierwszej liście mutantów ich nie było.
+
+## Wiele źródeł wydarzeń i łączenie duplikatów (V23)
+
+Ticketmaster jest **głównym** źródłem; Bandsintown (`BandsintownClient`, `BANDSINTOWN_APP_ID`) i Songkick
+(`SongkickClient`, `SONGKICK_API_KEY`) to źródła poboczne, oba **tylko z kluczem** (Bandsintown wydaje `app_id` na
+pisemną prośbę, Songkick tylko partnerom) — bez klucza nic nie robią. `SecondaryEventImportService` raz na dobę:
+Bandsintown pyta o koncerty 150 najczęściej lubianych wykonawców (`ArtistRepository.mostLiked`) i tych, których
+wydarzenia już ma (Bandsintown nie szuka po miejscu), Songkick — o okolice 10 największych miast Polski
+(`app.events.songkick.cities`). Tylko kraje, które pobieramy, i 12 miesięcy naprzód.
+
+- **Łączenie** (`EventMerger.score`, czyste reguły, `EventMergerTest`): ten sam dzień i kraj (nieznany kraj nie
+  przeszkadza), to samo miejsce — sala do 500 m po współrzędnych albo ta sama nazwa sali (`sameVenue`: bez słów
+  ogólnych „klub”, „hala”…, część wspólna ≥ 4 litery) w tym samym mieście (klucz miasta albo ≤ 30 km) — i ten sam
+  wykonawca (skład albo nazwa w nazwie wydarzenia, `NameKeys`) albo ta sama nazwa; dwie znane godziny różniące się
+  o więcej niż 3 h = dwa koncerty. Najlepsze dopasowanie wygrywa (sala 3+3, wykonawca 3, nazwa 2, godzina ≤ 1 h 1).
+- **Uzupełnianie, nie nadpisywanie**: co mówi źródło poboczne, leży w `event_sources` (`EventSourceEntry`: godzina,
+  sala, adres, współrzędne, bilety, zdjęcie, opis, skład). `MusicEvent.fillGaps` bierze z wpisów tylko to, czego
+  wydarzenie nie ma — **po każdym imporcie Ticketmastera od nowa** (`refill` — jedno zapytanie na stronę), bo
+  `apply` Ticketmastera nadpisuje pola i godzina z Bandsintown znikałaby co 6 h.
+- **Kto jest głównym źródłem** (`music_events.source`): wydarzenie, którego nie znaliśmy, zakłada źródło poboczne
+  (`external_id` z przedrostkiem `bandsintown:` / `songkick:`). Gdy Ticketmaster pokaże ten sam koncert, **przejmuje
+  go** (`adopt` — ten sam numer, więc zapisy, ekipy i posty zostają). Gdy Ticketmaster je wycofa, a źródło poboczne
+  widziało je w ostatnich 3 dniach, wydarzenie **przechodzi na to źródło** (`rescue`) zamiast znikać. `vanished`
+  Ticketmastera patrzy tylko na wydarzenia, których głównym źródłem jest Ticketmaster.
+- **Znikanie** wydarzeń ze źródła pobocznego: po 3 dniach niewidzenia — usuwane, a z zapisami/postami wycofywane
+  (ekipa ma zawsze zapisy). Bezpieczniki jak przy Ticketmasterze: przy zerze wyników albo 5 błędach z rzędu nic nie
+  znika. Wpisy niewidziane 14 dni są kasowane.
+- **Podpis**: strona wydarzenia pokazuje „Dane o wydarzeniu: Ticketmaster · Bandsintown” z odnośnikami do wydarzenia
+  w serwisie (`EventDetailsResponse.sources`) — Bandsintown i Songkick wymagają przypisania.
+- Polityka: do Bandsintown idą nazwy wykonawców najczęściej lubianych (bez wskazania kto), do Songkick współrzędne
+  miast — **żadnych danych użytkowników**; `event_sources` to dane o wydarzeniach (eksport i usuwanie konta bez zmian).
+- **Nie sprawdzone na żywo**: z tego środowiska oba serwisy są zablokowane, a klucze wymagają zgody — kształt odpowiedzi
+  z dokumentacji, testy na udawanym serwerze (`SecondarySourcesClientTest`, `SecondarySourcesFlowTest`). Po zdobyciu
+  klucza: próba z `docs/WDROZENIE.md`.
+- **Pułapki z tej rundy**: klucz miasta „Warszawa” to `warsaw` (`TE_SAME_MIASTA`) — w testach brać go z
+  `EventImportService.cityKey`, nie wpisywać ręcznie; nowe pole enum z `NOT NULL` dostało `columnDefinition` z domyślną
+  wartością (jak `age_restricted`) — `ddl-auto=update` nie doda kolumny `NOT NULL` bez domyślnej do tabeli z danymi.
+- **Przyciski udziału przy 320 px** (wyszło na zrzucie, nie w mierze przelewu): siatka `1fr 1fr` nie schodzi poniżej
+  najdłuższego słowa, więc „Zainteresowany” wypychało „Biorę udział” 37 px poza kartę, a karta (`overflow-hidden`) je
+  ucinała — miarka strony pomija elementy przycięte przez przodka, więc tego nie widziała. Teraz `flex-wrap`: gdy oba się
+  nie mieszczą, każdy ma cały wiersz (po polsku poniżej 412 px). Mierzyć **względem karty**, nie strony.
 
 ## Karta profilu i tryb Poznawaj (V17)
 

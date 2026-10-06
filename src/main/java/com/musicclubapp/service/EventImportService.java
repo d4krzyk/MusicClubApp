@@ -74,6 +74,7 @@ public class EventImportService {
     private final EventParticipationRepository participations;
     private final PerformerTagService performerTags;
     private final UserRepository users;
+    private final EventMerger merger;
     private final TransactionTemplate transactions;
     private final Clock clock;
 
@@ -112,12 +113,14 @@ public class EventImportService {
                               EventParticipationRepository participations,
                               PerformerTagService performerTags,
                               UserRepository users,
+                              EventMerger merger,
                               PlatformTransactionManager transactionManager,
                               Clock clock,
                               @Value("${app.events.import.pause-ms:250}") long przerwaMs,
                               @Value("${app.events.import.interval-ms:21600000}") long coIleMs,
                               @Value("${app.events.import.max-requests-per-country:60}") int limitNaKraj) {
         this.ticketmaster = ticketmaster;
+        this.merger = merger;
         this.repository = repository;
         this.participations = participations;
         this.performerTags = performerTags;
@@ -127,6 +130,15 @@ public class EventImportService {
         this.clock = clock;
         this.przerwaMs = przerwaMs;
         this.coIle = Duration.ofMillis(coIleMs);
+    }
+
+    /** Bez innych zrodel - dla testow, ktore skladaja import recznie. */
+    public EventImportService(TicketmasterClient ticketmaster, MusicEventRepository repository,
+                              EventParticipationRepository participations, PerformerTagService performerTags,
+                              UserRepository users, PlatformTransactionManager transactionManager, Clock clock,
+                              long przerwaMs, long coIleMs, int limitNaKraj) {
+        this(ticketmaster, repository, participations, performerTags, users, EventMerger.off(), transactionManager,
+            clock, przerwaMs, coIleMs, limitNaKraj);
     }
 
     /** Jak poszedl ostatni import. */
@@ -380,12 +392,21 @@ public class EventImportService {
             Map<String, MusicEvent> known = repository.findByExternalIdIn(ids).stream()
                 .collect(Collectors.toMap(MusicEvent::getExternalId, Function.identity()));
 
+            List<MusicEvent> zapisane = new ArrayList<>();
             for (TicketmasterClient.Event e : events) {
-                MusicEvent event = known.computeIfAbsent(e.externalId(), MusicEvent::new);
+                String krajWydarzenia = e.countryCode() != null ? e.countryCode() : kraj;
+                MusicEvent event = known.get(e.externalId());
+                if (event == null) {
+                    // Ten sam koncert mozemy juz miec z innego zrodla - wtedy Ticketmaster go przejmuje
+                    event = merger.adopt(asExternal(e, krajWydarzenia)).orElseGet(() -> new MusicEvent(e.externalId()));
+                    known.put(e.externalId(), event);
+                }
                 apply(event, e, seenAt);
-                event.inCountry(e.countryCode() != null ? e.countryCode() : kraj);
-                repository.save(event);
+                event.inCountry(krajWydarzenia);
+                zapisane.add(repository.save(event));
             }
+            // Ticketmaster nadpisal swoje dane - braki znow uzupelnione z innych zrodel
+            merger.refill(zapisane);
             performerTags.saveLinks(events);
             return events.size();
         });
@@ -449,6 +470,10 @@ public class EventImportService {
 
             List<MusicEvent> doUsuniecia = new ArrayList<>();
             for (MusicEvent event : vanished) {
+                // Inne zrodlo dalej je pokazuje - przechodzi na nie, zamiast znikac
+                if (merger.rescue(event, startedAt)) {
+                    continue;
+                }
                 if (zapisane.contains(event.getId())) {
                     event.withdraw(startedAt);
                 } else {
@@ -474,6 +499,14 @@ public class EventImportService {
             repository.deleteAll(old);
             return old.size();
         });
+    }
+
+    /** Wydarzenie Ticketmastera w postaci, ktora porownuje {@link EventMerger}. */
+    static ExternalEvent asExternal(TicketmasterClient.Event e, String kraj) {
+        return new ExternalEvent(com.musicclubapp.entity.EventSource.TICKETMASTER, e.externalId(), e.ticketUrl(),
+            e.name(), e.status(), e.date(), e.time(), e.venueName(), e.city(), kraj, e.address(), e.latitude(),
+            e.longitude(), e.ticketUrl(), e.imageUrl(), e.description(),
+            e.performers().stream().map(TicketmasterClient.Performer::name).toList());
     }
 
     /** Dzisiejsza data w Polsce - serwer liczy czas w UTC, a o polnocy to juz robi roznice. */

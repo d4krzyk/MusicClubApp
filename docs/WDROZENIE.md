@@ -244,6 +244,45 @@ na jeden kraj w jednym przebiegu przypada najwyżej 60 zapytań
 import kończy na tym, co zdążył pobrać — a z bazy znika tylko to, czego
 nie było w **pokrytym** zakresie dat; dalsze miesiące zostają bez zmian.
 
+### Dodatkowe źródła koncertów (Bandsintown, Songkick)
+
+Opcjonalne. Dokładają koncerty, których Ticketmaster nie ma (zwłaszcza mniejsze
+kluby i trasy zagranicznych wykonawców), i uzupełniają braki w tych, które ma —
+godzinę, miejsce na mapie, adres, bilety. Ten sam koncert z kilku źródeł to
+**jedna** karta: łączymy, gdy zgadza się dzień, miejsce (ta sama sala po nazwie
+w tym samym mieście albo do 500 m po współrzędnych) i wykonawca albo nazwa.
+Ticketmaster zostaje głównym źródłem — reszta tylko dopisuje to, czego brakuje.
+
+| Zmienna | Skąd | Uwagi |
+|---|---|---|
+| `BANDSINTOWN_APP_ID` | prośba do Bandsintown (formularz „API access” na ich stronie dla artystów i partnerów) | wydają go po pisemnej zgodzie; dane trzeba podpisać „Bandsintown” — strona wydarzenia robi to sama |
+| `SONGKICK_API_KEY` | tylko w ramach partnerstwa z Songkick (płatnie) | wymagają podpisu „Songkick” — jak wyżej |
+
+Bandsintown nie ma wyszukiwania po mieście — pytamy o koncerty 150 wykonawców
+najczęściej lubianych przez ludzi w aplikacji (`app.events.bandsintown.max-artists`).
+Songkick pytamy o okolice 10 największych miast Polski (`app.events.songkick.cities`,
+pary „szerokość,długość” rozdzielone średnikiem). Oba raz na dobę, pierwszy raz
+10 minut po starcie.
+
+**Odpowiedzi obu serwisów są sparsowane według dokumentacji, a nie sprawdzone na
+żywo** (z naszego środowiska były niedostępne, a klucze wymagają zgody). Po
+wpisaniu klucza i restarcie odczekaj ~10 minut i sprawdź log:
+
+```bash
+docker compose -f docker-compose.prod.yml logs backend | grep -E "Import (Bandsintown|Songkick)|Bandsintown '|Songkick:"
+```
+
+„Import Bandsintown: N wydarzeń” znaczy, że działa. Ostrzeżenia z błędem HTTP
+albo zero wydarzeń przy znanych wykonawcach = do sprawdzenia nazwy pól
+w `BandsintownClient.read` / `SongkickClient.read`.
+
+Czego **nie** podłączamy: Spotify nie udostępnia koncertów w swoim API (te w
+aplikacji Spotify pochodzą od partnerów i nie są wystawione na zewnątrz), a
+portali bez publicznego API (Going., eBilet i podobne) nie czytamy przez ich
+wewnętrzne adresy — to łamie ich regulaminy, narusza prawo producenta bazy danych
+i psułoby się przy każdej zmianie po ich stronie. Uczciwa droga to zapytać taki
+portal o oficjalny dostęp (np. program partnerski albo plik z wydarzeniami).
+
 ### Poczta i potwierdzanie adresów e-mail
 
 Z pocztą każde nowe konto dostaje wiadomość z linkiem i **nie zaloguje
@@ -1076,6 +1115,25 @@ Przy spotkaniach w czacie i mapie (październik 2026, migracja V20):
   „odwołanie zostawia przypomnienia”, „lista bez filtra blokad”, „przypomnienie po końcu”, „przypomnienie dla «nie dam
   rady»”, a jeden mutant był źle zapisany (nic nie zmieniał). Po dopisaniu testów (`MeetingFlowTest` 12 → 14,
   `mvnw clean test` → 755) wszystkie 42 zabite.
+
+Przy wielu źródłach wydarzeń (październik 2026, migracja V23):
+
+- migracja V23 na **pustej** bazie (V1 → V23) — schemat zgodny z Hibernate; na bazie z wydarzeniami po V22 istniejące
+  wydarzenia dostały źródło „Ticketmaster”, backend wstaje z `validate`;
+- testy: `SecondarySourcesClientTest` (4 — Bandsintown: kraj z nazwy, bilety tylko http(s), pusty tytuł = skład,
+  północ = godzina nieznana, ukośnik w nazwie wykonawcy zakodowany podwójnie, 404 i „not found” = pusto, błąd bez klucza;
+  Songkick: odwołane, festiwal po nazwie serii, ostatnia strona, błąd bez klucza; kraje z nazw), `EventMergerTest`
+  (7 — granice zgodności: dzień, kraj, 3 godziny, sala po nazwie i po współrzędnych, inny wykonawca, sama nazwa),
+  `SecondarySourcesFlowTest` (4 — na bazie: uzupełnienie bez nadpisywania, nowa karta, obcy kraj pominięty, podpis
+  źródeł; Ticketmaster nie kasuje uzupełnień, przejmuje koncert z Bandsintown bez duplikatu i oddaje wycofany;
+  znikanie po 3 dniach z bezpiecznikiem i wycofaniem przy zapisach; Songkick); `mvnw clean test` → 794;
+- Chromium na PostgreSQL po V23 (1280 i 320 px): podpis „Dane o wydarzeniu: Ticketmaster · Bandsintown · Songkick”
+  w tej kolejności, odnośnik tylko przy źródle ze znanym adresem (nowa karta, `nofollow`), wydarzenie założone przez
+  Bandsintown z nim jako głównym źródłem, podpis w oknie, zero błędów w konsoli. Przy okazji wyszło, że przy 320 px
+  „Biorę udział” wystawało 37 px poza kartę — poprawione; przyciski udziału zmierzone względem karty przy 320–768 px
+  po polsku i angielsku (w karcie, w jednej linii);
+- prawdziwe Bandsintown i Songkick **nie** były sprawdzone (zablokowane, klucze na zgodę) — próba po wpisaniu klucza
+  opisana wyżej, w „Dodatkowe źródła koncertów”.
 
 Przy ekipach na koncert (październik 2026, migracja V22):
 

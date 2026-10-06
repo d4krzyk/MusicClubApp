@@ -339,7 +339,22 @@ public class EventService {
             event.getPriceCurrency(),
             event.isAgeRestricted(),
             event.getSalesStart(),
-            event.getAccessibility());
+            event.getAccessibility(),
+            sources(event));
+    }
+
+    /** Glowne zrodlo pierwsze, potem kazde inne raz - z odnosnikiem do wydarzenia w tym serwisie, gdy go znamy. */
+    private List<com.musicclubapp.dto.EventSourceView> sources(MusicEvent event) {
+        Map<com.musicclubapp.entity.EventSource, String> wynik = new java.util.LinkedHashMap<>();
+        wynik.put(event.getSource(), null);
+        for (com.musicclubapp.entity.EventSourceEntry s : repository.sourcesOf(event.getId())) {
+            if (!wynik.containsKey(s.getSource()) || wynik.get(s.getSource()) == null) {
+                wynik.put(s.getSource(), s.getUrl());
+            }
+        }
+        return wynik.entrySet().stream()
+            .map(e -> new com.musicclubapp.dto.EventSourceView(e.getKey().label(), e.getValue()))
+            .toList();
     }
 
     /** Sklad do strony wydarzenia: gatunki i linki z bazy (bez pytania Last.fm), ulubieni ogladajacego zaznaczeni. */

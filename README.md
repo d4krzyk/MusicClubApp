@@ -28,7 +28,7 @@ wypuścić na świat.
 | **Komentarze** | odpowiedzi, oznaczanie osób przez `@login` z podpowiedziami, powiadomienia, zgłaszanie |
 | **GIF-y** | przeglądarka GIF-ów w komentarzach, na czacie i w czacie klanu; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
 | **Czat** | rozmowy ze znajomymi z linkami muzycznymi, dymkiem „pisze…” i potwierdzeniem przeczytania |
-| **Wydarzenia** | koncerty z Ticketmastera, widok „Dla ciebie”, zapisy i lista uczestników, przypomnienia, posty „szukam ekipy” |
+| **Wydarzenia** | koncerty z Ticketmastera (opcjonalnie też z Bandsintown i Songkick — duplikaty łączone w jedną kartę z uzupełnionymi brakami), widok „Dla ciebie”, zapisy i lista uczestników, przypomnienia, posty „szukam ekipy” |
 | **Klany** | przeglądarka klanów, prośby o dołączenie, czat, ankiety, utwór tygodnia, tytuły i ranking aktywności |
 | **Muzyka** | linki ze Spotify, YouTube Music i Apple Music w postach, ulubieni artyści i utwory z Deezera, import z Last.fm, gablotka playlist |
 | **Prywatność** | posty publiczne albo tylko dla znajomych, blokady, ustawienia widoczności, potwierdzanie e-maila, reset hasła, pobranie własnych danych, regulamin i polityka prywatności |
@@ -217,7 +217,7 @@ src/main/java/com/musicclubapp/
 src/main/resources/
 ├── application.properties         # konfiguracja do pracy nad kodem
 ├── application-prod.properties    # profil produkcyjny: Flyway, ciasteczka, ciche logi
-├── db/migration/                  # Flyway V1–V22 (tylko na produkcji; lokalnie ddl-auto=update)
+├── db/migration/                  # Flyway V1–V23 (tylko na produkcji; lokalnie ddl-auto=update)
 ├── geo/miasta.csv                 # miasta Polski ze współrzędnymi (okolica użytkownika)
 ├── mail/                          # szablon wiadomości e-mail, lista skrzynek jednorazowych
 └── lang/messages*.properties      # teksty PL i EN
@@ -1502,6 +1502,7 @@ dostawców opisuje [`docs/WDROZENIE.md`](docs/WDROZENIE.md).
 |---|---|---|
 | `LASTFM_API_KEY` | import historii słuchania z Last.fm, gatunki artystów i opisy wykonawców („Kim jest?”) | przycisk importu się nie pokazuje, gatunki z ogólnych etykiet Ticketmastera, przy wykonawcach same linki |
 | `TICKETMASTER_API_KEY` | koncerty w zakładce Wydarzenia | zakładka jest pusta |
+| `BANDSINTOWN_APP_ID`, `SONGKICK_API_KEY` | dodatkowe koncerty i uzupełnianie braków (ten sam koncert z kilku źródeł to jedna karta) | tylko Ticketmaster |
 | `GIF_API_KEY`, `GIF_PROVIDER` | przeglądarka GIF-ów (KLIPY albo GIPHY) | przycisk GIF się nie pokazuje |
 | `MAIL_HOST`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM`, `APP_PUBLIC_URL` | potwierdzanie adresu e-mail, reset hasła, zmiana adresu | konta działają od razu, bez resetu hasła |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | powiadomienia push | push wyłączony, powiadomienia tylko w dzwonku |

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import Collapse from 'react-bootstrap/Collapse';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -296,7 +296,18 @@ function Szczegoly({
           </section>
         )}
 
-        <p className="text-body-secondary small mb-0 mt-3">{t('events.source')}</p>
+        {/* Skad dane: glowne zrodlo i te, ktore uzupelnily braki (Bandsintown i Songkick wymagaja przypisania) */}
+        <p className="text-body-secondary small mb-0 mt-3 wydarzenie-zrodla">
+          {t('events.sourcesLabel')}{' '}
+          {(w.sources?.length ? w.sources : [{ name: 'Ticketmaster' }]).map((s, i) => (
+            <Fragment key={s.name}>
+              {i > 0 && ' · '}
+              {s.url
+                ? <a href={s.url} target="_blank" rel="noopener noreferrer nofollow">{s.name}</a>
+                : s.name}
+            </Fragment>
+          ))}
+        </p>
       </div>
     </article>
   );

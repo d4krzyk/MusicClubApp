@@ -29,4 +29,11 @@ public interface ArtistRepository extends JpaRepository<Artist, Long> {
          ORDER BY a.id
         """)
     List<Artist> needingGenres(@Param("checkedBefore") LocalDateTime checkedBefore, Pageable limit);
+
+    /** Wykonawcy, ktorych lubi najwiecej osob - o ich koncerty pytamy zrodla bez wyszukiwania po miejscu. */
+    @Query(value = """
+        SELECT a.name FROM artists a JOIN user_favorite_artists f ON f.artist_id = a.id
+         GROUP BY a.id, a.name ORDER BY COUNT(*) DESC, a.id
+        """, nativeQuery = true)
+    List<String> mostLiked(org.springframework.data.domain.Pageable limit);
 }
