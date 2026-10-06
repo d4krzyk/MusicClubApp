@@ -1094,7 +1094,12 @@ Przy ekipach na koncert (październik 2026, migracja V22):
   (miasto z profilu), zapis „idę”, „1 ekipa” na liście, karta z „blisko ciebie”, dołączenie, czat ekipy w obie strony bez
   przeładowania (1,5–2,7 s), licznik na ikonie Wydarzeń i jego zniknięcie po przeczytaniu, miejsce zbiórki z „Będę”,
   nabór za zgodą z wiadomością, dzwonek u obu stron, klik w powiadomienie, blokada rezygnacji w ekipie, odejście,
-  telefon 320 i 390 px (ciemny) bez przelewu, zero błędów w konsoli. Dwa przebiegi na świeżej bazie zielone.
+  telefon 320 i 390 px (ciemny) bez przelewu, zero błędów w konsoli. Dwa przebiegi na świeżej bazie zielone;
+- testy z mutacjami: 74 mutanty (widoczność i kolejność listy, „Dołącz” na karcie, limity, nabór, prośby i karencja,
+  zarząd zakładającego, przekazanie i rozwiązanie, czat: nieprzeczytane, znacznik, push, usuwanie, zamknięcie po koncercie,
+  spotkania ekipy i ich powiadomienia, blokada rezygnacji z koncertu, sprzątanie, usuwanie konta, karty wydarzeń, zakazy).
+  Zabite 73 (`CrewFlowTest` 12 → 13 z testem zakazów); jeden równoważny — sprawdzenie wycofanego wydarzenia przy
+  zakładaniu powtarza się w `participate`, które cofa całą transakcję.
 
 Przy „Kim jest” wykonawca i „Od organizatora” (październik 2026, migracja V21):
 

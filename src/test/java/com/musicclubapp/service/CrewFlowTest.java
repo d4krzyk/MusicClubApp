@@ -824,6 +824,32 @@ class CrewFlowTest {
     }
 
     @Test
+    @DisplayName("zakazy: z zakazem publikowania nie zalozysz ani nie zmienisz ekipy, z zakazem wiadomosci nie piszesz na czacie")
+    void bans() throws Exception {
+        long ekipa = zaloz("ek_ala", koncert, 6, "OPEN");
+        dolacz("ek_bob", ekipa, null);
+        users.findByUsername("ek_ala").orElseThrow().setBannedUntil(com.musicclubapp.entity.BanKind.POSTING,
+            LocalDateTime.now().plusDays(1));
+        users.findByUsername("ek_cyd").orElseThrow().setBannedUntil(com.musicclubapp.entity.BanKind.POSTING,
+            LocalDateTime.now().plusDays(1));
+        users.findByUsername("ek_bob").orElseThrow().setBannedUntil(com.musicclubapp.entity.BanKind.MESSAGING,
+            LocalDateTime.now().plusDays(1));
+        em.flush();
+
+        assertThat(blad(wyslij("PUT", "ek_ala", "/api/crews/" + ekipa, formularz("Nowa", 6, "OPEN", null))))
+            .contains("zakaz publikowania");
+        assertThat(blad(wyslij("POST", "ek_cyd", "/api/events/" + koncert + "/crews", formularz("A", 4, "OPEN", null))))
+            .contains("zakaz publikowania");
+        assertThat(blad(wyslij("POST", "ek_bob", "/api/crews/" + ekipa + "/chat", Map.of("content", "hej"))))
+            .contains("zakaz wysyłania wiadomości");
+        assertThat(blad(wyslij("POST", "ek_bob", "/api/crews/" + ekipa + "/chat/meeting", spotkanie("X", 60, 0))))
+            .contains("zakaz wysyłania wiadomości");
+        // zakaz publikowania nie zamyka czatu, zakaz wiadomosci nie zamyka dolaczania
+        napisz("ek_ala", ekipa, "dalej moge pisac");
+        assertThat(crewMessages.findAll()).hasSize(1);
+    }
+
+    @Test
     @DisplayName("lista pod wydarzeniem: moja pierwsza, potem z miejscami (od najblizszej), pelne na koncu; znajomi w srodku")
     void ordering() throws Exception {
         long daleka = tresc(wyslij("POST", "ek_bob", "/api/events/" + koncert + "/crews",

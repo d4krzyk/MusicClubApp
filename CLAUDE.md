@@ -767,6 +767,10 @@ na koncert sam” w trzech krokach (`OAplikacji`).
   nieprzeczytanego, więc przy cudzej wiadomości dostaje push. Skrypt e2e ekip rejestruje konta — świeża baza
   (`backend-n3.sh`). Zrzut całej strony zaraz po przejściu łapał stronę ekipy w połowie animacji (wyblakłą) — oceniać
   zrzuty zrobione po chwili albo z `reducedMotion`.
+- **Mutanty ekip**: 74, zabite 73. Jedyny ocalały jest równoważny — wyłączenie sprawdzania wycofanego wydarzenia
+  w `CrewService.openEvent` nic nie zmienia, bo `enter` woła `participate`, które odrzuca wycofane tym samym komunikatem,
+  a transakcja cofa założoną ekipę. Sprawdzenie zostaje (błąd przed zapisem, czytelniej). Zakazy publikowania i pisania
+  dopilnował osobny test (`CrewFlowTest.bans`) — w pierwszej liście mutantów ich nie było.
 
 ## Karta profilu i tryb Poznawaj (V17)
 
