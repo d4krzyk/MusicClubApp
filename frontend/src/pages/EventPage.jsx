@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import Collapse from 'react-bootstrap/Collapse';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Alert from 'react-bootstrap/Alert';
 import Button from 'react-bootstrap/Button';
@@ -41,6 +41,7 @@ export default function EventPage() {
   const { t, i18n } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const lokalizacja = useLocation();
 
   const [wydarzenie, setWydarzenie] = useState(null);
   const [ladowanie, setLadowanie] = useState(true);
@@ -89,12 +90,15 @@ export default function EventPage() {
   }
 
   /*
-   * "Wstecz" zamiast sztywnego odnosnika do listy: wraca do listy z tym
-   * samym miastem i fraza. Gdy ktos wszedl tu prosto z linku, historii
-   * nie ma - wtedy idziemy na sama liste.
+   * Przycisk jest podpisany "Wszystkie wydarzenia", wiec ma prowadzic do listy. Jedyny wyjatek: gdy przyszlismy z samej
+   * listy - wtedy cofamy sie o krok, zeby wrocic do niej z tym samym miastem i fraza (siedza w adresie). Skad
+   * przyszlismy, mowi karta wydarzenia (state.poprzednia).
+   *
+   * Wczesniej cofalismy sie zawsze, gdy byla jakakolwiek historia - i z ekipy, tablicy albo klanu przycisk
+   * "Wszystkie wydarzenia" odsylal z powrotem tam, skad przyszlismy.
    */
   function wroc(e) {
-    if (window.history.state?.idx > 0) {
+    if (lokalizacja.state?.poprzednia === '/wydarzenia') {
       e.preventDefault();
       navigate(-1);
     }

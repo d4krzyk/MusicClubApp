@@ -177,6 +177,13 @@ Na telefonie (< 576 px) ikony administratora przechodzą do menu konta, a liczni
 zgłoszeń na awatar — z ikoną Wydarzeń pasek administratora wychodził poza
 ekran o 41 px przy 360 px. Teraz mieści się od 320 px w górę (zmierzone).
 
+Przycisk „Wszystkie wydarzenia” na stronie wydarzenia (`EventPage.wroc`) cofa się o krok **tylko wtedy, gdy poprzednia strona
+to lista** (`EventCard` przekazuje `state.poprzednia`) — wtedy wraca z tym samym miastem i frazą z adresu. W każdym innym
+przypadku to zwykły link do `/wydarzenia`. Wcześniej cofał zawsze, gdy była jakaś historia, więc z ekipy, tablicy („Twoje
+koncerty”), klanu czy posta odsyłał z powrotem tam, skąd się przyszło, mimo napisu „Wszystkie wydarzenia” (zgłoszenie
+użytkownika; `wstecz-e2e` odtwarza to w Chromium na pięciu drogach wejścia). Przycisk z konkretnym napisem nie może zależeć
+od historii przeglądarki.
+
 Posty pod wydarzeniem (migracja V7) — „szukam ekipy”: `posts.event_id`
 z `ON DELETE SET NULL`. To zwykłe posty — są też na tablicy i na profilu,
 z plakietką prowadzącą do wydarzenia (na stronie wydarzenia plakietki nie ma).

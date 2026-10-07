@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import EventReasons from './EventReasons';
 import { IconCalendar, IconClock, IconFriends, IconPin } from './Icons';
@@ -14,6 +14,7 @@ import {
  */
 export default function EventCard({ wydarzenie, pokazPowody = false, indeks = 0 }) {
   const { t, i18n } = useTranslation();
+  const lokalizacja = useLocation();
   const { dzien, miesiac } = plakietka(wydarzenie.date, i18n.language);
   const miasto = nazwaMiasta(wydarzenie.cityKey, wydarzenie.city, i18n.language);
   const sklad = wykonawcySpozaNazwy(wydarzenie.name, wydarzenie.performers).slice(0, 3);
@@ -29,6 +30,8 @@ export default function EventCard({ wydarzenie, pokazPowody = false, indeks = 0 
   return (
     <Link
       to={`/wydarzenia/${wydarzenie.id}`}
+      /* Strona wydarzenia wie dzieki temu, skad przyszlismy - patrz "wroc" w EventPage */
+      state={{ poprzednia: lokalizacja.pathname }}
       className={`wydarzenie-karta mc-wejscie${odwolane ? ' is-odwolane' : ''}`}
       style={{ '--i': indeks }}
     >
