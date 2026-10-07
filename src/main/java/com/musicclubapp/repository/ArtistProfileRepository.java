@@ -14,9 +14,4 @@ public interface ArtistProfileRepository extends JpaRepository<ArtistProfile, Lo
     /** Czy ktos o tej nazwie gra na jakimkolwiek wydarzeniu - opis pokazujemy tylko wykonawcom z koncertow. */
     @Query(value = "SELECT COUNT(*) > 0 FROM music_event_performers WHERE lower(name) = lower(:name)", nativeQuery = true)
     boolean isPerformer(@Param("name") String name);
-
-    /** Numer wykonawcy u Ticketmastera (z importu) - do pytania o jego opis; null, gdy zaden koncert go nie podal. */
-    @Query(value = "SELECT external_id FROM music_event_performers WHERE lower(name) = lower(:name) "
-        + "AND external_id IS NOT NULL ORDER BY event_id DESC LIMIT 1", nativeQuery = true)
-    String attractionIdOf(@Param("name") String name);
 }

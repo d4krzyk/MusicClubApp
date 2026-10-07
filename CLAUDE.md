@@ -26,7 +26,7 @@ usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w cz
 „Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji),
 „Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21), **ekipy na koncert** — aplikacja przebudowana
 wokół „nie idź na koncert sam” (V22), wiele źródeł wydarzeń z łączeniem duplikatów — Bandsintown i Songkick
-obok Ticketmastera (V23), opisy wykonawców („About”) i pełny opis wydarzenia z Ticketmastera — bez formułek sprzedażowych i prawnych (V24).
+obok Ticketmastera (V23), opis wykonawcy z Ticketmastera (gdy go poda — zwykle nie podaje) i pełny opis wydarzenia bez formułek sprzedażowych i prawnych (V24).
 Uwaga na kierunek: **rdzeniem aplikacji są ekipy na koncert** — kilka osób, które idą na to samo wydarzenie razem.
 Nowe funkcje mają je wzmacniać (start, strona wydarzenia, czat ekipy), a nie konkurować z nimi o uwagę.
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
@@ -830,14 +830,14 @@ pytanie użytkownika „czemu nie pobiera się opis”.
 - **`PlainText.of`** (HTML z obcego serwisu → zwykły tekst): akapity i `<br>` zostają jako nowe linie (strona ma
   `white-space: pre-line`), znaczniki w zdaniu znikają bez śladu (lekcja z V21), `<script>`/`<style>` razem z treścią,
   encje rozkodowane **po** zdjęciu znaczników; „<3” to nie znacznik i zostaje.
-- **Opis wykonawcy** (`performer_about`, `PerformerAbout`, klucz `NameKeys` jak linki): z importu
-  (`PerformerTagService.saveAbout` — tylko gdy przyszedł; brak w odpowiedzi niczego nie kasuje, opis mógł przyjść z innego
-  koncertu albo z pytania o wykonawcę). Gdy go nie ma, „Kim jest?” pyta raz `/attractions/{id}.json` (numer
-  z `music_event_performers.external_id`, `ArtistProfileRepository.attractionIdOf`) i zapamiętuje odpowiedź na 30 dni —
-  **także „nic nie ma”** (404 albo brak tekstu); awarii nie (zostaje stary opis). Na kliknięcie czas 5 s, nie 15 s importu.
-  Numer idzie do ścieżki adresu, więc tylko `[A-Za-z0-9_-]{1,64}`.
-- **Bez `includeLicensedContent`**: treści licencjonowane mają własne warunki wyświetlania, których nie znamy. Jeśli „About”
-  z ticketmaster.pl okaże się licencjonowane, API go bez tego nie odda — próba i decyzja w `docs/WDROZENIE.md`.
+- **Opis wykonawcy** (`performer_about`, `PerformerAbout`, klucz `NameKeys` jak linki): **tylko z importu**
+  (`PerformerTagService.saveAbout` — gdy Ticketmaster przy wykonawcy poda `description` albo `additionalInfo`; brak
+  w odpowiedzi niczego nie kasuje, opis mógł przyjść z innego koncertu). „Kim jest?” go tylko czyta z bazy. Zwykle jest
+  pusty (niżej, próba na żywo), więc w praktyce opis artysty to Last.fm. **Nie pytamy Ticketmastera o pojedynczego
+  wykonawcę** — była taka wersja (`attractions/{id}.json`, pamięć 30 dni, „nic nie ma” też zapamiętane), usunięta po próbie
+  na żywo: odpowiedź nie ma opisu, a lista wydarzeń oddaje te same pola wykonawcy.
+- **Bez `includeLicensedContent`** — i tak niczego by nie dało (próba na żywo niżej); treści licencjonowane mają własne
+  warunki wyświetlania, których nie znamy.
 - **Formułki to nie opis** (`TicketBoilerplate.strip`): na żywym Ticketmasterze `info` polskich wydarzeń to zwykle sam
   regulamin sprzedaży — „Service fee…”, „Additional fees may be added…”, „Seating chart reflects…”, „To buy accessible
   tickets please contact us” (kontakt z Ticketmasterem, nie z nami) i dane spółki organizatora z KRS i VAT. Użytkownik
@@ -851,7 +851,7 @@ pytanie użytkownika „czemu nie pobiera się opis”.
 - **Locale bez zmian** (domyślne `en`), choć **teksty przychodzą po angielsku** — zrzuty użytkownika z żywego API (fixture
   z polskim `info` był ułożony ręcznie, poprzednia notatka „polskie już przychodzą” była błędna). Polskie wersje mogą być
   pod `locale=pl-pl,pl,*`, ale to może zmienić zbiór importowanych wydarzeń — sprawdzić na żywo, zanim się to włączy.
-- **Mutanty**: opisy 26 (25 zabitych + 1 równoważny: bramka `ZNACZNIK` w `PlainText.of` — na tekście bez znaczników
+- **Mutanty** (część dotyczyła pytania o pojedynczego wykonawcę, usuniętego później): opisy 26 (25 zabitych + 1 równoważny: bramka `ZNACZNIK` w `PlainText.of` — na tekście bez znaczników
   wyrażenia i tak nic nie zmieniają), formułki 12/12. Trzy przeżyły pierwszą rundę i dostały testy: znacznik przy kropce
   („w <b>Warszawie</b>.” — w środku zdania dodatkowa spacja i tak się zwija), pojedynczy `<p>` (dwa sąsiednie znaczniki
   dają pustą linię także z jednym „\n”) i skrót spoza listy w adresie („lok. 3”). Mutant, który zmienia zmienną używaną
@@ -861,14 +861,16 @@ pytanie użytkownika „czemu nie pobiera się opis”.
   ma żadnego.
 - Dane o wykonawcach, **żadnych danych użytkowników** — do Ticketmastera idzie numer wykonawcy i nasz klucz; polityka,
   eksport i usuwanie konta bez zmian.
-- **Sprawdzone na żywo przez użytkownika** (`curl` z jego kluczem, Kovacs, wykonawca `K8vZ9173gz7`): lista wydarzeń **nie
-  oddaje opisu wykonawcy** — `description` i `additionalInfo` w `_embedded.attractions[]` są `null`, choć ticketmaster.pl
-  pokazuje „About”. `info` wydarzenia to sama formułka sprzedażowa, a `description`/`additionalInfo` wydarzenia `null` — czyli
-  koncert nie ma opisu, i tak ma zostać (sekcji „O wydarzeniu” nie ma). **Nierozstrzygnięte**: `attractions/{id}.json`
-  (z `includeLicensedContent` i bez) — pierwsza próba poszła z literalnym `ID` zamiast numeru, więc nic nie znaczy. Gdy
-  i to jest puste, pytanie o pojedynczego wykonawcę (`ArtistProfileService.aboutTicketmastera`, `TicketmasterClient.attraction`)
-  jest martwym kodem do usunięcia — zostawić tylko czytanie opisu z importu. Klucz Ticketmastera użytkownik wkleił do
-  czatu — **nie trafia do repozytorium** i powinien zostać wymieniony.
+- **Sprawdzone na żywo przez użytkownika** (`curl` z jego kluczem, 7.10.2026, Kovacs, wykonawca `K8vZ9173gz7`): **Ticketmaster
+  nie oddaje opisu wykonawcy przez publiczne API**, choć ticketmaster.pl pokazuje „About”. Lista wydarzeń: `description`
+  i `additionalInfo` w `_embedded.attractions[]` = `null`. `attractions/{id}.json` (z `includeLicensedContent=yes` i bez):
+  też `null`, a w liście pól tych kluczy w ogóle nie ma (`_links, classifications, externalLinks, id, images, locale, name,
+  test, type, upcomingEvents, url`). `info` wydarzenia to sama formułka sprzedażowa, a `description`/`additionalInfo`
+  wydarzenia `null` — koncert nie ma opisu i sekcji „O wydarzeniu” nie ma. Sprawdzony jest **jeden** wykonawca; czytanie
+  z importu zostaje na wypadek innych. Link wykonawcy, który **jest**: `externalLinks` = facebook, homepage, instagram, itunes,
+  **musicbrainz**, spotify, twitter, youtube (bez `wiki`). MusicBrainz → Wikidata → Wikipedia byłaby legalną drogą do opisu
+  (otwarte API, CC BY-SA), ale to osobna funkcja — nie zrobiona. Klucz Ticketmastera użytkownik wkleił do czatu — **nie
+  trafia do repozytorium** i powinien zostać wymieniony.
 
 ## Karta profilu i tryb Poznawaj (V17)
 

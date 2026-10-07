@@ -28,7 +28,7 @@ wypuścić na świat.
 | **Komentarze** | odpowiedzi, oznaczanie osób przez `@login` z podpowiedziami, powiadomienia, zgłaszanie |
 | **GIF-y** | przeglądarka GIF-ów w komentarzach, na czacie i w czacie klanu; serwer pośredniczy w wyszukiwaniu, a wyniki są podpisane |
 | **Czat** | rozmowy ze znajomymi z linkami muzycznymi, dymkiem „pisze…” i potwierdzeniem przeczytania |
-| **Wydarzenia** | koncerty z Ticketmastera (opcjonalnie też z Bandsintown i Songkick — duplikaty łączone w jedną kartę z uzupełnionymi brakami), widok „Dla ciebie”, „Kim jest?” przy każdym wykonawcy (opis od Ticketmastera i z Last.fm), zapisy i lista uczestników, przypomnienia, posty „szukam ekipy” |
+| **Wydarzenia** | koncerty z Ticketmastera (opcjonalnie też z Bandsintown i Songkick — duplikaty łączone w jedną kartę z uzupełnionymi brakami), widok „Dla ciebie”, „Kim jest?” przy każdym wykonawcy (opis z Last.fm, gdy Ticketmaster go poda — także od niego), zapisy i lista uczestników, przypomnienia, posty „szukam ekipy” |
 | **Klany** | przeglądarka klanów, prośby o dołączenie, czat, ankiety, utwór tygodnia, tytuły i ranking aktywności |
 | **Muzyka** | linki ze Spotify, YouTube Music i Apple Music w postach, ulubieni artyści i utwory z Deezera, import z Last.fm, gablotka playlist |
 | **Prywatność** | posty publiczne albo tylko dla znajomych, blokady, ustawienia widoczności, potwierdzanie e-maila, reset hasła, pobranie własnych danych, regulamin i polityka prywatności |
@@ -341,7 +341,7 @@ z opisami: Swagger (adres niżej).
 | POST | `/api/crews/{id}/requests/{requestId}/accept` i `/decline` | rozpatrzenie prośby (zakładający) |
 | DELETE | `/api/crews/{id}/members/me` / `/api/crews/{id}/members/{login}` | odejście (zakładający przekazuje ekipę) / usunięcie z ekipy |
 | GET / POST | `/api/crews/{id}/chat` | czat ekipy (`after`, `before`, `limit`) / nowa wiadomość; `…/chat/meeting` — miejsce zbiórki; `…/chat/changes?since=` — usunięte i zmienione spotkania; `…/chat/read` — przeczytane do |
-| GET | `/api/artists/profile?name=&lang=` | „Kim jest” wykonawca z koncertu: opis od Ticketmastera („About” ze strony artysty), opis, słuchacze i podobni z Last.fm (zapamiętane na 30 dni) i jego linki |
+| GET | `/api/artists/profile?name=&lang=` | „Kim jest” wykonawca z koncertu: opis od Ticketmastera (gdy go poda — zwykle nie), opis, słuchacze i podobni z Last.fm (zapamiętane na 30 dni) i jego linki |
 | PUT / DELETE | `/api/events/{id}/participation` | „Zainteresowany” / „Biorę udział” / rezygnacja |
 | GET | `/api/posts?event={id}` | posty pod wydarzeniem („szukam ekipy”) |
 | GET / POST | `/api/posts/{id}/comments` | komentarze pierwszego poziomu (od najnowszych, `page`, `size`) / dodanie komentarza lub odpowiedzi (`content`, `parentId`) |

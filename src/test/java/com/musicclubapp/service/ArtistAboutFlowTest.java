@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -35,9 +34,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Opis wykonawcy od Ticketmastera ("About" na stronie artysty) w "Kim jest?" przez prawdziwe API, z udawanym
- * Ticketmasterem: z importu, gdy przyszedl przy wydarzeniu; inaczej jedno pytanie o wykonawce, zapamietane na 30 dni
- * (takze "nic nie ma"), a awaria nie jest zapamietywana. Do tego opis wydarzenia ze wszystkich pol.
+ * Opis wykonawcy od Ticketmastera w "Kim jest?" przez prawdziwe API, z udawanym Ticketmasterem: bierzemy go z importu
+ * wydarzen, gdy przyszedl (sprawdzone na zywo, ze zwykle nie przychodzi - "About" z ticketmaster.pl nie jest w publicznym
+ * API), a o wykonawcow osobno Ticketmastera nie pytamy. Do tego opis wydarzenia ze wszystkich pol.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -78,14 +77,12 @@ class ArtistAboutFlowTest {
     @Autowired private JdbcTemplate jdbc;
     @Autowired private EntityManager em;
 
-    private final AtomicInteger oKovacs = new AtomicInteger();
-    private final AtomicInteger oBrak = new AtomicInteger();
-    private final AtomicInteger oAwarie = new AtomicInteger();
-    private volatile boolean awaria = true;
+    private volatile String opisSupportu = "Duet z Gdańska grający dream pop.";
     private volatile String opisKovacs = "<p>Sharon Kovacs is a Dutch singer-songwriter known for her soulful voice.</p>";
 
     private String wydarzenia() throws IOException {
         String opis = opisKovacs == null ? "" : ", \"description\": " + json.writeValueAsString(opisKovacs);
+        String support = opisSupportu == null ? "" : ", \"additionalInfo\": " + json.writeValueAsString(opisSupportu);
         return """
             { "_embedded": { "events": [ {
                 "id": "KOV1", "name": "Kovacs", "locale": "pl-pl",
@@ -99,9 +96,9 @@ class ArtistAboutFlowTest {
                     { "id": "TMKOVACS", "name": "Kovacs", "locale": "en-us",
                       "url": "https://www.ticketmaster.pl/artist/kovacs-tickets/950040" %s },
                     { "id": "TMBRAK", "name": "Support Bez Opisu", "locale": "pl-pl" },
-                    { "id": "TMAWARIA", "name": "Support Z Awaria", "locale": "pl-pl" } ] } } ] },
+                    { "id": "TMSUPPORT", "name": "Support Duo", "locale": "pl-pl" %s } ] } } ] },
               "page": { "size": 200, "totalElements": 1, "totalPages": 1, "number": 0 } }
-            """.formatted(LocalDate.now().plusDays(30), opis);
+            """.formatted(LocalDate.now().plusDays(30), opis, support);
     }
 
     @BeforeEach
@@ -112,24 +109,6 @@ class ArtistAboutFlowTest {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-        });
-        server.odpowiadaj("/discovery/v2/attractions/TMKOVACS.json", zapytanie -> {
-            oKovacs.incrementAndGet();
-            return new TestHttpServer.Odpowiedz(500, "nie powinno byc pytania");
-        });
-        server.odpowiadaj("/discovery/v2/attractions/TMBRAK.json", zapytanie -> {
-            oBrak.incrementAndGet();
-            return new TestHttpServer.Odpowiedz(404, "{\"errors\":[{\"code\":\"DIS1004\"}]}");
-        });
-        server.odpowiadaj("/discovery/v2/attractions/TMAWARIA.json", zapytanie -> {
-            oAwarie.incrementAndGet();
-            return awaria
-                ? new TestHttpServer.Odpowiedz(503, "awaria")
-                : TestHttpServer.Odpowiedz.ok("""
-                    { "id": "TMAWARIA", "name": "Support Z Awaria", "locale": "pl-pl",
-                      "url": "https://www.ticketmaster.pl/artist/support-tickets/1",
-                      "additionalInfo": "Duet z Gdańska grający dream pop." }
-                    """);
         });
         users.save(new User("ab_ala", "ab_ala@example.com", "x"));
         assertThat(importer.runImport().success()).isTrue();
@@ -153,7 +132,6 @@ class ArtistAboutFlowTest {
         assertThat(p.get("aboutLang").asText()).isEqualTo("en");
         assertThat(p.get("aboutUrl").asText()).isEqualTo("https://www.ticketmaster.pl/artist/kovacs-tickets/950040");
         assertThat(p.get("bio").isNull()).as("bez klucza Last.fm").isTrue();
-        assertThat(oKovacs.get()).isZero();
     }
 
     @Test
@@ -179,42 +157,35 @@ class ArtistAboutFlowTest {
     }
 
     @Test
-    @DisplayName("bez opisu przy wydarzeniu: jedno pytanie o wykonawce; \"nic nie ma\" zapamietane na 30 dni")
-    void missingAboutAskedOnceAndRemembered() throws Exception {
-        assertThat(profil("Support Bez Opisu").get("about").isNull()).isTrue();
-        assertThat(oBrak.get()).isEqualTo(1);
-        em.flush();
-        assertThat(profil("support bez opisu").get("about").isNull()).isTrue();
-        assertThat(oBrak.get()).as("odpowiedz zapamietana").isEqualTo(1);
-
-        jdbc.update("UPDATE performer_about SET checked_at = ?", LocalDateTime.now().minusDays(31));
+    @DisplayName("wykonawca bez opisu w imporcie: pusto, a Ticketmastera o niego osobno nie pytamy (takze przy kolejnych klikach)")
+    void missingAboutIsNotAskedFor() throws Exception {
+        JsonNode p = profil("Support Bez Opisu");
+        assertThat(p.get("about").isNull()).isTrue();
+        assertThat(p.get("aboutLang").isNull()).isTrue();
+        assertThat(p.get("aboutUrl").isNull()).isTrue();
+        profil("support bez opisu");
+        jdbc.update("UPDATE performer_about SET checked_at = ?", LocalDateTime.now().minusDays(90));
         em.clear();
-        profil("Support Bez Opisu");
-        assertThat(oBrak.get()).as("po 30 dniach pytamy znowu").isEqualTo(2);
+        profil("Kovacs");
+        assertThat(server.requests()).as("tylko lista wydarzen z importu, zadnych /attractions/")
+            .allMatch(zapytanie -> zapytanie.contains("/events.json"));
     }
 
     @Test
-    @DisplayName("awaria Ticketmastera nie jest zapamietywana; nastepny import nie kasuje opisu, ktorego nie przyslal")
-    void failureNotRemembered() throws Exception {
-        assertThat(profil("Support Z Awaria").get("about").isNull()).isTrue();
-        assertThat(oAwarie.get()).isEqualTo(1);
+    @DisplayName("opis z importu: kolejny import bez opisu go nie kasuje, a zmieniony poprawia; jezyk z locale wykonawcy")
+    void importKeepsAndUpdatesAbout() throws Exception {
+        JsonNode support = profil("Support Duo");
+        assertThat(support.get("about").asText()).isEqualTo("Duet z Gdańska grający dream pop.");
+        assertThat(support.get("aboutLang").asText()).isEqualTo("pl");
+        assertThat(support.get("aboutUrl").isNull()).as("bez strony artysty w odpowiedzi").isTrue();
 
-        awaria = false;
-        JsonNode p = profil("Support Z Awaria");
-        assertThat(p.get("about").asText()).isEqualTo("Duet z Gdańska grający dream pop.");
-        assertThat(p.get("aboutLang").asText()).isEqualTo("pl");
-        assertThat(oAwarie.get()).isEqualTo(2);
-        em.flush();
-        profil("Support Z Awaria");
-        assertThat(oAwarie.get()).isEqualTo(2);
-
-        // Import znow bez opisu tego wykonawcy - opis zostaje; zmieniony opis Kovacs - poprawiony
+        // Import znow, tym razem bez opisu Supportu - zostaje; opis Kovacs zmieniony - poprawiony
+        opisSupportu = null;
         opisKovacs = "Nowy opis Kovacs.";
         assertThat(importer.runImport().success()).isTrue();
         em.flush();
         em.clear();
-        assertThat(profil("Support Z Awaria").get("about").asText()).isEqualTo("Duet z Gdańska grający dream pop.");
+        assertThat(profil("Support Duo").get("about").asText()).isEqualTo("Duet z Gdańska grający dream pop.");
         assertThat(profil("Kovacs").get("about").asText()).isEqualTo("Nowy opis Kovacs.");
-        assertThat(oKovacs.get()).isZero();
     }
 }

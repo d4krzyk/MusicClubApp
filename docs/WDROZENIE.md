@@ -283,51 +283,37 @@ wewnętrzne adresy — to łamie ich regulaminy, narusza prawo producenta bazy d
 i psułoby się przy każdej zmianie po ich stronie. Uczciwa droga to zapytać taki
 portal o oficjalny dostęp (np. program partnerski albo plik z wydarzeniami).
 
-### Opisy z Ticketmastera — próba na żywo
+### Opisy z Ticketmastera — co naprawdę oddaje API
 
-Ticketmaster podaje tekst w kilku polach: wydarzenie ma `info`, `description`
-i `additionalInfo`, a wykonawca (na ticketmaster.pl sekcja „About” na stronie
-artysty) — `description` i `additionalInfo`. Opis wydarzenia składamy ze
-wszystkich trzech, a opis wykonawcy pokazujemy w „Kim jest?” (przed opisem
-z Last.fm). Przychodzi z importem; gdy go tam nie ma, „Kim jest?” pyta
-Ticketmastera o tego jednego wykonawcę i zapamiętuje odpowiedź na 30 dni.
+Ticketmaster ma w specyfikacji kilka pól tekstu: wydarzenie — `info`, `description`, `additionalInfo`, wykonawca —
+`description` i `additionalInfo`. Opis wydarzenia składamy ze wszystkich trzech (bez formułek sprzedażowych i prawnych),
+opis wykonawcy czytamy z importu, gdy Ticketmaster go poda, i pokazujemy w „Kim jest?” przed opisem z Last.fm.
 
-**Sprawdzone na żywo (7.10.2026, Kovacs, id wykonawcy `K8vZ9173gz7`):** lista wydarzeń
-(`events.json`) **nie oddaje opisu wykonawcy** — `description` i `additionalInfo`
-wykonawcy są `null`, mimo że ticketmaster.pl pokazuje mu sekcję „About”. Pole `info`
-wydarzenia to sama formułka sprzedażowa („Service fee depends on the ticket prices…”),
-a `description` i `additionalInfo` wydarzenia też `null`. Czyli opisu koncertu Ticketmaster
-tu po prostu nie ma — to nie jest błąd po naszej stronie.
+**Sprawdzone na żywo (7.10.2026, Kovacs, wykonawca `K8vZ9173gz7`): Ticketmaster nie oddaje opisu wykonawcy
+przez publiczne API**, choć ticketmaster.pl pokazuje mu sekcję „About”:
 
-Nierozstrzygnięte zostaje, czy opis da się wziąć pytaniem o samego wykonawcę
-(`attractions/{id}.json`), także z treściami licencjonowanymi. Sprawdź to na prawdziwym
-numerze wykonawcy (w pierwszej próbie został literalny `ID`, więc odpowiedź była pusta):
+- lista wydarzeń: `description` i `additionalInfo` wykonawcy `null`;
+- `attractions/{id}.json`, także z `includeLicensedContent=yes`: `null`, a w liście pól tych kluczy w ogóle nie ma
+  (`_links, classifications, externalLinks, id, images, locale, name, test, type, upcomingEvents, url`);
+- `info` wydarzenia to sama formułka sprzedażowa („Service fee depends on the ticket prices…”), `description`
+  i `additionalInfo` wydarzenia `null` — koncert nie ma opisu, więc sekcji „O wydarzeniu” nie ma. To nie błąd po naszej
+  stronie; opisy artystów zostają z Last.fm.
+
+Dlatego nie pytamy Ticketmastera o pojedynczego wykonawcę (była taka wersja, usunięta po tej próbie). Czytanie opisu
+z importu zostaje — nic nie kosztuje, a sprawdzony jest jeden wykonawca. Żeby sprawdzić innego, wystarczy:
 
 ```bash
 K=twoj-klucz-ticketmastera          # klucza nie wklejaj do czatu ani do repozytorium
-ID=K8vZ9173gz7                      # Kovacs; inny wykonawca - jego id z punktu 1
-BAZA=https://app.ticketmaster.com/discovery/v2
-# 1. Co lista wydarzeń mówi o wykonawcach (id, opisy)
-curl -s "$BAZA/events.json?apikey=$K&countryCode=PL&keyword=Kovacs" \
-  | jq '._embedded.events[0] | {name, info, description, additionalInfo,
-        wykonawcy: [._embedded.attractions[] | {id, name, locale, description, additionalInfo}]}'
-# 2. Wykonawca pytany wprost (tak pyta „Kim jest?”): jakie pola w ogóle ma i jakie linki
-curl -s "$BAZA/attractions/$ID.json?apikey=$K" \
-  | jq '{pola: keys, name, locale, description, additionalInfo, url, linki: ((.externalLinks // {}) | keys)}'
-# 3. To samo z treściami licencjonowanymi - tylko dla porównania
-curl -s "$BAZA/attractions/$ID.json?apikey=$K&includeLicensedContent=yes" \
-  | jq '{description, additionalInfo, pola: keys}'
+curl -s "https://app.ticketmaster.com/discovery/v2/events.json?apikey=$K&countryCode=PL&keyword=NAZWA" \
+  | jq '._embedded.events[0]._embedded.attractions[] | {id, name, description, additionalInfo}'
 ```
 
-- Tekst jest w 2. — działa przez „Kim jest?” (jedno zapytanie na wykonawcę na 30 dni;
-  dzienny limit 5000 starcza z zapasem).
-- Tekst jest **tylko** w 3. — to treść licencjonowana (np. biografia od zewnętrznego
-  dostawcy). Celowo o nią nie prosimy, bo ma własne warunki wyświetlania. Przed włączeniem
-  trzeba przeczytać warunki Ticketmastera dla takich treści i dopisać wymagane przypisanie.
-- Tekstu nie ma nigdzie (2. i 3. puste przy prawdziwym `$ID`) — „About” z ticketmaster.pl
-  nie jest dostępne przez publiczne API. Zostaje opis z Last.fm; wtedy zapytanie o
-  pojedynczego wykonawcę nic nie daje i można je usunąć (`ArtistProfileService.aboutTicketmastera`),
-  a czytanie opisu z importu zostawić — nic nie kosztuje.
+Gdy któryś wykonawca ma tam tekst, pojawi się po następnym imporcie w „Kim jest?” z podpisem „opis: Ticketmaster”
+(w logu backendu: „Opisy wykonawcow z Ticketmastera: N nowych albo zmienionych”).
+
+Wykonawcy mają za to w `externalLinks` m.in. `musicbrainz` (Kovacs: facebook, homepage, instagram, itunes, musicbrainz,
+spotify, twitter, youtube). Z MusicBrainz przez Wikidata do Wikipedii prowadzi legalna droga do opisu (otwarte API,
+licencja CC BY-SA z przypisaniem) — osobna funkcja, jeszcze nie zrobiona.
 
 ### Poczta i potwierdzanie adresów e-mail
 
@@ -1169,15 +1155,14 @@ Przy opisach z Ticketmastera (październik 2026, migracja V24):
   z `validate`;
 - testy: `TicketmasterTextsTest` (4 — opis wydarzenia z `info` + `description` + `additionalInfo` bez powtórzeń, HTML na
   zwykły tekst z akapitami, „<3” i `&lt;b&gt;` zostają tekstem, `<script>` znika; opis wykonawcy z obu pól, język
-  z `locale`, strona artysty tylko http(s), przycięcie na granicy słowa), `TicketmasterClientTest` (+2 — zapytanie
-  `/attractions/{id}.json` bez treści licencjonowanych, 404 i brak tekstu = pusto, dziwny numer nie idzie do sieci, błąd
-  bez klucza), `ArtistAboutFlowTest` (4 — przez prawdziwe API z udawanym Ticketmasterem: opis z importu bez dodatkowego
-  pytania, opis wydarzenia ze wszystkich pól, „nic nie ma” zapamiętane na 30 dni, awaria niezapamiętana, import nie kasuje
-  opisu, którego nie przysłał, a zmieniony poprawia);
+  z `locale`, strona artysty tylko http(s), przycięcie na granicy słowa), `ArtistAboutFlowTest` (4 — przez
+  prawdziwe API z udawanym Ticketmasterem: opis z importu, opis wydarzenia ze wszystkich pól, wykonawca bez opisu = pusto
+  i **żadnego zapytania `/attractions/`**, import nie kasuje opisu, którego nie przysłał, a zmieniony poprawia); wersja
+  z pytaniem o pojedynczego wykonawcę (testy 404/awaria/pamięć 30 dni) została usunięta razem z kodem po próbie na żywo;
 - Chromium na PostgreSQL po V24 (1280 i 320 px, udawany Ticketmaster i Last.fm): w „Kim jest?” najpierw opis od
   Ticketmastera w akapitach z `lang="en"` i podpisem „opis: Ticketmaster” (strona artysty, `nofollow`), potem Last.fm
-  ze swoim przypisaniem; drugi wykonawca bez opisu z importu — jedno pytanie do Ticketmastera, po przeładowaniu z pamięci;
-  opis wydarzenia w dwóch akapitach; panel w karcie; zero błędów w konsoli;
+  ze swoim przypisaniem; opis wydarzenia w dwóch akapitach; panel w karcie; zero błędów w konsoli (drugi wykonawca, o którego wtedy pytaliśmy
+  osobno, po usunięciu tej funkcji nie ma opisu od Ticketmastera);
 - formułki zamiast opisu (zgłoszone przez użytkownika na zrzutach z żywego Ticketmastera — „Service fee…”, „Seating
   chart…”, dane spółki Live Nation z KRS i VAT): `TicketBoilerplateTest` (5 — oba prawdziwe teksty dają brak opisu,
   prawdziwe zdanie zostaje, akapity zostają, polskie formułki, skrót ani inicjał nie rozcinają danych spółki),
@@ -1188,7 +1173,8 @@ Przy opisach z Ticketmastera (październik 2026, migracja V24):
 - mutanty: opisy z Ticketmastera 26 — 25 zabitych (w tym 5 przywracających stare zachowanie, więc testy czerwienieją na
   kodzie sprzed zmiany) i 1 równoważny; formułki 12/12. Trzy ocalałe w pierwszej rundzie dostały brakujące przypadki
   testowe i zostały zabite;
-- prawdziwy Ticketmaster **nie** był sprawdzony (zablokowany) — trzy `curl` w „Opisy z Ticketmastera — próba na żywo”.
+- Ticketmaster sprawdzony na żywo przez użytkownika (z jego klucza, nie z tego środowiska): „Opisy z Ticketmastera — co
+  naprawdę oddaje API”.
 
 Przy wielu źródłach wydarzeń (październik 2026, migracja V23):
 
