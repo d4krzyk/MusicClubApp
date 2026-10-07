@@ -26,7 +26,7 @@ usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w cz
 „Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji),
 „Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21), **ekipy na koncert** — aplikacja przebudowana
 wokół „nie idź na koncert sam” (V22), wiele źródeł wydarzeń z łączeniem duplikatów — Bandsintown i Songkick
-obok Ticketmastera (V23).
+obok Ticketmastera (V23), opisy wykonawców („About”) i pełny opis wydarzenia z Ticketmastera (V24).
 Uwaga na kierunek: **rdzeniem aplikacji są ekipy na koncert** — kilka osób, które idą na to samo wydarzenie razem.
 Nowe funkcje mają je wzmacniać (start, strona wydarzenia, czat ekipy), a nie konkurować z nimi o uwagę.
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
@@ -817,6 +817,37 @@ wydarzenia już ma (Bandsintown nie szuka po miejscu), Songkick — o okolice 10
   najdłuższego słowa, więc „Zainteresowany” wypychało „Biorę udział” 37 px poza kartę, a karta (`overflow-hidden`) je
   ucinała — miarka strony pomija elementy przycięte przez przodka, więc tego nie widziała. Teraz `flex-wrap`: gdy oba się
   nie mieszczą, każdy ma cały wiersz (po polsku poniżej 412 px). Mierzyć **względem karty**, nie strony.
+
+## Opisy z Ticketmastera (V24)
+
+Specyfikacja Discovery API (OpenAPI): wydarzenie ma `info`, `description`, `additionalInfo` (i `pleaseNote` — to idzie do
+„Od organizatora”), a wykonawca (`attraction`) — `description` i `additionalInfo`; na ticketmaster.pl to sekcja „About”
+na stronie artysty. Do V24 czytaliśmy z wydarzenia tylko `info` albo `description`, a opisu wykonawcy wcale — stąd
+pytanie użytkownika „czemu nie pobiera się opis”.
+
+- **Opis wydarzenia**: wszystkie trzy pola po kolei, bez powtórzeń (`PlainText.joined` — tekst zawarty w innym, bez
+  wielkości liter i odstępów, odpada; z dwóch takich samych zostaje pierwszy), ≤ 4000 znaków na granicy słowa.
+- **`PlainText.of`** (HTML z obcego serwisu → zwykły tekst): akapity i `<br>` zostają jako nowe linie (strona ma
+  `white-space: pre-line`), znaczniki w zdaniu znikają bez śladu (lekcja z V21), `<script>`/`<style>` razem z treścią,
+  encje rozkodowane **po** zdjęciu znaczników; „<3” to nie znacznik i zostaje.
+- **Opis wykonawcy** (`performer_about`, `PerformerAbout`, klucz `NameKeys` jak linki): z importu
+  (`PerformerTagService.saveAbout` — tylko gdy przyszedł; brak w odpowiedzi niczego nie kasuje, opis mógł przyjść z innego
+  koncertu albo z pytania o wykonawcę). Gdy go nie ma, „Kim jest?” pyta raz `/attractions/{id}.json` (numer
+  z `music_event_performers.external_id`, `ArtistProfileRepository.attractionIdOf`) i zapamiętuje odpowiedź na 30 dni —
+  **także „nic nie ma”** (404 albo brak tekstu); awarii nie (zostaje stary opis). Na kliknięcie czas 5 s, nie 15 s importu.
+  Numer idzie do ścieżki adresu, więc tylko `[A-Za-z0-9_-]{1,64}`.
+- **Bez `includeLicensedContent`**: treści licencjonowane mają własne warunki wyświetlania, których nie znamy. Jeśli „About”
+  z ticketmaster.pl okaże się licencjonowane, API go bez tego nie odda — próba i decyzja w `docs/WDROZENIE.md`.
+- **Locale bez zmian** (domyślne `en`): fixture z prawdziwej odpowiedzi dla Polski ma `locale: pl-pl` i polskie `info`, więc
+  polskie teksty już przychodzą; zmiana `locale` mogłaby zmienić zbiór importowanych wydarzeń, a nie da się jej stąd sprawdzić.
+- **UI** („Kim jest?”, `Wykonawcy.jsx`): najpierw opis od Ticketmastera (`lang` z `locale`, podpis „opis: Ticketmaster”
+  z linkiem do strony artysty, `nofollow`), potem Last.fm ze swoim przypisaniem; „Nie mamy jeszcze opisu” tylko, gdy nie
+  ma żadnego.
+- Dane o wykonawcach, **żadnych danych użytkowników** — do Ticketmastera idzie numer wykonawcy i nasz klucz; polityka,
+  eksport i usuwanie konta bez zmian.
+- **Nie sprawdzone na żywo**: czy lista wydarzeń oddaje opisy w `_embedded.attractions` (fixture ma tam tylko id i nazwę),
+  nie wiadomo — dlatego jest zapas w postaci pytania o jednego wykonawcę. Trzy `curl` do sprawdzenia w `docs/WDROZENIE.md`
+  („Opisy z Ticketmastera — próba na żywo”).
 
 ## Karta profilu i tryb Poznawaj (V17)
 

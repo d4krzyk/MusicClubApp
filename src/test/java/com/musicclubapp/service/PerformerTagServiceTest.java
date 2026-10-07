@@ -41,6 +41,7 @@ class PerformerTagServiceTest {
 
     @Autowired private PerformerTagsRepository repository;
     @Autowired private com.musicclubapp.repository.PerformerLinkRepository links;
+    @Autowired private com.musicclubapp.repository.PerformerAboutRepository abouts;
     @Autowired private PlatformTransactionManager transactionManager;
 
     private TestHttpServer lastFmServer;
@@ -67,7 +68,7 @@ class PerformerTagServiceTest {
     }
 
     private PerformerTagService serwis(LastFmService lastFm) {
-        return new PerformerTagService(lastFm, repository, links, transactionManager,
+        return new PerformerTagService(lastFm, repository, links, abouts, transactionManager,
             Clock.fixed(EventImportServiceTest.TERAZ, ZoneOffset.UTC), 0);
     }
 

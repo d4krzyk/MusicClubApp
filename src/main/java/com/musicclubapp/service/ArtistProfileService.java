@@ -3,10 +3,12 @@ package com.musicclubapp.service;
 import com.musicclubapp.dto.ArtistProfileResponse;
 import com.musicclubapp.dto.PerformerLinkView;
 import com.musicclubapp.entity.ArtistProfile;
+import com.musicclubapp.entity.PerformerAbout;
 import com.musicclubapp.entity.PerformerLink;
 import com.musicclubapp.error.NoSuchElementFoundException;
 import com.musicclubapp.gif.SlidingLimiter;
 import com.musicclubapp.repository.ArtistProfileRepository;
+import com.musicclubapp.repository.PerformerAboutRepository;
 import com.musicclubapp.repository.PerformerLinkRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,29 +23,40 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * "Kim jest" wykonawca z koncertu: opis, sluchacze i podobni z Last.fm ({@code artist.getInfo}) plus linki z importu
- * wydarzen. Odpowiedz Last.fm zapamietujemy na 30 dni na wykonawce i jezyk - Last.fm jest pytany najwyzej raz na miesiac
- * o kazdego, a nie przy kazdym rozwinieciu. Awaria Last.fm nie jest zapamietywana (stary opis zostaje, a bez niego idzie
- * odpowiedz z samymi linkami). Opis dostaja tylko nazwy, ktore graja na jakims wydarzeniu - to nie jest wyszukiwarka.
+ * "Kim jest" wykonawca z koncertu: opis od Ticketmastera ("About" na stronie artysty), opis, sluchacze i podobni
+ * z Last.fm ({@code artist.getInfo}) plus linki z importu wydarzen. Odpowiedz Last.fm zapamietujemy na 30 dni na
+ * wykonawce i jezyk - Last.fm jest pytany najwyzej raz na miesiac o kazdego, a nie przy kazdym rozwinieciu. Awaria
+ * Last.fm nie jest zapamietywana (stary opis zostaje, a bez niego idzie odpowiedz z samymi linkami). Opis dostaja tylko
+ * nazwy, ktore graja na jakims wydarzeniu - to nie jest wyszukiwarka.
+ *
+ * Opis od Ticketmastera zwykle przychodzi z importem; gdy nie przyszedl, pytamy Ticketmastera o tego jednego wykonawce
+ * (po numerze z importu) i zapamietujemy odpowiedz na 30 dni - takze "nic nie ma". Awarii nie zapamietujemy.
  */
 @Service
 public class ArtistProfileService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ArtistProfileService.class);
 
     static final Duration WAZNOSC = Duration.ofDays(30);
 
     private final LastFmService lastFm;
     private final ArtistProfileRepository profiles;
     private final PerformerLinkRepository links;
+    private final TicketmasterClient ticketmaster;
+    private final PerformerAboutRepository abouts;
     private final TransactionTemplate transactions;
     private final SlidingLimiter limiter;
     private final Clock clock;
 
     public ArtistProfileService(LastFmService lastFm, ArtistProfileRepository profiles, PerformerLinkRepository links,
+                                TicketmasterClient ticketmaster, PerformerAboutRepository abouts,
                                 PlatformTransactionManager transactionManager, Clock clock,
                                 @Value("${app.artists.profiles-per-minute:30}") int perMinute) {
         this.lastFm = lastFm;
         this.profiles = profiles;
         this.links = links;
+        this.ticketmaster = ticketmaster;
+        this.abouts = abouts;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.limiter = new SlidingLimiter(60_000, perMinute);
@@ -88,13 +101,46 @@ public class ArtistProfileService {
             profil = znany.orElse(null); // przeterminowany, ale lepszy niz nic, gdy Last.fm nie odpowiada
         }
 
+        PerformerAbout opis = aboutTicketmastera(nazwa, klucz, teraz);
+        String about = opis == null ? null : opis.getAbout();
+        String aboutLang = about == null ? null : opis.getLang();
+        String aboutUrl = about == null ? null : opis.getPageUrl();
+
         List<PerformerLinkView> linki = links.findByNameKey(klucz).stream()
             .sorted(Comparator.comparing(PerformerLink::getKind))
             .map(l -> new PerformerLinkView(l.getKind(), l.getUrl()))
             .toList();
         return profil == null
-            ? new ArtistProfileResponse(nazwa, null, null, null, List.of(), linki)
+            ? new ArtistProfileResponse(nazwa, null, null, null, List.of(), linki, about, aboutLang, aboutUrl)
             : new ArtistProfileResponse(profil.getName(), profil.getBio(), profil.getBioUrl(), profil.getListeners(),
-                profil.getSimilar(), linki);
+                profil.getSimilar(), linki, about, aboutLang, aboutUrl);
+    }
+
+    /**
+     * Opis od Ticketmastera: zapamietany, gdy swiezy; inaczej jedno pytanie o wykonawce po numerze z importu. Przy
+     * awarii zostaje to, co bylo (takze przeterminowane) - nic nie zapisujemy.
+     */
+    private PerformerAbout aboutTicketmastera(String nazwa, String klucz, LocalDateTime teraz) {
+        PerformerAbout znany = abouts.findById(klucz).orElse(null);
+        if (znany != null && znany.getCheckedAt().plus(WAZNOSC).isAfter(teraz) || !ticketmaster.available()) {
+            return znany;
+        }
+        String numer = profiles.attractionIdOf(nazwa);
+        if (numer == null) {
+            return znany;
+        }
+        Optional<TicketmasterClient.About> odpowiedz;
+        try {
+            odpowiedz = ticketmaster.attraction(numer);
+        } catch (IllegalStateException e) {
+            log.warn("Opis wykonawcy z Ticketmastera ({}): {}", numer, e.getMessage());
+            return znany;
+        }
+        return transactions.execute(s -> {
+            PerformerAbout p = abouts.findById(klucz).orElseGet(() -> new PerformerAbout(klucz));
+            TicketmasterClient.About a = odpowiedz.orElse(null);
+            p.update(numer, a == null ? null : a.text(), a == null ? null : a.lang(), a == null ? null : a.url(), teraz);
+            return abouts.save(p);
+        });
     }
 }

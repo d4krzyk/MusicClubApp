@@ -48,6 +48,7 @@ public class PerformerTagService {
     private final LastFmService lastFm;
     private final PerformerTagsRepository repository;
     private final com.musicclubapp.repository.PerformerLinkRepository links;
+    private final com.musicclubapp.repository.PerformerAboutRepository abouts;
     private final TransactionTemplate transactions;
     private final Clock clock;
     private final long przerwaMs;
@@ -56,12 +57,14 @@ public class PerformerTagService {
     public PerformerTagService(LastFmService lastFm,
                                PerformerTagsRepository repository,
                                com.musicclubapp.repository.PerformerLinkRepository links,
+                               com.musicclubapp.repository.PerformerAboutRepository abouts,
                                PlatformTransactionManager transactionManager,
                                Clock clock,
                                @Value("${app.events.tags.pause-ms:250}") long przerwaMs) {
         this.lastFm = lastFm;
         this.repository = repository;
         this.links = links;
+        this.abouts = abouts;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.przerwaMs = przerwaMs;
@@ -164,6 +167,48 @@ public class PerformerTagService {
                 l.update(url, now);
             }
         }));
+    }
+
+    /**
+     * Opisy wykonawcow, ktore Ticketmaster przyslal przy wydarzeniach ("About" na stronie artysty) - jeden na klucz
+     * nazwy. Wykonawca bez opisu w tej odpowiedzi nic nie zmienia: opis mogl przyjsc z innego koncertu albo z pytania
+     * o samego wykonawce ({@link ArtistProfileService}). Wolane w transakcji importu.
+     *
+     * @return ile opisow bylo nowych albo zmienionych
+     */
+    public int saveAbout(Collection<TicketmasterClient.Event> events) {
+        Map<String, TicketmasterClient.Performer> wg = new LinkedHashMap<>();
+        for (TicketmasterClient.Event e : events) {
+            for (TicketmasterClient.Performer p : e.performers()) {
+                String key = NameKeys.of(p.name());
+                if (p.about() != null && !key.isEmpty() && key.length() <= 200) {
+                    wg.putIfAbsent(key, p);
+                }
+            }
+        }
+        if (wg.isEmpty()) {
+            return 0;
+        }
+        Map<String, com.musicclubapp.entity.PerformerAbout> znane = abouts.findAllById(wg.keySet()).stream()
+            .collect(Collectors.toMap(com.musicclubapp.entity.PerformerAbout::getNameKey, Function.identity()));
+        LocalDateTime now = LocalDateTime.now(clock);
+        int zmienione = 0;
+        for (Map.Entry<String, TicketmasterClient.Performer> w : wg.entrySet()) {
+            TicketmasterClient.About a = w.getValue().about();
+            com.musicclubapp.entity.PerformerAbout opis = znane.get(w.getKey());
+            if (opis == null) {
+                opis = new com.musicclubapp.entity.PerformerAbout(w.getKey());
+            }
+            if (!a.text().equals(opis.getAbout())) {
+                zmienione++;
+            }
+            opis.update(w.getValue().externalId(), a.text(), a.lang(), a.url(), now);
+            abouts.save(opis);
+        }
+        if (zmienione > 0) {
+            log.info("Opisy wykonawcow z Ticketmastera: {} nowych albo zmienionych", zmienione);
+        }
+        return zmienione;
     }
 
     /** Gatunki wykonawcow tak, jak przyszly z Last.fm (do pokazania przy skladzie): klucz nazwy -> gatunki. */

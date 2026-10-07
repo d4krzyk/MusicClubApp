@@ -408,6 +408,7 @@ public class EventImportService {
             // Ticketmaster nadpisal swoje dane - braki znow uzupelnione z innych zrodel
             merger.refill(zapisane);
             performerTags.saveLinks(events);
+            performerTags.saveAbout(events);
             return events.size();
         });
     }

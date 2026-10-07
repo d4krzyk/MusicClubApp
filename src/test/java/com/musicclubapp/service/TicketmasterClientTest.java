@@ -243,6 +243,50 @@ class TicketmasterClientTest {
     }
 
     @Test
+    @DisplayName("opis jednego wykonawcy: /attractions/{id}.json z kluczem, bez tresci licencjonowanych")
+    void attractionAbout() {
+        server.odpowiadaj("/discovery/v2/attractions/K8vZ917G1W0.json", query -> TestHttpServer.Odpowiedz.ok("""
+            { "id": "K8vZ917G1W0", "name": "Kovacs", "type": "attraction", "locale": "en-us",
+              "url": "https://www.ticketmaster.pl/artist/kovacs-tickets/950040",
+              "description": "Sharon Kovacs is a Dutch singer-songwriter." }
+            """));
+
+        var about = ticketmaster.attraction("K8vZ917G1W0");
+
+        assertThat(about).isPresent();
+        assertThat(about.get().text()).isEqualTo("Sharon Kovacs is a Dutch singer-songwriter.");
+        assertThat(about.get().lang()).isEqualTo("en");
+        assertThat(about.get().url()).isEqualTo("https://www.ticketmaster.pl/artist/kovacs-tickets/950040");
+        String zapytanie = server.requests().get(0);
+        assertThat(zapytanie).contains("/discovery/v2/attractions/K8vZ917G1W0.json").contains("apikey=" + KLUCZ)
+            // tresci licencjonowane maja wlasne warunki - nie prosimy o nie
+            .doesNotContain("includeLicensedContent");
+    }
+
+    @Test
+    @DisplayName("opis wykonawcy: brak tekstu albo 404 = pusto; zly numer nie idzie do sieci; blad bez klucza w tresci")
+    void attractionWithoutAbout() {
+        server.odpowiadaj("/discovery/v2/attractions/PUSTY.json",
+            query -> TestHttpServer.Odpowiedz.ok("{ \"id\": \"PUSTY\", \"name\": \"Ktos\" }"));
+        server.odpowiadaj("/discovery/v2/attractions/BRAK.json", query -> new TestHttpServer.Odpowiedz(404,
+            "{\"errors\":[{\"code\":\"DIS1004\",\"detail\":\"Resource not found\"}]}"));
+        server.odpowiadaj("/discovery/v2/attractions/AWARIA.json",
+            query -> new TestHttpServer.Odpowiedz(500, "awaria"));
+
+        assertThat(ticketmaster.attraction("PUSTY")).isEmpty();
+        assertThat(ticketmaster.attraction("BRAK")).isEmpty();
+        int zapytan = server.requests().size();
+        assertThat(ticketmaster.attraction("../events")).isEmpty();
+        assertThat(ticketmaster.attraction(null)).isEmpty();
+        assertThat(server.requests()).hasSize(zapytan);
+        assertThatThrownBy(() -> ticketmaster.attraction("AWARIA"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("500")
+            .hasMessageNotContaining(KLUCZ)
+            .hasNoCause();
+    }
+
+    @Test
     @DisplayName("statusy: onsale i offsale to nie odwolanie")
     void statuses() {
         assertThat(List.of("onsale", "offsale", "cancelled", "canceled", "postponed", "rescheduled", "nieznany"))

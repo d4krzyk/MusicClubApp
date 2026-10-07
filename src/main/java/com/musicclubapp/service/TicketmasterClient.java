@@ -52,10 +52,20 @@ public class TicketmasterClient {
     /** Opisy bywaja bardzo dlugie - wiecej i tak nikt nie przeczyta na telefonie. */
     private static final int MAX_OPIS = 4000;
 
+    /** Opis wykonawcy ("About" na stronie artysty) - dlugosc kolumny {@code performer_about.about}. */
+    public static final int MAX_O_WYKONAWCY = 2000;
+
+    /** Numer wykonawcy u Ticketmastera - idzie do sciezki adresu, wiec nic poza literami, cyframi, "_" i "-". */
+    private static final java.util.regex.Pattern NUMER_WYKONAWCY = java.util.regex.Pattern.compile("[A-Za-z0-9_-]{1,64}");
+
+    /** Opis wykonawcy pobierany na klikniecie "Kim jest?" - ktos czeka, wiec krocej niz import w tle. */
+    private static final int CZAS_NA_KLIKNIECIE_MS = 5000;
+
     /** Ticketmaster chce czasu w UTC, bez ulamkow sekund: 2026-09-29T00:00:00Z. */
     private static final DateTimeFormatter FORMAT_CZASU = DateTimeFormatter.ISO_INSTANT;
 
     private final RestClient restClient;
+    private final RestClient interactive;
     private final String key;
     private final String api;
 
@@ -77,6 +87,11 @@ public class TicketmasterClient {
         factory.setReadTimeout(Duration.ofMillis(timeoutMs));
         this.restClient = RestClient.builder().requestFactory(factory).build();
 
+        SimpleClientHttpRequestFactory szybki = new SimpleClientHttpRequestFactory();
+        szybki.setConnectTimeout(Duration.ofMillis(Math.min(timeoutMs, CZAS_NA_KLIKNIECIE_MS)));
+        szybki.setReadTimeout(Duration.ofMillis(Math.min(timeoutMs, CZAS_NA_KLIKNIECIE_MS)));
+        this.interactive = RestClient.builder().requestFactory(szybki).build();
+
         if (this.key.isEmpty()) {
             log.info("Klucz Ticketmastera nie jest ustawiony (app.ticketmaster.api-key) - "
                 + "zakladka Wydarzenia bedzie pusta.");
@@ -88,13 +103,23 @@ public class TicketmasterClient {
         return !key.isEmpty();
     }
 
-    /** Wykonawca ze skladu - z linkami (strona, Spotify...), gdy Ticketmaster je zna. */
-    public record Performer(String externalId, String name, Map<PerformerLinkKind, String> links) {
+    /** Wykonawca ze skladu - z linkami (strona, Spotify...) i opisem, gdy Ticketmaster je zna. */
+    public record Performer(String externalId, String name, Map<PerformerLinkKind, String> links, About about) {
 
         public Performer(String externalId, String name) {
-            this(externalId, name, Map.of());
+            this(externalId, name, Map.of(), null);
+        }
+
+        public Performer(String externalId, String name, Map<PerformerLinkKind, String> links) {
+            this(externalId, name, links, null);
         }
     }
+
+    /**
+     * Opis wykonawcy od Ticketmastera - pola {@code description} i {@code additionalInfo} wykonawcy, na stronie artysty
+     * w ticketmaster.pl to sekcja "About". Zwykly tekst; jezyk z {@code locale} ("pl", "en"), adres strony artysty.
+     */
+    public record About(String text, String lang, String url) { }
 
     /**
      * To, co organizator mowi poza nazwa i data: wazne uwagi, kto organizuje, ceny biletow, ograniczenie wiekowe,
@@ -232,15 +257,17 @@ public class TicketmasterClient {
         for (JsonNode a : e.path("_embedded").path("attractions")) {
             String performerName = clean(text(a, "name"), 200);
             if (performerName != null) {
-                performers.add(new Performer(clean(text(a, "id"), 64), performerName, links(a.path("externalLinks"))));
+                performers.add(new Performer(clean(text(a, "id"), 64), performerName, links(a.path("externalLinks")),
+                    about(a)));
             }
         }
 
-        /* "info" to zwykle zaproszenie od organizatora; "description" bywa zamiast niego. */
-        String description = text(e, "info");
-        if (description == null || description.isBlank()) {
-            description = text(e, "description");
-        }
+        /*
+         * Wydarzenie ma trzy pola tekstu: "info" (zwykle zaproszenie od organizatora), "description" i "additionalInfo".
+         * Bierzemy wszystkie, bez powtorzen - wczesniej tylko pierwsze niepuste z dwoch pierwszych.
+         */
+        String description = PlainText.cut(
+            PlainText.joined(text(e, "info"), text(e, "description"), text(e, "additionalInfo")), MAX_OPIS);
 
         return new Event(
             clean(id, 64),
@@ -248,7 +275,7 @@ public class TicketmasterClient {
             date,
             time,
             status(text(e.path("dates").path("status"), "code")),
-            clean(description, MAX_OPIS),
+            description,
             clean(text(e, "url"), 1000),
             clean(image(e.path("images"), SZEROKOSC_DUZEGO), 1000),
             clean(image(e.path("images"), SZEROKOSC_MINIATURY), 1000),
@@ -263,6 +290,53 @@ public class TicketmasterClient {
             performers,
             countryCode(text(venue.path("country"), "countryCode")),
             organizer(e));
+    }
+
+    /** Opis wykonawcy z jego pol {@code description} i {@code additionalInfo}; null, gdy nie ma tekstu. */
+    static About about(JsonNode a) {
+        String tekst = PlainText.cut(PlainText.joined(text(a, "description"), text(a, "additionalInfo")), MAX_O_WYKONAWCY);
+        if (tekst == null) {
+            return null;
+        }
+        String locale = text(a, "locale");
+        String jezyk = locale == null || !locale.matches("[A-Za-z]{2}([-_].*)?") ? null
+            : locale.substring(0, 2).toLowerCase(Locale.ROOT);
+        String adres = text(a, "url");
+        return new About(tekst, jezyk, safeLink(adres) ? adres.strip() : null);
+    }
+
+    /**
+     * Opis jednego wykonawcy ({@code /attractions/{id}.json}) - gdy nie przyszedl przy wydarzeniu. Bez tresci
+     * licencjonowanych ({@code includeLicensedContent}): maja wlasne warunki, ktorych nie znamy.
+     *
+     * @return opis albo pusto, gdy Ticketmaster go nie ma (takze 404) albo numer jest dziwny
+     * @throws IllegalStateException gdy Ticketmaster odmowil albo nie odpowiedzial - takiej odpowiedzi nie zapamietujemy
+     */
+    public java.util.Optional<About> attraction(String id) {
+        if (!available() || id == null || !NUMER_WYKONAWCY.matcher(id).matches()) {
+            return java.util.Optional.empty();
+        }
+        String url = UriComponentsBuilder.fromUriString(api + "/attractions/" + id + ".json")
+            .queryParam("apikey", key)
+            .build()
+            .toUriString();
+        JsonNode response;
+        try {
+            response = interactive.get().uri(url).retrieve().body(JsonNode.class);
+        } catch (RestClientResponseException e) {
+            if (e.getStatusCode().value() == 404) {
+                return java.util.Optional.empty();
+            }
+            throw new IllegalStateException(bezKlucza("Ticketmaster odmowil: HTTP "
+                + e.getStatusCode().value() + " " + faultstring(e.getResponseBodyAsString()), key));
+        } catch (Exception e) {
+            throw new IllegalStateException("Ticketmaster nie odpowiada: " + opisBledu(e, key));
+        }
+        if (response == null || response.has("fault")) {
+            throw new IllegalStateException("Ticketmaster odmowil: "
+                + (response == null ? "pusta odpowiedz" : text(response.path("fault"), "faultstring")));
+        }
+        return java.util.Optional.ofNullable(about(response));
     }
 
     /** Uwagi, organizator, ceny, wiek, sprzedaz i dostepnosc - wszystko jako zwykly tekst albo liczba. */

@@ -283,6 +283,40 @@ wewnętrzne adresy — to łamie ich regulaminy, narusza prawo producenta bazy d
 i psułoby się przy każdej zmianie po ich stronie. Uczciwa droga to zapytać taki
 portal o oficjalny dostęp (np. program partnerski albo plik z wydarzeniami).
 
+### Opisy z Ticketmastera — próba na żywo
+
+Ticketmaster podaje tekst w kilku polach: wydarzenie ma `info`, `description`
+i `additionalInfo`, a wykonawca (na ticketmaster.pl sekcja „About” na stronie
+artysty) — `description` i `additionalInfo`. Opis wydarzenia składamy ze
+wszystkich trzech, a opis wykonawcy pokazujemy w „Kim jest?” (przed opisem
+z Last.fm). Przychodzi z importem; gdy go tam nie ma, „Kim jest?” pyta
+Ticketmastera o tego jednego wykonawcę i zapamiętuje odpowiedź na 30 dni.
+
+**Nie wiemy na pewno, czy lista wydarzeń oddaje opisy wykonawców** — z naszego
+środowiska Ticketmaster był niedostępny. Po wdrożeniu (z kluczem) sprawdź na
+wykonawcy, który ma „About” na ticketmaster.pl, np. Kovacs:
+
+```bash
+K=twoj-klucz-ticketmastera
+# 1. Czy opis przychodzi przy wydarzeniach (wtedy wystarczy import)?
+curl -s "https://app.ticketmaster.com/discovery/v2/events.json?apikey=$K&countryCode=PL&keyword=Kovacs" \
+  | jq '._embedded.events[] | {name, info, description, additionalInfo,
+        wykonawcy: [._embedded.attractions[] | {id, name, locale, description, additionalInfo}]}'
+# 2. Opis pojedynczego wykonawcy (tak pyta „Kim jest?”) - id z punktu 1
+curl -s "https://app.ticketmaster.com/discovery/v2/attractions/ID.json?apikey=$K" | jq '{name, locale, description, additionalInfo}'
+# 3. To samo z treściami licencjonowanymi - tylko dla porównania
+curl -s "https://app.ticketmaster.com/discovery/v2/attractions/ID.json?apikey=$K&includeLicensedContent=yes" | jq '{description, additionalInfo}'
+```
+
+- Tekst jest w 1. — wszystko działa z importu; w logu backendu pojawi się
+  „Opisy wykonawcow z Ticketmastera: N nowych albo zmienionych”.
+- Tekst jest dopiero w 2. — działa przez „Kim jest?” (jedno zapytanie na
+  wykonawcę na 30 dni; dzienny limit 5000 starcza z zapasem).
+- Tekst jest **tylko** w 3. — to treść licencjonowana (np. biografia od
+  zewnętrznego dostawcy). Celowo o nią nie prosimy, bo ma własne warunki
+  wyświetlania. Przed włączeniem trzeba przeczytać warunki Ticketmastera dla
+  takich treści i dopisać wymagane przypisanie.
+
 ### Poczta i potwierdzanie adresów e-mail
 
 Z pocztą każde nowe konto dostaje wiadomość z linkiem i **nie zaloguje
@@ -1115,6 +1149,24 @@ Przy spotkaniach w czacie i mapie (październik 2026, migracja V20):
   „odwołanie zostawia przypomnienia”, „lista bez filtra blokad”, „przypomnienie po końcu”, „przypomnienie dla «nie dam
   rady»”, a jeden mutant był źle zapisany (nic nie zmieniał). Po dopisaniu testów (`MeetingFlowTest` 12 → 14,
   `mvnw clean test` → 755) wszystkie 42 zabite.
+
+Przy opisach z Ticketmastera (październik 2026, migracja V24):
+
+- migracja V24 na **pustej** bazie (V1 → V24, profil `prod`) — schemat taki sam jak z Hibernate (porównane zbiorami
+  kolumn; nowa tabela `performer_about` co do znaku); na bazie z danymi po V23 migracja przechodzi, a backend wstaje
+  z `validate`;
+- testy: `TicketmasterTextsTest` (4 — opis wydarzenia z `info` + `description` + `additionalInfo` bez powtórzeń, HTML na
+  zwykły tekst z akapitami, „<3” i `&lt;b&gt;` zostają tekstem, `<script>` znika; opis wykonawcy z obu pól, język
+  z `locale`, strona artysty tylko http(s), przycięcie na granicy słowa), `TicketmasterClientTest` (+2 — zapytanie
+  `/attractions/{id}.json` bez treści licencjonowanych, 404 i brak tekstu = pusto, dziwny numer nie idzie do sieci, błąd
+  bez klucza), `ArtistAboutFlowTest` (4 — przez prawdziwe API z udawanym Ticketmasterem: opis z importu bez dodatkowego
+  pytania, opis wydarzenia ze wszystkich pól, „nic nie ma” zapamiętane na 30 dni, awaria niezapamiętana, import nie kasuje
+  opisu, którego nie przysłał, a zmieniony poprawia);
+- Chromium na PostgreSQL po V24 (1280 i 320 px, udawany Ticketmaster i Last.fm): w „Kim jest?” najpierw opis od
+  Ticketmastera w akapitach z `lang="en"` i podpisem „opis: Ticketmaster” (strona artysty, `nofollow`), potem Last.fm
+  ze swoim przypisaniem; drugi wykonawca bez opisu z importu — jedno pytanie do Ticketmastera, po przeładowaniu z pamięci;
+  opis wydarzenia w dwóch akapitach; panel w karcie; zero błędów w konsoli;
+- prawdziwy Ticketmaster **nie** był sprawdzony (zablokowany) — trzy `curl` w „Opisy z Ticketmastera — próba na żywo”.
 
 Przy wielu źródłach wydarzeń (październik 2026, migracja V23):
 

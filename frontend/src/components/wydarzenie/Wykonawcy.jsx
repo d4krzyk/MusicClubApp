@@ -8,9 +8,9 @@ import { IconExternal, IconStar } from '../Icons';
 const LINKI = ['HOMEPAGE', 'SPOTIFY', 'YOUTUBE', 'INSTAGRAM', 'FACEBOOK', 'TIKTOK', 'BANDCAMP', 'SOUNDCLOUD', 'WIKI'];
 
 /**
- * Sklad z odpowiedzia na "kim to jest": gatunki i linki od razu (z bazy), a bio z Last.fm dopiero po rozwinieciu
- * (serwer trzyma je w pamieci podrecznej, wiec drugi raz nie pyta Last.fm). Bio to zwykly tekst - nigdy HTML - i ma
- * przypisanie z linkiem, jak wymaga licencja tresci Last.fm (CC BY-SA).
+ * Sklad z odpowiedzia na "kim to jest": gatunki i linki od razu (z bazy), a opisy dopiero po rozwinieciu - najpierw
+ * od Ticketmastera ("About" na stronie artysty), potem bio z Last.fm (serwer trzyma oba w pamieci podrecznej). Opisy to
+ * zwykly tekst - nigdy HTML - i kazdy ma swoje zrodlo; Last.fm z linkiem, jak wymaga licencja (CC BY-SA).
  */
 export default function Wykonawcy({ sklad }) {
   const { t, i18n } = useTranslation();
@@ -69,9 +69,22 @@ export default function Wykonawcy({ sklad }) {
                 {p?.blad && <p className="small text-danger mb-0">{p.blad}</p>}
                 {p && !p.ladowanie && !p.blad && (
                   <>
-                    {p.bio ? (
-                      <p className="wykonawca-bio">{p.bio}</p>
-                    ) : (
+                    {p.about && (
+                      <>
+                        <p className="wykonawca-bio" lang={p.aboutLang || undefined}>{p.about}</p>
+                        <p className="wykonawca-zrodlo small mb-2">
+                          {p.aboutUrl ? (
+                            <a href={p.aboutUrl} target="_blank" rel="noopener noreferrer nofollow">
+                              {t('events.artist.aboutSource')} <IconExternal size={10} />
+                            </a>
+                          ) : (
+                            <span className="text-body-secondary">{t('events.artist.aboutSource')}</span>
+                          )}
+                        </p>
+                      </>
+                    )}
+                    {p.bio && <p className="wykonawca-bio">{p.bio}</p>}
+                    {!p.bio && !p.about && (
                       <p className="small text-body-secondary mb-2">{t('events.artist.noBio')}</p>
                     )}
                     <ul className="wykonawca-fakty list-unstyled">
