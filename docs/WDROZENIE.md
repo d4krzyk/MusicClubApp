@@ -292,30 +292,42 @@ wszystkich trzech, a opis wykonawcy pokazujemy w „Kim jest?” (przed opisem
 z Last.fm). Przychodzi z importem; gdy go tam nie ma, „Kim jest?” pyta
 Ticketmastera o tego jednego wykonawcę i zapamiętuje odpowiedź na 30 dni.
 
-**Nie wiemy na pewno, czy lista wydarzeń oddaje opisy wykonawców** — z naszego
-środowiska Ticketmaster był niedostępny. Po wdrożeniu (z kluczem) sprawdź na
-wykonawcy, który ma „About” na ticketmaster.pl, np. Kovacs:
+**Sprawdzone na żywo (7.10.2026, Kovacs, id wykonawcy `K8vZ9173gz7`):** lista wydarzeń
+(`events.json`) **nie oddaje opisu wykonawcy** — `description` i `additionalInfo`
+wykonawcy są `null`, mimo że ticketmaster.pl pokazuje mu sekcję „About”. Pole `info`
+wydarzenia to sama formułka sprzedażowa („Service fee depends on the ticket prices…”),
+a `description` i `additionalInfo` wydarzenia też `null`. Czyli opisu koncertu Ticketmaster
+tu po prostu nie ma — to nie jest błąd po naszej stronie.
+
+Nierozstrzygnięte zostaje, czy opis da się wziąć pytaniem o samego wykonawcę
+(`attractions/{id}.json`), także z treściami licencjonowanymi. Sprawdź to na prawdziwym
+numerze wykonawcy (w pierwszej próbie został literalny `ID`, więc odpowiedź była pusta):
 
 ```bash
-K=twoj-klucz-ticketmastera
-# 1. Czy opis przychodzi przy wydarzeniach (wtedy wystarczy import)?
-curl -s "https://app.ticketmaster.com/discovery/v2/events.json?apikey=$K&countryCode=PL&keyword=Kovacs" \
-  | jq '._embedded.events[] | {name, info, description, additionalInfo,
+K=twoj-klucz-ticketmastera          # klucza nie wklejaj do czatu ani do repozytorium
+ID=K8vZ9173gz7                      # Kovacs; inny wykonawca - jego id z punktu 1
+BAZA=https://app.ticketmaster.com/discovery/v2
+# 1. Co lista wydarzeń mówi o wykonawcach (id, opisy)
+curl -s "$BAZA/events.json?apikey=$K&countryCode=PL&keyword=Kovacs" \
+  | jq '._embedded.events[0] | {name, info, description, additionalInfo,
         wykonawcy: [._embedded.attractions[] | {id, name, locale, description, additionalInfo}]}'
-# 2. Opis pojedynczego wykonawcy (tak pyta „Kim jest?”) - id z punktu 1
-curl -s "https://app.ticketmaster.com/discovery/v2/attractions/ID.json?apikey=$K" | jq '{name, locale, description, additionalInfo}'
+# 2. Wykonawca pytany wprost (tak pyta „Kim jest?”): jakie pola w ogóle ma i jakie linki
+curl -s "$BAZA/attractions/$ID.json?apikey=$K" \
+  | jq '{pola: keys, name, locale, description, additionalInfo, url, linki: ((.externalLinks // {}) | keys)}'
 # 3. To samo z treściami licencjonowanymi - tylko dla porównania
-curl -s "https://app.ticketmaster.com/discovery/v2/attractions/ID.json?apikey=$K&includeLicensedContent=yes" | jq '{description, additionalInfo}'
+curl -s "$BAZA/attractions/$ID.json?apikey=$K&includeLicensedContent=yes" \
+  | jq '{description, additionalInfo, pola: keys}'
 ```
 
-- Tekst jest w 1. — wszystko działa z importu; w logu backendu pojawi się
-  „Opisy wykonawcow z Ticketmastera: N nowych albo zmienionych”.
-- Tekst jest dopiero w 2. — działa przez „Kim jest?” (jedno zapytanie na
-  wykonawcę na 30 dni; dzienny limit 5000 starcza z zapasem).
-- Tekst jest **tylko** w 3. — to treść licencjonowana (np. biografia od
-  zewnętrznego dostawcy). Celowo o nią nie prosimy, bo ma własne warunki
-  wyświetlania. Przed włączeniem trzeba przeczytać warunki Ticketmastera dla
-  takich treści i dopisać wymagane przypisanie.
+- Tekst jest w 2. — działa przez „Kim jest?” (jedno zapytanie na wykonawcę na 30 dni;
+  dzienny limit 5000 starcza z zapasem).
+- Tekst jest **tylko** w 3. — to treść licencjonowana (np. biografia od zewnętrznego
+  dostawcy). Celowo o nią nie prosimy, bo ma własne warunki wyświetlania. Przed włączeniem
+  trzeba przeczytać warunki Ticketmastera dla takich treści i dopisać wymagane przypisanie.
+- Tekstu nie ma nigdzie (2. i 3. puste przy prawdziwym `$ID`) — „About” z ticketmaster.pl
+  nie jest dostępne przez publiczne API. Zostaje opis z Last.fm; wtedy zapytanie o
+  pojedynczego wykonawcę nic nie daje i można je usunąć (`ArtistProfileService.aboutTicketmastera`),
+  a czytanie opisu z importu zostawić — nic nie kosztuje.
 
 ### Poczta i potwierdzanie adresów e-mail
 

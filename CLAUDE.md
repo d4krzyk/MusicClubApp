@@ -861,9 +861,14 @@ pytanie użytkownika „czemu nie pobiera się opis”.
   ma żadnego.
 - Dane o wykonawcach, **żadnych danych użytkowników** — do Ticketmastera idzie numer wykonawcy i nasz klucz; polityka,
   eksport i usuwanie konta bez zmian.
-- **Nie sprawdzone na żywo**: czy lista wydarzeń oddaje opisy w `_embedded.attractions` (fixture ma tam tylko id i nazwę),
-  nie wiadomo — dlatego jest zapas w postaci pytania o jednego wykonawcę. Trzy `curl` do sprawdzenia w `docs/WDROZENIE.md`
-  („Opisy z Ticketmastera — próba na żywo”).
+- **Sprawdzone na żywo przez użytkownika** (`curl` z jego kluczem, Kovacs, wykonawca `K8vZ9173gz7`): lista wydarzeń **nie
+  oddaje opisu wykonawcy** — `description` i `additionalInfo` w `_embedded.attractions[]` są `null`, choć ticketmaster.pl
+  pokazuje „About”. `info` wydarzenia to sama formułka sprzedażowa, a `description`/`additionalInfo` wydarzenia `null` — czyli
+  koncert nie ma opisu, i tak ma zostać (sekcji „O wydarzeniu” nie ma). **Nierozstrzygnięte**: `attractions/{id}.json`
+  (z `includeLicensedContent` i bez) — pierwsza próba poszła z literalnym `ID` zamiast numeru, więc nic nie znaczy. Gdy
+  i to jest puste, pytanie o pojedynczego wykonawcę (`ArtistProfileService.aboutTicketmastera`, `TicketmasterClient.attraction`)
+  jest martwym kodem do usunięcia — zostawić tylko czytanie opisu z importu. Klucz Ticketmastera użytkownik wkleił do
+  czatu — **nie trafia do repozytorium** i powinien zostać wymieniony.
 
 ## Karta profilu i tryb Poznawaj (V17)
 

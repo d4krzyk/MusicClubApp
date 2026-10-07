@@ -116,6 +116,18 @@ class TicketmasterTextsTest {
     }
 
     @Test
+    @DisplayName("prawdziwa odpowiedz dla Kovacs (events.json, 7.10.2026): sama formulka i nulle - ani opisu koncertu, ani wykonawcy")
+    void realKovacsResponse() throws Exception {
+        var e = wydarzenie(pole("info", TicketBoilerplateTest.STODOLA)
+                + ", \"description\": null, \"additionalInfo\": null",
+            "{ \"id\": \"K8vZ9173gz7\", \"name\": \"Kovacs\", \"locale\": \"en-us\", \"description\": null, \"additionalInfo\": null }");
+        assertThat(e.description()).as("formulka z info nie jest opisem").isNull();
+        assertThat(e.performers()).hasSize(1);
+        assertThat(e.performers().get(0).externalId()).isEqualTo("K8vZ9173gz7");
+        assertThat(e.performers().get(0).about()).as("null w polach wykonawcy = brak opisu, bez wyjatku").isNull();
+    }
+
+    @Test
     @DisplayName("za dlugi opis wykonawcy uciety na granicy slowa")
     void longAboutIsCut() throws Exception {
         String dlugi = "slowo ".repeat(600);
