@@ -1166,6 +1166,16 @@ Przy opisach z Ticketmastera (październik 2026, migracja V24):
   Ticketmastera w akapitach z `lang="en"` i podpisem „opis: Ticketmaster” (strona artysty, `nofollow`), potem Last.fm
   ze swoim przypisaniem; drugi wykonawca bez opisu z importu — jedno pytanie do Ticketmastera, po przeładowaniu z pamięci;
   opis wydarzenia w dwóch akapitach; panel w karcie; zero błędów w konsoli;
+- formułki zamiast opisu (zgłoszone przez użytkownika na zrzutach z żywego Ticketmastera — „Service fee…”, „Seating
+  chart…”, dane spółki Live Nation z KRS i VAT): `TicketBoilerplateTest` (5 — oba prawdziwe teksty dają brak opisu,
+  prawdziwe zdanie zostaje, akapity zostają, polskie formułki, skrót ani inicjał nie rozcinają danych spółki),
+  `TicketmasterTextsTest.boilerplateIsNotDescription` (import: opis, uwagi, dostępność) i `ArtistAboutFlowTest` (opis
+  zapisany przed zmianą też bez formułek). Testy zaczerwieniły się na zaślepce, zanim powstał filtr. W Chromium (1280
+  i 320 px, ciemny motyw) strony obu wydarzeń ze zrzutów nie mają sekcji „O wydarzeniu” ani żadnej formułki, a przy
+  opisie mieszanym zostaje samo zdanie o koncercie; uwagi organizatora też bez formułek;
+- mutanty: opisy z Ticketmastera 26 — 25 zabitych (w tym 5 przywracających stare zachowanie, więc testy czerwienieją na
+  kodzie sprzed zmiany) i 1 równoważny; formułki 12/12. Trzy ocalałe w pierwszej rundzie dostały brakujące przypadki
+  testowe i zostały zabite;
 - prawdziwy Ticketmaster **nie** był sprawdzony (zablokowany) — trzy `curl` w „Opisy z Ticketmastera — próba na żywo”.
 
 Przy wielu źródłach wydarzeń (październik 2026, migracja V23):

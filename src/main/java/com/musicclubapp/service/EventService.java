@@ -310,7 +310,8 @@ public class EventService {
             event.getStartDate(),
             event.getStartTime(),
             event.getStatus(),
-            event.getDescription(),
+            // Formulki odsiewa import; tu jeszcze raz - dla opisow zapisanych przed tym
+            TicketBoilerplate.strip(event.getDescription()),
             event.getTicketUrl(),
             event.getImageUrl(),
             event.getVenueName(),
@@ -332,14 +333,14 @@ public class EventService {
             LocationService.rounded(location.distanceKm(originOf(viewer),
                 event.getLatitude(), event.getLongitude(), event.getCityKey())),
             lineup(performers, taste),
-            event.getPleaseNote(),
+            TicketBoilerplate.strip(event.getPleaseNote()),
             event.getPromoter(),
             event.getPriceMin(),
             event.getPriceMax(),
             event.getPriceCurrency(),
             event.isAgeRestricted(),
             event.getSalesStart(),
-            event.getAccessibility(),
+            TicketBoilerplate.strip(event.getAccessibility()),
             sources(event));
     }
 

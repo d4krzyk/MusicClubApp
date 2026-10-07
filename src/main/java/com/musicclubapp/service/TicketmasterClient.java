@@ -263,11 +263,12 @@ public class TicketmasterClient {
         }
 
         /*
-         * Wydarzenie ma trzy pola tekstu: "info" (zwykle zaproszenie od organizatora), "description" i "additionalInfo".
-         * Bierzemy wszystkie, bez powtorzen - wczesniej tylko pierwsze niepuste z dwoch pierwszych.
+         * Wydarzenie ma trzy pola tekstu: "info", "description" i "additionalInfo". Bierzemy wszystkie, bez powtorzen -
+         * i bez formulek sprzedazowych i prawnych, ktorymi Ticketmaster zwykle je wypelnia (oplata serwisowa, plan
+         * sali, dane spolki organizatora). Same formulki = brak opisu.
          */
-        String description = PlainText.cut(
-            PlainText.joined(text(e, "info"), text(e, "description"), text(e, "additionalInfo")), MAX_OPIS);
+        String description = PlainText.cut(TicketBoilerplate.strip(
+            PlainText.joined(text(e, "info"), text(e, "description"), text(e, "additionalInfo"))), MAX_OPIS);
 
         return new Event(
             clean(id, 64),
@@ -367,13 +368,13 @@ public class TicketmasterClient {
             }
         }
         return new Organizer(
-            clean(text(e, "pleaseNote"), 1000),
+            PlainText.cut(TicketBoilerplate.strip(text(e, "pleaseNote")), 1000),
             clean(promoter, 200),
             min, max == null || min == null || max >= min ? max : null,
             (min == null && max == null) || waluta == null ? null : waluta.toUpperCase(Locale.ROOT),
             e.path("ageRestrictions").path("legalAgeEnforced").asBoolean(false),
             sprzedaz,
-            clean(text(e.path("accessibility"), "info"), 500));
+            PlainText.cut(TicketBoilerplate.strip(text(e.path("accessibility"), "info")), 500));
     }
 
     private static Double price(JsonNode value) {

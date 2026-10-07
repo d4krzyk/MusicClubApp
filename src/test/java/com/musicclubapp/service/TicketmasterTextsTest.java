@@ -55,6 +55,22 @@ class TicketmasterTextsTest {
     }
 
     @Test
+    @DisplayName("formulki sprzedazowe i prawne nie sa opisem: z samych formulek - brak opisu; w uwagach i dostepnosci tez znikaja")
+    void boilerplateIsNotDescription() throws Exception {
+        var same = wydarzenie(pole("info", TicketBoilerplateTest.LIVE_NATION), "{ \"id\": \"A1\", \"name\": \"K\" }");
+        assertThat(same.description()).isNull();
+
+        var mieszane = wydarzenie(pole("info", TicketBoilerplateTest.STODOLA)
+                + pole("description", "Eagle-Eye Cherry wraca z trasą na 30-lecie albumu Desireless.")
+                + pole("pleaseNote", "Wejście od 18:00. " + TicketBoilerplateTest.STODOLA)
+                + ", \"accessibility\": { \"info\": \"Podjazd od ul. Mszczonowskiej. To buy accessible tickets please contact us.\" }",
+            "{ \"id\": \"A1\", \"name\": \"Eagle-Eye Cherry\" }");
+        assertThat(mieszane.description()).isEqualTo("Eagle-Eye Cherry wraca z trasą na 30-lecie albumu Desireless.");
+        assertThat(mieszane.organizer().pleaseNote()).isEqualTo("Wejście od 18:00.");
+        assertThat(mieszane.organizer().accessibility()).isEqualTo("Podjazd od ul. Mszczonowskiej.");
+    }
+
+    @Test
     @DisplayName("HTML w opisie: akapity i nowe linie zostaja, znaczniki w zdaniu znikaja bez sladu, encje rozkodowane")
     void htmlBecomesPlainText() throws Exception {
         var e = wydarzenie(pole("info",
@@ -66,6 +82,10 @@ class TicketmasterTextsTest {
         assertThat(PlainText.of("Kocham was <3 i &lt;b&gt; zostaje")).isEqualTo("Kocham was <3 i <b> zostaje");
         assertThat(PlainText.of("  linia   1  \n\n\n\n  linia 2 ")).isEqualTo("linia 1\n\nlinia 2");
         assertThat(PlainText.of("<p> </p><br>")).isNull();
+        // znacznik w zdaniu przy kropce albo w srodku slowa - bez sladu (spacja dawala "Warszawie ." i "Zesp o l")
+        assertThat(PlainText.of("Zesp<i>o</i>ł gra w <b>Warszawie</b>.")).isEqualTo("Zespoł gra w Warszawie.");
+        // pojedynczy znacznik akapitu (bez sasiedniego </p>) tez daje pusta linie, a nie zwykle przejscie do nowej
+        assertThat(PlainText.of("Pierwszy akapit.<p>Drugi akapit.")).isEqualTo("Pierwszy akapit.\n\nDrugi akapit.");
         assertThat(PlainText.of("<script>alert(1)</script>Tekst")).isEqualTo("Tekst");
     }
 

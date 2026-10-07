@@ -26,7 +26,7 @@ usuwanie własnych wiadomości i podgląd linków w czacie (V19), spotkania w cz
 „Będę” i przypomnienie — w rozmowach i klanach (V20), mapa z pinezką pod wydarzeniem (bez migracji),
 „Kim jest” wykonawca i „Od organizatora” na stronie wydarzenia (V21), **ekipy na koncert** — aplikacja przebudowana
 wokół „nie idź na koncert sam” (V22), wiele źródeł wydarzeń z łączeniem duplikatów — Bandsintown i Songkick
-obok Ticketmastera (V23), opisy wykonawców („About”) i pełny opis wydarzenia z Ticketmastera (V24).
+obok Ticketmastera (V23), opisy wykonawców („About”) i pełny opis wydarzenia z Ticketmastera — bez formułek sprzedażowych i prawnych (V24).
 Uwaga na kierunek: **rdzeniem aplikacji są ekipy na koncert** — kilka osób, które idą na to samo wydarzenie razem.
 Nowe funkcje mają je wzmacniać (start, strona wydarzenia, czat ekipy), a nie konkurować z nimi o uwagę.
 Zostało: stały adres → sprawdzenie PWA na prawdziwym telefonie → TWA przez
@@ -838,8 +838,24 @@ pytanie użytkownika „czemu nie pobiera się opis”.
   Numer idzie do ścieżki adresu, więc tylko `[A-Za-z0-9_-]{1,64}`.
 - **Bez `includeLicensedContent`**: treści licencjonowane mają własne warunki wyświetlania, których nie znamy. Jeśli „About”
   z ticketmaster.pl okaże się licencjonowane, API go bez tego nie odda — próba i decyzja w `docs/WDROZENIE.md`.
-- **Locale bez zmian** (domyślne `en`): fixture z prawdziwej odpowiedzi dla Polski ma `locale: pl-pl` i polskie `info`, więc
-  polskie teksty już przychodzą; zmiana `locale` mogłaby zmienić zbiór importowanych wydarzeń, a nie da się jej stąd sprawdzić.
+- **Formułki to nie opis** (`TicketBoilerplate.strip`): na żywym Ticketmasterze `info` polskich wydarzeń to zwykle sam
+  regulamin sprzedaży — „Service fee…”, „Additional fees may be added…”, „Seating chart reflects…”, „To buy accessible
+  tickets please contact us” (kontakt z Ticketmasterem, nie z nami) i dane spółki organizatora z KRS i VAT. Użytkownik
+  pokazał to na zrzutach („pismo kopiuj-wklej”); dwa takie teksty są dosłownie w `TicketBoilerplateTest`. Wycinamy całe
+  zdania z formułkami (EN i PL: opłaty, plan sali, bilety dla osób z niepełnosprawnościami, limity, zwroty, bilety mobilne,
+  dane spółki); same formułki = brak opisu, więc sekcji „O wydarzeniu” nie ma, a braki może uzupełnić inne źródło (V23).
+  Działa przy imporcie (opis, `pleaseNote`, dostępność) **i** przy wyświetlaniu (`EventService` — opisy zapisane wcześniej).
+  Zdanie kończy się na `.!?…` przed wielką literą, ale nie po skrócie (`SKROTY`: „Sp.”, „ul.”, „No.”, „St.”…) ani po
+  pojedynczej literze („o.o.”, „P. Nowak”) — inaczej dane spółki rozpadały się na kawałek bez znaku rozpoznawczego, który
+  zostawał na stronie. Końcówki słów we wzorcach przez `\p{L}`, nie `\w` — `\w` nie łapie „podlegają”.
+- **Locale bez zmian** (domyślne `en`), choć **teksty przychodzą po angielsku** — zrzuty użytkownika z żywego API (fixture
+  z polskim `info` był ułożony ręcznie, poprzednia notatka „polskie już przychodzą” była błędna). Polskie wersje mogą być
+  pod `locale=pl-pl,pl,*`, ale to może zmienić zbiór importowanych wydarzeń — sprawdzić na żywo, zanim się to włączy.
+- **Mutanty**: opisy 26 (25 zabitych + 1 równoważny: bramka `ZNACZNIK` w `PlainText.of` — na tekście bez znaczników
+  wyrażenia i tak nic nie zmieniają), formułki 12/12. Trzy przeżyły pierwszą rundę i dostały testy: znacznik przy kropce
+  („w <b>Warszawie</b>.” — w środku zdania dodatkowa spacja i tak się zwija), pojedynczy `<p>` (dwa sąsiednie znaczniki
+  dają pustą linię także z jednym „\n”) i skrót spoza listy w adresie („lok. 3”). Mutant, który zmienia zmienną używaną
+  w lambdzie, się nie kompiluje — zapisać go inaczej, a nie liczyć jako zabitego.
 - **UI** („Kim jest?”, `Wykonawcy.jsx`): najpierw opis od Ticketmastera (`lang` z `locale`, podpis „opis: Ticketmaster”
   z linkiem do strony artysty, `nofollow`), potem Last.fm ze swoim przypisaniem; „Nie mamy jeszcze opisu” tylko, gdy nie
   ma żadnego.

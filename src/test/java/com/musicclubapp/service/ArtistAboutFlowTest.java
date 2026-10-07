@@ -165,6 +165,17 @@ class ArtistAboutFlowTest {
             .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
         assertThat(w.get("description").asText())
             .isEqualTo("Kovacs wraca do Polski z nową płytą.\n\nBilety kolekcjonerskie tylko w kasie klubu.");
+
+        // Opis zapisany przed odsiewaniem formulek (stary import) - strona i tak ich nie pokazuje
+        jdbc.update("UPDATE music_events SET description = ?, please_note = ? WHERE id = ?",
+            TicketBoilerplateTest.LIVE_NATION + "\n\nKoncert promuje nową płytę.", TicketBoilerplateTest.STODOLA,
+            kovacs.getId());
+        em.clear();
+        JsonNode stary = json.readTree(mvc.perform(get("/api/events/" + kovacs.getId()).with(user("ab_ala")))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        assertThat(stary.get("description").asText()).isEqualTo("Koncert promuje nową płytę.");
+        assertThat(stary.get("pleaseNote").isNull()).as("same formulki - bez uwag").isTrue();
     }
 
     @Test
