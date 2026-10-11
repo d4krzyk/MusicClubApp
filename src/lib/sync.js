@@ -2,6 +2,8 @@ import { fetchCountry } from './ticketmaster.js';
 import * as lastfm from './lastfm.js';
 import { nameKey } from './nameKeys.js';
 import { dbGet, dbSet } from './store.js';
+import { artistEvents } from './bandsintown.js';
+import { parseIcs, normalizeFeedUrl } from './ics.js';
 
 export const WAZNOSC_TAGOW_MS = 60 * 24 * 3600 * 1000; // gatunki wykonawcy: 60 dni
 export const NA_PRZEBIEG = 150;                          // tylu nowych wykonawcow pytamy o gatunki w jednym odswiezeniu
@@ -75,4 +77,101 @@ export function performerNames(events, today) {
   const posortowane = [...events].filter((e) => e.date >= today).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   for (const e of posortowane) for (const p of e.performers) wynik.push(p.name);
   return wynik;
+}
+
+/* ---------- Bandsintown: koncerty ulubionych wykonawcow (wlasny app_id) ---------- */
+
+export async function loadBandsintown() {
+  return (await dbGet('bit')) ?? { events: [], syncedAt: null };
+}
+
+// Pyta o kazdego ulubionego wykonawce po kolei. Blad pojedynczego wykonawcy nie przerywa; zly klucz przerywa.
+// Przy awarii (nic sie nie udalo) zostaje stara kopia.
+export async function syncBandsintown(artists, { appId, country, fetchFn = fetch, signal, pauseMs = 150,
+  onProgress = () => {}, now = new Date() } = {}) {
+  if (!appId?.trim()) return loadBandsintown();
+  const wynik = new Map();
+  let udane = 0;
+  let i = 0;
+  for (const a of artists) {
+    if (i > 0) await pauza(pauseMs);
+    i++;
+    try {
+      for (const e of await artistEvents(a, { appId: appId.trim(), fetchFn, signal })) {
+        if (!country || !e.country || e.country === country) wynik.set(e.id, e);
+      }
+      udane++;
+    } catch (e) {
+      if (e?.name === 'AbortError' || e?.kod === 'KLUCZ') throw e;
+    }
+    onProgress({ done: i, total: artists.length });
+  }
+  if (artists.length && !udane) throw new Error('Bandsintown nie odpowiada');
+  const dane = { events: [...wynik.values()], syncedAt: now.toISOString() };
+  await dbSet('bit', dane);
+  return dane;
+}
+
+/* ---------- Twoje kalendarze (ICS): pliki i subskrypcje ---------- */
+
+export async function loadCalendars() {
+  return (await dbGet('calendars')) ?? [];
+}
+
+async function zapiszKalendarze(lista) {
+  await dbSet('calendars', lista);
+  return lista;
+}
+
+const nowyId = () => `k${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+export async function addCalendarFile(tekst, nazwa, { now = new Date() } = {}) {
+  const id = nowyId();
+  const events = parseIcs(tekst, { sourceId: id, sourceName: nazwa });
+  if (!events.length && !/BEGIN:VCALENDAR/i.test(tekst)) throw new Error('To nie jest plik kalendarza (.ics)');
+  const lista = await loadCalendars();
+  return zapiszKalendarze([...lista, { id, name: nazwa, kind: 'file', url: null, events, syncedAt: now.toISOString(), error: null }]);
+}
+
+async function pobierzIcs(url, fetchFn, signal) {
+  let odp;
+  try { odp = await fetchFn(url, { signal }); } catch (e) {
+    if (e?.name === 'AbortError') throw e;
+    throw new Error(`Nie udało się pobrać kalendarza: ${e?.message ?? e}`);
+  }
+  if (!odp.ok) throw new Error(`Kalendarz: HTTP ${odp.status}`);
+  const tekst = await odp.text();
+  if (!/BEGIN:VCALENDAR/i.test(tekst)) throw new Error('Pod tym adresem nie ma kalendarza (.ics)');
+  return tekst;
+}
+
+export async function addCalendarUrl(adres, nazwa, { fetchFn = fetch, signal, now = new Date() } = {}) {
+  const url = normalizeFeedUrl(adres);
+  if (!url) throw new Error('Nieprawidłowy adres kalendarza');
+  const id = nowyId();
+  const tekst = await pobierzIcs(url, fetchFn, signal);
+  const lista = await loadCalendars();
+  return zapiszKalendarze([...lista, { id, name: nazwa || new URL(url).hostname, kind: 'url', url,
+    events: parseIcs(tekst, { sourceId: id, sourceName: nazwa || new URL(url).hostname }), syncedAt: now.toISOString(), error: null }]);
+}
+
+// Odswieza subskrypcje; nieudana zostawia poprzednie wydarzenia i zapisuje blad.
+export async function refreshCalendars({ fetchFn = fetch, signal, now = new Date() } = {}) {
+  const lista = await loadCalendars();
+  const nowa = [];
+  for (const k of lista) {
+    if (k.kind !== 'url') { nowa.push(k); continue; }
+    try {
+      const tekst = await pobierzIcs(k.url, fetchFn, signal);
+      nowa.push({ ...k, events: parseIcs(tekst, { sourceId: k.id, sourceName: k.name }), syncedAt: now.toISOString(), error: null });
+    } catch (e) {
+      if (e?.name === 'AbortError') throw e;
+      nowa.push({ ...k, error: e?.message ?? String(e) });
+    }
+  }
+  return zapiszKalendarze(nowa);
+}
+
+export async function removeCalendar(id) {
+  return zapiszKalendarze((await loadCalendars()).filter((k) => k.id !== id));
 }

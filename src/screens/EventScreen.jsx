@@ -4,9 +4,12 @@ import { match, datesOf } from '../lib/match.js';
 import { nameKey } from '../lib/nameKeys.js';
 import { artistInfo } from '../lib/lastfm.js';
 import { dbGet, dbSet } from '../lib/store.js';
-import { dateParts, today, money, ics } from '../format.js';
-import { Reasons, StatusBadge, Star } from '../components.jsx';
-import { saveFile } from '../saveFile.js';
+import { dateParts, today, money } from '../format.js';
+import { Reasons, StatusBadge, Star, Obraz, Rozwijane } from '../components.jsx';
+import Arkusz from '../ui/Arkusz.jsx';
+import { useToast } from '../ui/Toast.jsx';
+import { IkBilet, IkKalendarzPlus, IkMapa, IkTrasa, IkWstecz, IkLink, IkPlik } from '../ui/Ikony.jsx';
+import { naAndroidzie, dodajNatywnie, otworzGoogle, pobierzIcs } from '../kalendarz.js';
 
 const ETYKIETY = { WEBSITE: 'WWW', SPOTIFY: 'Spotify', YOUTUBE: 'YouTube', INSTAGRAM: 'Instagram', FACEBOOK: 'Facebook',
   TIKTOK: 'TikTok', BANDCAMP: 'Bandcamp', SOUNDCLOUD: 'SoundCloud', WIKIPEDIA: 'Wikipedia', MUSICBRAINZ: 'MusicBrainz',
@@ -34,7 +37,8 @@ function Performer({ p, liked, app }) {
       await dbSet(klucz, { at: Date.now(), info });
       setStan({ loading: false, info, error: null });
     } catch (e) {
-      setStan({ loading: false, info: null, error: zapamietane ? null : (e?.kod === 'BRAK' ? 'none' : 'needKey'), ...(zapamietane ? { info: zapamietane.info } : {}) });
+      setStan(zapamietane ? { loading: false, info: zapamietane.info, error: null }
+        : { loading: false, info: null, error: e?.kod === 'BRAK' ? 'none' : 'needKey' });
     }
   }
 
@@ -44,17 +48,17 @@ function Performer({ p, liked, app }) {
       <div className="mc-performer-head">
         <span className="mc-performer-name">{p.name}{liked && <span className="mc-badge mc-badge-liked">{t('event.liked')}</span>}</span>
         {gatunki.length > 0 && <span className="mc-genres">{gatunki.join(', ')}</span>}
-        <button type="button" className="mc-btn mc-btn-small" aria-expanded={otwarty} onClick={przelacz}>
+        <button type="button" className={`mc-btn mc-btn-small mc-btn-rozwin${otwarty ? ' otwarty' : ''}`} aria-expanded={otwarty} onClick={przelacz}>
           {otwarty ? t('event.hide') : t('event.who')}
         </button>
       </div>
-      {Object.keys(p.links).length > 0 && (
+      {Object.keys(p.links ?? {}).length > 0 && (
         <p className="mc-links">{Object.entries(p.links).map(([rodzaj, url]) => (
           <a key={rodzaj} href={url} target="_blank" rel="noopener noreferrer nofollow">{ETYKIETY[rodzaj] ?? rodzaj}</a>))}</p>
       )}
-      {otwarty && (
+      <Rozwijane otwarte={otwarty}>
         <div className="mc-bio" lang={lang}>
-          {stan.loading && <p>{t('bio.loading')}</p>}
+          {stan.loading && <p className="mc-ladowanie"><span className="mc-kropki" aria-hidden="true"><i /><i /><i /></span>{t('bio.loading')}</p>}
           {info?.bio && <p className="mc-prewrap">{info.bio}</p>}
           {info && !info.bio && <p>{t('bio.none')}</p>}
           {info?.listeners && <p className="mc-hint">{t('bio.listeners', info.listeners.toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL'))}</p>}
@@ -63,87 +67,133 @@ function Performer({ p, liked, app }) {
           {stan.error === 'needKey' && <p>{t('bio.needKey')}</p>}
           {stan.error === 'none' && <p>{t('bio.none')}</p>}
         </div>
-      )}
+      </Rozwijane>
     </li>
   );
 }
 
-function pobierzIcs(e) {
-  const nazwa = `${e.name.replace(/[^\p{L}\p{N}]+/gu, '-').slice(0, 40)}.ics`;
-  return saveFile(nazwa, 'text/calendar', ics(e)).catch(() => { /* okno udostepniania zamkniete */ });
+function DoKalendarza({ e }) {
+  const { t } = useT();
+  const toast = useToast();
+  const [arkusz, setArkusz] = useState(false);
+
+  async function klik() {
+    if (!naAndroidzie()) { setArkusz(true); return; }
+    try {
+      await dodajNatywnie(e, t('event.addCalTitle'));
+    } catch {
+      toast(t('event.noCalendarApp'), 'blad');
+      setArkusz(true);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" className="mc-btn" onClick={klik}><IkKalendarzPlus size={18} />{t('event.addCal')}</button>
+      <Arkusz otwarty={arkusz} onClose={() => setArkusz(false)} tytul={t('event.addCalTitle')} zamknij={t('common.close')}>
+        <div className="mc-akcje-arkusza">
+          <button type="button" className="mc-akcja" data-autofocus onClick={() => { otworzGoogle(e); setArkusz(false); }}>
+            <span className="mc-akcja-ikona mc-google" aria-hidden="true">31</span>
+            <span><b>{t('event.googleCal')}</b><small>{t('event.googleCalHint')}</small></span>
+          </button>
+          <button type="button" className="mc-akcja" onClick={() => { pobierzIcs(e).catch(() => {}); setArkusz(false); }}>
+            <span className="mc-akcja-ikona" aria-hidden="true"><IkPlik /></span>
+            <span><b>{t('event.icsFile')}</b></span>
+          </button>
+        </div>
+      </Arkusz>
+    </>
+  );
 }
 
 export default function EventScreen({ app, id }) {
   const { t, lang } = useT();
+  const toast = useToast();
   const dzis = today();
-  const e = useMemo(() => app.data.events.find((x) => x.id === id) ?? app.settings.saved[id] ?? null, [app.data.events, app.settings.saved, id]);
+  const e = useMemo(() => app.events.find((x) => x.id === id || x.mergedIds?.includes(id)) ?? app.settings.saved[id] ?? null,
+    [app.events, app.settings.saved, id]);
   const m = useMemo(() => (e ? match(app.taste, e, app.tags) : { score: 0, reasons: [] }), [e, app.taste, app.tags]);
-  const inne = useMemo(() => (e ? datesOf(app.data.events, e, dzis).filter((x) => x.id !== e.id) : []), [e, app.data.events, dzis]);
+  const inne = useMemo(() => (e ? datesOf(app.events, e, dzis).filter((x) => x.id !== e.id) : []), [e, app.events, dzis]);
 
-  if (!e) return <section><a className="mc-back" href="#/">← {t('event.back')}</a><p className="mc-empty">{t('event.notFound')}</p></section>;
+  if (!e) return <section><a className="mc-back" href="#/"><IkWstecz size={18} />{t('event.back')}</a><p className="mc-empty">{t('event.notFound')}</p></section>;
 
   const d = dateParts(e.date, lang);
   const zapisany = !!app.settings.saved[e.id];
   const polubieni = new Set([...app.taste.artists.keys()]);
   const o = e.organizer ?? {};
   const mapa = e.lat != null && e.lon != null ? `https://www.openstreetmap.org/?mlat=${e.lat}&mlon=${e.lon}#map=16/${e.lat}/${e.lon}` : null;
-  const trasa = e.lat != null && e.lon != null ? `https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}` : null;
+  const trasa = e.lat != null && e.lon != null ? `https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`
+    : e.venueName && e.city ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${e.venueName}, ${e.city}`)}` : null;
+  const zrodla = (e.sources ?? []).filter((z, i, a) => a.findIndex((y) => y.kind === z.kind && y.name === z.name) === i);
+  const sprzedaz = o.salesStart && Date.parse(o.salesStart) > Date.now();
 
   return (
     <article className="mc-event-page">
-      <a className="mc-back" href="#/">← {t('event.back')}</a>
-      {e.imageUrl && <img className="mc-hero" src={e.imageUrl} alt="" referrerPolicy="no-referrer" />}
+      <a className="mc-back" href="#/"><IkWstecz size={18} />{t('event.back')}</a>
+      {e.imageUrl && <Obraz className="mc-hero" src={e.imageUrl} />}
       <header className="mc-event-head">
         <div>
           <h1>{e.name}</h1>
           <p className="mc-when"><span className="mc-cap">{d.weekday}</span>, {d.full} · {e.time ? t('event.time', e.time) : t('event.noTime')}</p>
           <p className="mc-where">{[e.venueName, e.address, e.city].filter(Boolean).join(', ')}</p>
-          <div className="mc-chips"><StatusBadge status={e.status} />{e.date < dzis && <span className="mc-badge mc-badge-warn">{t('event.past')}</span>}</div>
+          <div className="mc-chips">
+            <StatusBadge status={e.status} />
+            {e.date < dzis && <span className="mc-badge mc-badge-warn">{t('event.past')}</span>}
+            {(e.inCalendar || e.source === 'ics') && <span className="mc-badge mc-badge-liked">{t('event.inCalendar')}</span>}
+          </div>
         </div>
         <Star on={zapisany} label={zapisany ? t('unsave') : t('save')}
-          onClick={() => app.setSettings((s) => { const z = { ...s.saved }; if (z[e.id]) delete z[e.id]; else z[e.id] = e; return { saved: z }; })} />
+          onClick={() => {
+            app.setSettings((s) => { const z = { ...s.saved }; if (z[e.id]) delete z[e.id]; else z[e.id] = e; return { saved: z }; });
+            toast(t(zapisany ? 'unsaved.toast' : 'saved.toast'));
+          }} />
       </header>
 
       <div className="mc-actions">
-        {e.ticketUrl && <a className="mc-btn mc-btn-primary" href={e.ticketUrl} target="_blank" rel="noopener noreferrer">{t('event.tickets')}</a>}
-        {mapa && <a className="mc-btn" href={mapa} target="_blank" rel="noopener noreferrer">{t('event.map')}</a>}
-        {trasa && <a className="mc-btn" href={trasa} target="_blank" rel="noopener noreferrer">{t('event.route')}</a>}
-        <button type="button" className="mc-btn" onClick={() => pobierzIcs(e)}>{t('event.calendar')}</button>
+        {e.ticketUrl && <a className="mc-btn mc-btn-primary" href={e.ticketUrl} target="_blank" rel="noopener noreferrer"><IkBilet size={18} />{t('event.tickets')}</a>}
+        <DoKalendarza e={e} />
+        {mapa && <a className="mc-btn" href={mapa} target="_blank" rel="noopener noreferrer"><IkMapa size={18} />{t('event.map')}</a>}
+        {trasa && <a className="mc-btn" href={trasa} target="_blank" rel="noopener noreferrer"><IkTrasa size={18} />{t('event.route')}</a>}
+        {e.sourceUrl && !e.ticketUrl && <a className="mc-btn" href={e.sourceUrl} target="_blank" rel="noopener noreferrer"><IkLink size={18} />{t('event.openSource')}</a>}
       </div>
 
       {m.reasons.length > 0 && (
-        <section className="mc-card mc-section"><h2>{t('event.why')}</h2><Reasons reasons={m.reasons} /></section>
+        <section className="mc-card mc-section mc-wejscie" style={{ '--i': 1 }}><h2>{t('event.why')}</h2><Reasons reasons={m.reasons} /></section>
       )}
 
       {e.performers.length > 0 && (
-        <section className="mc-card mc-section">
+        <section className="mc-card mc-section mc-wejscie" style={{ '--i': 2 }}>
           <h2>{t('event.lineup')}</h2>
           <ul className="mc-performers">{e.performers.map((p) => (
             <Performer key={p.id ?? p.name} p={p} app={app} liked={polubieni.has(nameKey(p.name))} />))}</ul>
         </section>
       )}
 
-      {e.description && <section className="mc-card mc-section"><h2>{t('event.about')}</h2><p className="mc-prewrap">{e.description}</p></section>}
+      {e.description && <section className="mc-card mc-section mc-wejscie" style={{ '--i': 3 }}><h2>{t('event.about')}</h2><p className="mc-prewrap">{e.description}</p></section>}
 
-      {(o.pleaseNote || o.promoter || o.priceMin != null || o.ageRestricted || (o.salesStart && Date.parse(o.salesStart) > Date.now()) || o.accessibility) && (
-        <section className="mc-card mc-section">
+      {(o.pleaseNote || o.promoter || o.priceMin != null || o.ageRestricted || sprzedaz || o.accessibility) && (
+        <section className="mc-card mc-section mc-wejscie" style={{ '--i': 4 }}>
           <h2>{t('event.organizer')}</h2>
           {o.promoter && <p>{o.promoter}</p>}
           {o.priceMin != null && <p>{t('event.price', money(o.priceMin, o.priceMax, o.priceCurrency, lang))}</p>}
           {o.ageRestricted && <p>{t('event.age')}</p>}
-          {o.salesStart && Date.parse(o.salesStart) > Date.now() && (
-            <p>{t('event.salesStart', new Date(o.salesStart).toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL', { dateStyle: 'medium', timeStyle: 'short' }))}</p>)}
+          {sprzedaz && <p>{t('event.salesStart', new Date(o.salesStart).toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL', { dateStyle: 'medium', timeStyle: 'short' }))}</p>}
           {o.pleaseNote && <p className="mc-prewrap">{o.pleaseNote}</p>}
           {o.accessibility && <p className="mc-prewrap">{o.accessibility}</p>}
         </section>
       )}
 
       {inne.length > 0 && (
-        <section className="mc-card mc-section">
+        <section className="mc-card mc-section mc-wejscie" style={{ '--i': 5 }}>
           <h2>{t('event.moreDates')}</h2>
           <ul className="mc-dates">{inne.map((x) => (
             <li key={x.id}><a href={`#/e/${encodeURIComponent(x.id)}`}>{dateParts(x.date, lang).full}{x.time ? ` · ${x.time}` : ''}</a></li>))}</ul>
         </section>
+      )}
+
+      {zrodla.length > 0 && (
+        <p className="mc-hint mc-zrodla">{t('event.sources')}{zrodla.map((z, i) => (
+          <span key={`${z.kind}${z.name}`}>{i > 0 && ' · '}{z.url ? <a href={z.url} target="_blank" rel="noopener noreferrer nofollow">{z.name}</a> : z.name}</span>))}</p>
       )}
     </article>
   );

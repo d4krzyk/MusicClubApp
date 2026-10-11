@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadSettings, saveSettings, dbClear } from './lib/store.js';
-import { loadEvents, loadTags, syncEvents, syncTags, importLastFm, performerNames, MIN_ODSWIEZANIA_MS, NA_PRZEBIEG } from './lib/sync.js';
+import { loadEvents, loadTags, syncEvents, syncTags, importLastFm, performerNames, MIN_ODSWIEZANIA_MS, NA_PRZEBIEG,
+  loadBandsintown, syncBandsintown, loadCalendars, refreshCalendars, addCalendarFile, addCalendarUrl, removeCalendar } from './lib/sync.js';
+import { mergeAll } from './lib/merge.js';
 import { buildTaste } from './lib/match.js';
 import { nameKey } from './lib/nameKeys.js';
 import { cityByName } from './lib/location.js';
@@ -10,11 +12,15 @@ export function useApp() {
   const [settings, setSettingsState] = useState(loadSettings);
   const [data, setData] = useState({ events: [], syncedAt: null });
   const [tags, setTags] = useState({});
+  const [bit, setBit] = useState({ events: [], syncedAt: null });
+  const [calendars, setCalendars] = useState([]);
   const [status, setStatus] = useState({ running: false, step: null, done: 0, total: 0, error: null, message: null });
   const [ready, setReady] = useState(false);
   const abort = useRef(null);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
+  const calendarsRef = useRef([]);
+  const data0 = useRef(null);
 
   const setSettings = useCallback((zmiana) => {
     setSettingsState((poprzednie) => {
@@ -26,14 +32,19 @@ export function useApp() {
 
   useEffect(() => {
     let zyje = true;
-    Promise.all([loadEvents(), loadTags()]).then(([d, t]) => {
+    Promise.all([loadEvents(), loadTags(), loadBandsintown(), loadCalendars()]).then(([d, t, b, k]) => {
       if (!zyje) return;
       setData(d);
+      setBit(b);
+      setCalendars(k);
       setTags(Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.tags])));
       setReady(true);
     });
     return () => { zyje = false; };
   }, []);
+
+  calendarsRef.current = calendars;
+  data0.current = data;
 
   const artistNames = useMemo(() => {
     const widziane = new Set();
@@ -46,6 +57,9 @@ export function useApp() {
   }, [settings.manualArtists, settings.lfmArtists]);
 
   const taste = useMemo(() => buildTaste(artistNames, tags), [artistNames, tags]);
+  // Jedna lista z trzech zrodel: Ticketmaster (glowne), Bandsintown, twoje kalendarze - ten sam koncert raz.
+  const events = useMemo(() => mergeAll(data.events, bit.events, calendars.flatMap((k) => k.events)),
+    [data.events, bit.events, calendars]);
   const origin = useMemo(() => {
     const c = settings.city ? cityByName(settings.city) : null;
     return c ? { lat: c.lat, lon: c.lon } : null;
@@ -63,7 +77,7 @@ export function useApp() {
 
   const refresh = useCallback(async ({ silent = false } = {}) => {
     const s = settingsRef.current;
-    if (!s.tmKey.trim()) { setStatus((x) => ({ ...x, error: { kod: 'KLUCZ_BRAK' } })); return; }
+    if (!s.tmKey.trim() && !calendarsRef.current.some((k) => k.kind === 'url')) { setStatus((x) => ({ ...x, error: { kod: 'KLUCZ_BRAK' } })); return; }
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       setStatus((x) => ({ ...x, running: false, error: null, message: silent ? null : 'sync.offline' }));
       return;
@@ -73,8 +87,27 @@ export function useApp() {
     abort.current = ctl;
     setStatus({ running: true, step: 'events', done: 0, total: 0, error: null, message: null });
     try {
-      const d = await syncEvents(s, { signal: ctl.signal, onProgress: (p) => setStatus((x) => ({ ...x, ...p })) });
-      setData(d);
+      let d = data0.current;
+      if (s.tmKey.trim()) {
+        d = await syncEvents(s, { signal: ctl.signal, onProgress: (p) => setStatus((x) => ({ ...x, ...p })) });
+        setData(d);
+      }
+      let bladPoboczny = null;
+      if (s.bitKey?.trim()) {
+        setStatus({ running: true, step: 'bit', done: 0, total: 0, error: null, message: null });
+        try {
+          const fav = [...s.manualArtists, ...s.lfmArtists].slice(0, 200);
+          setBit(await syncBandsintown(fav, { appId: s.bitKey, country: s.country, signal: ctl.signal,
+            onProgress: (p) => setStatus((x) => ({ ...x, ...p })) }));
+        } catch (e) {
+          if (e?.name === 'AbortError') throw e;
+          bladPoboczny = { kod: e?.kod ?? 'ERR', tekst: e?.message };
+        }
+      }
+      if (calendarsRef.current.some((k) => k.kind === 'url')) {
+        setStatus({ running: true, step: 'calendars', done: 0, total: 0, error: null, message: null });
+        setCalendars(await refreshCalendars({ signal: ctl.signal }));
+      }
       setStatus({ running: true, step: 'tags', done: 0, total: 0, error: null, message: null });
       try {
         await odswiezTagi(d.events, { signal: ctl.signal, onProgress: (p) => setStatus((x) => ({ ...x, ...p })) });
@@ -84,7 +117,7 @@ export function useApp() {
         setStatus({ running: false, step: null, done: 0, total: 0, error: { kod: e?.kod ?? 'ERR', tekst: e?.message }, message: null });
         return;
       }
-      setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: 'sync.done', count: d.events.length });
+      setStatus({ running: false, step: null, done: 0, total: 0, error: bladPoboczny, message: bladPoboczny ? null : 'sync.done', count: d.events.length });
     } catch (e) {
       if (e?.name === 'AbortError') { setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: null }); return; }
       setStatus({ running: false, step: null, done: 0, total: 0, error: { kod: e?.kod ?? 'ERR', tekst: e?.message }, message: null });
@@ -100,7 +133,7 @@ export function useApp() {
     startowe.current = true;
     const s = settingsRef.current;
     const stare = !data.syncedAt || Date.now() - Date.parse(data.syncedAt) > MIN_ODSWIEZANIA_MS || data.country !== s.country;
-    if (s.tmKey.trim() && stare) refresh({ silent: true });
+    if ((s.tmKey.trim() || calendars.some((k) => k.kind === 'url')) && stare) refresh({ silent: true });
   }, [ready, data, refresh]);
 
   const importArtists = useCallback(async () => {
@@ -115,12 +148,12 @@ export function useApp() {
     abort.current = ctl;
     setStatus({ running: true, step: 'tags', done: 0, total: 0, error: null, message: null });
     try {
-      await odswiezTagi(data.events, { signal: ctl.signal, onProgress: (p) => setStatus((x) => ({ ...x, ...p })) });
+      await odswiezTagi(events, { signal: ctl.signal, onProgress: (p) => setStatus((x) => ({ ...x, ...p })) });
       setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: null });
     } catch (e) {
       setStatus({ running: false, step: null, done: 0, total: 0, error: e?.name === 'AbortError' ? null : { kod: e?.kod ?? 'ERR', tekst: e?.message }, message: null });
     }
-  }, [data.events, odswiezTagi]);
+  }, [events, odswiezTagi]);
 
   const wipe = useCallback(async () => {
     abort.current?.abort();
@@ -129,11 +162,20 @@ export function useApp() {
     saveSettings(czyste);
     setSettingsState(czyste);
     setData({ events: [], syncedAt: null });
+    setBit({ events: [], syncedAt: null });
+    setCalendars([]);
     setTags({});
     setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: null });
   }, []);
 
-  return { settings, setSettings, data, tags, taste, origin, artistNames, status, ready, refresh, stop, importArtists, refreshTags, wipe };
+  const kalendarze = useMemo(() => ({
+    dodajPlik: async (tekst, nazwa) => { const l = await addCalendarFile(tekst, nazwa); setCalendars(l); return l[l.length - 1]; },
+    dodajAdres: async (url, nazwa) => { const l = await addCalendarUrl(url, nazwa); setCalendars(l); return l[l.length - 1]; },
+    usun: async (id) => setCalendars(await removeCalendar(id)),
+  }), []);
+
+  return { settings, setSettings, data, events, tags, taste, origin, artistNames, status, ready, refresh, stop, importArtists,
+    refreshTags, wipe, calendars, kalendarze };
 }
 
 function loadSettingsDefaults() {

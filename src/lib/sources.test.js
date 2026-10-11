@@ -1,0 +1,142 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readEvent, artistEvents, pathName, countryCode } from './bandsintown.js';
+import { mergeAll, score, sameVenue } from './merge.js';
+import { googleCalendarUrl, span, ics } from './calendar.js';
+import { match, buildTaste } from './match.js';
+import { syncBandsintown, addCalendarFile, addCalendarUrl, refreshCalendars, loadCalendars, removeCalendar } from './sync.js';
+import { dbClear } from './store.js';
+
+const odp = (json, status = 200) => ({ ok: status < 400, status, json: async () => json, text: async () => (typeof json === 'string' ? json : JSON.stringify(json)) });
+const BIT = { id: '1007', datetime: '2026-11-20T20:00:00', url: 'https://www.bandsintown.com/e/1007', title: '',
+  lineup: ['Kovacs', 'Support Duo'], offers: [{ type: 'Tickets', url: 'https://tix.example/1007' }],
+  venue: { name: 'Klub Progresja', city: 'Warszawa', country: 'Poland', latitude: '52.2323', longitude: '20.9364', street_address: 'Fort Wola 22' } };
+const tm = (o) => ({ id: 'TM1', source: 'tm', name: 'Kovacs', date: '2026-11-20', time: '20:00', venueName: 'Progresja', cityKey: 'warsaw',
+  city: 'Warszawa', lat: 52.2321, lon: 20.9361, country: 'PL', performers: [{ name: 'Kovacs' }], ticketUrl: 'https://tm/1', imageUrl: null,
+  description: null, address: null, ...o });
+
+test('Bandsintown: wydarzenie, kraj z nazwy, sklad, bilety; polnoc = brak godziny', () => {
+  const e = readEvent(BIT, 'Kovacs');
+  assert.equal(e.id, 'bit:1007');
+  assert.equal(e.name, 'Kovacs + Support Duo');
+  assert.equal(e.time, '20:00');
+  assert.equal(e.country, 'PL');
+  assert.equal(e.cityKey, 'warsaw');
+  assert.equal(e.ticketUrl, 'https://tix.example/1007');
+  assert.equal(readEvent({ ...BIT, datetime: '2026-11-20T00:00:00' }, 'K').time, null);
+  assert.equal(readEvent({ id: 'x' }, 'K'), null);
+  assert.equal(countryCode('Czech Republic'), 'CZ');
+  assert.equal(countryCode('Germany'), 'DE');
+  assert.equal(pathName('AC/DC'), 'AC%252FDC');
+});
+
+test('Bandsintown: 404 = brak koncertow, 403 = zly klucz, klucz nie wycieka', async () => {
+  assert.deepEqual(await artistEvents('X', { appId: 'a', fetchFn: async () => odp({}, 404) }), []);
+  assert.deepEqual(await artistEvents('X', { appId: 'a', fetchFn: async () => odp({ errorMessage: '[NotFound]' }) }), []);
+  await assert.rejects(artistEvents('X', { appId: 'a', fetchFn: async () => odp({}, 403) }), (e) => e.kod === 'KLUCZ');
+  await assert.rejects(artistEvents('X', { appId: 'tajny', fetchFn: async (u) => { throw new Error(u); } }), (e) => !e.message.includes('tajny'));
+});
+
+test('laczenie: ten sam koncert z Bandsintown dopisany do Ticketmastera, braki uzupelnione', () => {
+  const bit = readEvent(BIT, 'Kovacs');
+  assert.ok(sameVenue('Klub Progresja', 'Progresja'));
+  assert.ok(!sameVenue('Klub', 'Hala'));
+  assert.ok(score(tm(), bit) >= 9);
+  const [jeden, ...reszta] = mergeAll([tm({ address: null })], [bit]);
+  assert.equal(reszta.length, 0);
+  assert.equal(jeden.id, 'TM1');
+  assert.equal(jeden.address, 'Fort Wola 22');
+  assert.equal(jeden.ticketUrl, 'https://tm/1', 'nie nadpisuje');
+  assert.deepEqual(jeden.sources.map((s) => s.kind), ['TICKETMASTER', 'BANDSINTOWN']);
+});
+
+test('laczenie: inny dzien, inna sala, inny wykonawca, godziny o > 3 h = osobne karty', () => {
+  const bit = readEvent(BIT, 'Kovacs');
+  assert.equal(score(tm({ date: '2026-11-21' }), bit), 0);
+  assert.equal(score(tm({ venueName: 'Stodoła', lat: 52.21, lon: 21.0 }), bit), 0);
+  assert.equal(score(tm({ name: 'Ktoś inny', performers: [{ name: 'Ktoś inny' }] }), bit), 0);
+  assert.equal(score(tm({ time: '15:00' }), bit), 0);
+  assert.equal(score(tm({ country: 'DE' }), bit), 0);
+  assert.equal(mergeAll([tm({ date: '2026-11-21' })], [bit]).length, 2);
+});
+
+test('wydarzenie z kalendarza (Facebook) laczy sie z Ticketmasterem i podnosi je w "Dla ciebie"', () => {
+  const fb = { id: 'ics:fb:1', source: 'ics', name: 'Kovacs | Warszawa', date: '2026-11-20', time: '20:00', venueName: 'Progresja',
+    cityKey: 'warsaw', lat: null, lon: null, country: null, performers: [], sources: [{ kind: 'ICS', name: 'Facebook', url: null }] };
+  const [e] = mergeAll([tm()], [], [fb]);
+  assert.equal(e.inCalendar, true);
+  const pusty = buildTaste([], {});
+  assert.deepEqual(match(pusty, e), { score: 60, reasons: [{ kind: 'CALENDAR', value: 'Facebook' }] });
+  assert.equal(match(pusty, tm()).score, 0);
+});
+
+test('kalendarz: link Google z UTC, calodniowy, plik .ics', () => {
+  const e = tm({ startUtc: '2026-11-20T19:00:00Z', description: 'Opis', address: 'Fort Wola 22' });
+  const u = new URL(googleCalendarUrl(e));
+  assert.equal(u.searchParams.get('action'), 'TEMPLATE');
+  assert.equal(u.searchParams.get('dates'), '20261120T190000Z/20261120T220000Z');
+  assert.equal(u.searchParams.get('location'), 'Progresja, Fort Wola 22, Warszawa');
+  assert.ok(u.searchParams.get('details').includes('https://tm/1'));
+  assert.equal(new URL(googleCalendarUrl(tm({ time: null, startUtc: null }))).searchParams.get('dates'), '20261120/20261121');
+  assert.equal(span(tm({ time: null, startUtc: null })).allDay, true);
+  const plik = ics(e, new Date('2026-10-01T00:00:00Z'));
+  assert.ok(plik.includes('DTSTART:20261120T190000Z') && plik.includes('GEO:52.2321;20.9361') && plik.includes('LOCATION:Progresja\\, Fort Wola 22\\, Warszawa'));
+});
+
+test('Bandsintown w synchronizacji: tylko wybrany kraj, blad wykonawcy nie przerywa, zly klucz przerywa', async () => {
+  await dbClear();
+  const pytania = [];
+  const f = async (u) => {
+    const a = decodeURIComponent(new URL(u).pathname.split('/')[2]);
+    pytania.push(a);
+    if (a === 'Awaria') return odp({}, 500);
+    return odp([BIT, { ...BIT, id: '2', venue: { ...BIT.venue, country: 'Germany', city: 'Berlin' } }]);
+  };
+  const d = await syncBandsintown(['Kovacs', 'Awaria', 'Hey'], { appId: 'a', country: 'PL', fetchFn: f, pauseMs: 0 });
+  assert.deepEqual(pytania, ['Kovacs', 'Awaria', 'Hey']);
+  assert.deepEqual(d.events.map((e) => e.id), ['bit:1007']);
+  await assert.rejects(syncBandsintown(['A', 'B'], { appId: 'x', fetchFn: async () => odp({}, 403), pauseMs: 0 }), (e) => e.kod === 'KLUCZ');
+});
+
+test('kalendarze: plik, subskrypcja, odswiezenie z bledem zostawia stare wydarzenia, usuniecie', async () => {
+  await dbClear();
+  const ICS = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:1\r\nDTSTART:20261120T190000Z\r\nSUMMARY:Kovacs\r\nEND:VEVENT\r\nEND:VCALENDAR';
+  await addCalendarFile(ICS, 'Facebook');
+  await assert.rejects(addCalendarFile('nic', 'zly'));
+  let lista = await addCalendarUrl('webcal://klub.example/cal.ics', 'Klub', { fetchFn: async (u) => { assert.equal(u, 'https://klub.example/cal.ics'); return odp(ICS); } });
+  assert.equal(lista.length, 2);
+  assert.equal(lista[1].events.length, 1);
+  await assert.rejects(addCalendarUrl('https://x.example/', '', { fetchFn: async () => odp('<html>') }), /nie ma kalendarza/);
+  lista = await refreshCalendars({ fetchFn: async () => odp('', 500) });
+  assert.equal(lista[1].events.length, 1);
+  assert.match(lista[1].error, /500/);
+  lista = await removeCalendar(lista[0].id);
+  assert.deepEqual((await loadCalendars()).map((k) => k.name), ['Klub']);
+});
+
+test('laczenie: punkty za godzine (do 1 h), krotka nazwa sali nie wystarcza, remis = pierwsze wydarzenie', () => {
+  const bit = readEvent(BIT, 'Kovacs');
+  assert.equal(score(tm(), bit), 12);
+  assert.equal(score(tm({ time: '21:30' }), bit), 11);
+  assert.ok(!sameVenue('Sala B90', 'B90'));
+  assert.ok(sameVenue('Klub Ucho', 'Ucho Live'));
+  const [a, b] = mergeAll([tm({ id: 'A' }), tm({ id: 'B' })], [bit]);
+  assert.equal(a.sources.length, 2);
+  assert.equal(b.sources.length, 1);
+});
+
+test('kalendarz: koniec z pliku, gdy jest pozniej niz poczatek', () => {
+  const s = span(tm({ startUtc: '2026-11-20T19:00:00Z', endUtc: '2026-11-20T23:30:00Z' }));
+  assert.equal(new Date(s.end).toISOString(), '2026-11-20T23:30:00.000Z');
+  assert.equal(span(tm({ startUtc: '2026-11-20T19:00:00Z', endUtc: '2026-11-20T18:00:00Z' })).end, Date.parse('2026-11-20T22:00:00Z'));
+});
+
+test('odswiezanie kalendarzy nie pobiera plikow (tylko subskrypcje)', async () => {
+  await dbClear();
+  const ICS = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:1\r\nDTSTART:20261120T190000Z\r\nSUMMARY:K\r\nEND:VEVENT\r\nEND:VCALENDAR';
+  await addCalendarFile(ICS, 'Plik');
+  let n = 0;
+  const [plik] = await refreshCalendars({ fetchFn: async () => { n++; return odp('', 500); } });
+  assert.equal(n, 0);
+  assert.equal(plik.error, null);
+});

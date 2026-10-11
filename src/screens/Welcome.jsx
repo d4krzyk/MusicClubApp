@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useT } from '../i18n.js';
-import Logo from '../Logo.jsx';
+import NapisMC from '../NapisMC.jsx';
+import { KeyField } from '../components.jsx';
 
 export default function Welcome({ app, onDone }) {
   const { t } = useT();
@@ -9,7 +10,7 @@ export default function Welcome({ app, onDone }) {
   const [user, setUser] = useState(app.settings.lfmUser);
   const [blad, setBlad] = useState(null);
 
-  async function start(e) {
+  function start(e) {
     e.preventDefault();
     if (!tm.trim()) { setBlad(t('welcome.needTm')); return; }
     app.setSettings({ tmKey: tm.trim(), lfmKey: lfm.trim(), lfmUser: user.trim() });
@@ -22,27 +23,26 @@ export default function Welcome({ app, onDone }) {
   }
 
   return (
-    <form className="mc-welcome mc-card" onSubmit={start}>
-      <Logo size={64} />
-      <h1>{t('welcome.title')}</h1>
-      <p className="mc-lead">{t('welcome.lead')}</p>
+    <form className="mc-welcome" onSubmit={start} noValidate>
+      <div className="mc-welcome-hero">
+        <NapisMC uklad="pionowy" className="mc-welcome-napis" aria-hidden="true" />
+        <h1>{t('welcome.title')}</h1>
+        <p className="mc-lead">{t('welcome.lead')}</p>
+      </div>
       <ol className="mc-steps">
-        <li><a href="https://developer.ticketmaster.com/" target="_blank" rel="noopener noreferrer">{t('welcome.step1')}</a></li>
-        <li><a href="https://www.last.fm/api/account/create" target="_blank" rel="noopener noreferrer">{t('welcome.step2')}</a></li>
-        <li>{t('welcome.step3')}</li>
+        <li style={{ '--i': 1 }}><a href="https://developer.ticketmaster.com/" target="_blank" rel="noopener noreferrer">{t('welcome.step1')}</a></li>
+        <li style={{ '--i': 2 }}><a href="https://www.last.fm/api/account/create" target="_blank" rel="noopener noreferrer">{t('welcome.step2')}</a></li>
+        <li style={{ '--i': 3 }}>{t('welcome.step3')}</li>
       </ol>
-      <label className="mc-field">{t('set.tmKey')}
-        <input value={tm} onChange={(e) => setTm(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck="false" />
-      </label>
-      <label className="mc-field">{t('set.lfmKey')}
-        <input value={lfm} onChange={(e) => setLfm(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck="false" />
-      </label>
-      <label className="mc-field">{t('taste.lfmUser')}
-        <input value={user} onChange={(e) => setUser(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck="false" />
-      </label>
-      <p className="mc-hint">{t('welcome.optional')}</p>
-      {blad && <p className="mc-error" role="alert">{blad}</p>}
-      <button className="mc-btn mc-btn-primary" type="submit">{t('welcome.start')}</button>
+      <div className="mc-card mc-section mc-welcome-pola">
+        <KeyField label={t('set.tmKey')} value={tm} onChange={(v) => { setTm(v); setBlad(null); }} blad={blad} />
+        <KeyField label={t('set.lfmKey')} value={lfm} onChange={setLfm} />
+        <label className="mc-field">{t('taste.lfmUser')}
+          <input value={user} onChange={(e) => setUser(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck="false" />
+        </label>
+        <p className="mc-hint">{t('welcome.optional')}</p>
+        <button className="mc-btn mc-btn-primary mc-btn-duzy" type="submit">{t('welcome.start')}</button>
+      </div>
     </form>
   );
 }

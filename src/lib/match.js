@@ -6,6 +6,7 @@ export const ZA_ARTYSTE = 100;
 export const ZA_GATUNEK = 15;
 export const ZA_RODZINE = 8;
 export const ZA_BLISKOSC = 8; // za kazdy poziom bliskosci 0-5
+export const ZA_KALENDARZ = 60; // wydarzenie z twojego kalendarza (Facebook, ICS) - sam je tam dodales
 
 // Gust: ulubieni artysci (klucz -> nazwa) i ich gatunki (z tagow Last.fm; mapa klucz artysty -> lista tagow).
 export function buildTaste(artists, artistTags) {
@@ -56,6 +57,11 @@ export function match(taste, event, performerTags = {}) {
   const rodzinyDokladnych = families(new Set(dokladne));
   const reszta = tylkoRodzina.filter((f) => !rodzinyDokladnych.has(f));
   score += ZA_RODZINE * Math.min(2, reszta.length);
+
+  if (event.source === 'ics' || event.inCalendar) {
+    score += ZA_KALENDARZ;
+    reasons.unshift({ kind: 'CALENDAR', value: (event.sources ?? []).find((z) => z.kind === 'ICS')?.name ?? '' });
+  }
 
   if (dokladne.length) {
     reasons.push({ kind: 'GENRE', value: dokladne.slice(0, 3).map((t) => taste.genres.get(t).display).join(', ') });

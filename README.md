@@ -25,10 +25,32 @@ stąd usunięta — zostaje w gałęzi, z której ta powstała.
 
 | Ekran | Co robi |
 |---|---|
-| **Koncerty** | „Dla ciebie” (tylko pasujące do gustu, z powodem przy każdym), „Najbliższe” (wszystkie), „Zapisane” (gwiazdka). Szukanie, filtr miasta, promień od twojego miasta. Terminy tej samej serii zwinięte w jedną kartę („+2 terminów”). |
-| **Wydarzenie** | Termin, miejsce, bilety, mapa (OpenStreetMap), trasa, plik do kalendarza (`.ics`), skład z gatunkami i linkami wykonawców, „Kim jest?” (opis z Last.fm), opis wydarzenia bez formułek sprzedażowych, „Od organizatora” (ceny, wiek, start sprzedaży), inne terminy. |
+| **Koncerty** | „Dla ciebie” (tylko pasujące do gustu, z powodem przy każdym), „Najbliższe” (wszystkie), „Moje” (gwiazdka + wydarzenia z twoich kalendarzy). Szukanie, miasto i zasięg w arkuszach wysuwanych od dołu. Terminy tej samej serii zwinięte w jedną kartę („+2 terminów”). |
+| **Wydarzenie** | Termin, miejsce, bilety, **Do kalendarza** (na Androidzie od razu Kalendarz Google, w przeglądarce Kalendarz Google albo plik `.ics`), mapa (OpenStreetMap), trasa, skład z gatunkami i linkami wykonawców, „Kim jest?” (opis z Last.fm), opis bez formułek sprzedażowych, „Od organizatora”, inne terminy, podpis źródeł danych. |
 | **Twój gust** | Import artystów z Last.fm, ręczna lista, twoje gatunki (z tagów Last.fm). |
-| **Ustawienia** | Klucze API, kraj (19) i zakres miesięcy, miasto i promień, język (PL/EN), motyw, kopia ustawień, usunięcie wszystkich danych. |
+| **Ustawienia** | Klucze API, **źródła wydarzeń** (Bandsintown, twoje kalendarze `.ics`), kraj i zakres miesięcy, miasto i promień, język (PL/EN), motyw, kopia ustawień, usunięcie wszystkich danych. |
+
+### Źródła wydarzeń
+
+- **Ticketmaster** — główne źródło (twój klucz).
+- **Bandsintown** (opcjonalnie, twój `app_id`) — koncerty twoich ulubionych wykonawców w wybranym kraju; Bandsintown nie
+  szuka po mieście, tylko po wykonawcy, więc dokłada to, czego Ticketmaster nie sprzedaje.
+- **Twoje kalendarze (`.ics`)** — plik importowany raz (np. wydarzenie z Facebooka: „Dodaj do kalendarza / Eksportuj”)
+  albo adres subskrypcji (`https://…` lub `webcal://…`: kalendarz Google „tajny adres iCal”, strona klubu), odświeżany razem
+  z koncertami. Wydarzenia z kalendarza są w „Moje” i wyżej w „Dla ciebie”.
+- **Ten sam koncert z kilku źródeł = jedna karta** (`src/lib/merge.js`, port łączenia z wersji serwerowej: ten sam dzień
+  i kraj, ta sama sala — do 500 m albo ta sama nazwa w tym samym mieście — i ten sam wykonawca albo nazwa; godziny różne
+  o ponad 3 h = dwa koncerty). Źródło poboczne niczego nie nadpisuje, tylko uzupełnia braki (adres, godzina, bilety).
+- Facebook nie ma publicznego API wydarzeń; eksport `.ics` jest jedyną legalną drogą. Kształtu jego eksportu nie dało się
+  stąd sprawdzić na żywo — parser trzyma się standardu (RFC 5545) i jest przetestowany na typowym pliku.
+
+### Kalendarz Google na Androidzie
+
+Przycisk „Do kalendarza” w APK otwiera **Kalendarz Google z wypełnionym wydarzeniem** (nazwa, miejsce, opis z linkiem do
+biletów, początek i koniec — koncert bez godziny końca trwa 3 h, bez godziny startu jest całodniowy). To zwykły ekran
+„Nowe wydarzenie”: zapisujesz jednym dotknięciem, a aplikacja **nie dostaje uprawnień do twojego kalendarza**. Robi to
+mała wtyczka `android/app/src/main/java/pl/musicclub/solo/KalendarzPlugin.java` (Intent `ACTION_INSERT` z pakietem
+`com.google.android.calendar`); gdy Kalendarza Google nie ma, Android pokazuje inne kalendarze.
 
 ### Dopasowanie („Dla ciebie”)
 
@@ -93,11 +115,15 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Co sprawdzono, a czego nie
 
-- **Sprawdzone:** 38 testów logiki (`npm test`) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
+- **Sprawdzone:** 56 testów logiki (`npm test`, każdy z ~50 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
   Ticketmasterze i Last.fm: ekran powitalny, klucze, pobranie, „Dla ciebie”, szukanie, zapis, strona wydarzenia, „Kim
   jest?”, `.ics`, import i ręczna lista, praca offline po przeładowaniu (service worker + IndexedDB), błędny klucz, usunięcie
   danych, brak przelewu strony przy 320 px.
-- **Niesprawdzone (blokada w środowisku):** prawdziwe odpowiedzi Ticketmastera i Last.fm przez przeglądarkę (CORS),
+  Druga runda w Chromium: napis w pasku, płynące przełączniki, arkusze (Esc, fokus), kalendarz Google (adres szablonu),
+  import pliku z Facebooka i subskrypcja, Bandsintown, łączenie duplikatów, „Moje”, offline z kalendarzami, 320 i 390 px.
+- **Niesprawdzone (blokada w środowisku):** prawdziwe odpowiedzi Ticketmastera, Last.fm, Bandsintown i eksportu z Facebooka,
+  CORS w przeglądarce (subskrypcje `.ics` z Google/Facebooka w przeglądarce prawie na pewno nie przejdą — w APK tak),
+  wtyczka kalendarza na prawdziwym telefonie,
   budowa APK i działanie aplikacji na telefonie — workflow i projekt Androida są przygotowane, ale nie zostały uruchomione.
   Kształt odpowiedzi odtworzono z dokumentacji i z prawdziwej odpowiedzi Ticketmastera z fixture (`src/lib/fixtures`).
 - Ticketmaster nie oddaje opisów wykonawców przez publiczne API, a opisy wydarzeń to zwykle formułki sprzedażowe —
@@ -106,5 +132,5 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Dane i źródła
 
-Dane o koncertach: Ticketmaster. Gatunki i opisy artystów: Last.fm. Mapy: OpenStreetMap (tylko odnośnik, aplikacja nie
+Dane o koncertach: Ticketmaster, Bandsintown (opcjonalnie), twoje kalendarze. Gatunki i opisy artystów: Last.fm. Mapy: OpenStreetMap (tylko odnośnik, aplikacja nie
 ładuje kafelków). Krój pisma: Poppins (SIL OFL).

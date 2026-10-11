@@ -135,7 +135,10 @@ export function readEvent(e) {
 
   return {
     id: id.slice(0, 64),
+    source: 'tm',
     name, date, time: godzina,
+    startUtc: godzina && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(tekst(start, 'dateTime') ?? '') ? start.dateTime : null,
+    timezone: czysc(tekst(e.dates, 'timezone'), 64),
     status: status(tekst(e.dates?.status, 'code')),
     description: cut(strip(joined(tekst(e, 'info'), tekst(e, 'description'), tekst(e, 'additionalInfo'))), 4000),
     ticketUrl: bezpiecznyLink(tekst(e, 'url')) ? e.url.trim() : null,
@@ -148,6 +151,7 @@ export function readEvent(e) {
     country: kraj && kraj.length === 2 ? kraj.toUpperCase() : null,
     seriesKey: seriesKey(name, venueId, sala),
     organizer: organizer(e),
+    sources: [{ kind: 'TICKETMASTER', name: 'Ticketmaster', url: bezpiecznyLink(tekst(e, 'url')) ? e.url.trim() : null }],
   };
 }
 
