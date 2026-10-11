@@ -116,7 +116,9 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-btn:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); box-shadow: var(--shadow); }
 .mc-btn:active { transform: scale(.96); }
 .mc-btn:disabled { opacity: .5; cursor: default; transform: none; box-shadow: none; }
-.mc-btn-primary { background: var(--gradient); background-size: 140% 100%; color: #fff; border-color: transparent; box-shadow: 0 2px 8px rgba(192, 38, 211, .22);
+/* Gradient od krawedzi ramki (border-box) i bez powtarzania - inaczej pod przezroczysta ramka widac pasek z drugiego
+   konca gradientu i przycisk wyglada na uciety. */
+.mc-btn-primary { background: var(--gradient) border-box no-repeat; background-size: 140% 100%; color: #fff; border-color: transparent; box-shadow: 0 2px 8px rgba(192, 38, 211, .22);
   transition: transform .18s var(--ease), box-shadow .25s var(--ease), background-position .5s var(--ease); }
 .mc-btn-primary:hover { background-position: 100% 0; box-shadow: var(--glow); border-color: transparent; }
 .mc-btn-small { min-height: 2.05rem; padding: .2rem .8rem; font-size: .82rem; }
@@ -171,7 +173,7 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-seg-opcja:active:not(:disabled) { transform: scale(.95); }
 .mc-seg-opcja:disabled { opacity: .4; cursor: default; }
 .mc-seg-opcja[aria-pressed='true'], .mc-seg-opcja[aria-selected='true'] { color: #fff; }
-.mc-seg:not(.ma-wskaznik) .mc-seg-opcja[aria-pressed='true'], .mc-seg:not(.ma-wskaznik) .mc-seg-opcja[aria-selected='true'] { background: var(--gradient); }
+.mc-seg:not(.ma-wskaznik) .mc-seg-opcja[aria-pressed='true'], .mc-seg:not(.ma-wskaznik) .mc-seg-opcja[aria-selected='true'] { background: var(--gradient) border-box no-repeat; }
 .mc-seg[role='tablist'] { margin-bottom: .75rem; }
 
 /* --- Pasek odswiezania ----------------------------------------------------- */
@@ -209,6 +211,16 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-wybor .mc-wybor-tekst { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .mc-wybor-etykieta { font-size: .75rem; color: var(--muted); }
 .mc-flaga { font-size: 1.3rem; line-height: 1; }
+.mc-pod-polem { margin: -.6rem 0 .9rem; }
+.mc-akcja-gps { width: 100%; margin-bottom: .7rem; }
+.mc-akcja:disabled { opacity: .7; cursor: default; }
+.mc-opcja-wyczysc { color: var(--muted); }
+.mc-edycja textarea { width: 100%; min-height: 8rem; padding: .6rem .85rem; border-radius: .8rem; border: 1px solid var(--border); background: var(--bg);
+  font: inherit; color: inherit; resize: vertical; transition: border-color .2s, box-shadow .2s; }
+.mc-edycja textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+.mc-edycja-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.mc-edycja input[type='date'], .mc-edycja input[type='time'] { min-width: 0; }
+.mc-edycja-przyciski { display: grid; gap: .5rem; margin-top: .4rem; }
 
 /* --- Suwak zasiegu ---------------------------------------------------------- */
 .mc-suwak { margin: .25rem 0 1rem; }
@@ -245,12 +257,12 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-event-name { font-size: 1rem; margin: 0 0 .15rem; overflow-wrap: anywhere; }
 .mc-event-meta { margin: 0 0 .35rem; font-size: .84rem; color: var(--muted); }
 .mc-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
-.mc-badge { display: inline-block; padding: .1rem .55rem; border-radius: 999px; background: var(--surface-2); font-size: .74rem; color: var(--muted); }
+.mc-badge { display: inline-block; max-width: 100%; overflow-wrap: anywhere; padding: .1rem .55rem; border-radius: 999px; background: var(--surface-2); font-size: .74rem; color: var(--muted); }
 .mc-badge-warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
 .mc-badge-zrodlo { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
 .mc-badge-liked { margin-left: .5rem; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 .mc-reasons { list-style: none; margin: .45rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; }
-.mc-reason { font-size: .76rem; padding: .12rem .6rem; border-radius: 999px; background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+.mc-reason { max-width: 100%; overflow-wrap: anywhere; font-size: .76rem; padding: .12rem .6rem; border-radius: 999px; background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
 .mc-reason.artist { background: var(--gradient); color: #fff; }
 .mc-badge-ide { background: var(--gradient); color: #fff; }
 .mc-star-ide { color: var(--accent-2); }
@@ -263,7 +275,7 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
   transition: transform .18s var(--ease), border-color .2s, background-color .25s, color .2s, box-shadow .25s; }
 .mc-udzial-btn:hover { border-color: var(--accent); } .mc-udzial-btn:active { transform: scale(.96); }
 .mc-udzial-btn svg { color: var(--accent-2); }
-.mc-udzial-btn.wybrany { background: var(--gradient); border-color: transparent; color: #fff; box-shadow: var(--glow); }
+.mc-udzial-btn.wybrany { background: var(--gradient) border-box no-repeat; border-color: transparent; color: #fff; box-shadow: var(--glow); }
 .mc-udzial-btn.wybrany svg { color: #fff; --ide-kreska: var(--accent-2); animation: mc-gwiazda .45s var(--sprezyna); }
 .mc-badge-inne { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
 .mc-event-inne { opacity: .72; }
@@ -272,6 +284,7 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-rodzaj-wiersz > span { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; }
 .mc-rodzaj-wiersz small { color: var(--muted); font-size: .8rem; }
 .mc-rodzaj.inne b { color: var(--muted); }
+.mc-poprawione { color: var(--accent) !important; }
 .mc-gatunki-tekst { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin: .7rem 0 0; font-size: .85rem; color: var(--muted); }
 .mc-reason.calendar { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
 .mc-star { position: absolute; top: .45rem; right: .45rem; width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border: 0; background: transparent;

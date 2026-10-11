@@ -26,9 +26,9 @@ stąd usunięta — zostaje w gałęzi, z której ta powstała.
 | Ekran | Co robi |
 |---|---|
 | **Koncerty** | „Dla ciebie” (tylko pasujące do gustu, z powodem przy każdym), „Najbliższe” (wszystkie), „Moje” (**Biorę udział** / **Zainteresowany** + wydarzenia z twoich kalendarzy, z filtrem i eksportem do jednego pliku `.ics`). Szukanie, miasto w arkuszu, zasięg suwakiem. Terminy tej samej serii zwinięte w jedną kartę („+2 terminów”). |
-| **Wydarzenie** | Termin, miejsce, bilety, **Do kalendarza** (na Androidzie od razu Kalendarz Google, w przeglądarce Kalendarz Google albo plik `.ics`), mapa (OpenStreetMap), trasa, skład z gatunkami i linkami wykonawców, „Kim jest?” (opis z Last.fm), opis bez formułek sprzedażowych, „Od organizatora”, inne terminy, podpis źródeł danych. |
+| **Wydarzenie** | Termin, miejsce, bilety, **Do kalendarza** (na Androidzie od razu Kalendarz Google, w przeglądarce Kalendarz Google albo plik `.ics`), mapa i trasa w Mapach Google (po nazwie i adresie klubu), **„Popraw dane”** przy wydarzeniach z twoich kalendarzy (godzina, miejsce, miasto, opis, bilety — poprawki zostają po odświeżeniu), skład z gatunkami i linkami wykonawców, „Kim jest?” (opis z Last.fm), opis bez formułek sprzedażowych, „Od organizatora”, inne terminy, podpis źródeł danych. |
 | **Twój gust** | Import artystów z Last.fm, ręczna lista, twoje gatunki (z tagów Last.fm). |
-| **Ustawienia** | Klucze API, **źródła wydarzeń** (Bandsintown, twoje kalendarze `.ics`), kraj i zakres miesięcy, miasto i promień, język (PL/EN), motyw, kopia ustawień, usunięcie wszystkich danych. |
+| **Ustawienia** | Klucze API, **źródła wydarzeń** (Bandsintown, twoje kalendarze `.ics`), kraj i zakres miesięcy, miasto (wyszukiwanie albo **„Moja lokalizacja”** — jednorazowo, zapisuje się tylko nazwa miasta) i promień, język (PL/EN), motyw, kopia ustawień, usunięcie wszystkich danych. |
 
 ### Źródła wydarzeń
 
@@ -135,7 +135,7 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Co sprawdzono, a czego nie
 
-- **Sprawdzone:** 73 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
+- **Sprawdzone:** 77 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
   Ticketmasterze i Last.fm: ekran powitalny, klucze, pobranie, „Dla ciebie”, szukanie, zapis, strona wydarzenia, „Kim
   jest?”, `.ics`, import i ręczna lista, praca offline po przeładowaniu (service worker + IndexedDB), błędny klucz, usunięcie
   danych, brak przelewu strony przy 320 px.
@@ -152,5 +152,4 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Dane i źródła
 
-Dane o koncertach: Ticketmaster, Bandsintown (opcjonalnie), twoje kalendarze. Gatunki i opisy artystów: Last.fm. Mapy: OpenStreetMap (tylko odnośnik, aplikacja nie
-ładuje kafelków). Krój pisma: Poppins (SIL OFL).
+Dane o koncertach: Ticketmaster, Bandsintown (opcjonalnie), twoje kalendarze. Gatunki i opisy artystów: Last.fm. Mapy: odnośniki do Map Google (aplikacja nie ładuje map). Krój pisma: Poppins (SIL OFL).

@@ -14,7 +14,8 @@ test('czyta nazwe, termin, miejsce, sklad i opis z prawdziwej odpowiedzi', () =>
   assert.equal(a.time, '19:00');
   assert.equal(a.status, 'SCHEDULED');
   assert.equal(a.venueName, 'Progresja');
-  assert.equal(a.city, 'Warsaw');
+  assert.equal(a.city, 'Warszawa', 'polska nazwa zamiast Warsaw');
+  assert.equal(a.cityKey, 'warsaw');
   assert.equal(a.address, 'Fort Wola 22');
   assert.equal(a.lat, 52.2321);
   assert.equal(a.lon, 20.9361);

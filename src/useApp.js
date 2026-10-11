@@ -4,6 +4,7 @@ import { loadEvents, loadTags, syncEvents, syncTags, importLastFm, performerName
   loadBandsintown, syncBandsintown, loadCalendars, refreshCalendars, addCalendarFile, addCalendarUrl, removeCalendar } from './lib/sync.js';
 import { mergeAll } from './lib/merge.js';
 import { enrich, performerCandidates } from './lib/eventKind.js';
+import { applyEdit } from './lib/edycja.js';
 import { buildTaste } from './lib/match.js';
 import { nameKey } from './lib/nameKeys.js';
 import { cityByName } from './lib/location.js';
@@ -62,8 +63,8 @@ export function useApp() {
   // Wydarzenia z kalendarzy dostaja ocene "koncert czy nie", wykonawcow z tytulu i gatunki z tekstu - przed laczeniem,
   // zeby wykonawcy pomogli rozpoznac ten sam koncert z Ticketmastera.
   const events = useMemo(() => mergeAll(data.events, bit.events,
-    calendars.flatMap((k) => k.events).map((e) => enrich(e, tags, settings.kindOverride?.[e.id]))),
-  [data.events, bit.events, calendars, tags, settings.kindOverride]);
+    calendars.flatMap((k) => k.events).map((e) => enrich(applyEdit(e, settings.edits?.[e.id]), tags, settings.kindOverride?.[e.id]))),
+  [data.events, bit.events, calendars, tags, settings.kindOverride, settings.edits]);
   const origin = useMemo(() => {
     const c = settings.city ? cityByName(settings.city) : null;
     return c ? { lat: c.lat, lon: c.lon } : null;

@@ -1,5 +1,6 @@
 import { cityKey, seriesKey } from './nameKeys.js';
 import { joined, cut } from './plainText.js';
+import { cityByName } from './location.js';
 import { strip } from './boilerplate.js';
 
 export const API = 'https://app.ticketmaster.com/discovery/v2';
@@ -124,7 +125,9 @@ export function readEvent(e) {
     if (nazwa) performers.push({ id: czysc(tekst(a, 'id'), 64), name: nazwa, links: links(a.externalLinks) });
   }
 
-  const miasto = czysc(tekst(venue.city, 'name'), 100);
+  // Ticketmaster pisze po angielsku ("Warsaw") - pokazujemy polska nazwe, gdy miasto jest na liscie
+  const miastoTm = czysc(tekst(venue.city, 'name'), 100);
+  const miasto = cityByName(miastoTm)?.name ?? miastoTm;
   const sala = czysc(tekst(venue, 'name'), 200);
   const venueId = czysc(tekst(venue, 'id'), 64);
   const wsp = (pole) => {

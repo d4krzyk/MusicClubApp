@@ -3,7 +3,8 @@ import { czytajMotyw, ustawMotyw } from '../motyw.js';
 import Suwak from '../ui/Suwak.jsx';
 import { useT } from '../i18n.js';
 import { KRAJE } from '../format.js';
-import { CITIES, cityByName } from '../lib/location.js';
+import { cityByName } from '../lib/location.js';
+import MiastoWybor from '../ui/MiastoWybor.jsx';
 import { go } from '../nav.js';
 import { saveFile } from '../saveFile.js';
 import { KeyField, Rozwijane } from '../components.jsx';
@@ -120,7 +121,6 @@ export default function SettingsScreen({ app }) {
   }
 
   const miasto = s.city.trim();
-  const znaneMiasto = !miasto || !!cityByName(miasto);
   const nazwyKrajow = new Intl.DisplayNames([lang], { type: 'region' });
 
   return (
@@ -150,11 +150,8 @@ export default function SettingsScreen({ app }) {
           <Przelacznik opcje={[1, 3, 6, 9, 12].map((n) => ({ value: n, label: String(n) }))} wartosc={s.months}
             onChange={(v) => app.setSettings({ months: v })} etykieta={t('set.months')} />
         </div>
-        <label className="mc-field">{t('set.city')}
-          <input list="mc-miasta" value={s.city} onChange={(e) => app.setSettings({ city: e.target.value })} autoComplete="off" />
-          <datalist id="mc-miasta">{CITIES.slice(0, 120).map((c) => <option key={c.name} value={c.name} />)}</datalist>
-          <span className={`mc-hint${znaneMiasto ? '' : ' mc-uwaga'}`}>{znaneMiasto ? t('set.cityHint') : t('set.cityUnknown')}</span>
-        </label>
+        <MiastoWybor etykieta={t('set.city')} wartosc={s.city} onChange={(v) => app.setSettings({ city: v })} />
+        <span className="mc-hint mc-pod-polem">{t('set.cityHint')}</span>
         <Suwak etykieta={t('set.radius')} calyKraj={t('list.radiusAll')} wartosc={cityByName(miasto) ? s.radius : 0}
           disabled={!cityByName(miasto)} onChange={(v) => app.setSettings({ radius: v })} />
       </div>

@@ -27,6 +27,14 @@ na `master` nie wchodzimy.
   zamyka aplikację od razu (zgłoszenie użytkownika).
 - Bota do zbierania wydarzeń z Facebooka (konto „dummy”, scraping wyszukiwarki) **nie robimy** — regulamin Facebooka
   zabrania fałszywych kont i automatycznego zbierania danych. Legalnie: eksport `.ics` własnych wydarzeń.
+- Miasto: `ui/MiastoWybor` (arkusz z wyszukiwaniem bez polskich znaków, miasto spoza listy, „Moja lokalizacja” przez
+  `@capacitor/geolocation` — jednorazowo, przybliżenie, zapisuje się tylko nazwa miasta). Nazwy miast z Ticketmastera
+  po polsku z listy miast („Warsaw” → „Warszawa”).
+- Poprawki wydarzeń z kalendarzy: `settings.edits[id]` = tylko zmienione pola (`lib/edycja.js`), nakładane przy wczytaniu.
+- Mapa i trasa: Google Maps po nazwie i adresie (`mapsUrl`/`routeUrl` w `lib/calendar.js`), nie OpenStreetMap — życzenie
+  użytkownika; same współrzędne w trasie Google pokazywał jako niezrozumiały punkt.
+- Gradient na przyciskach z przezroczystą ramką: `border-box no-repeat`, inaczej pod ramką widać pasek z drugiego końca
+  gradientu („jakby ucinał je gradient” — zgłoszenie użytkownika).
 - „Do kalendarza” na Androidzie = wtyczka `KalendarzPlugin.java` (Intent `ACTION_INSERT`, pakiet Kalendarza Google, bez
   uprawnień do kalendarza); w przeglądarce link szablonu Google Calendar albo plik `.ics`.
 

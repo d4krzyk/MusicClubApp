@@ -226,3 +226,13 @@ test('udzial: stary zapis gwiazdka na wydarzeniu, ktore wciaz jest w zrodle = za
   const { statusOf } = await import('./udzial.js');
   assert.equal(statusOf(tm({ id: 'T1' }), { saved: { T1: {} } }), 'INTERESTED');
 });
+
+test('mapy Google: po nazwie i adresie, wspolrzedne tylko awaryjnie', async () => {
+  const { mapsUrl, routeUrl } = await import('./calendar.js');
+  const e = tm({ venueName: 'Klub Proxima', address: 'ul. Żwirki i Wigury 99a', city: 'Warszawa' });
+  assert.equal(new URL(mapsUrl(e)).searchParams.get('query'), 'Klub Proxima, ul. Żwirki i Wigury 99a, Warszawa');
+  assert.equal(new URL(routeUrl(e)).searchParams.get('destination'), 'Klub Proxima, ul. Żwirki i Wigury 99a, Warszawa');
+  assert.ok(routeUrl(e).startsWith('https://www.google.com/maps/dir/?api=1&destination='));
+  assert.equal(new URL(mapsUrl(tm({ venueName: 'Bar', address: null, city: null, lat: 52.1, lon: 21.2 }))).searchParams.get('query'), '52.1,21.2');
+  assert.equal(mapsUrl({ venueName: null, address: null, city: null, lat: null, lon: null }), null);
+});

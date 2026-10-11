@@ -11,6 +11,10 @@ import { useToast } from '../ui/Toast.jsx';
 import { IkBilet, IkKalendarzPlus, IkMapa, IkTrasa, IkWstecz, IkLink, IkPlik } from '../ui/Ikony.jsx';
 import { naAndroidzie, dodajNatywnie, otworzGoogle, pobierzIcs } from '../kalendarz.js';
 import { statusOf, setStatus } from '../lib/udzial.js';
+import { mapsUrl, routeUrl } from '../lib/calendar.js';
+import { diff } from '../lib/edycja.js';
+import MiastoWybor from '../ui/MiastoWybor.jsx';
+import { IkOlowek } from '../ui/Ikony.jsx';
 import { IkGwiazda, IkIde } from '../ui/Ikony.jsx';
 
 const ETYKIETY = { WEBSITE: 'WWW', SPOTIFY: 'Spotify', YOUTUBE: 'YouTube', INSTAGRAM: 'Instagram', FACEBOOK: 'Facebook',
@@ -108,6 +112,64 @@ function DoKalendarza({ e }) {
   );
 }
 
+// Poprawki wydarzenia z twojego kalendarza: formularz w arkuszu, zapis jako roznica wzgledem danych z kalendarza.
+function Edycja({ e, app }) {
+  const { t } = useT();
+  const toast = useToast();
+  const [otwarty, setOtwarty] = useState(false);
+  const [f, setF] = useState(null);
+  const oryginal = app.calendars.flatMap((k) => k.events).find((x) => x.id === e.id) ?? e;
+  const poprawione = !!app.settings.edits?.[e.id];
+  const otworz = () => {
+    setF({ name: e.name ?? '', date: e.date ?? '', time: e.time ?? '', venueName: e.venueName ?? '', address: e.address ?? '',
+      city: e.city ?? '', description: e.description ?? '', ticketUrl: e.ticketUrl ?? '' });
+    setOtwarty(true);
+  };
+  const pole = (klucz) => ({ value: f?.[klucz] ?? '', onChange: (ev) => setF({ ...f, [klucz]: ev.target.value }) });
+  function zapisz(ev) {
+    ev.preventDefault();
+    const zmiany = diff(oryginal, f);
+    app.setSettings((s) => {
+      const edits = { ...(s.edits ?? {}) };
+      if (Object.keys(zmiany).length) edits[e.id] = zmiany; else delete edits[e.id];
+      return { edits };
+    });
+    setOtwarty(false);
+    toast(t('edit.saved'));
+  }
+  function przywroc() {
+    app.setSettings((s) => { const edits = { ...(s.edits ?? {}) }; delete edits[e.id]; return { edits }; });
+    setOtwarty(false);
+    toast(t('edit.restored'));
+  }
+  return (
+    <>
+      <button type="button" className="mc-btn mc-btn-small" onClick={otworz}><IkOlowek size={16} />{t('edit.button')}</button>
+      <Arkusz otwarty={otwarty} onClose={() => setOtwarty(false)} tytul={t('edit.title')} zamknij={t('common.close')}>
+        {f && (
+          <form className="mc-edycja" onSubmit={zapisz}>
+            <label className="mc-field">{t('edit.name')}<input {...pole('name')} required maxLength={300} data-autofocus /></label>
+            <div className="mc-edycja-2">
+              <label className="mc-field">{t('edit.date')}<input type="date" {...pole('date')} required /></label>
+              <label className="mc-field">{t('edit.time')}<input type="time" {...pole('time')} /></label>
+            </div>
+            <label className="mc-field">{t('edit.venue')}<input {...pole('venueName')} maxLength={200} /></label>
+            <label className="mc-field">{t('edit.address')}<input {...pole('address')} maxLength={300} /></label>
+            <MiastoWybor etykieta={t('edit.city')} wartosc={f.city} onChange={(v) => setF({ ...f, city: v })} gps={false} />
+            <label className="mc-field">{t('edit.tickets')}<input type="url" inputMode="url" {...pole('ticketUrl')} placeholder="https://…" /></label>
+            <label className="mc-field">{t('edit.description')}<textarea {...pole('description')} maxLength={4000} /></label>
+            <p className="mc-hint">{t('edit.hint')}</p>
+            <div className="mc-edycja-przyciski">
+              <button type="submit" className="mc-btn mc-btn-primary mc-btn-duzy">{t('edit.save')}</button>
+              {poprawione && <button type="button" className="mc-btn" onClick={przywroc}>{t('edit.restore')}</button>}
+            </div>
+          </form>
+        )}
+      </Arkusz>
+    </>
+  );
+}
+
 export default function EventScreen({ app, id }) {
   const { t, lang } = useT();
   const toast = useToast();
@@ -128,9 +190,8 @@ export default function EventScreen({ app, id }) {
   };
   const polubieni = new Set([...app.taste.artists.keys()]);
   const o = e.organizer ?? {};
-  const mapa = e.lat != null && e.lon != null ? `https://www.openstreetmap.org/?mlat=${e.lat}&mlon=${e.lon}#map=16/${e.lat}/${e.lon}` : null;
-  const trasa = e.lat != null && e.lon != null ? `https://www.google.com/maps/dir/?api=1&destination=${e.lat},${e.lon}`
-    : e.venueName && e.city ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${e.venueName}, ${e.city}`)}` : null;
+  const mapa = mapsUrl(e);
+  const trasa = routeUrl(e);
   const zrodla = (e.sources ?? []).filter((z, i, a) => a.findIndex((y) => y.kind === z.kind && y.name === z.name) === i);
   const sprzedaz = o.salesStart && Date.parse(o.salesStart) > Date.now();
 
@@ -174,7 +235,9 @@ export default function EventScreen({ app, id }) {
             <span>
               <b>{e.music ? t('kind.music') : t('kind.notMusic')}</b>
               <small>{t(app.settings.kindOverride?.[e.id] ? 'kind.byYou' : 'kind.guess')}</small>
+              {e.edited && <small className="mc-poprawione">{t('edit.edited')}</small>}
             </span>
+            <Edycja e={e} app={app} />
             <button type="button" className="mc-btn mc-btn-small" onClick={() => {
               app.setSettings((s) => {
                 const o = { ...(s.kindOverride ?? {}) };

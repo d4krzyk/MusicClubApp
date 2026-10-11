@@ -32,3 +32,5 @@ export const IkIde = ({ wypelniona, ...p }) => (
   <I {...p}><circle cx="12" cy="12" r="9" fill={wypelniona ? 'currentColor' : 'none'} /><path d="m8 12.3 2.8 2.8L16.2 9.6" stroke={wypelniona ? 'var(--ide-kreska, #fff)' : 'currentColor'} /></I>
 );
 export const IkSchowek = (p) => <I {...p}><rect x="6" y="4.5" width="12" height="16" rx="2" /><path d="M9 4.5V3.8A1.3 1.3 0 0 1 10.3 2.5h3.4A1.3 1.3 0 0 1 15 3.8v.7M9 11h6M9 15h4" /></I>;
+export const IkCel = (p) => <I {...p}><circle cx="12" cy="12" r="7" /><circle cx="12" cy="12" r="2.5" fill="currentColor" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></I>;
+export const IkOlowek = (p) => <I {...p}><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></I>;

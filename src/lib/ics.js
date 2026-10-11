@@ -114,10 +114,10 @@ export function cityFromName(nazwa) {
   return null;
 }
 
-// Najblizsze miasto z listy do punktu (GEO), gdy blizej niz 25 km.
-export function cityNear(lat, lon) {
+// Najblizsze miasto z listy do punktu (GEO), gdy blizej niz maxKm (domyslnie 25 km).
+export function cityNear(lat, lon, maxKm = 25) {
   let best = null;
-  let km = 25;
+  let km = maxKm;
   for (const c of CITIES) {
     const d = distanceKm(lat, lon, c.lat, c.lon);
     if (d < km) { km = d; best = c.name; }

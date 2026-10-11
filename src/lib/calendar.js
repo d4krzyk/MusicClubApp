@@ -79,3 +79,22 @@ export function ics(e, teraz = new Date()) {
 }
 
 export { pad };
+
+// Mapy Google: po nazwie miejsca i adresie (Google pokazuje wtedy karte miejsca), a wspolrzedne tylko, gdy nic innego nie ma.
+// Na Androidzie adres google.com/maps otwiera aplikacje Mapy Google.
+function celMapy(e) {
+  const tekst = [e.venueName, e.address, e.city].filter(Boolean).join(', ');
+  if (tekst && (e.address || e.city)) return tekst;
+  if (e.lat != null && e.lon != null) return `${e.lat},${e.lon}`;
+  return tekst || null;
+}
+
+export function mapsUrl(e) {
+  const cel = celMapy(e);
+  return cel ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cel)}` : null;
+}
+
+export function routeUrl(e) {
+  const cel = celMapy(e);
+  return cel ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(cel)}` : null;
+}
