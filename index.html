@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" href="./icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f2fa" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131019" />
+    <title>MusicClub</title>
+    <!-- Motyw ustawiamy zanim przegladarka cokolwiek narysuje (bez migniecia zlego motywu). -->
+    <script>
+      (function () {
+        var m = null;
+        try { m = localStorage.getItem('motyw'); } catch (e) { /* tryb prywatny */ }
+        if (m !== 'light' && m !== 'dark') m = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', m);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
