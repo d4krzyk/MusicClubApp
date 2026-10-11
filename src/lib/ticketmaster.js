@@ -22,12 +22,12 @@ const czysc = (v, max) => {
 };
 const pierwszy = (a) => (Array.isArray(a) && a.length ? a[0] : undefined);
 
+// Bez obiektu URL - ten kod dziala tez w tle na Androidzie (Background Runner), gdzie URL nie istnieje.
+// http(s), nazwa hosta, bez danych logowania ("u:p@host") i bez spacji, najwyzej 500 znakow.
+const BEZPIECZNY = /^https?:\/\/(?![^/?#]*@)[A-Za-z0-9.-]+(?::\d+)?(?:[/?#]\S*)?$/i;
 export function bezpiecznyLink(adres) {
-  if (!adres || adres.length > 500 || /\s/.test(adres.trim())) return false;
-  try {
-    const u = new URL(adres.trim());
-    return (u.protocol === 'https:' || u.protocol === 'http:') && !!u.hostname && !u.username && !u.password;
-  } catch { return false; }
+  if (!adres || adres.length > 500) return false;
+  return BEZPIECZNY.test(adres.trim());
 }
 
 export function links(externalLinks) {
@@ -162,11 +162,14 @@ export class ApiError extends Error {
   constructor(kod, wiadomosc) { super(wiadomosc); this.kod = kod; }
 }
 
+// Parametry zapytania bez URLSearchParams (ktorego nie ma w tle na Androidzie).
+const zapytanie = (o) => Object.entries(o).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+
 const bezKlucza = (t, klucz) => (klucz ? String(t).replaceAll(klucz, '***') : String(t));
 
 // Jedna strona wydarzen muzycznych w kraju miedzy from a to (ISO bez ulamkow sekund).
 export async function fetchPage({ key, country, from, to, page, fetchFn = fetch, signal }) {
-  const q = new URLSearchParams({ countryCode: country, classificationName: 'music', startDateTime: from,
+  const q = zapytanie({ countryCode: country, classificationName: 'music', startDateTime: from,
     endDateTime: to, sort: 'date,asc', size: String(ROZMIAR_STRONY), page: String(page), apikey: key });
   let odp;
   try {
@@ -213,7 +216,7 @@ export async function fetchCountry({ key, country, now = new Date(), months = 6,
   const razem = okna.length;
   for (const okno of okna) {
     for (let strona = 0; strona < MAX_STRON; strona++) {
-      if (strona > 0 || zapytan > 0) await new Promise((r) => setTimeout(r, pauseMs));
+      if (pauseMs > 0 && (strona > 0 || zapytan > 0)) await new Promise((r) => setTimeout(r, pauseMs));
       const wynik = await fetchPage({ key, country, from: okno.from, to: okno.to, page: strona, fetchFn, signal });
       zapytan++;
       for (const e of wynik.events) wszystkie.set(e.id, e);

@@ -41,4 +41,6 @@
     <!-- "Moja lokalizacja" w ustawieniach: jednorazowo, tylko po to, zeby ustalic miasto (wspolrzedne nie sa zapisywane). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Powiadomienia o nowych koncertach (Android 13+ pyta o zgode przy wlaczeniu w ustawieniach aplikacji). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

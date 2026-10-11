@@ -5,6 +5,8 @@ import { loadEvents, loadTags, syncEvents, syncTags, importLastFm, performerName
 import { mergeAll } from './lib/merge.js';
 import { enrich, performerCandidates } from './lib/eventKind.js';
 import { applyEdit } from './lib/edycja.js';
+import { przekazStan } from './powiadomienia.js';
+import { detectLang } from './i18n.js';
 import { buildTaste } from './lib/match.js';
 import { nameKey } from './lib/nameKeys.js';
 import { cityByName } from './lib/location.js';
@@ -174,6 +176,18 @@ export function useApp() {
     setTags({});
     setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: null });
   }, []);
+
+  // Stan dla powiadomien w tle (tylko Android): po odswiezeniu i zmianie ustawien, z opoznieniem (wpisywanie klucza itp.).
+  useEffect(() => {
+    if (!ready) return undefined;
+    const t = setTimeout(() => {
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      przekazStan({ settings, data, artistNames, tags, origin, lang: detectLang(settings.lang),
+        today: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` });
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [ready, settings, data, artistNames, tags, origin]);
 
   const kalendarze = useMemo(() => ({
     dodajPlik: async (tekst, nazwa) => { const l = await addCalendarFile(tekst, nazwa); setCalendars(l); calendarsRef.current = l; po(); return l[l.length - 1]; },

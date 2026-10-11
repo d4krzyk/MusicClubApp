@@ -35,6 +35,11 @@ na `master` nie wchodzimy.
   użytkownika; same współrzędne w trasie Google pokazywał jako niezrozumiały punkt.
 - Gradient na przyciskach z przezroczystą ramką: `border-box no-repeat`, inaczej pod ramką widać pasek z drugiego końca
   gradientu („jakby ucinał je gradient” — zgłoszenie użytkownika).
+- Powiadomienia (Android): `@capacitor/background-runner` uruchamia `src/runner/background.js` (esbuild → `dist/runners/`,
+  `npm run build` robi oba). **Silnik w tle to QuickJS bez `URL`, `URLSearchParams`, `Intl` i DOM** — wszystko, co
+  importuje runner (`lib/ticketmaster.js`, `lib/match.js`, `lib/powiadomienia.js` i ich zależności), nie może ich używać.
+  Sprawdzać w `quickjs-emscripten` (scratchpad), nie tylko w Node. Stan z aplikacji: zdarzenie „stan” (`stanDoTla`);
+  „seen” = serie z „Dla ciebie” widziane w aplikacji; runner pamięta, o czym już powiadomił.
 - „Do kalendarza” na Androidzie = wtyczka `KalendarzPlugin.java` (Intent `ACTION_INSERT`, pakiet Kalendarza Google, bez
   uprawnień do kalendarza); w przeglądarce link szablonu Google Calendar albo plik `.ics`.
 

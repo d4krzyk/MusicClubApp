@@ -2,9 +2,23 @@
   "appId": "pl.musicclub.solo",
   "appName": "MusicClub",
   "webDir": "dist",
-  "server": { "androidScheme": "https" },
-  "plugins": {
-    "CapacitorHttp": { "enabled": true }
+  "server": {
+    "androidScheme": "https"
   },
-  "android": { "allowMixedContent": false }
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "BackgroundRunner": {
+      "label": "pl.musicclub.solo.koncerty",
+      "src": "runners/background.js",
+      "event": "sprawdz",
+      "repeat": true,
+      "interval": 240,
+      "autoStart": true
+    }
+  },
+  "android": {
+    "allowMixedContent": false
+  }
 }

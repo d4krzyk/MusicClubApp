@@ -57,6 +57,25 @@ zmienisz jednym przyciskiem. Wykonawcy z tytułu („A (Argentyna), B + C / 13.1
 miasta, klubu i listy gatunków) dostają gatunki z Last.fm i „Kim jest?”, a gatunki z tekstu liczą się w „Dla ciebie”.
 Odpowiedź z Facebooka („Wezmę udział” / „Zainteresowany”, `PARTSTAT` w pliku) przechodzi do „Moje”.
 
+### Powiadomienia o nowych koncertach (Android)
+
+W Ustawieniach → **Powiadomienia** włączasz dwie rzeczy:
+- **Nowe koncerty dla ciebie**: gdy zagra ktoś z twoich artystów (zawsze) albo pojawi się koncert w twoich gatunkach
+  w okolicy (zasięg albo 100 km od twojego miasta),
+- **Zmiany w „Biorę udział”**: odwołanie, przełożenie, nowa data albo godzina.
+
+Działa to w tle bez otwierania aplikacji: [Capacitor Background Runner](https://github.com/ionic-team/capacitor-background-runner)
+uruchamia `src/runner/background.js` (budowany osobno do `dist/runners/background.js`) mniej więcej co 4 godziny, gdy
+Android pozwoli. Ten kod pobiera 3 miesiące koncertów z Ticketmastera twoim kluczem, porównuje z tym, co już widziałeś
+w aplikacji, i wysyła najwyżej jedno zbiorcze powiadomienie o nowych plus jedno na każdą zmianę. O tym samym nie
+powiadamia drugi raz. Aplikacja po każdym odświeżeniu przekazuje do pracy w tle klucz, gust, miasto i to, co już znasz
+(zostaje na telefonie). Na części telefonów (Xiaomi, Huawei, Samsung) trzeba wyłączyć oszczędzanie baterii dla
+MusicClub — patrz [dontkillmyapp.com](https://dontkillmyapp.com/). W przeglądarce powiadomień nie ma.
+
+Kod w tle działa w osobnym silniku QuickJS bez `URL`, `URLSearchParams` i `Intl`, więc logika, której używa
+(`lib/ticketmaster.js`, `lib/match.js`, `lib/powiadomienia.js`), ich nie potrzebuje. Sprawdzone w prawdziwym QuickJS
+(WebAssembly) — wynik identyczny jak w Node — i całym plikiem w odizolowanym kontekście z udawanymi API Androida.
+
 ### Kalendarz Google na Androidzie
 
 Przycisk „Do kalendarza” w APK otwiera **Kalendarz Google z wypełnionym wydarzeniem** (nazwa, miejsce, opis z linkiem do
@@ -135,13 +154,14 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Co sprawdzono, a czego nie
 
-- **Sprawdzone:** 77 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
+- **Sprawdzone:** 81 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
   Ticketmasterze i Last.fm: ekran powitalny, klucze, pobranie, „Dla ciebie”, szukanie, zapis, strona wydarzenia, „Kim
   jest?”, `.ics`, import i ręczna lista, praca offline po przeładowaniu (service worker + IndexedDB), błędny klucz, usunięcie
   danych, brak przelewu strony przy 320 px.
   Druga runda w Chromium: napis w pasku, płynące przełączniki, arkusze (Esc, fokus), kalendarz Google (adres szablonu),
   import pliku z Facebooka i subskrypcja, Bandsintown, łączenie duplikatów, „Moje”, offline z kalendarzami, 320 i 390 px.
-- **Niesprawdzone (blokada w środowisku):** prawdziwe odpowiedzi Ticketmastera, Last.fm, Bandsintown i eksportu z Facebooka,
+- **Niesprawdzone (blokada w środowisku):** praca w tle i powiadomienia na prawdziwym Androidzie (harmonogram, zgoda,
+  oszczędzanie baterii), prawdziwe odpowiedzi Ticketmastera, Last.fm, Bandsintown i eksportu z Facebooka,
   CORS w przeglądarce (subskrypcje `.ics` z Google/Facebooka w przeglądarce prawie na pewno nie przejdą — w APK tak),
   wtyczka kalendarza na prawdziwym telefonie,
   budowa APK i działanie aplikacji na telefonie — workflow i projekt Androida są przygotowane, ale nie zostały uruchomione.

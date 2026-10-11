@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { czytajMotyw, ustawMotyw } from '../motyw.js';
 import Suwak from '../ui/Suwak.jsx';
+import Wlacznik from '../ui/Wlacznik.jsx';
+import { dostepne as powiadomieniaDostepne, zgoda, probne, sprawdzTeraz, ostatnie } from '../powiadomienia.js';
 import { useT } from '../i18n.js';
 import { KRAJE } from '../format.js';
 import { cityByName } from '../lib/location.js';
@@ -92,6 +94,45 @@ function Kalendarze({ app }) {
   );
 }
 
+function Powiadomienia({ app }) {
+  const { t, lang } = useT();
+  const toast = useToast();
+  const p = app.settings.powiadomienia ?? {};
+  const [info, setInfo] = useState(null);
+  const natywne = powiadomieniaDostepne();
+  useEffect(() => { if (natywne) ostatnie().then(setInfo).catch(() => {}); }, [natywne]);
+
+  async function ustaw(klucz, wl) {
+    if (wl && !(await zgoda().catch(() => false))) { toast(t('notif.denied'), 'blad'); return; }
+    app.setSettings((s) => ({ powiadomienia: { ...(s.powiadomienia ?? {}), [klucz]: wl } }));
+  }
+  async function teraz() {
+    toast(t('notif.checking'));
+    const w = await sprawdzTeraz().catch(() => null);
+    setInfo(await ostatnie().catch(() => null));
+    if (w?.blad) toast(t('notif.checkError'), 'blad');
+    else if (w && typeof w === 'object') toast(w.nowe || w.zmiany ? t('notif.checkSent', (w.nowe ?? 0) + (w.zmiany ?? 0)) : t('notif.checkNothing'));
+  }
+
+  return (
+    <div className="mc-card mc-section mc-wejscie" style={{ '--i': 2 }}>
+      <h2>{t('notif.title')}</h2>
+      {!natywne ? <p className="mc-hint">{t('notif.webOnly')}</p> : (
+        <>
+          <Wlacznik etykieta={t('notif.new')} opis={t('notif.newHint')} wlaczony={!!p.nowe} onChange={(v) => ustaw('nowe', v)} />
+          <Wlacznik etykieta={t('notif.changes')} opis={t('notif.changesHint')} wlaczony={!!p.zmiany} onChange={(v) => ustaw('zmiany', v)} />
+          <div className="mc-actions">
+            <button type="button" className="mc-btn mc-btn-small" onClick={() => probne().catch(() => {})}>{t('notif.test')}</button>
+            <button type="button" className="mc-btn mc-btn-small" disabled={!p.nowe && !p.zmiany} onClick={teraz}>{t('notif.now')}</button>
+          </div>
+          {info?.lastCheck && <p className="mc-hint">{t('notif.last', new Date(info.lastCheck).toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL', { dateStyle: 'medium', timeStyle: 'short' }))}</p>}
+          <p className="mc-hint">{t('notif.battery')} <a href="https://dontkillmyapp.com/" target="_blank" rel="noopener noreferrer">dontkillmyapp.com</a></p>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsScreen({ app }) {
   const { t, lang } = useT();
   const toast = useToast();
@@ -140,6 +181,8 @@ export default function SettingsScreen({ app }) {
         <KeyField rodzaj="bit" label={t('set.bitKey')} value={s.bitKey ?? ''} onChange={(v) => app.setSettings({ bitKey: v })} />
         <Kalendarze app={app} />
       </div>
+
+      <Powiadomienia app={app} />
 
       <div className="mc-card mc-section mc-wejscie" style={{ '--i': 2 }}>
         <h2>{t('set.where')}</h2>

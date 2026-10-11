@@ -7,7 +7,7 @@ export const DOMYSLNE = {
   tmKey: '', lfmKey: '', lfmUser: '', bitKey: '',
   city: '', radius: 0, country: 'PL', months: 6,
   lfmCount: 50, lfmArtists: [], manualArtists: [],
-  lang: '', saved: {}, kindOverride: {},
+  lang: '', saved: {}, kindOverride: {}, powiadomienia: { nowe: false, zmiany: false },
 };
 
 const pamiec = { ust: null, idb: new Map() };
