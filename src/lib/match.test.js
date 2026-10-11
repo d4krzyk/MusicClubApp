@@ -77,3 +77,17 @@ test('odleglosci i poziomy; lista miast', () => {
   assert.equal(cityKey('Kraków'), 'krakow');
   assert.ok(eventDistance({ lat: p.lat, lon: p.lon }, ev({ lat: 52.4, lon: 16.9 })) < 20);
 });
+
+test('limity gatunkow: 3 dokladne (45) i 2 rodziny (16)', () => {
+  const t = buildTaste([{ name: 'A' }], { a: ['rock', 'metal', 'jazz', 'blues'] });
+  const m = match(t, ev({ genre: 'Rock/Metal/Jazz/Blues' }));
+  assert.equal(m.score, 45);
+  assert.equal(m.reasons[0].value.split(', ').length, 3);
+  const r = buildTaste([{ name: 'A' }], { a: ['rock', 'jazz', 'blues', 'reggae'] });
+  const m2 = match(r, ev({ genre: 'Hard Rock/Smooth Jazz/Delta Blues/Roots Reggae' }));
+  assert.equal(m2.score, 16);
+});
+
+test('progi poziomow bliskosci: 1, 30, 60, 120 i 250 km', () => {
+  assert.deepEqual([0.99, 1, 30, 31, 60, 61, 120, 121, 250, 251].map(level), [5, 4, 4, 3, 3, 2, 2, 1, 1, 0]);
+});

@@ -110,3 +110,18 @@ test('od organizatora: ceny, wiek, sprzedaz, uwagi bez formulek', () => {
   assert.deepEqual(e.organizer, { pleaseNote: 'Wejście od 18:00.', promoter: 'Live Nation', priceMin: 60, priceMax: 120,
     priceCurrency: 'PLN', ageRestricted: true, salesStart: '2026-10-15T09:00:00Z', accessibility: null });
 });
+
+test('zdjecie: wlasne wygrywa z grafika zastepcza, nawet mniejsze; bez wlasnego - zastepcza', () => {
+  const fb = { ratio: '16_9', width: 2048, fallback: true, url: 'https://x/fallback.jpg' };
+  const wlasne = { ratio: '16_9', width: 640, url: 'https://x/wlasne.jpg' };
+  assert.equal(image([fb, wlasne], 1024), 'https://x/wlasne.jpg');
+  assert.equal(image([fb], 1024), 'https://x/fallback.jpg');
+  assert.equal(image([{ ratio: '4_3', width: 100, url: 'https://x/inne.jpg' }], 1024), 'https://x/inne.jpg');
+});
+
+test('godzina do ustalenia (timeTBA / noSpecificTime) to brak godziny, a nie polnoc', () => {
+  const baza = (start) => readEvent({ id: 'X', name: 'N', dates: { start } });
+  assert.equal(baza({ localDate: '2026-11-01', localTime: '00:00:00', timeTBA: true }).time, null);
+  assert.equal(baza({ localDate: '2026-11-01', localTime: '00:00:00', noSpecificTime: true }).time, null);
+  assert.equal(baza({ localDate: '2026-11-01', localTime: '20:30:00' }).time, '20:30');
+});

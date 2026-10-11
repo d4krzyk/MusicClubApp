@@ -69,8 +69,7 @@ npm run preview    # podgląd zbudowanej wersji (service worker działa tylko tu
 
 ### Android (APK)
 
-Aplikacja jest opakowana w [Capacitor](https://capacitorjs.com/) (`android/`, id `pl.musicclub.solo`). Zakładki i
-kopie zapasowe Androida są wyłączone (`allowBackup=false`) — klucze nie trafiają do chmury Google.
+Aplikacja jest opakowana w [Capacitor](https://capacitorjs.com/) (`android/`, id `pl.musicclub.solo`). Kopie zapasowe Androida są wyłączone (`allowBackup=false`) — klucze nie trafiają do chmury Google.
 
 **Najprościej — przez GitHub Actions:** każdy push na `release/solo` uruchamia workflow „Android APK”
 (`.github/workflows/android.yml`). Gotowy plik `app-debug.apk` pobierzesz ze strony przebiegu
@@ -94,7 +93,7 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Co sprawdzono, a czego nie
 
-- **Sprawdzone:** 34 testy logiki (`npm test`) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
+- **Sprawdzone:** 38 testów logiki (`npm test`) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
   Ticketmasterze i Last.fm: ekran powitalny, klucze, pobranie, „Dla ciebie”, szukanie, zapis, strona wydarzenia, „Kim
   jest?”, `.ics`, import i ręczna lista, praca offline po przeładowaniu (service worker + IndexedDB), błędny klucz, usunięcie
   danych, brak przelewu strony przy 320 px.

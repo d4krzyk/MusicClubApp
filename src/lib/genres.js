@@ -26,7 +26,7 @@ const RODZINY = {
 // "Hip-Hop", "hip hop" i "hiphop" to to samo; "R&B" to "rnb".
 export function normalizeTag(tag) {
   if (tag == null) return '';
-  return String(tag).toLowerCase().replaceAll('&', 'n').replaceAll('drum and bass', 'drumandbass').replace(/[^a-z0-9]/g, '');
+  return String(tag).toLowerCase().replaceAll('&', 'n').replace(/[^a-z0-9]/g, '');
 }
 
 // Etykieta rozbita na tagi, bez tych, ktore gatunkiem nie sa. "Hip-Hop/Rap" to dwa tagi.
