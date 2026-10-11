@@ -1,7 +1,10 @@
 import { useId, useState } from 'react';
 import { useT } from './i18n.js';
 import { dateParts, money } from './format.js';
-import { IkGwiazda, IkX, IkIde } from './ui/Ikony.jsx';
+import { IkGwiazda, IkX, IkIde, IkPtaszek, IkLink, IkSchowek } from './ui/Ikony.jsx';
+import { useToast } from './ui/Toast.jsx';
+import { cleanKey, keyShape, checkKey } from './lib/keys.js';
+import { czytajSchowek } from './schowek.js';
 import { linkify } from './lib/linkify.js';
 
 export function Star({ on, onClick, label }) {
@@ -123,20 +126,63 @@ export function bladTekst(err, t) {
   return t('err.generic', err.tekst ?? '');
 }
 
-export function KeyField({ label, help, helpUrl, value, onChange, blad }) {
+// Pole klucza API: ukryte, "Wklej" ze schowka, czyszczenie wklejonego tekstu, "Sprawdz" jednym zapytaniem
+// i instrukcja z linkami prosto do stron, na ktorych klucz lezy.
+const JAK = {
+  tm: [['key.tm.1', 'https://developer.ticketmaster.com/'], ['key.tm.2', 'https://developer-account.ticketmaster.com/'], ['key.tm.3', null]],
+  lfm: [['key.lfm.1', 'https://www.last.fm/api/accounts'], ['key.lfm.2', 'https://www.last.fm/api/account/create'], ['key.lfm.3', null]],
+  bit: [['key.bit.1', 'https://help.artists.bandsintown.com/en/articles/9186477-api-documentation'], ['key.bit.2', null]],
+};
+
+export function KeyField({ rodzaj, label, value, onChange, blad }) {
   const { t } = useT();
+  const toast = useToast();
   const [pokaz, setPokaz] = useState(false);
+  const [jak, setJak] = useState(false);
+  const [stan, setStan] = useState(null); // null | 'sprawdzam' | wynik checkKey
   const id = useId();
+  const ksztalt = keyShape(rodzaj, value);
+
+  const zmien = (v) => { onChange(cleanKey(v)); setStan(null); };
+  async function wklej() {
+    const tekst = await czytajSchowek();
+    if (tekst == null || !tekst.trim()) { toast(t('key.pasteManual'), 'blad'); document.getElementById(id)?.focus(); return; }
+    zmien(tekst);
+    toast(t('key.pasted'));
+  }
+  async function sprawdz() {
+    setStan('sprawdzam');
+    setStan(await checkKey(rodzaj, value));
+  }
+
   return (
-    <div className="mc-field">
+    <div className="mc-field mc-klucz">
       <label htmlFor={id}>{label}</label>
-      <span className={`mc-pole-z-przyciskiem${blad ? ' blad' : ''}`}>
-        <input id={id} type={pokaz ? 'text' : 'password'} value={value} onChange={(e) => onChange(e.target.value)} autoComplete="off"
-          autoCapitalize="off" spellCheck="false" aria-invalid={!!blad} />
+      <span className={`mc-pole-z-przyciskiem${blad || stan === 'zly' ? ' blad' : ''}${stan === 'ok' ? ' dobry' : ''}`}>
+        <input id={id} type={pokaz ? 'text' : 'password'} value={value} onChange={(e) => zmien(e.target.value)} autoComplete="off"
+          autoCapitalize="off" spellCheck="false" aria-invalid={!!blad || stan === 'zly'} placeholder={t('key.placeholder')} />
         <button type="button" className="mc-pole-przycisk" onClick={() => setPokaz(!pokaz)}>{pokaz ? t('set.hide') : t('set.show')}</button>
       </span>
+      <span className="mc-klucz-akcje">
+        <button type="button" className="mc-btn mc-btn-small" onClick={wklej}><IkSchowek size={16} />{t('key.paste')}</button>
+        <button type="button" className="mc-btn mc-btn-small" disabled={!value || stan === 'sprawdzam'} onClick={sprawdz}>
+          {stan === 'sprawdzam' ? <span className="mc-spinner" aria-hidden="true" /> : <IkPtaszek size={16} />}{t('key.check')}
+        </button>
+        <button type="button" className="mc-link-btn" aria-expanded={jak} onClick={() => setJak(!jak)}>{t('key.how')}</button>
+      </span>
+      {stan && stan !== 'sprawdzam' && <span className={`mc-klucz-wynik ${stan} mc-wejscie`} role="status">{t(`key.result.${stan}`)}</span>}
+      {!stan && ksztalt === 'secret' && <span className="mc-hint mc-uwaga mc-wejscie">{t('key.secret')}</span>}
+      {!stan && ksztalt === 'dziwny' && <span className="mc-hint mc-uwaga mc-wejscie">{t(`key.shape.${rodzaj}`)}</span>}
       {blad && <span className="mc-error mc-wejscie" role="alert">{blad}</span>}
-      {help && <a className="mc-hint" href={helpUrl} target="_blank" rel="noopener noreferrer">{help}</a>}
+      <Rozwijane otwarte={jak}>
+        <ol className="mc-klucz-kroki">
+          {JAK[rodzaj].map(([klucz, url], i) => (
+            <li key={klucz}>
+              <span>{t(klucz)}</span>
+              {url && <a className="mc-btn mc-btn-small" href={url} target="_blank" rel="noopener noreferrer"><IkLink size={14} />{t(`key.open.${i}`)}</a>}
+            </li>))}
+        </ol>
+      </Rozwijane>
     </div>
   );
 }

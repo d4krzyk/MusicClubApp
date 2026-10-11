@@ -130,14 +130,14 @@ export default function SettingsScreen({ app }) {
       <div className="mc-card mc-section mc-wejscie" style={{ '--i': 0 }}>
         <h2>{t('set.keys')}</h2>
         <p className="mc-hint">{t('set.keysIntro')}</p>
-        <KeyField label={t('set.tmKey')} help={t('set.tmHelp')} helpUrl="https://developer.ticketmaster.com/" value={s.tmKey} onChange={(v) => app.setSettings({ tmKey: v.trim() })} />
-        <KeyField label={t('set.lfmKey')} help={t('set.lfmHelp')} helpUrl="https://www.last.fm/api/account/create" value={s.lfmKey} onChange={(v) => app.setSettings({ lfmKey: v.trim() })} />
+        <KeyField rodzaj="tm" label={t('set.tmKey')} value={s.tmKey} onChange={(v) => app.setSettings({ tmKey: v })} />
+        <KeyField rodzaj="lfm" label={t('set.lfmKey')} value={s.lfmKey} onChange={(v) => app.setSettings({ lfmKey: v })} />
       </div>
 
       <div className="mc-card mc-section mc-wejscie" style={{ '--i': 1 }}>
         <h2>{t('set.sources')}</h2>
         <p className="mc-hint">{t('set.sourcesIntro')}</p>
-        <KeyField label={t('set.bitKey')} help={t('set.bitHelp')} helpUrl="https://help.artists.bandsintown.com/en/articles/9186477-api-documentation" value={s.bitKey ?? ''} onChange={(v) => app.setSettings({ bitKey: v.trim() })} />
+        <KeyField rodzaj="bit" label={t('set.bitKey')} value={s.bitKey ?? ''} onChange={(v) => app.setSettings({ bitKey: v })} />
         <Kalendarze app={app} />
       </div>
 

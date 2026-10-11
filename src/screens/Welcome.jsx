@@ -35,8 +35,8 @@ export default function Welcome({ app, onDone }) {
         <li style={{ '--i': 3 }}>{t('welcome.step3')}</li>
       </ol>
       <div className="mc-card mc-section mc-welcome-pola">
-        <KeyField label={t('set.tmKey')} value={tm} onChange={(v) => { setTm(v); setBlad(null); }} blad={blad} />
-        <KeyField label={t('set.lfmKey')} value={lfm} onChange={setLfm} />
+        <KeyField rodzaj="tm" label={t('set.tmKey')} value={tm} onChange={(v) => { setTm(v); setBlad(null); }} blad={blad} />
+        <KeyField rodzaj="lfm" label={t('set.lfmKey')} value={lfm} onChange={setLfm} />
         <label className="mc-field">{t('taste.lfmUser')}
           <input value={user} onChange={(e) => setUser(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck="false" />
         </label>

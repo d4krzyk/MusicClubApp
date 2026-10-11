@@ -31,3 +31,4 @@ export const IkGwiazda = ({ wypelniona, ...p }) => (
 export const IkIde = ({ wypelniona, ...p }) => (
   <I {...p}><circle cx="12" cy="12" r="9" fill={wypelniona ? 'currentColor' : 'none'} /><path d="m8 12.3 2.8 2.8L16.2 9.6" stroke={wypelniona ? 'var(--ide-kreska, #fff)' : 'currentColor'} /></I>
 );
+export const IkSchowek = (p) => <I {...p}><rect x="6" y="4.5" width="12" height="16" rx="2" /><path d="M9 4.5V3.8A1.3 1.3 0 0 1 10.3 2.5h3.4A1.3 1.3 0 0 1 15 3.8v.7M9 11h6M9 15h4" /></I>;

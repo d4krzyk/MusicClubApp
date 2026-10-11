@@ -79,6 +79,13 @@ działa tylko jako „to samo miasto”, bez odległości).
 2. **Last.fm** — <https://www.last.fm/api/account/create> (wystarczy nazwa aplikacji), skopiuj *API key*.
    Last.fm jest opcjonalny, ale bez niego gust trzeba wpisać ręcznie i nie ma gatunków.
 
+W aplikacji przy każdym kluczu jest **„Wklej”** (ze schowka — wklejona cała linijka typu „API key: …” zostaje
+obcięta do samego klucza), **„Sprawdź”** (jedno próbne zapytanie: działa / odrzucony / limit / brak połączenia),
+ostrzeżenie, gdy wkleisz „Consumer Secret” zamiast „Consumer Key”, i **„Gdzie znaleźć klucz?”** z linkami prosto do
+właściwych stron (Ticketmaster: „My Apps” → „Consumer Key”; Last.fm: <https://www.last.fm/api/accounts> → „API key”).
+Logowanie do tych serwisów za ciebie odpada: aplikacja musiałaby znać twoje hasła, a automatyczne zakładanie kluczy łamie
+warunki obu serwisów.
+
 Klucz Ticketmaster jest wymagany. **Nie wklejaj kluczy do czatów ani do repozytorium** — kto je zobaczy, wyczerpie
 ci limit. Jeśli klucz wyciekł, wygeneruj nowy u dostawcy.
 
@@ -128,7 +135,7 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Co sprawdzono, a czego nie
 
-- **Sprawdzone:** 70 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
+- **Sprawdzone:** 73 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
   Ticketmasterze i Last.fm: ekran powitalny, klucze, pobranie, „Dla ciebie”, szukanie, zapis, strona wydarzenia, „Kim
   jest?”, `.ics`, import i ręczna lista, praca offline po przeładowaniu (service worker + IndexedDB), błędny klucz, usunięcie
   danych, brak przelewu strony przy 320 px.

@@ -143,6 +143,15 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-pole-z-przyciskiem { display: flex; align-items: center; padding: 0 .3rem 0 0; }
 .mc-pole-z-przyciskiem input { border: 0; background: transparent; min-height: 2.65rem; box-shadow: none !important; outline: none; }
 .mc-pole-z-przyciskiem.blad { border-color: var(--danger); animation: mc-trzes .35s var(--ease); }
+.mc-pole-z-przyciskiem.dobry { border-color: var(--ok); }
+.mc-klucz-akcje { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.mc-klucz-wynik { font-size: .84rem; font-weight: 500; }
+.mc-klucz-wynik.ok { color: var(--ok); } .mc-klucz-wynik.zly, .mc-klucz-wynik.blad { color: var(--danger); }
+.mc-klucz-wynik.limit, .mc-klucz-wynik.siec { color: var(--warn); }
+.mc-klucz-kroki { margin: .3rem 0 0; padding: .7rem .9rem .7rem 2rem; border-radius: .8rem; background: var(--surface-2); font-weight: 400; font-size: .86rem;
+  display: grid; gap: .55rem; }
+.mc-klucz-kroki li { padding-left: .2rem; } .mc-klucz-kroki li > span { display: block; margin-bottom: .3rem; }
+.mc-klucz-kroki li:last-child > span { margin-bottom: 0; }
 .mc-pole-przycisk { border: 0; background: var(--surface-2); border-radius: 999px; padding: .3rem .75rem; font-size: .8rem; cursor: pointer; color: var(--muted); flex: none; }
 .mc-pole-przycisk:hover { color: var(--text); }
 @keyframes mc-trzes { 20%, 60% { transform: translateX(-4px); } 40%, 80% { transform: translateX(4px); } }
