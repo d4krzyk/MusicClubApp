@@ -24,7 +24,10 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: android-actions/setup-android@v3
+      # Android SDK jest już na obrazie ubuntu-latest (ANDROID_HOME). Krok android-actions/setup-android@v3
+      # wywracał się na `sdkmanager tools`, więc zostaje tylko akceptacja licencji.
+      - name: Licencje Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Zaleznosci i testy
         run: |
