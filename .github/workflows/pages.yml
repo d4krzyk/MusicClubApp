@@ -3,9 +3,7 @@
 name: Strona (GitHub Pages)
 
 on:
-  push:
-    branches: [release/solo]
-  workflow_dispatch:
+  workflow_dispatch:   # ręcznie: Actions -> "Strona (GitHub Pages)" -> Run workflow (wymaga zgody gałęzi w Settings -> Environments -> github-pages)
 
 permissions:
   contents: read
