@@ -1,9 +1,9 @@
 import { fetchCountry } from './ticketmaster.js';
 import * as lastfm from './lastfm.js';
-import { nameKey } from './nameKeys.js';
+import { nameKey, cityKey } from './nameKeys.js';
 import { dbGet, dbSet } from './store.js';
 import { artistEvents } from './bandsintown.js';
-import { parseIcs, normalizeFeedUrl } from './ics.js';
+import { parseIcs, normalizeFeedUrl, calendarName, cityFromName } from './ics.js';
 
 export const WAZNOSC_TAGOW_MS = 60 * 24 * 3600 * 1000; // gatunki wykonawcy: 60 dni
 export const NA_PRZEBIEG = 150;                          // tylu nowych wykonawcow pytamy o gatunki w jednym odswiezeniu
@@ -115,7 +115,20 @@ export async function syncBandsintown(artists, { appId, country, fetchFn = fetch
 /* ---------- Twoje kalendarze (ICS): pliki i subskrypcje ---------- */
 
 export async function loadCalendars() {
-  return (await dbGet('calendars')) ?? [];
+  return ((await dbGet('calendars')) ?? []).map(poprawNazwe);
+}
+
+// Kalendarze zaimportowane przed rozpoznawaniem Facebooka nazywaly sie jak plik ("u100004746730811").
+function poprawNazwe(k0) {
+  // Miasto z nazwy wydarzenia ("... - Warszawa") dla wydarzen zaimportowanych, zanim aplikacja to umiala.
+  const k = { ...k0, events: k0.events.map((e) => {
+    if (e.cityKey) return e;
+    const miasto = cityFromName(e.name);
+    return miasto ? { ...e, city: miasto, cityKey: cityKey(miasto) } : e;
+  }) };
+  const zFacebooka = /^u\d{6,}$/.test(k.name) && k.events.some((e) => /facebook\.com/.test(e.sourceUrl ?? '') || /@facebook\.com/.test(e.id));
+  if (!zFacebooka) return k;
+  return { ...k, name: 'Facebook', events: k.events.map((e) => ({ ...e, sources: e.sources.map((z) => (z.kind === 'ICS' ? { ...z, name: 'Facebook' } : z)) })) };
 }
 
 async function zapiszKalendarze(lista) {
@@ -125,8 +138,9 @@ async function zapiszKalendarze(lista) {
 
 const nowyId = () => `k${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-export async function addCalendarFile(tekst, nazwa, { now = new Date() } = {}) {
+export async function addCalendarFile(tekst, plik, { now = new Date() } = {}) {
   const id = nowyId();
+  const nazwa = calendarName(tekst, plik);
   const events = parseIcs(tekst, { sourceId: id, sourceName: nazwa });
   if (!events.length && !/BEGIN:VCALENDAR/i.test(tekst)) throw new Error('To nie jest plik kalendarza (.ics)');
   const lista = await loadCalendars();
@@ -151,8 +165,9 @@ export async function addCalendarUrl(adres, nazwa, { fetchFn = fetch, signal, no
   const id = nowyId();
   const tekst = await pobierzIcs(url, fetchFn, signal);
   const lista = await loadCalendars();
-  return zapiszKalendarze([...lista, { id, name: nazwa || new URL(url).hostname, kind: 'url', url,
-    events: parseIcs(tekst, { sourceId: id, sourceName: nazwa || new URL(url).hostname }), syncedAt: now.toISOString(), error: null }]);
+  const n = nazwa || calendarName(tekst, new URL(url).hostname);
+  return zapiszKalendarze([...lista, { id, name: n, kind: 'url', url,
+    events: parseIcs(tekst, { sourceId: id, sourceName: n }), syncedAt: now.toISOString(), error: null }]);
 }
 
 // Odswieza subskrypcje; nieudana zostawia poprzednie wydarzenia i zapisuje blad.

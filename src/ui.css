@@ -23,7 +23,7 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.5 'Poppins', system-ui, sans-serif; overflow-x: hidden;
+body { margin: 0; overflow-wrap: break-word; background: var(--bg); color: var(--text); font: 400 1rem/1.5 'Poppins', system-ui, sans-serif; overflow-x: hidden;
   background-image: radial-gradient(60rem 26rem at 50% -12rem, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
     radial-gradient(36rem 18rem at 90% 0, color-mix(in srgb, var(--accent-3) 10%, transparent), transparent 70%);
   background-repeat: no-repeat; min-height: 100vh; }
@@ -39,6 +39,7 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 
 /* --- Uklad, pasek, nawigacja ---------------------------------------------- */
 .mc-splash { min-height: 100vh; display: grid; place-items: center; animation: mc-puls 1.2s var(--ease) infinite alternate; }
+.mc-main, .mc-ekran { min-width: 0; }
 .mc-app { max-width: 46rem; margin: 0 auto; padding: 0 1rem calc(5.5rem + env(safe-area-inset-bottom)); }
 .mc-app-powitanie { padding-bottom: 2rem; }
 .mc-top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: .75rem;
@@ -90,7 +91,10 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-empty { text-align: center; color: var(--muted); padding: 2.5rem 1rem; }
 .mc-error { color: var(--danger); font-size: .9rem; } .mc-ok { color: var(--ok); }
 .mc-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.mc-prewrap { white-space: pre-line; }
+.mc-prewrap { white-space: pre-line; overflow-wrap: anywhere; }
+.mc-link-w-tekscie { word-break: break-all; }
+.mc-dlugi.zwiniety .mc-prewrap { display: -webkit-box; -webkit-line-clamp: 9; -webkit-box-orient: vertical; overflow: hidden;
+  -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
 .mc-cap { text-transform: capitalize; }
 .mc-trunc { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mc-wejscie { animation: mc-in .38s var(--plynnie) both; animation-delay: calc(min(var(--i, 0), 10) * 40ms); }

@@ -1,5 +1,5 @@
 import { cityKey, seriesKey } from './nameKeys.js';
-import { cityByName } from './location.js';
+import { cityByName, CITIES, distanceKm } from './location.js';
 import { plain, cut } from './plainText.js';
 import { bezpiecznyLink } from './ticketmaster.js';
 
@@ -102,6 +102,38 @@ export function splitLocation(loc) {
   return { venueName: venueName?.slice(0, 200) ?? null, address: address?.slice(0, 300) ?? null, city };
 }
 
+// Miasto z nazwy wydarzenia, gdy nie ma go w miejscu: "Koncert / Pod Minoga, Poznan", "Wiec - Warszawa". Tylko cale
+// czesci oddzielone przecinkiem, ukosnikiem, kreska albo "|" - zeby "Sopot" w srodku zdania nie udawal miasta.
+export function cityFromName(nazwa) {
+  if (!nazwa) return null;
+  const czesci = nazwa.split(/\s*[,/|]\s*|\s+[-–—]\s+/).map((c) => c.trim()).filter(Boolean);
+  for (let i = czesci.length - 1; i >= 0; i--) {
+    const c = cityByName(czesci[i]);
+    if (c) return c.name;
+  }
+  return null;
+}
+
+// Najblizsze miasto z listy do punktu (GEO), gdy blizej niz 25 km.
+export function cityNear(lat, lon) {
+  let best = null;
+  let km = 25;
+  for (const c of CITIES) {
+    const d = distanceKm(lat, lon, c.lat, c.lon);
+    if (d < km) { km = d; best = c.name; }
+  }
+  return best;
+}
+
+// Nazwa kalendarza do pokazania: X-WR-CALNAME, a eksport z Facebooka (plik nazwany numerem konta "u1000...") - "Facebook".
+export function calendarName(tekst, zapasowa) {
+  const linie = unfold(tekst);
+  const nazwa = linie.map(parseLine).find((p) => p?.name === 'X-WR-CALNAME')?.value;
+  if (nazwa && unescapeText(nazwa).trim()) return unescapeText(nazwa).trim().slice(0, 60);
+  if (/^PRODID:.*facebook/im.test(linie.join('\n')) || /^UID:[^\n]*@facebook\.com/im.test(linie.join('\n'))) return 'Facebook';
+  return zapasowa;
+}
+
 // Caly plik -> nasze wydarzenia. sourceId rozroznia kalendarze (ten sam UID w dwoch plikach to dwa wpisy).
 export function parseIcs(tekst, { sourceId, sourceName, displayTz } = {}) {
   const strefa = displayTz ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
@@ -141,6 +173,7 @@ function zbuduj(w, sourceId, sourceName, strefa) {
     const [a, b] = w.GEO.value.split(/[;,]/).map(Number);
     if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) <= 90 && Math.abs(b) <= 180) { lat = a; lon = b; }
   }
+  if (!miejsce.city) miejsce.city = (lat != null ? cityNear(lat, lon) : null) ?? cityFromName(nazwa);
   const opis = w.DESCRIPTION ? cut(plain(unescapeText(w.DESCRIPTION.value)), 4000) : null;
   const url = w.URL ? w.URL.value.trim() : null;
   return {

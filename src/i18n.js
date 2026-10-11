@@ -155,6 +155,8 @@ const S = {
   'event.noCalendarApp': ['Nie znaleziono aplikacji kalendarza.', 'No calendar app found.'],
   'event.sources': ['Dane o wydarzeniu: ', 'Event data: '],
   'event.openSource': ['Otwórz w źródle', 'Open source'],
+  'event.more': ['Pokaż całość', 'Show all'],
+  'event.less': ['Zwiń', 'Show less'],
   'event.inCalendar': ['Masz to w swoim kalendarzu', 'This is in your calendar'],
   'set.sources': ['Źródła wydarzeń', 'Event sources'],
   'set.sourcesIntro': ['Ticketmaster jest głównym źródłem. Bandsintown dokłada koncerty twoich ulubionych wykonawców, a twoje kalendarze — wydarzenia, które sam(a) zapisałeś(-aś), np. z Facebooka. Ten sam koncert z kilku źródeł pokazuje się raz.', 'Ticketmaster is the main source. Bandsintown adds concerts of your favourite artists, and your calendars add events you saved yourself, e.g. from Facebook. The same concert from several sources is shown once.'],

@@ -5,7 +5,7 @@ import { nameKey } from '../lib/nameKeys.js';
 import { artistInfo } from '../lib/lastfm.js';
 import { dbGet, dbSet } from '../lib/store.js';
 import { dateParts, today, money } from '../format.js';
-import { Reasons, StatusBadge, Star, Obraz, Rozwijane } from '../components.jsx';
+import { Reasons, StatusBadge, Star, Obraz, Rozwijane, Tekst, DlugiTekst } from '../components.jsx';
 import Arkusz from '../ui/Arkusz.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { IkBilet, IkKalendarzPlus, IkMapa, IkTrasa, IkWstecz, IkLink, IkPlik } from '../ui/Ikony.jsx';
@@ -59,7 +59,7 @@ function Performer({ p, liked, app }) {
       <Rozwijane otwarte={otwarty}>
         <div className="mc-bio" lang={lang}>
           {stan.loading && <p className="mc-ladowanie"><span className="mc-kropki" aria-hidden="true"><i /><i /><i /></span>{t('bio.loading')}</p>}
-          {info?.bio && <p className="mc-prewrap">{info.bio}</p>}
+          {info?.bio && <Tekst>{info.bio}</Tekst>}
           {info && !info.bio && <p>{t('bio.none')}</p>}
           {info?.listeners && <p className="mc-hint">{t('bio.listeners', info.listeners.toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL'))}</p>}
           {info?.similar?.length > 0 && <p className="mc-hint">{t('bio.similar', info.similar.join(', '))}</p>}
@@ -169,7 +169,7 @@ export default function EventScreen({ app, id }) {
         </section>
       )}
 
-      {e.description && <section className="mc-card mc-section mc-wejscie" style={{ '--i': 3 }}><h2>{t('event.about')}</h2><p className="mc-prewrap">{e.description}</p></section>}
+      {e.description && <section className="mc-card mc-section mc-wejscie" style={{ '--i': 3 }}><h2>{t('event.about')}</h2><DlugiTekst>{e.description}</DlugiTekst></section>}
 
       {(o.pleaseNote || o.promoter || o.priceMin != null || o.ageRestricted || sprzedaz || o.accessibility) && (
         <section className="mc-card mc-section mc-wejscie" style={{ '--i': 4 }}>
@@ -178,8 +178,8 @@ export default function EventScreen({ app, id }) {
           {o.priceMin != null && <p>{t('event.price', money(o.priceMin, o.priceMax, o.priceCurrency, lang))}</p>}
           {o.ageRestricted && <p>{t('event.age')}</p>}
           {sprzedaz && <p>{t('event.salesStart', new Date(o.salesStart).toLocaleString(lang === 'en' ? 'en-GB' : 'pl-PL', { dateStyle: 'medium', timeStyle: 'short' }))}</p>}
-          {o.pleaseNote && <p className="mc-prewrap">{o.pleaseNote}</p>}
-          {o.accessibility && <p className="mc-prewrap">{o.accessibility}</p>}
+          {o.pleaseNote && <Tekst>{o.pleaseNote}</Tekst>}
+          {o.accessibility && <Tekst>{o.accessibility}</Tekst>}
         </section>
       )}
 

@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { useT } from './i18n.js';
 import { dateParts, money } from './format.js';
 import { IkGwiazda, IkOdswiez, IkX } from './ui/Ikony.jsx';
+import { linkify } from './lib/linkify.js';
 
 export function Star({ on, onClick, label }) {
   return (
@@ -141,6 +142,30 @@ export function Rozwijane({ otwarte, children, className = '' }) {
   return (
     <div className={`mc-rozwijane${otwarte ? ' otwarte' : ''} ${className}`} aria-hidden={!otwarte}>
       <div className="mc-rozwijane-srodek">{children}</div>
+    </div>
+  );
+}
+
+// Zwykly tekst z adresami jako odnosnikami (krotki napis, pelny adres w podpowiedzi). Zadnego HTML-a z zewnatrz.
+export function Tekst({ children, className = 'mc-prewrap' }) {
+  return (
+    <p className={className}>
+      {linkify(children).map((c, i) => (c.url
+        ? <a key={i} href={c.url} title={c.url} target="_blank" rel="noopener noreferrer nofollow" className="mc-link-w-tekscie">{c.label}</a>
+        : <span key={i}>{c.text}</span>))}
+    </p>
+  );
+}
+
+// Dlugi opis zwiniety do kilku linii z "Pokaz calosc" - opisy z Facebooka potrafia miec kilka ekranow.
+export function DlugiTekst({ children }) {
+  const { t } = useT();
+  const [caly, setCaly] = useState(false);
+  const dlugi = (children?.length ?? 0) > 480 || (children?.split('\n').length ?? 0) > 9;
+  return (
+    <div className={`mc-dlugi${dlugi && !caly ? ' zwiniety' : ''}`}>
+      <Tekst>{children}</Tekst>
+      {dlugi && <button type="button" className="mc-link-btn" aria-expanded={caly} onClick={() => setCaly(!caly)}>{caly ? t('event.less') : t('event.more')}</button>}
     </div>
   );
 }

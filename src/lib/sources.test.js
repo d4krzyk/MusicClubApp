@@ -140,3 +140,17 @@ test('odswiezanie kalendarzy nie pobiera plikow (tylko subskrypcje)', async () =
   assert.equal(n, 0);
   assert.equal(plik.error, null);
 });
+
+test('kalendarz zaimportowany wczesniej: nazwa pliku z Facebooka -> "Facebook", miasto z nazwy wydarzenia', async () => {
+  await dbClear();
+  const { dbSet } = await import('./store.js');
+  await dbSet('calendars', [{ id: 'k', name: 'u100004746730811', kind: 'file', url: null, error: null, events: [
+    { id: 'ics:k:1@facebook.com', name: 'Wiec - Warszawa', sourceUrl: 'https://www.facebook.com/events/1/', city: null, cityKey: null,
+      sources: [{ kind: 'ICS', name: 'u100004746730811', url: null }] }] },
+  { id: 'm', name: 'u12345678', kind: 'file', url: null, error: null, events: [{ id: 'ics:m:x', name: 'Coś', sourceUrl: null, cityKey: null, sources: [] }] }]);
+  const [fb, inny] = await loadCalendars();
+  assert.equal(fb.name, 'Facebook');
+  assert.equal(fb.events[0].sources[0].name, 'Facebook');
+  assert.equal(fb.events[0].cityKey, 'warsaw');
+  assert.equal(inny.name, 'u12345678', 'bez sladu Facebooka nazwa zostaje');
+});
