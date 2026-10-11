@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { useT } from './i18n.js';
 import { dateParts, money } from './format.js';
-import { IkGwiazda, IkOdswiez, IkX } from './ui/Ikony.jsx';
+import { IkGwiazda, IkX, IkIde } from './ui/Ikony.jsx';
 import { linkify } from './lib/linkify.js';
 
 export function Star({ on, onClick, label }) {
@@ -43,13 +43,13 @@ export function Obraz({ src, className, alt = '' }) {
   );
 }
 
-export function EventCard({ item, saved, onToggleSave, index = 0 }) {
+export function EventCard({ item, udzial, onToggleSave, index = 0 }) {
   const { t, lang } = useT();
   const { event: e, moreDates, match, km } = item;
   const d = dateParts(e.date, lang);
   const zrodlo = e.source === 'bit' ? t('card.source.bit') : e.source === 'ics' ? t('card.source.ics') : null;
   return (
-    <li className="mc-event mc-card mc-wejscie" style={{ '--i': Math.min(index, 10) }}>
+    <li className={`mc-event mc-card mc-wejscie${e.music === false ? ' mc-event-inne' : ''}`} style={{ '--i': Math.min(index, 10) }}>
       <a className="mc-event-link" href={`#/e/${encodeURIComponent(e.id)}`}>
         <div className="mc-date" aria-hidden="true"><b>{d.day}</b><span>{d.month}</span></div>
         <Obraz className="mc-thumb" src={e.thumbUrl} />
@@ -61,7 +61,10 @@ export function EventCard({ item, saved, onToggleSave, index = 0 }) {
           </p>
           <div className="mc-chips">
             <StatusBadge status={e.status} />
+            {udzial === 'GOING' && <span className="mc-badge mc-badge-ide">{t('part.going')}</span>}
             {zrodlo && <span className="mc-badge mc-badge-zrodlo">{zrodlo}</span>}
+            {e.music === false && <span className="mc-badge mc-badge-inne">{t('kind.other')}</span>}
+            {e.textGenres?.length > 0 && <span className="mc-badge">{e.textGenres.slice(0, 2).join(' · ')}</span>}
             {moreDates > 0 && <span className="mc-badge">{t('card.moreDates', moreDates)}</span>}
             {km != null && km >= 1 && <span className="mc-badge">{t('card.km', Math.round(km))}</span>}
             {e.organizer?.priceMin != null && <span className="mc-badge">{money(e.organizer.priceMin, e.organizer.priceMax, e.organizer.priceCurrency, lang)}</span>}
@@ -69,7 +72,10 @@ export function EventCard({ item, saved, onToggleSave, index = 0 }) {
           {match.reasons.length > 0 && <Reasons reasons={match.reasons} />}
         </div>
       </a>
-      <Star on={saved} onClick={onToggleSave} label={saved ? t('unsave') : t('save')} />
+      {udzial === 'GOING'
+        ? <button type="button" className="mc-star on mc-star-ide" aria-pressed="true" aria-label={t('part.going')} title={t('part.going')}
+          onClick={(ev) => { ev.preventDefault(); onToggleSave(); }}><IkIde size={24} wypelniona className="mc-star-ikona" /></button>
+        : <Star on={!!udzial} onClick={onToggleSave} label={udzial ? t('unsave') : t('part.interested')} />}
     </li>
   );
 }
@@ -101,9 +107,7 @@ export function SyncBar({ app }) {
   return (
     <div className={`mc-sync${status.error ? ' mc-sync-error' : ''}${status.running ? ' trwa' : ''}`} role="status">
       <span className="mc-sync-text" key={tekst.slice(0, 12)}>{tekst}</span>
-      {status.running
-        ? <button type="button" className="mc-ikona-btn" onClick={app.stop} aria-label={t('sync.stop')} title={t('sync.stop')}><IkX size={18} /></button>
-        : <button type="button" className="mc-ikona-btn" onClick={() => app.refresh()} aria-label={t('sync.refresh')} title={t('sync.refresh')}><IkOdswiez size={18} /></button>}
+      {status.running && <button type="button" className="mc-ikona-btn" onClick={app.stop} aria-label={t('sync.stop')} title={t('sync.stop')}><IkX size={18} /></button>}
       <div className={`mc-progress${status.running ? ' widoczny' : ''}${status.running && procent == null ? ' nieokreslony' : ''}`}>
         <div style={{ width: `${procent ?? 30}%` }} />
       </div>

@@ -3,6 +3,7 @@ import { loadSettings, saveSettings, dbClear } from './lib/store.js';
 import { loadEvents, loadTags, syncEvents, syncTags, importLastFm, performerNames, MIN_ODSWIEZANIA_MS, NA_PRZEBIEG,
   loadBandsintown, syncBandsintown, loadCalendars, refreshCalendars, addCalendarFile, addCalendarUrl, removeCalendar } from './lib/sync.js';
 import { mergeAll } from './lib/merge.js';
+import { enrich, performerCandidates } from './lib/eventKind.js';
 import { buildTaste } from './lib/match.js';
 import { nameKey } from './lib/nameKeys.js';
 import { cityByName } from './lib/location.js';
@@ -58,8 +59,11 @@ export function useApp() {
 
   const taste = useMemo(() => buildTaste(artistNames, tags), [artistNames, tags]);
   // Jedna lista z trzech zrodel: Ticketmaster (glowne), Bandsintown, twoje kalendarze - ten sam koncert raz.
-  const events = useMemo(() => mergeAll(data.events, bit.events, calendars.flatMap((k) => k.events)),
-    [data.events, bit.events, calendars]);
+  // Wydarzenia z kalendarzy dostaja ocene "koncert czy nie", wykonawcow z tytulu i gatunki z tekstu - przed laczeniem,
+  // zeby wykonawcy pomogli rozpoznac ten sam koncert z Ticketmastera.
+  const events = useMemo(() => mergeAll(data.events, bit.events,
+    calendars.flatMap((k) => k.events).map((e) => enrich(e, tags, settings.kindOverride?.[e.id]))),
+  [data.events, bit.events, calendars, tags, settings.kindOverride]);
   const origin = useMemo(() => {
     const c = settings.city ? cityByName(settings.city) : null;
     return c ? { lat: c.lat, lon: c.lon } : null;
@@ -70,8 +74,10 @@ export function useApp() {
     if (!s.lfmKey.trim()) return;
     const fav = [...s.manualArtists, ...s.lfmArtists];
     const dzis = new Date().toISOString().slice(0, 10);
-    const r = await syncTags([...fav, ...performerNames(events, dzis)], { lfmKey: s.lfmKey, signal,
-      limit: fav.length + NA_PRZEBIEG, onProgress });
+    // kandydaci na wykonawcow z tytulow wydarzen z kalendarzy - Last.fm potwierdza, ze to artysta, i podaje gatunek
+    const zKalendarzy = calendarsRef.current.flatMap((k) => k.events).filter((e) => e.date >= dzis).flatMap(performerCandidates);
+    const r = await syncTags([...fav, ...zKalendarzy, ...performerNames(events, dzis)], { lfmKey: s.lfmKey, signal,
+      limit: fav.length + zKalendarzy.length + NA_PRZEBIEG, onProgress });
     setTags(r.tags);
   }, []);
 
@@ -169,10 +175,14 @@ export function useApp() {
   }, []);
 
   const kalendarze = useMemo(() => ({
-    dodajPlik: async (tekst, nazwa) => { const l = await addCalendarFile(tekst, nazwa); setCalendars(l); return l[l.length - 1]; },
-    dodajAdres: async (url, nazwa) => { const l = await addCalendarUrl(url, nazwa); setCalendars(l); return l[l.length - 1]; },
+    dodajPlik: async (tekst, nazwa) => { const l = await addCalendarFile(tekst, nazwa); setCalendars(l); calendarsRef.current = l; po(); return l[l.length - 1]; },
+    dodajAdres: async (url, nazwa) => { const l = await addCalendarUrl(url, nazwa); setCalendars(l); calendarsRef.current = l; po(); return l[l.length - 1]; },
     usun: async (id) => setCalendars(await removeCalendar(id)),
-  }), []);
+  }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // po dodaniu kalendarza: gatunki nowych wykonawcow z Last.fm (w tle)
+  const poRef = useRef(null);
+  poRef.current = refreshTags;
+  function po() { setTimeout(() => poRef.current?.(), 0); }
 
   return { settings, setSettings, data, events, tags, taste, origin, artistNames, status, ready, refresh, stop, importArtists,
     refreshTags, wipe, calendars, kalendarze };

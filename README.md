@@ -25,7 +25,7 @@ stąd usunięta — zostaje w gałęzi, z której ta powstała.
 
 | Ekran | Co robi |
 |---|---|
-| **Koncerty** | „Dla ciebie” (tylko pasujące do gustu, z powodem przy każdym), „Najbliższe” (wszystkie), „Moje” (gwiazdka + wydarzenia z twoich kalendarzy). Szukanie, miasto i zasięg w arkuszach wysuwanych od dołu. Terminy tej samej serii zwinięte w jedną kartę („+2 terminów”). |
+| **Koncerty** | „Dla ciebie” (tylko pasujące do gustu, z powodem przy każdym), „Najbliższe” (wszystkie), „Moje” (**Biorę udział** / **Zainteresowany** + wydarzenia z twoich kalendarzy, z filtrem i eksportem do jednego pliku `.ics`). Szukanie, miasto w arkuszu, zasięg suwakiem. Terminy tej samej serii zwinięte w jedną kartę („+2 terminów”). |
 | **Wydarzenie** | Termin, miejsce, bilety, **Do kalendarza** (na Androidzie od razu Kalendarz Google, w przeglądarce Kalendarz Google albo plik `.ics`), mapa (OpenStreetMap), trasa, skład z gatunkami i linkami wykonawców, „Kim jest?” (opis z Last.fm), opis bez formułek sprzedażowych, „Od organizatora”, inne terminy, podpis źródeł danych. |
 | **Twój gust** | Import artystów z Last.fm, ręczna lista, twoje gatunki (z tagów Last.fm). |
 | **Ustawienia** | Klucze API, **źródła wydarzeń** (Bandsintown, twoje kalendarze `.ics`), kraj i zakres miesięcy, miasto i promień, język (PL/EN), motyw, kopia ustawień, usunięcie wszystkich danych. |
@@ -39,10 +39,23 @@ stąd usunięta — zostaje w gałęzi, z której ta powstała.
   albo adres subskrypcji (`https://…` lub `webcal://…`: kalendarz Google „tajny adres iCal”, strona klubu), odświeżany razem
   z koncertami. Wydarzenia z kalendarza są w „Moje” i wyżej w „Dla ciebie”.
 - **Ten sam koncert z kilku źródeł = jedna karta** (`src/lib/merge.js`, port łączenia z wersji serwerowej: ten sam dzień
-  i kraj, ta sama sala — do 500 m albo ta sama nazwa w tym samym mieście — i ten sam wykonawca albo nazwa; godziny różne
-  o ponad 3 h = dwa koncerty). Źródło poboczne niczego nie nadpisuje, tylko uzupełnia braki (adres, godzina, bilety).
+  i kraj, ta sama sala — do 500 m albo ta sama nazwa w tym samym (albo nieznanym) mieście — i ten sam wykonawca albo
+  nazwa; bez pewnej sali wystarczy ten sam wykonawca o tej samej godzinie; godziny różne o ponad 3 h = dwa koncerty).
+  Ticketmaster sam ze sobą też (np. bilety i „pakiet VIP” jako dwa wydarzenia). Źródło poboczne uzupełnia braki
+  (adres, godzina, bilety), a krótki albo pusty opis z Ticketmastera zastępuje dłuższym — z Facebooka bywa dużo lepszy.
 - Facebook nie ma publicznego API wydarzeń; eksport `.ics` jest jedyną legalną drogą. Kształtu jego eksportu nie dało się
   stąd sprawdzić na żywo — parser trzyma się standardu (RFC 5545) i jest przetestowany na typowym pliku.
+
+### Wydarzenia z Facebooka: koncert czy nie
+
+Twoja lista „zainteresowany” na Facebooku miesza koncerty z protestami, spacerami i atrakcjami. Aplikacja ocenia każde
+wydarzenie z kalendarza (`src/lib/eventKind.js`): słowa muzyczne („koncert”, „support”, „zagrają”, link do Bandcampa),
+gatunki w tekście („post punk”, „darkwave'owym”, „gotycki”), wykonawcy z tytułu potwierdzeni przez Last.fm — na plus;
+protest, wykład, warsztaty, spacer, wystawa itp. i wydarzenie trwające ponad dobę (chyba że festiwal) — na minus.
+Nie-koncerty nie trafiają do list koncertów, są tylko w „Moje” z plakietką „Nie koncert”; na stronie wydarzenia ocenę
+zmienisz jednym przyciskiem. Wykonawcy z tytułu („A (Argentyna), B + C / 13.12.26 / Klub, Poznań” → A, B, C — bez dat,
+miasta, klubu i listy gatunków) dostają gatunki z Last.fm i „Kim jest?”, a gatunki z tekstu liczą się w „Dla ciebie”.
+Odpowiedź z Facebooka („Wezmę udział” / „Zainteresowany”, `PARTSTAT` w pliku) przechodzi do „Moje”.
 
 ### Kalendarz Google na Androidzie
 
@@ -115,7 +128,7 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Co sprawdzono, a czego nie
 
-- **Sprawdzone:** 56 testów logiki (`npm test`, każdy z ~50 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
+- **Sprawdzone:** 70 testów logiki (`npm test`, każdy z ~75 sztucznie wprowadzonych błędów w logice zostaje wykryty) oraz cały przepływ w prawdziwym Chromium (Playwright) na udawanych
   Ticketmasterze i Last.fm: ekran powitalny, klucze, pobranie, „Dla ciebie”, szukanie, zapis, strona wydarzenia, „Kim
   jest?”, `.ics`, import i ręczna lista, praca offline po przeładowaniu (service worker + IndexedDB), błędny klucz, usunięcie
   danych, brak przelewu strony przy 320 px.

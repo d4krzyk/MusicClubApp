@@ -53,7 +53,10 @@ test('laczenie: ten sam koncert z Bandsintown dopisany do Ticketmastera, braki u
 test('laczenie: inny dzien, inna sala, inny wykonawca, godziny o > 3 h = osobne karty', () => {
   const bit = readEvent(BIT, 'Kovacs');
   assert.equal(score(tm({ date: '2026-11-21' }), bit), 0);
-  assert.equal(score(tm({ venueName: 'Stodoła', lat: 52.21, lon: 21.0 }), bit), 0);
+  assert.equal(score(tm({ venueName: 'Klub Studio', city: 'Kraków', cityKey: 'krakow', lat: 50.068, lon: 19.913 }), bit), 0);
+  // ten sam wykonawca o tej samej godzinie w tym samym miescie, tylko sala nazwana inaczej - to ten sam koncert
+  assert.ok(score(tm({ venueName: 'Fort Wola', lat: 52.21, lon: 21.0 }), bit) > 0);
+  assert.equal(score(tm({ venueName: 'Stodoła', lat: 52.21, lon: 21.0, time: '17:30' }), bit), 0);
   assert.equal(score(tm({ name: 'Ktoś inny', performers: [{ name: 'Ktoś inny' }] }), bit), 0);
   assert.equal(score(tm({ time: '15:00' }), bit), 0);
   assert.equal(score(tm({ country: 'DE' }), bit), 0);
@@ -120,8 +123,9 @@ test('laczenie: punkty za godzine (do 1 h), krotka nazwa sali nie wystarcza, rem
   assert.equal(score(tm({ time: '21:30' }), bit), 11);
   assert.ok(!sameVenue('Sala B90', 'B90'));
   assert.ok(sameVenue('Klub Ucho', 'Ucho Live'));
-  const [a, b] = mergeAll([tm({ id: 'A' }), tm({ id: 'B' })], [bit]);
-  assert.equal(a.sources.length, 2);
+  const bezGodziny = { ...bit, time: null };
+  const [a, b] = mergeAll([tm({ id: 'A' }), tm({ id: 'B', time: '21:30' })], [bezGodziny]);
+  assert.equal(a.sources.length, 2, 'remis - wygrywa pierwsze');
   assert.equal(b.sources.length, 1);
 });
 
@@ -153,4 +157,72 @@ test('kalendarz zaimportowany wczesniej: nazwa pliku z Facebooka -> "Facebook", 
   assert.equal(fb.events[0].sources[0].name, 'Facebook');
   assert.equal(fb.events[0].cityKey, 'warsaw');
   assert.equal(inny.name, 'u12345678', 'bez sladu Facebooka nazwa zostaje');
+});
+
+test('Ticketmaster sam ze soba: ten sam koncert dwa razy (np. pakiet VIP) - jedna karta; inny dzien serii zostaje', () => {
+  const lista = mergeAll([tm({ id: 'A', description: null }), tm({ id: 'B', name: 'Kovacs | Pakiety VIP', description: 'Pakiet VIP z wejściem na soundcheck.' }),
+    tm({ id: 'C', date: '2026-11-21' })]);
+  assert.deepEqual(lista.map((e) => e.id), ['A', 'C']);
+  assert.equal(lista[0].description, 'Pakiet VIP z wejściem na soundcheck.');
+});
+
+test('Facebook bez miasta w miejscu laczy sie z Ticketmasterem; dluzszy opis z Facebooka zastepuje krotki', () => {
+  const fb = { id: 'ics:fb:1', source: 'ics', name: 'Buenos Vampiros (Argentyna), Sofia Night Club - OLD SKULL - post punk', date: '2026-11-20',
+    time: '20:00', venueName: 'Syrena', address: 'ul Wilcza 30', city: null, cityKey: null, lat: null, lon: null, country: null, performers: [],
+    candidates: ['Buenos Vampiros', 'Sofia Night Club', 'OLD SKULL'], description: 'Buenos Vampiros to trzy dziewczyny i chłopak z Mar del Plata. '.repeat(5),
+    textGenres: ['post punk'], genreTags: ['postpunk'], sources: [{ kind: 'ICS', name: 'Facebook', url: 'https://www.facebook.com/events/1/' }] };
+  const t = tm({ id: 'T', name: 'Buenos Vampiros', venueName: 'Klub Syrena', performers: [{ name: 'Buenos Vampiros' }], description: 'Koncert.', lat: null, lon: null });
+  const [e, ...reszta] = mergeAll([t], [], [fb]);
+  assert.equal(reszta.length, 0);
+  assert.equal(e.id, 'T');
+  assert.ok(e.description.startsWith('Buenos Vampiros to trzy'));
+  assert.deepEqual(e.genreTags, ['postpunk']);
+  assert.equal(e.address, 'ul Wilcza 30');
+  assert.equal(e.inCalendar, true);
+  // ta sama godzina i wykonawca, ale nieznana sala i miasto po stronie Facebooka - tez jeden koncert
+  assert.equal(mergeAll([t], [], [{ ...fb, venueName: null, address: null }]).length, 1);
+  // inny dzien - osobno
+  assert.equal(mergeAll([t], [], [{ ...fb, date: '2026-11-21' }]).length, 2);
+});
+
+test('udzial: biore udzial / zainteresowany / nic; kalendarz z Facebooka; zdjecie wydarzenia z kalendarza', async () => {
+  const { statusOf, setStatus, mine } = await import('./udzial.js');
+  const t1 = tm({ id: 'T1' });
+  const fbGoing = { id: 'ics:k:1', source: 'ics', name: 'FB', date: '2026-11-22', partstat: 'GOING', performers: [] };
+  const fbInt = { id: 'ics:k:2', source: 'ics', name: 'FB2', date: '2026-11-23', partstat: null, performers: [] };
+  let s = { saved: {}, udzial: {} };
+  assert.equal(statusOf(t1, s), null);
+  assert.equal(statusOf(fbGoing, s), 'GOING');
+  assert.equal(statusOf(fbInt, s), 'INTERESTED');
+  s = { ...s, ...setStatus(s, t1, 'GOING') };
+  assert.equal(statusOf(t1, s), 'GOING');
+  s = { ...s, ...setStatus(s, fbInt, null) };
+  assert.equal(statusOf(fbInt, s), null, 'zdjete z kalendarza zostaje zdjete');
+  assert.deepEqual(mine([t1, fbGoing, fbInt], s, 'GOING').map((e) => e.id), ['T1', 'ics:k:1']);
+  assert.deepEqual(mine([t1, fbGoing, fbInt], s, 'INTERESTED').map((e) => e.id), []);
+  // stary zapis (gwiazdka) = zainteresowany; kopia zostaje, gdy wydarzenie zniknie ze zrodla
+  assert.deepEqual(mine([], { saved: { X: { id: 'X', name: 'Stare' } } }, 'INTERESTED').map((e) => e.udzial), ['INTERESTED']);
+  // status ustawiony na wydarzeniu, ktore potem polaczylo sie z innym (mergedIds), nie ginie
+  assert.equal(statusOf({ ...tm({ id: 'T9' }), mergedIds: ['ics:k:1'] }, { udzial: { 'ics:k:1': 'INTERESTED' } }), 'INTERESTED');
+  s = { ...s, ...setStatus(s, t1, null) };
+  assert.equal(statusOf(t1, s), null);
+  assert.equal(s.udzial.T1, undefined);
+});
+
+test('PARTSTAT z kalendarza: ACCEPTED = biore udzial, TENTATIVE = zainteresowany; eksport wielu wydarzen', async () => {
+  const { parseIcs } = await import('./ics.js');
+  const { icsMany } = await import('./calendar.js');
+  const [a, b, c] = parseIcs(['BEGIN:VEVENT', 'UID:1', 'DTSTART:20261201T200000Z', 'SUMMARY:A', 'PARTSTAT:ACCEPTED', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:2', 'DTSTART:20261202T200000Z', 'SUMMARY:B', 'ATTENDEE;PARTSTAT=TENTATIVE;CN=Ja:mailto:x@y', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:3', 'DTSTART:20261203T200000Z', 'SUMMARY:C', 'END:VEVENT'].join('\n'), { displayTz: 'UTC' });
+  assert.deepEqual([a.partstat, b.partstat, c.partstat], ['GOING', 'INTERESTED', null]);
+  const plik = icsMany([{ ...tm({ startUtc: '2026-11-20T19:00:00Z' }), udzial: 'GOING' }, { ...tm({ id: 'X', status: 'CANCELLED' }), udzial: 'INTERESTED' }], { name: 'Biorę udział' });
+  assert.equal((plik.match(/BEGIN:VEVENT/g) ?? []).length, 2);
+  assert.ok(plik.includes('X-WR-CALNAME:Biorę udział') && plik.includes('STATUS:CONFIRMED') && plik.includes('STATUS:CANCELLED'));
+  assert.ok(!plik.includes('STATUS:TENTATIVE'), 'odwolane ma tylko STATUS:CANCELLED');
+});
+
+test('udzial: stary zapis gwiazdka na wydarzeniu, ktore wciaz jest w zrodle = zainteresowany', async () => {
+  const { statusOf } = await import('./udzial.js');
+  assert.equal(statusOf(tm({ id: 'T1' }), { saved: { T1: {} } }), 'INTERESTED');
 });

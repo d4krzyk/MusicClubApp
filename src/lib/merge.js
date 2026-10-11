@@ -36,21 +36,28 @@ export function score(e, x) {
   const km = e.lat != null && e.lon != null && x.lat != null && x.lon != null ? distanceKm(e.lat, e.lon, x.lat, x.lon) : null;
   const salaWsp = km != null && km <= 0.5;
   const miasto = (e.cityKey && e.cityKey === x.cityKey) || (km != null && km <= 30);
-  const salaNazwa = !!miasto && sameVenue(e.venueName, x.venueName);
-  if (!salaWsp && !salaNazwa) return 0;
+  // Wydarzenie z Facebooka czesto nie ma miasta ("Syrena, ul Wilcza 30") - wtedy miasto nie moze przeszkodzic,
+  // ale dwa ROZNE znane miasta tak.
+  const bezMiasta = (!e.cityKey && (e.lat == null || e.lon == null)) || (!x.cityKey && (x.lat == null || x.lon == null));
+  const salaNazwa = (!!miasto || bezMiasta) && sameVenue(e.venueName, x.venueName);
 
   const nE = nameKey(e.name);
   const nX = nameKey(x.name);
-  const skladE = new Set(e.performers.map((p) => nameKey(p.name)).filter(Boolean));
-  const skladX = x.performers.map((p) => nameKey(p.name)).filter(Boolean);
+  const sklad = (z) => [...(z.performers ?? []).map((p) => p.name), ...(z.candidates ?? [])].map(nameKey).filter(Boolean);
+  const skladE = new Set(sklad(e));
+  const skladX = sklad(x);
   const wykonawca = skladX.some((k) => skladE.has(k) || mentions(nE, k)) || [...skladE].some((k) => mentions(nX, k));
   const nazwa = !!nE && (nE === nX || (nE.length >= 5 && mentions(nX, nE)) || (nX.length >= 5 && mentions(nE, nX)));
   if (!wykonawca && !nazwa) return 0;
+  // Bez pewnej sali: ten sam wykonawca o tej samej godzinie (do 1 h) w tym samym albo nieznanym miescie - nikt nie gra
+  // w dwoch miejscach naraz.
+  if (!salaWsp && !salaNazwa && !(wykonawca && godzina && (miasto || bezMiasta))) return 0;
   return (salaWsp ? 3 : 0) + (salaNazwa ? 3 : 0) + (wykonawca ? 3 : 0) + (nazwa ? 2 : 0) + (godzina ? 1 : 0);
 }
 
 const POLA = ['time', 'startUtc', 'timezone', 'venueName', 'address', 'ticketUrl', 'imageUrl', 'thumbUrl',
-  'description', 'city', 'cityKey', 'country'];
+  'city', 'cityKey', 'country', 'sourceUrl'];
+const KROTKI_OPIS = 200;
 
 // Dopisuje zrodlo do wydarzenia i uzupelnia braki - niczego nie nadpisuje.
 function wchlon(cel, x) {
@@ -60,7 +67,15 @@ function wchlon(cel, x) {
   }
   if ((cel.lat == null || cel.lon == null) && x.lat != null && x.lon != null) { wynik.lat = x.lat; wynik.lon = x.lon; }
   if (!wynik.performers.length && x.performers.length) wynik.performers = x.performers;
-  if (x.source === 'ics') wynik.inCalendar = true;
+  // Opis: pusty albo krotki (Ticketmaster po wycieciu formulek) zastepuje dluzszy - z Facebooka bywa duzo lepszy.
+  const a = cel.description ?? '';
+  const b = x.description ?? '';
+  if (b && (!a || (a.length < KROTKI_OPIS && b.length > a.length))) wynik.description = b;
+  const gat = [...new Set([...(cel.genreTags ?? []), ...(x.genreTags ?? [])])];
+  if (gat.length) wynik.genreTags = gat;
+  const gatT = [...new Set([...(cel.textGenres ?? []), ...(x.textGenres ?? [])])];
+  if (gatT.length) wynik.textGenres = gatT;
+  if (x.source === 'ics') { wynik.inCalendar = true; if (!wynik.partstat && x.partstat) wynik.partstat = x.partstat; }
   wynik.mergedIds = [...(cel.mergedIds ?? []), x.id];
   return wynik;
 }
@@ -68,10 +83,17 @@ function wchlon(cel, x) {
 // primary: wydarzenia glownego zrodla (Ticketmaster), extras: reszta w kolejnosci waznosci (Bandsintown, kalendarze).
 // Zwraca jedna liste bez duplikatow. Dopasowanie liczone tylko w obrebie dnia - kilka tysiecy wydarzen to ulamek sekundy.
 export function mergeAll(primary, ...extras) {
-  const wynik = primary.map((e) => ({ ...e, sources: e.sources ?? [{ kind: 'TICKETMASTER', name: 'Ticketmaster', url: e.ticketUrl ?? null }] }));
+  const wynik = [];
   const poDniu = new Map();
   const dodaj = (e, i) => { if (!poDniu.has(e.date)) poDniu.set(e.date, []); poDniu.get(e.date).push(i); };
-  wynik.forEach(dodaj);
+  // Ticketmaster bywa sam ze soba zduplikowany (np. bilety i "pakiet VIP" na ten sam koncert jako dwa wydarzenia):
+  // to samo miejsce, dzien i godzina oraz ten sam wykonawca - jedna karta. Terminy serii (inny dzien) zostaja osobno.
+  for (const p of primary) {
+    const e = { ...p, sources: p.sources ?? [{ kind: 'TICKETMASTER', name: 'Ticketmaster', url: p.ticketUrl ?? null }] };
+    const i = (poDniu.get(e.date) ?? []).find((j) => wynik[j].time && e.time && wynik[j].time === e.time && score(wynik[j], e) >= 7);
+    if (i != null) wynik[i] = wchlon(wynik[i], e);
+    else { wynik.push(e); dodaj(e, wynik.length - 1); }
+  }
   for (const lista of extras) {
     for (const x of lista) {
       let najlepszy = -1;

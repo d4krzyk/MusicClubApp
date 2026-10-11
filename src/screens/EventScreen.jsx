@@ -5,11 +5,13 @@ import { nameKey } from '../lib/nameKeys.js';
 import { artistInfo } from '../lib/lastfm.js';
 import { dbGet, dbSet } from '../lib/store.js';
 import { dateParts, today, money } from '../format.js';
-import { Reasons, StatusBadge, Star, Obraz, Rozwijane, Tekst, DlugiTekst } from '../components.jsx';
+import { Reasons, StatusBadge, Obraz, Rozwijane, Tekst, DlugiTekst } from '../components.jsx';
 import Arkusz from '../ui/Arkusz.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { IkBilet, IkKalendarzPlus, IkMapa, IkTrasa, IkWstecz, IkLink, IkPlik } from '../ui/Ikony.jsx';
 import { naAndroidzie, dodajNatywnie, otworzGoogle, pobierzIcs } from '../kalendarz.js';
+import { statusOf, setStatus } from '../lib/udzial.js';
+import { IkGwiazda, IkIde } from '../ui/Ikony.jsx';
 
 const ETYKIETY = { WEBSITE: 'WWW', SPOTIFY: 'Spotify', YOUTUBE: 'YouTube', INSTAGRAM: 'Instagram', FACEBOOK: 'Facebook',
   TIKTOK: 'TikTok', BANDCAMP: 'Bandcamp', SOUNDCLOUD: 'SoundCloud', WIKIPEDIA: 'Wikipedia', MUSICBRAINZ: 'MusicBrainz',
@@ -118,7 +120,12 @@ export default function EventScreen({ app, id }) {
   if (!e) return <section><a className="mc-back" href="#/"><IkWstecz size={18} />{t('event.back')}</a><p className="mc-empty">{t('event.notFound')}</p></section>;
 
   const d = dateParts(e.date, lang);
-  const zapisany = !!app.settings.saved[e.id];
+  const udzial = statusOf(e, app.settings);
+  const ustawUdzial = (st) => {
+    const nowy = udzial === st ? null : st;
+    app.setSettings((s) => setStatus(s, e, nowy));
+    toast(t(nowy === 'GOING' ? 'part.toastGoing' : nowy ? 'part.toastInterested' : 'part.toastNone'));
+  };
   const polubieni = new Set([...app.taste.artists.keys()]);
   const o = e.organizer ?? {};
   const mapa = e.lat != null && e.lon != null ? `https://www.openstreetmap.org/?mlat=${e.lat}&mlon=${e.lon}#map=16/${e.lat}/${e.lon}` : null;
@@ -142,12 +149,16 @@ export default function EventScreen({ app, id }) {
             {(e.inCalendar || e.source === 'ics') && <span className="mc-badge mc-badge-liked">{t('event.inCalendar')}</span>}
           </div>
         </div>
-        <Star on={zapisany} label={zapisany ? t('unsave') : t('save')}
-          onClick={() => {
-            app.setSettings((s) => { const z = { ...s.saved }; if (z[e.id]) delete z[e.id]; else z[e.id] = e; return { saved: z }; });
-            toast(t(zapisany ? 'unsaved.toast' : 'saved.toast'));
-          }} />
       </header>
+
+      <div className="mc-udzial" role="group" aria-label={t('tab.mine')}>
+        <button type="button" className={`mc-udzial-btn${udzial === 'INTERESTED' ? ' wybrany' : ''}`} aria-pressed={udzial === 'INTERESTED'} onClick={() => ustawUdzial('INTERESTED')}>
+          <IkGwiazda size={20} wypelniona={udzial === 'INTERESTED'} key={`z${udzial === 'INTERESTED'}`} />{t('part.interested')}
+        </button>
+        <button type="button" className={`mc-udzial-btn${udzial === 'GOING' ? ' wybrany' : ''}`} aria-pressed={udzial === 'GOING'} onClick={() => ustawUdzial('GOING')}>
+          <IkIde size={20} wypelniona={udzial === 'GOING'} key={`i${udzial === 'GOING'}`} />{t('part.going')}
+        </button>
+      </div>
 
       <div className="mc-actions">
         {e.ticketUrl && <a className="mc-btn mc-btn-primary" href={e.ticketUrl} target="_blank" rel="noopener noreferrer"><IkBilet size={18} />{t('event.tickets')}</a>}
@@ -157,7 +168,30 @@ export default function EventScreen({ app, id }) {
         {e.sourceUrl && !e.ticketUrl && <a className="mc-btn" href={e.sourceUrl} target="_blank" rel="noopener noreferrer"><IkLink size={18} />{t('event.openSource')}</a>}
       </div>
 
-      {m.reasons.length > 0 && (
+      {e.source === 'ics' && (
+        <section className={`mc-card mc-section mc-rodzaj mc-wejscie${e.music ? '' : ' inne'}`} style={{ '--i': 0 }}>
+          <div className="mc-rodzaj-wiersz">
+            <span>
+              <b>{e.music ? t('kind.music') : t('kind.notMusic')}</b>
+              <small>{t(app.settings.kindOverride?.[e.id] ? 'kind.byYou' : 'kind.guess')}</small>
+            </span>
+            <button type="button" className="mc-btn mc-btn-small" onClick={() => {
+              app.setSettings((s) => {
+                const o = { ...(s.kindOverride ?? {}) };
+                const nowy = e.music ? 'other' : 'music';
+                if (nowy === (e.musicGuess ? 'music' : 'other')) delete o[e.id]; else o[e.id] = nowy;
+                return { kindOverride: o };
+              });
+              toast(t(e.music ? 'kind.toastOther' : 'kind.toastMusic'));
+            }}>{e.music ? t('kind.markOther') : t('kind.markMusic')}</button>
+          </div>
+          {e.textGenres?.length > 0 && (
+            <p className="mc-gatunki-tekst">{t('kind.genres')} {e.textGenres.map((g) => <span key={g} className="mc-badge">{g}</span>)}</p>
+          )}
+        </section>
+      )}
+
+      {m.reasons.length > 0 && e.music !== false && (
         <section className="mc-card mc-section mc-wejscie" style={{ '--i': 1 }}><h2>{t('event.why')}</h2><Reasons reasons={m.reasons} /></section>
       )}
 

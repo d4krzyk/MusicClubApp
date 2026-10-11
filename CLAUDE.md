@@ -18,6 +18,15 @@ na `master` nie wchodzimy.
   „ogranicz ruch” wyłącza wszystko jedną regułą na końcu `ui.css`.
 - Źródła: Ticketmaster (główne), Bandsintown (`bitKey`, ulubieni wykonawcy), kalendarze `.ics` (plik albo subskrypcja).
   `lib/merge.js` łączy duplikaty (port `EventMerger`); źródło poboczne tylko uzupełnia braki.
+- Wydarzenia z kalendarzy (Facebook) oceniane „koncert czy nie” (`lib/eventKind.js`); nie-koncerty tylko w „Moje”,
+  poprawka ręczna w `settings.kindOverride`. Wykonawcy z tytułu potwierdzani przez Last.fm, gatunki z tekstu.
+  Użytkownik: „nie każde wydarzenie z Facebooka jest stricte muzyczne” — nie pokazywać ich jako koncertów.
+- Udział: `settings.udzial[id]` = GOING / INTERESTED / NONE + kopia w `saved` (`lib/udzial.js`); „Moje” filtruje i eksportuje
+  przefiltrowane do jednego `.ics`. Gwiazdka na karcie = zainteresowany.
+- Przycisk „wstecz” Androida (`src/wstecz.js`, `@capacitor/app`): arkusz → poprzedni ekran → wyjście. Bez tego Capacitor
+  zamyka aplikację od razu (zgłoszenie użytkownika).
+- Bota do zbierania wydarzeń z Facebooka (konto „dummy”, scraping wyszukiwarki) **nie robimy** — regulamin Facebooka
+  zabrania fałszywych kont i automatycznego zbierania danych. Legalnie: eksport `.ics` własnych wydarzeń.
 - „Do kalendarza” na Androidzie = wtyczka `KalendarzPlugin.java` (Intent `ACTION_INSERT`, pakiet Kalendarza Google, bez
   uprawnień do kalendarza); w przeglądarce link szablonu Google Calendar albo plik `.ics`.
 

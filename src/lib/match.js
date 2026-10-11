@@ -46,7 +46,7 @@ export function match(taste, event, performerTags = {}) {
     }
   }
 
-  const eventTags = new Set([...genreTags(event.genre), ...genreTags(event.subGenre)]);
+  const eventTags = new Set([...genreTags(event.genre), ...genreTags(event.subGenre), ...(event.genreTags ?? [])]);
   for (const k of performerKeys) for (const t of performerTags[k] ?? []) for (const x of genreTags(t)) eventTags.add(x);
 
   const dokladne = [...taste.genres.keys()].filter((t) => eventTags.has(t))
@@ -58,7 +58,7 @@ export function match(taste, event, performerTags = {}) {
   const reszta = tylkoRodzina.filter((f) => !rodzinyDokladnych.has(f));
   score += ZA_RODZINE * Math.min(2, reszta.length);
 
-  if (event.source === 'ics' || event.inCalendar) {
+  if ((event.source === 'ics' && event.music !== false) || event.inCalendar) {
     score += ZA_KALENDARZ;
     reasons.unshift({ kind: 'CALENDAR', value: (event.sources ?? []).find((z) => z.kind === 'ICS')?.name ?? '' });
   }
@@ -96,10 +96,12 @@ const poza = (origin, radiusKm, km) => radiusKm > 0 && origin != null && (km == 
 
 // widok: 'FOR_YOU' (tylko pasujace, od najlepszych), 'UPCOMING' (wszystkie od najblizszego terminu).
 // Bliskosc miasta tylko przesuwa kolejnosc - o tym, czy cos "pasuje", decyduje gust.
+// includeOther: wydarzenia z kalendarza, ktore nie sa koncertami (protest, spacer) - tylko w "Moje".
 export function rank(events, taste, performerTags, { view = 'FOR_YOU', today, origin = null, radiusKm = 0, cityKey = '',
-  phrase = '', country = '' }) {
+  phrase = '', country = '', includeOther = false }) {
   const wynik = [];
-  for (const dates of series(events, { today, cityKey, phrase, country })) {
+  const lista = includeOther ? events : events.filter((e) => e.music !== false);
+  for (const dates of series(lista, { today, cityKey, phrase, country })) {
     const first = dates[0];
     const km = eventDistance(origin, first);
     if (poza(origin, radiusKm, km)) continue;

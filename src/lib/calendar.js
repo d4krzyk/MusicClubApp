@@ -46,12 +46,11 @@ export function googleCalendarUrl(e) {
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
-// Plik .ics dla jednego wydarzenia (inne kalendarze, iPhone).
-export function ics(e, teraz = new Date()) {
-  const esc = (t) => String(t ?? '').replace(/([\;,])/g, '\\$1').replace(/\n/g, '\\n');
+// Wydarzenie jako VEVENT (linie pliku .ics).
+function vevent(e, teraz) {
+  const esc = (t) => String(t ?? '').replace(/([\\;,])/g, '\\$1').replace(/\n/g, '\\n');
   const s = span(e);
-  const linie = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MusicClub//PL', 'BEGIN:VEVENT',
-    `UID:${String(e.id).replace(/[^\w.:@-]/g, '_')}@musicclub`, `DTSTAMP:${zwarty(teraz.toISOString())}`];
+  const linie = ['BEGIN:VEVENT', `UID:${String(e.id).replace(/[^\w.:@-]/g, '_')}@musicclub`, `DTSTAMP:${zwarty(teraz.toISOString())}`];
   if (s.allDay) linie.push(`DTSTART;VALUE=DATE:${e.date.replaceAll('-', '')}`, `DTEND;VALUE=DATE:${nastepnyDzien(e.date).replaceAll('-', '')}`);
   else linie.push(`DTSTART:${zwarty(new Date(s.begin).toISOString())}`, `DTEND:${zwarty(new Date(s.end).toISOString())}`);
   linie.push(`SUMMARY:${esc(e.name)}`);
@@ -62,8 +61,21 @@ export function ics(e, teraz = new Date()) {
   if (e.lat != null && e.lon != null) linie.push(`GEO:${e.lat};${e.lon}`);
   const link = e.ticketUrl ?? e.sourceUrl;
   if (link) linie.push(`URL:${link}`);
-  linie.push('END:VEVENT', 'END:VCALENDAR');
-  return linie.join('\r\n');
+  if (e.status === 'CANCELLED') linie.push('STATUS:CANCELLED');
+  else if (e.udzial) linie.push(`STATUS:${e.udzial === 'GOING' ? 'CONFIRMED' : 'TENTATIVE'}`);
+  linie.push('END:VEVENT');
+  return linie;
+}
+
+// Plik .ics z wieloma wydarzeniami (eksport "Moje"); nazwa kalendarza dla aplikacji, ktore ja pokazuja.
+export function icsMany(events, { name = 'MusicClub', teraz = new Date() } = {}) {
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MusicClub//PL', 'CALSCALE:GREGORIAN', `X-WR-CALNAME:${name.replace(/[\r\n]/g, ' ')}`,
+    ...events.flatMap((e) => vevent(e, teraz)), 'END:VCALENDAR'].join('\r\n');
+}
+
+// Plik .ics dla jednego wydarzenia (inne kalendarze, iPhone).
+export function ics(e, teraz = new Date()) {
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MusicClub//PL', ...vevent(e, teraz), 'END:VCALENDAR'].join('\r\n');
 }
 
 export { pad };

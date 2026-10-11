@@ -28,3 +28,6 @@ export const IkAuto = (p) => <I {...p}><rect x="3" y="4" width="18" height="12" 
 export const IkGwiazda = ({ wypelniona, ...p }) => (
   <I {...p}><path d="M12 3.2l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.1 6.6 20l1-6.1L3.2 9.6l6.1-.9z" fill={wypelniona ? 'currentColor' : 'none'} /></I>
 );
+export const IkIde = ({ wypelniona, ...p }) => (
+  <I {...p}><circle cx="12" cy="12" r="9" fill={wypelniona ? 'currentColor' : 'none'} /><path d="m8 12.3 2.8 2.8L16.2 9.6" stroke={wypelniona ? 'var(--ide-kreska, #fff)' : 'currentColor'} /></I>
+);

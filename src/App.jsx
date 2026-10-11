@@ -6,7 +6,8 @@ import Logo from './Logo.jsx';
 import { go } from './nav.js';
 import useWskaznik from './ui/useWskaznik.js';
 import { ToastProvider } from './ui/Toast.jsx';
-import { IkKoncerty, IkGust, IkUstawienia } from './ui/Ikony.jsx';
+import { IkKoncerty, IkGust, IkUstawienia, IkOdswiez, IkSlonce, IkKsiezyc } from './ui/Ikony.jsx';
+import { aktualnyMotyw, ustawMotyw } from './motyw.js';
 import Welcome from './screens/Welcome.jsx';
 import EventsScreen from './screens/EventsScreen.jsx';
 import EventScreen from './screens/EventScreen.jsx';
@@ -43,6 +44,29 @@ function Nawigacja({ aktywna, t }) {
         ))}
       </div>
     </nav>
+  );
+}
+
+// Prawa strona paska: odswiezanie (kreci sie, gdy trwa) i szybka zmiana motywu.
+function Akcje({ app, t }) {
+  const [motyw, setMotyw] = useState(aktualnyMotyw);
+  useEffect(() => {
+    const f = () => setMotyw(aktualnyMotyw());
+    window.addEventListener('mc-motyw', f);
+    return () => window.removeEventListener('mc-motyw', f);
+  }, []);
+  const trwa = app.status.running;
+  return (
+    <div className="mc-akcje-paska">
+      <button type="button" className={`mc-ikona-btn mc-odswiez${trwa ? ' trwa' : ''}`} aria-label={t('top.refresh')} title={t('top.refresh')}
+        onClick={() => (trwa ? app.stop() : app.refresh())}>
+        <IkOdswiez size={20} />
+      </button>
+      <button type="button" className="mc-ikona-btn mc-motyw-btn" aria-label={t('top.theme')} title={t('top.theme')}
+        onClick={() => { const m = motyw === 'dark' ? 'light' : 'dark'; ustawMotyw(m); setMotyw(m); }}>
+        <span key={motyw} className="mc-motyw-ikona">{motyw === 'dark' ? <IkSlonce size={20} /> : <IkKsiezyc size={20} />}</span>
+      </button>
+    </div>
   );
 }
 
@@ -88,6 +112,7 @@ export default function App() {
                 <NapisMC uklad="pionowy" className="mc-napis" aria-hidden="true" />
               </a>
               <Nawigacja aktywna={aktywna} t={t} />
+              <Akcje app={app} t={t} />
             </header>
           )}
           <main className="mc-main">

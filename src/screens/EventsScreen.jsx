@@ -4,19 +4,24 @@ import { rank, emptyTaste } from '../lib/match.js';
 import { today } from '../format.js';
 import { EventCard, SyncBar, SkeletonCards } from '../components.jsx';
 import Przelacznik from '../ui/Przelacznik.jsx';
+import Suwak from '../ui/Suwak.jsx';
 import Wybor from '../ui/Wybor.jsx';
 import Arkusz from '../ui/Arkusz.jsx';
 import { useToast } from '../ui/Toast.jsx';
 import { IkPinezka, IkSzukaj, IkX, IkZasieg, IkStrzalka } from '../ui/Ikony.jsx';
 import { go } from '../nav.js';
+import { statusOf, setStatus, mine } from '../lib/udzial.js';
+import { icsMany } from '../lib/calendar.js';
+import { saveFile } from '../saveFile.js';
+import { IkPlik } from '../ui/Ikony.jsx';
 
-const PROMIENIE = [0, 30, 50, 100, 200];
 
 export default function EventsScreen({ app, filtry, setFiltry }) {
   const { t } = useT();
   const toast = useToast();
   const { settings, events, tags, taste, origin } = app;
   const [arkuszZasiegu, setArkuszZasiegu] = useState(false);
+  const mojeFiltr = settings.mojeFiltr ?? 'ALL';
   const dzis = today();
   const promien = filtry.promien ?? settings.radius;
   const set = (zmiana) => setFiltry((f) => ({ ...f, ...zmiana }));
@@ -34,25 +39,29 @@ export default function EventsScreen({ app, filtry, setFiltry }) {
 
   const lista = useMemo(() => {
     if (filtry.widok === 'MINE') {
-      const zapisane = Object.values(settings.saved).map((snap) => events.find((e) => e.id === snap.id) ?? snap);
-      const zKalendarza = events.filter((e) => (e.source === 'ics' || e.inCalendar) && !settings.saved[e.id]);
-      return rank([...zapisane, ...zKalendarza], taste, tags, { view: 'UPCOMING', today: dzis, origin, phrase: filtry.fraza });
+      return rank(mine(events, settings, mojeFiltr), taste, tags, { view: 'UPCOMING', today: dzis, origin, phrase: filtry.fraza, includeOther: true });
     }
     return rank(events, taste, tags, { view: filtry.widok, today: dzis, origin, radiusKm: filtry.miasto ? 0 : promien,
       cityKey: filtry.miasto, phrase: filtry.fraza });
-  }, [events, settings.saved, taste, tags, origin, filtry, promien, dzis]);
+  }, [events, settings, taste, tags, origin, filtry, promien, dzis, mojeFiltr]);
 
+  // Gwiazdka na karcie: nic -> zainteresowany; zainteresowany albo biore udzial -> zdjete.
   function przelaczZapis(e) {
-    const byl = !!settings.saved[e.id];
-    app.setSettings((s) => {
-      const zapisane = { ...s.saved };
-      if (zapisane[e.id]) delete zapisane[e.id]; else zapisane[e.id] = e;
-      return { saved: zapisane };
-    });
-    toast(t(byl ? 'unsaved.toast' : 'saved.toast'));
+    const nowy = statusOf(e, settings) ? null : 'INTERESTED';
+    app.setSettings((s) => setStatus(s, e, nowy));
+    toast(t(nowy ? 'part.toastInterested' : 'part.toastNone'));
   }
 
-  const ileMoich = Object.keys(settings.saved).length + events.filter((e) => (e.source === 'ics' || e.inCalendar) && e.date >= dzis && !settings.saved[e.id]).length;
+  const moje = useMemo(() => mine(events, settings, 'ALL').filter((e) => e.date >= dzis), [events, settings, dzis]);
+  const ileMoich = moje.length;
+  const ile = (st) => moje.filter((e) => e.udzial === st).length;
+
+  function eksportuj() {
+    const doPliku = moje.filter((e) => mojeFiltr === 'ALL' || e.udzial === mojeFiltr);
+    const nazwa = mojeFiltr === 'GOING' ? t('part.going') : mojeFiltr === 'INTERESTED' ? t('part.interested') : 'MusicClub';
+    saveFile(`musicclub-${mojeFiltr.toLowerCase()}.ics`, 'text/calendar', icsMany(doPliku, { name: `MusicClub — ${nazwa}` }))
+      .then(() => toast(t('part.exported', doPliku.length))).catch(() => {});
+  }
   const widoki = [{ value: 'FOR_YOU', label: t('tab.forYou') }, { value: 'UPCOMING', label: t('tab.upcoming') },
     { value: 'MINE', label: ileMoich ? `${t('tab.mine')} · ${ileMoich}` : t('tab.mine') }];
   const pusty = filtry.widok === 'MINE' ? 'list.empty.mine' : !events.length ? 'list.noData' : filtry.widok === 'FOR_YOU' ? 'list.empty.forYou' : 'list.empty.upcoming';
@@ -82,20 +91,32 @@ export default function EventsScreen({ app, filtry, setFiltry }) {
           </div>
         )}
       </div>
+      {filtry.widok === 'MINE' && ileMoich > 0 && (
+        <div className="mc-moje-pasek mc-wejscie">
+          <Przelacznik maly opcje={[{ value: 'ALL', label: `${t('part.all')} ${ileMoich}` }, { value: 'GOING', label: `${t('part.going')} ${ile('GOING')}` },
+            { value: 'INTERESTED', label: `${t('part.interested')} ${ile('INTERESTED')}` }]} wartosc={mojeFiltr}
+            onChange={(v) => app.setSettings({ mojeFiltr: v })} etykieta={t('tab.mine')} />
+          <button type="button" className="mc-btn mc-btn-small" onClick={eksportuj} title={t('part.exportHint')}><IkPlik size={16} />{t('part.export')}</button>
+        </div>
+      )}
       {filtry.widok === 'FOR_YOU' && emptyTaste(taste) && !!events.length && <p className="mc-hint mc-wejscie">{t('list.noTaste')}</p>}
       {ladowanie ? <SkeletonCards /> : lista.length === 0
         ? <p className="mc-empty mc-wejscie">{t(pusty)}</p>
         : (
-          <ul className="mc-list" key={`${filtry.widok}|${filtry.miasto}|${promien}`}>
+          <ul className="mc-list" key={`${filtry.widok}|${filtry.miasto}|${promien}|${filtry.widok === 'MINE' ? mojeFiltr : ''}`}>
             {lista.map((item, i) => (
-              <EventCard key={item.event.id} item={item} index={i} saved={!!settings.saved[item.event.id]} onToggleSave={() => przelaczZapis(item.event)} />))}
+              <EventCard key={item.event.id} item={item} index={i} udzial={statusOf(item.event, settings)} onToggleSave={() => przelaczZapis(item.event)} />))}
           </ul>
         )}
 
       <Arkusz otwarty={arkuszZasiegu} onClose={() => setArkuszZasiegu(false)} tytul={origin ? t('list.radiusSheet', settings.city) : t('list.radiusShort')} zamknij={t('common.close')}>
         {origin ? (
-          <Przelacznik opcje={PROMIENIE.map((km) => ({ value: km, label: km === 0 ? t('list.radiusCountry') : `${km} km` }))} wartosc={filtry.miasto ? 0 : promien}
-            etykieta={t('list.radius')} onChange={(v) => { set({ promien: v, miasto: '' }); app.setSettings({ radius: v }); setTimeout(() => setArkuszZasiegu(false), 250); }} />
+          <>
+            <Suwak etykieta={t('list.radius')} calyKraj={t('list.radiusAll')} wartosc={filtry.miasto ? 0 : promien}
+              onChange={(v) => { set({ promien: v, miasto: '' }); app.setSettings({ radius: v }); }} />
+            <p className="mc-hint mc-suwak-licznik" aria-live="polite">{t('list.count', lista.length)}</p>
+            <button type="button" className="mc-btn mc-btn-primary mc-btn-duzy" onClick={() => setArkuszZasiegu(false)}>{t('list.done')}</button>
+          </>
         ) : (
           <>
             <p>{t('list.noCityForRadius')}</p>

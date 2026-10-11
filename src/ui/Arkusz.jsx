@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { IkX } from './Ikony.jsx';
+import { naWstecz } from '../wstecz.js';
 
 // Arkusz wysuwany od dolu (na komputerze okno na srodku). Wjezdza i zjezdza z animacja, zamyka sie Esc, kliknieciem
 // w tlo i przeciagnieciem w dol za uchwyt. Przy otwarciu fokus idzie do srodka, po zamknieciu wraca na przycisk.
@@ -28,6 +29,7 @@ export default function Arkusz({ otwarty, onClose, tytul, children, stopka, zamk
   useEffect(() => {
     if (!widoczny || wychodzi) return undefined;
     const klawisz = (e) => { if (e.key === 'Escape') onClose(); };
+    const odepnij = naWstecz(onClose); // przycisk "wstecz" Androida zamyka arkusz, a nie aplikacje
     document.addEventListener('keydown', klawisz);
     document.body.classList.add('mc-bez-przewijania');
     const t = requestAnimationFrame(() => {
@@ -36,6 +38,7 @@ export default function Arkusz({ otwarty, onClose, tytul, children, stopka, zamk
     });
     return () => {
       document.removeEventListener('keydown', klawisz);
+      odepnij();
       document.body.classList.remove('mc-bez-przewijania');
       cancelAnimationFrame(t);
     };

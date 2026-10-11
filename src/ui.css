@@ -50,6 +50,12 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-napis { display: block; height: 2.6rem; width: auto; transition: transform .36s var(--sprezyna); transform-origin: left center; }
 .mc-brand:hover .mc-napis { transform: scale(1.04); }
 .mc-brand:active .mc-napis { transform: scale(.97); }
+.mc-nav { margin-left: auto; }
+.mc-akcje-paska { display: flex; align-items: center; gap: .15rem; }
+.mc-odswiez.trwa svg { animation: mc-obrot 1s linear infinite; color: var(--accent); }
+.mc-odswiez:active svg { transform: rotate(-90deg); }
+.mc-motyw-ikona { display: grid; animation: mc-motyw .45s var(--sprezyna) both; }
+@keyframes mc-motyw { from { opacity: 0; transform: rotate(-90deg) scale(.5); } }
 .mc-nav-lista { position: relative; display: flex; gap: .2rem; padding: .25rem; border-radius: 999px; background: var(--surface-2); }
 .mc-nav-link { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .9rem; border-radius: 999px;
   text-decoration: none; color: var(--muted); font-weight: 500; font-size: .9rem; white-space: nowrap; transition: color .25s var(--ease); }
@@ -160,7 +166,7 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-seg[role='tablist'] { margin-bottom: .75rem; }
 
 /* --- Pasek odswiezania ----------------------------------------------------- */
-.mc-sync { position: relative; display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .3rem .3rem .3rem .9rem; margin: .5rem 0 .75rem;
+.mc-sync { position: relative; display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2.4rem; padding: .3rem .3rem .3rem .9rem; margin: .5rem 0 .75rem;
   background: var(--surface); border: 1px solid var(--border); border-radius: 999px; font-size: .82rem; color: var(--muted); overflow: hidden; }
 .mc-sync-error { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
 .mc-sync-text { min-width: 0; animation: mc-in .3s var(--plynnie) both; }
@@ -195,6 +201,25 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-wybor-etykieta { font-size: .75rem; color: var(--muted); }
 .mc-flaga { font-size: 1.3rem; line-height: 1; }
 
+/* --- Suwak zasiegu ---------------------------------------------------------- */
+.mc-suwak { margin: .25rem 0 1rem; }
+.mc-suwak-gora { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-weight: 500; font-size: .9rem; margin-bottom: .35rem; }
+.mc-suwak-wartosc { font-weight: 600; font-size: 1.05rem; background: var(--gradient); -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: mc-pyk .25s var(--sprezyna) both; }
+.mc-suwak input { -webkit-appearance: none; appearance: none; width: 100%; height: 2.2rem; margin: 0; background: transparent; cursor: pointer; touch-action: pan-y; }
+.mc-suwak input:focus-visible { outline: none; }
+.mc-suwak input::-webkit-slider-runnable-track { height: .5rem; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2) var(--p), var(--surface-2) var(--p)); }
+.mc-suwak input::-moz-range-track { height: .5rem; border-radius: 999px; background: var(--surface-2); }
+.mc-suwak input::-moz-range-progress { height: .5rem; border-radius: 999px; background: var(--gradient); }
+.mc-suwak input::-webkit-slider-thumb { -webkit-appearance: none; width: 1.6rem; height: 1.6rem; margin-top: -.55rem; border-radius: 50%; background: #fff;
+  border: 3px solid var(--accent-2); box-shadow: var(--glow); transition: transform .2s var(--sprezyna); }
+.mc-suwak input::-moz-range-thumb { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: #fff; border: 3px solid var(--accent-2); box-shadow: var(--glow); }
+.mc-suwak input:active::-webkit-slider-thumb, .mc-suwak input:focus-visible::-webkit-slider-thumb { transform: scale(1.18); }
+.mc-suwak-podzialka { display: flex; justify-content: space-between; font-size: .72rem; color: var(--muted); padding: 0 .1rem; }
+.mc-suwak.wylaczony { opacity: .5; } .mc-suwak.wylaczony input { cursor: default; }
+.mc-suwak-licznik { text-align: center; margin: -.25rem 0 .75rem; }
+
 /* --- Lista koncertow ------------------------------------------------------- */
 .mc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .7rem; }
 .mc-event { position: relative; transition: transform .22s var(--ease), box-shadow .25s var(--ease), border-color .25s; }
@@ -218,6 +243,27 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-reasons { list-style: none; margin: .45rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .3rem; }
 .mc-reason { font-size: .76rem; padding: .12rem .6rem; border-radius: 999px; background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
 .mc-reason.artist { background: var(--gradient); color: #fff; }
+.mc-badge-ide { background: var(--gradient); color: #fff; }
+.mc-star-ide { color: var(--accent-2); }
+.mc-moje-pasek { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .85rem; }
+.mc-moje-pasek .mc-seg { flex: 1 1 18rem; }
+.mc-seg-maly .mc-seg-opcja { min-height: 2rem; font-size: .8rem; padding: .25rem .6rem; }
+.mc-udzial { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: .8rem 0 .2rem; }
+.mc-udzial-btn { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 2.9rem; padding: .4rem .6rem; border-radius: 1rem;
+  border: 1.5px solid var(--border); background: var(--surface); cursor: pointer; font-weight: 600; font-size: .92rem; color: var(--text);
+  transition: transform .18s var(--ease), border-color .2s, background-color .25s, color .2s, box-shadow .25s; }
+.mc-udzial-btn:hover { border-color: var(--accent); } .mc-udzial-btn:active { transform: scale(.96); }
+.mc-udzial-btn svg { color: var(--accent-2); }
+.mc-udzial-btn.wybrany { background: var(--gradient); border-color: transparent; color: #fff; box-shadow: var(--glow); }
+.mc-udzial-btn.wybrany svg { color: #fff; --ide-kreska: var(--accent-2); animation: mc-gwiazda .45s var(--sprezyna); }
+.mc-badge-inne { background: color-mix(in srgb, var(--muted) 18%, transparent); color: var(--muted); }
+.mc-event-inne { opacity: .72; }
+.mc-event-inne:hover { opacity: 1; }
+.mc-rodzaj-wiersz { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.mc-rodzaj-wiersz > span { flex: 1 1 12rem; min-width: 0; display: flex; flex-direction: column; }
+.mc-rodzaj-wiersz small { color: var(--muted); font-size: .8rem; }
+.mc-rodzaj.inne b { color: var(--muted); }
+.mc-gatunki-tekst { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin: .7rem 0 0; font-size: .85rem; color: var(--muted); }
 .mc-reason.calendar { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
 .mc-star { position: absolute; top: .45rem; right: .45rem; width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border: 0; background: transparent;
   color: var(--muted); border-radius: 50%; cursor: pointer; transition: background-color .2s, color .2s; }

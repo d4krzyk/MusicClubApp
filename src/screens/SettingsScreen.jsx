@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { czytajMotyw, ustawMotyw } from '../motyw.js';
+import Suwak from '../ui/Suwak.jsx';
 import { useT } from '../i18n.js';
 import { KRAJE } from '../format.js';
 import { CITIES, cityByName } from '../lib/location.js';
@@ -94,16 +96,12 @@ export default function SettingsScreen({ app }) {
   const toast = useToast();
   const s = app.settings;
   const plik = useRef(null);
-  const [motyw, setMotyw] = useState(() => { try { return localStorage.getItem('motyw') ?? 'auto'; } catch { return 'auto'; } });
-
-  function ustawMotyw(m) {
-    setMotyw(m);
-    try { if (m === 'auto') localStorage.removeItem('motyw'); else localStorage.setItem('motyw', m); } catch { /* nic */ }
-    const wybrany = m === 'auto' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : m;
-    document.documentElement.classList.add('mc-zmiana-motywu');
-    document.documentElement.setAttribute('data-theme', wybrany);
-    setTimeout(() => document.documentElement.classList.remove('mc-zmiana-motywu'), 400);
-  }
+  const [motyw, setMotyw] = useState(czytajMotyw);
+  useEffect(() => {
+    const f = (e) => setMotyw(e.detail);
+    window.addEventListener('mc-motyw', f);
+    return () => window.removeEventListener('mc-motyw', f);
+  }, []);
 
   function eksport() {
     saveFile('musicclub-ustawienia.json', 'application/json', JSON.stringify({ wersja: 1, ustawienia: s }, null, 2)).catch(() => { /* okno zamkniete */ });
@@ -157,11 +155,8 @@ export default function SettingsScreen({ app }) {
           <datalist id="mc-miasta">{CITIES.slice(0, 120).map((c) => <option key={c.name} value={c.name} />)}</datalist>
           <span className={`mc-hint${znaneMiasto ? '' : ' mc-uwaga'}`}>{znaneMiasto ? t('set.cityHint') : t('set.cityUnknown')}</span>
         </label>
-        <div className="mc-field">
-          <span>{t('set.radius')}</span>
-          <Przelacznik opcje={[0, 30, 50, 100, 200].map((km) => ({ value: km, label: km === 0 ? t('list.radiusCountry') : `${km}`, disabled: !cityByName(miasto) && km > 0 }))}
-            wartosc={cityByName(miasto) ? s.radius : 0} onChange={(v) => app.setSettings({ radius: v })} etykieta={t('set.radius')} />
-        </div>
+        <Suwak etykieta={t('set.radius')} calyKraj={t('list.radiusAll')} wartosc={cityByName(miasto) ? s.radius : 0}
+          disabled={!cityByName(miasto)} onChange={(v) => app.setSettings({ radius: v })} />
       </div>
 
       <div className="mc-card mc-section mc-wejscie" style={{ '--i': 3 }}>
@@ -173,7 +168,7 @@ export default function SettingsScreen({ app }) {
         </div>
         <div className="mc-field">
           <span>{t('set.theme')}</span>
-          <Przelacznik wartosc={motyw} onChange={ustawMotyw} etykieta={t('set.theme')} opcje={[
+          <Przelacznik wartosc={motyw} onChange={(m) => { setMotyw(m); ustawMotyw(m); }} etykieta={t('set.theme')} opcje={[
             { value: 'auto', label: t('set.theme.auto'), ikona: <IkAuto size={16} /> },
             { value: 'light', label: t('set.theme.light'), ikona: <IkSlonce size={16} /> },
             { value: 'dark', label: t('set.theme.dark'), ikona: <IkKsiezyc size={16} /> }]} />

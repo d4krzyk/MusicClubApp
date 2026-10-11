@@ -176,6 +176,9 @@ function zbuduj(w, sourceId, sourceName, strefa) {
   if (!miejsce.city) miejsce.city = (lat != null ? cityNear(lat, lon) : null) ?? cityFromName(nazwa);
   const opis = w.DESCRIPTION ? cut(plain(unescapeText(w.DESCRIPTION.value)), 4000) : null;
   const url = w.URL ? w.URL.value.trim() : null;
+  // Twoja odpowiedz na Facebooku: "Wezme udzial" (ACCEPTED) albo "Zainteresowany" (TENTATIVE / brak).
+  const odp = (w.PARTSTAT?.value ?? w.ATTENDEE?.params?.PARTSTAT ?? '').trim().toUpperCase();
+  const partstat = odp === 'ACCEPTED' ? 'GOING' : odp === 'TENTATIVE' || odp === 'NEEDS-ACTION' ? 'INTERESTED' : null;
   return {
     id: `ics:${sourceId ?? 'plik'}:${uid}`.slice(0, 300),
     source: 'ics',
@@ -197,6 +200,7 @@ function zbuduj(w, sourceId, sourceName, strefa) {
     country: null,
     seriesKey: `ics|${uid}`,
     organizer: null,
+    partstat,
     sources: [{ kind: 'ICS', name: sourceName ?? 'Kalendarz', url: url && bezpiecznyLink(url) ? url : null }],
   };
 }

@@ -9,6 +9,8 @@ const RODZINY = {
   'hip-hop': ['hiphop', 'rap', 'trap', 'grime', 'drill'],
   metal: ['metal', 'metalcore', 'deathcore', 'grindcore'],
   punk: ['punk', 'hardcore', 'emo', 'screamo'],
+  // ciemna scena: post punk, goth, darkwave - na Last.fm czesto "gothic rock", "post-punk", "coldwave"
+  dark: ['goth', 'deathrock', 'darkwave', 'coldwave', 'postpunk', 'minimalwave', 'ebm', 'industrial'],
   rock: ['rock', 'grunge', 'shoegaze'],
   indie: ['indie', 'alternative', 'altpop', 'lofi'],
   pop: ['pop', 'discopolo', 'schlager'],
