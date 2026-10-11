@@ -231,6 +231,19 @@ html.mc-zmiana-motywu, html.mc-zmiana-motywu * { transition: background-color .3
 .mc-edycja textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
 .mc-edycja-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
 .mc-edycja input[type='date'], .mc-edycja input[type='time'] { min-width: 0; }
+.mc-podpowiedzi-lista { margin-top: .15rem; border: 1px solid var(--border); border-radius: .9rem; background: var(--surface); box-shadow: var(--shadow);
+  overflow: hidden; animation: mc-in .18s var(--plynnie) both; font-weight: 400; }
+.mc-podpowiedzi-lista ul { list-style: none; margin: 0; padding: .25rem; }
+.mc-podpowiedzi-lista li { display: flex; align-items: center; gap: .6rem; padding: .55rem .6rem; border-radius: .65rem; cursor: pointer; min-width: 0;
+  transition: background-color .15s; }
+.mc-podpowiedzi-lista li svg { flex: none; color: var(--accent); }
+.mc-podpowiedzi-lista li:hover, .mc-podpowiedzi-lista li.aktywna { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.mc-podpowiedz-tekst { display: flex; flex-direction: column; min-width: 0; }
+.mc-podpowiedz-tekst b, .mc-podpowiedz-tekst small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mc-podpowiedz-tekst b { font-weight: 600; }
+.mc-podpowiedz-tekst small { color: var(--muted); }
+.mc-podpowiedzi-lista > .mc-hint { margin: .6rem .85rem; display: flex; align-items: center; gap: .4rem; }
+.mc-podpowiedzi-zrodlo { margin: 0; padding: .3rem .85rem .4rem; font-size: .7rem; color: var(--muted); text-align: right; border-top: 1px solid var(--border); }
 .mc-edycja-przyciski { display: grid; gap: .5rem; margin-top: .4rem; }
 
 /* --- Suwak zasiegu ---------------------------------------------------------- */

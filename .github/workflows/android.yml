@@ -1,12 +1,23 @@
 # Buduje plik APK do zainstalowania na telefonie z Androidem.
 # Uruchamia sie po kazdym pushu na te galaz albo recznie (Actions -> "Android APK" -> Run workflow).
-# Gotowy plik: na stronie przebiegu, w sekcji "Artifacts" (musicclub-debug-apk).
+# Gotowy plik: wydanie "najnowsza" na GitHubie - staly link do pobrania prosto na telefon:
+#   https://github.com/d4krzyk/MusicClubApp/releases/latest/download/MusicClub.apk
+# (oraz, jak wczesniej, "Artifacts" na stronie przebiegu).
 name: Android APK
 
 on:
   push:
     branches: [release/solo]
   workflow_dispatch:
+
+# wydanie robi sie tokenem przebiegu (bez osobnych sekretow)
+permissions:
+  contents: write
+
+# dwa pushe jeden po drugim: wydanie z nowszego nie moze zostac nadpisane starszym
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
 
 jobs:
   apk:
@@ -39,6 +50,19 @@ jobs:
           npm run build
           npx cap sync android
 
+      # Wlasny klucz podpisu (opcjonalnie): sekrety MC_KEYSTORE_BASE64 i MC_KEYSTORE_PASSWORD. Bez nich - staly klucz
+      # z repozytorium (android/app/musicclub-debug.keystore).
+      - name: Klucz podpisu z sekretow (jesli jest)
+        env:
+          KS: ${{ secrets.MC_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.MC_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -n "$KS" ]; then
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/musicclub.keystore"
+            echo "MC_KEYSTORE_FILE=$RUNNER_TEMP/musicclub.keystore" >> "$GITHUB_ENV"
+            echo "MC_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+          fi
+
       - name: Budowa APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
@@ -48,3 +72,22 @@ jobs:
           name: musicclub-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      # Jedno wydanie "najnowsza" podmieniane przy kazdym pushu - link .../releases/latest/download/MusicClub.apk
+      # zawsze prowadzi do ostatniego APK.
+      - name: Wydanie na GitHubie
+        if: github.ref == 'refs/heads/release/solo'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk MusicClub.apk
+          gh release delete najnowsza --yes --cleanup-tag || true
+          gh release create najnowsza MusicClub.apk \
+            --target "${{ github.sha }}" --latest \
+            --title "MusicClub 1.0.${{ github.run_number }}" \
+            --notes "Wersja testowa (debug) z gałęzi release/solo, commit ${GITHUB_SHA::7}.
+
+          Instalacja na telefonie: pobierz MusicClub.apk poniżej, otwórz plik i zezwól na instalację z tego źródła.
+          Kolejne wersje instalują się jako aktualizacja (ten sam podpis) — dane i ustawienia zostają.
+
+          Stały link: https://github.com/${{ github.repository }}/releases/latest/download/MusicClub.apk"

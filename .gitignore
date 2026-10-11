@@ -11,6 +11,8 @@ Thumbs.db
 *.keystore
 *.jks
 keystore.properties
+# klucz do podpisu wersji testowej z CI (stały, żeby kolejne APK instalowały się jako aktualizacja) - patrz README
+!android/app/musicclub-debug.keystore
 .env
 *.env.local
 *.patch

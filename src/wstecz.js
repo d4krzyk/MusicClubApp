@@ -16,6 +16,9 @@ export function naWstecz(zamknij) {
   };
 }
 
+// Czy ten arkusz jest na wierzchu (Esc zamyka tylko gorny, gdy jeden arkusz otwiera drugi - np. miasto w poprawkach).
+export const naWierzchu = (zamknij) => stos[stos.length - 1] === zamknij;
+
 export function wstecz({ wyjdz }) {
   if (stos.length) {
     stos[stos.length - 1]();

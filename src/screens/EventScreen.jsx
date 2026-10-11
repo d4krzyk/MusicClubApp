@@ -14,6 +14,7 @@ import { statusOf, setStatus } from '../lib/udzial.js';
 import { mapsUrl, routeUrl } from '../lib/calendar.js';
 import { diff } from '../lib/edycja.js';
 import MiastoWybor from '../ui/MiastoWybor.jsx';
+import PolePodpowiedzi from '../ui/PolePodpowiedzi.jsx';
 import { IkOlowek } from '../ui/Ikony.jsx';
 import { IkGwiazda, IkIde } from '../ui/Ikony.jsx';
 
@@ -122,10 +123,21 @@ function Edycja({ e, app }) {
   const poprawione = !!app.settings.edits?.[e.id];
   const otworz = () => {
     setF({ name: e.name ?? '', date: e.date ?? '', time: e.time ?? '', venueName: e.venueName ?? '', address: e.address ?? '',
-      city: e.city ?? '', description: e.description ?? '', ticketUrl: e.ticketUrl ?? '' });
+      city: e.city ?? '', lat: e.lat ?? '', lon: e.lon ?? '', description: e.description ?? '', ticketUrl: e.ticketUrl ?? '' });
     setOtwarty(true);
   };
-  const pole = (klucz) => ({ value: f?.[klucz] ?? '', onChange: (ev) => setF({ ...f, [klucz]: ev.target.value }) });
+  const zmien = (zmiany) => setF((s) => ({ ...s, ...zmiany }));
+  const pole = (klucz) => ({ value: f?.[klucz] ?? '', onChange: (ev) => zmien({ [klucz]: ev.target.value }) });
+  // Wspolrzedne sa tylko z podpowiedzi; recznie zmieniony adres albo miasto je kasuje (inaczej odleglosc i mapa
+  // liczylyby sie od starego miejsca).
+  const bezWspolrzednych = { lat: '', lon: '' };
+  const zPodpowiedzi = (pierwszenstwoNazwy) => (s) => zmien({
+    ...(s.name && (pierwszenstwoNazwy || !f.venueName.trim()) ? { venueName: s.name } : {}),
+    // nowe miejsce bez ulicy w OSM: stary adres nalezal do innego miejsca, wiec znika (z pola adresu zostaje wpisany tekst)
+    address: s.address ?? (pierwszenstwoNazwy ? '' : f.address),
+    ...(s.city ? { city: s.city } : {}),
+    lat: s.lat ?? '', lon: s.lon ?? '',
+  });
   function zapisz(ev) {
     ev.preventDefault();
     const zmiany = diff(oryginal, f);
@@ -153,9 +165,12 @@ function Edycja({ e, app }) {
               <label className="mc-field">{t('edit.date')}<input type="date" {...pole('date')} required /></label>
               <label className="mc-field">{t('edit.time')}<input type="time" {...pole('time')} /></label>
             </div>
-            <label className="mc-field">{t('edit.venue')}<input {...pole('venueName')} maxLength={200} /></label>
-            <label className="mc-field">{t('edit.address')}<input {...pole('address')} maxLength={300} /></label>
-            <MiastoWybor etykieta={t('edit.city')} wartosc={f.city} onChange={(v) => setF({ ...f, city: v })} gps={false} />
+            <MiastoWybor etykieta={t('edit.city')} wartosc={f.city} onChange={(v) => zmien({ city: v, ...bezWspolrzednych })} gps={false} />
+            <PolePodpowiedzi etykieta={t('edit.venue')} value={f.venueName} maxLength={200} miasto={f.city}
+              onChange={(v) => zmien({ venueName: v })} onWybierz={zPodpowiedzi(true)} />
+            <PolePodpowiedzi etykieta={t('edit.address')} value={f.address} maxLength={300} miasto={f.city}
+              onChange={(v) => zmien({ address: v, ...bezWspolrzednych })} onWybierz={zPodpowiedzi(false)} />
+            {f.lat !== '' && f.lon !== '' && <p className="mc-hint mc-pod-polem">{t('edit.pinned')}</p>}
             <label className="mc-field">{t('edit.tickets')}<input type="url" inputMode="url" {...pole('ticketUrl')} placeholder="https://…" /></label>
             <label className="mc-field">{t('edit.description')}<textarea {...pole('description')} maxLength={4000} /></label>
             <p className="mc-hint">{t('edit.hint')}</p>

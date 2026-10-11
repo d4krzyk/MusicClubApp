@@ -32,3 +32,17 @@ test('zle dane nie psuja wydarzenia: pusta nazwa, zla data, zly link', () => {
   assert.equal(applyEdit(fb, {}), fb);
   assert.equal(applyEdit(fb, { ticketUrl: 'https://bilety.pl/x' }).ticketUrl, 'https://bilety.pl/x');
 });
+
+test('wspolrzedne z podpowiedzi adresu: liczby, zle albo pojedyncze = brak', () => {
+  assert.deepEqual(diff(fb, { ...fb, lat: 52.2, lon: 21.01 }), { lat: '52.2', lon: '21.01' });
+  const e = applyEdit(fb, { lat: '52.2', lon: '21.01' });
+  assert.deepEqual([e.lat, e.lon], [52.2, 21.01]);
+  const zle = applyEdit(fb, { lat: 'abc', lon: '21' });
+  assert.deepEqual([zle.lat, zle.lon], [null, null]);
+  assert.deepEqual([applyEdit(fb, { lat: '95', lon: '21' }).lat], [null]);
+  // wpisany recznie adres kasuje stare wspolrzedne z kalendarza
+  const zGeo = { ...fb, lat: 50, lon: 19 };
+  assert.deepEqual(diff(zGeo, { ...zGeo, address: 'Inna 1', lat: '', lon: '' }), { address: 'Inna 1', lat: null, lon: null });
+  const bez = applyEdit(zGeo, { address: 'Inna 1', lat: null, lon: null });
+  assert.deepEqual([bez.lat, bez.lon], [null, null]);
+});

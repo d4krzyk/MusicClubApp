@@ -132,10 +132,21 @@ npm run preview    # podgląd zbudowanej wersji (service worker działa tylko tu
 
 Aplikacja jest opakowana w [Capacitor](https://capacitorjs.com/) (`android/`, id `pl.musicclub.solo`). Kopie zapasowe Androida są wyłączone (`allowBackup=false`) — klucze nie trafiają do chmury Google.
 
-**Najprościej — przez GitHub Actions:** każdy push na `release/solo` uruchamia workflow „Android APK”
-(`.github/workflows/android.yml`). Gotowy plik `app-debug.apk` pobierzesz ze strony przebiegu
-(*Actions → Android APK → Artifacts → musicclub-debug-apk*), przerzucasz na telefon i instalujesz (Android poprosi o
-zgodę na instalację z nieznanego źródła).
+**Najprościej — gotowy plik z GitHuba.** Otwórz na telefonie:
+
+**https://github.com/d4krzyk/MusicClubApp/releases/latest/download/MusicClub.apk**
+
+i zainstaluj pobrany plik (Android poprosi o zgodę na instalację z tego źródła). Każdy push na `release/solo` uruchamia
+workflow „Android APK” (`.github/workflows/android.yml`), który buduje APK i podmienia wydanie „najnowsza” — link zawsze
+prowadzi do ostatniej wersji. Plik jest też w *Actions → Android APK → Artifacts → musicclub-debug-apk*.
+
+**Podpis i aktualizacje.** Wersje z CI są podpisane stałym kluczem z repozytorium (`android/app/musicclub-debug.keystore`,
+hasło `android`) i mają rosnący `versionCode` (numer przebiegu), więc kolejne instalują się jako aktualizacja i dane
+zostają. APK sprzed tej zmiany były podpisane losowym kluczem — przy pierwszej aktualizacji Android zgłosi konflikt
+podpisu: zrób *Ustawienia → Kopia ustawień*, odinstaluj starą aplikację, zainstaluj nową i wczytaj kopię.
+Klucz w repozytorium jest jawny (to wersja testowa). Własny, prywatny klucz: sekrety repozytorium `MC_KEYSTORE_BASE64`
+(plik keystore w base64) i `MC_KEYSTORE_PASSWORD` (alias `androiddebugkey`) — workflow użyje go zamiast jawnego (zmiana
+klucza znów wymaga jednorazowej reinstalacji).
 
 **Lokalnie** (potrzebne JDK 17 i Android SDK, np. Android Studio):
 
@@ -160,11 +171,13 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
   danych, brak przelewu strony przy 320 px.
   Druga runda w Chromium: napis w pasku, płynące przełączniki, arkusze (Esc, fokus), kalendarz Google (adres szablonu),
   import pliku z Facebooka i subskrypcja, Bandsintown, łączenie duplikatów, „Moje”, offline z kalendarzami, 320 i 390 px.
+  Poprawki wydarzenia: pisanie litera po literze w każdym polu (fokus zostaje — test odtwarza zgłoszony błąd na starym
+  kodzie), podpowiedzi miejsca i adresu w wybranym mieście (udawany Photon), klawiatura, Esc, brak sieci.
 - **Niesprawdzone (blokada w środowisku):** praca w tle i powiadomienia na prawdziwym Androidzie (harmonogram, zgoda,
   oszczędzanie baterii), prawdziwe odpowiedzi Ticketmastera, Last.fm, Bandsintown i eksportu z Facebooka,
   CORS w przeglądarce (subskrypcje `.ics` z Google/Facebooka w przeglądarce prawie na pewno nie przejdą — w APK tak),
   wtyczka kalendarza na prawdziwym telefonie,
-  budowa APK i działanie aplikacji na telefonie — workflow i projekt Androida są przygotowane, ale nie zostały uruchomione.
+  działanie aplikacji na prawdziwym telefonie (APK buduje się w GitHub Actions), prawdziwe odpowiedzi Photona (podpowiedzi adresów).
   Kształt odpowiedzi odtworzono z dokumentacji i z prawdziwej odpowiedzi Ticketmastera z fixture (`src/lib/fixtures`).
 - Ticketmaster nie oddaje opisów wykonawców przez publiczne API, a opisy wydarzeń to zwykle formułki sprzedażowe —
   aplikacja je odfiltrowuje (`src/lib/boilerplate.js`) i pokazuje sekcję „O wydarzeniu” tylko wtedy, gdy zostaje prawdziwy tekst.
@@ -172,4 +185,7 @@ Kalendarz (`.ics`) i kopia ustawień w aplikacji otwierają systemowe okno „Ud
 
 ## Dane i źródła
 
-Dane o koncertach: Ticketmaster, Bandsintown (opcjonalnie), twoje kalendarze. Gatunki i opisy artystów: Last.fm. Mapy: odnośniki do Map Google (aplikacja nie ładuje map). Krój pisma: Poppins (SIL OFL).
+Dane o koncertach: Ticketmaster, Bandsintown (opcjonalnie), twoje kalendarze. Gatunki i opisy artystów: Last.fm. Mapy: odnośniki do Map Google (aplikacja nie ładuje map).
+Podpowiedzi miejsc i adresów przy poprawianiu wydarzenia: [Photon](https://photon.komoot.io) na danych © OpenStreetMap
+(ODbL) — wpisywana fraza i nazwa wybranego miasta idą do photon.komoot.io (bez kluczy i bez innych danych), dopiero od
+3 liter i po przerwie w pisaniu; bez sieci pole działa jak zwykłe. Krój pisma: Poppins (SIL OFL).

@@ -5,7 +5,8 @@ import { wallToUtc } from './ics.js';
 // Twoje poprawki wydarzenia z kalendarza (Facebook): godzina, miejsce, opis... Zapisane osobno (settings.edits[id]) i
 // nakladane na wydarzenie przy kazdym wczytaniu - odswiezenie kalendarza ich nie kasuje.
 
-export const POLA_EDYCJI = ['name', 'date', 'time', 'venueName', 'address', 'city', 'description', 'ticketUrl'];
+// lat/lon: wspolrzedne z podpowiedzi adresu (odleglosc liczy sie wtedy od sali, nie od srodka miasta)
+export const POLA_EDYCJI = ['name', 'date', 'time', 'venueName', 'address', 'city', 'lat', 'lon', 'description', 'ticketUrl'];
 
 const pusty = (v) => v == null || String(v).trim() === '';
 
@@ -46,6 +47,12 @@ export function applyEdit(e, edycja) {
       w.endUtc = null;
     }
   }
+  for (const p of ['lat', 'lon']) {
+    if (!(p in edycja)) continue;
+    const n = edycja[p] == null ? NaN : Number(edycja[p]);
+    w[p] = Number.isFinite(n) && Math.abs(n) <= (p === 'lat' ? 90 : 180) ? n : null;
+  }
+  if (w.lat == null || w.lon == null) { w.lat = null; w.lon = null; } // jedna wspolrzedna bez drugiej nic nie znaczy
   if ('ticketUrl' in edycja && w.ticketUrl && !/^https?:\/\/[^\s]+$/i.test(w.ticketUrl)) w.ticketUrl = e.ticketUrl ?? null;
   return w;
 }

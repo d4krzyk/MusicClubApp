@@ -31,6 +31,13 @@ na `master` nie wchodzimy.
   `@capacitor/geolocation` — jednorazowo, przybliżenie, zapisuje się tylko nazwa miasta). Nazwy miast z Ticketmastera
   po polsku z listy miast („Warsaw” → „Warszawa”).
 - Poprawki wydarzeń z kalendarzy: `settings.edits[id]` = tylko zmienione pola (`lib/edycja.js`), nakładane przy wczytaniu.
+- Arkusz trzyma `onClose` w refie: efekt fokusu zależny od `onClose` (nowa funkcja przy każdym przerysowaniu) ustawiał
+  fokus na pierwszym polu po każdej literze — „po jednej literce przeskakuje do innej kolumny” (zgłoszenie użytkownika).
+  Esc zamyka tylko arkusz na wierzchu (`naWierzchu` w `wstecz.js`). Test: `edycja2-e2e.mjs` (pisze litera po literze).
+- Podpowiedzi miejsca/adresu w poprawkach: `lib/adresy.js` (Photon, photon.komoot.io, OSM — bez klucza, bez `lang`,
+  od 3 liter, 350 ms po pisaniu) + `ui/PolePodpowiedzi.jsx` (combobox, lista pod polem, `mousedown` bez domyślnej akcji).
+  Miasto w formularzu jest przed miejscem i adresem; wybór podpowiedzi zapisuje też `lat`/`lon`, ręczna zmiana adresu
+  albo miasta je kasuje.
 - Mapa i trasa: Google Maps po nazwie i adresie (`mapsUrl`/`routeUrl` w `lib/calendar.js`), nie OpenStreetMap — życzenie
   użytkownika; same współrzędne w trasie Google pokazywał jako niezrozumiały punkt.
 - Gradient na przyciskach z przezroczystą ramką: `border-box no-repeat`, inaczej pod ramką widać pasek z drugiego końca
@@ -51,7 +58,11 @@ na `master` nie wchodzimy.
   `store.js` (localStorage + IndexedDB, w testach pamięć), `sync.js`.
 - `src/screens/`, `src/App.jsx` (routing po `#hash` — działa z pliku, GitHub Pages i Androida), `src/useApp.js` (cały stan).
 - `public/sw.js` — powłoka offline + zdjęcia koncertów; **nigdy** nie cache'uje API.
-- `scripts` w `package.json`: `npm run android` = build + `cap sync`. Budowa APK: `.github/workflows/android.yml`.
+- `scripts` w `package.json`: `npm run android` = build + `cap sync`. Budowa APK: `.github/workflows/android.yml` — po
+  każdym pushu podmienia wydanie „najnowsza”; link dla użytkownika:
+  `https://github.com/d4krzyk/MusicClubApp/releases/latest/download/MusicClub.apk`. Podpis: stały, jawny
+  `android/app/musicclub-debug.keystore` (wyjątek w `.gitignore`) albo sekrety `MC_KEYSTORE_*`; `versionCode` =
+  `GITHUB_RUN_NUMBER`. Zmiana klucza = jednorazowa reinstalacja u użytkownika.
 
 ## Zasady sprawdzania (z poprzedniej wersji, nadal obowiązują)
 
