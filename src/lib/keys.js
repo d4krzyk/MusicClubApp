@@ -24,7 +24,6 @@ export function keyShape(rodzaj, klucz) {
 const ADRESY = {
   tm: (k) => `https://app.ticketmaster.com/discovery/v2/events.json?size=1&classificationName=music&apikey=${encodeURIComponent(k)}`,
   lfm: (k) => `https://ws.audioscrobbler.com/2.0/?method=chart.gettopartists&limit=1&format=json&api_key=${encodeURIComponent(k)}`,
-  bit: (k) => `https://rest.bandsintown.com/artists/Coldplay?app_id=${encodeURIComponent(k)}`,
 };
 
 // Jedno probne zapytanie: 'ok', 'zly' (serwis odrzucil klucz), 'limit', 'siec' (brak polaczenia albo przegladarka

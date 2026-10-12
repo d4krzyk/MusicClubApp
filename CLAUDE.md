@@ -16,7 +16,10 @@ na `master` nie wchodzimy.
 - UX ma być płynny, nie jak „stara strona”: zamiast natywnych `<select>` — `ui/Przelacznik` (pigułka z `useWskaznik`)
   i `ui/Wybor`/`ui/Arkusz` (arkusz od dołu, Esc, fokus, przeciąganie w dół). Animacje tylko transform/opacity,
   „ogranicz ruch” wyłącza wszystko jedną regułą na końcu `ui.css`.
-- Źródła: Ticketmaster (główne), Bandsintown (`bitKey`, ulubieni wykonawcy), kalendarze `.ics` (plik albo subskrypcja).
+- Źródła: Ticketmaster (główne) i kalendarze `.ics` (plik albo subskrypcja).
+  **Bandsintown usunięte** na prośbę użytkownika: ich wsparcie odmówiło klucza (API tylko dla artystów, nie dla projektów
+  prywatnych/edukacyjnych). Nie dodawać z powrotem. Ślady w danych: `bitKey` wycinany w `store.js` (`DAWNE`), wpis `bit`
+  w IndexedDB kasowany przy starcie; `source: 'bit'` zostaje tylko w kopiach zapisanych wydarzeń (podpis na karcie).
   `lib/merge.js` łączy duplikaty (port `EventMerger`); źródło poboczne tylko uzupełnia braki.
 - Wydarzenia z kalendarzy (Facebook) oceniane „koncert czy nie” (`lib/eventKind.js`); nie-koncerty tylko w „Moje”,
   poprawka ręczna w `settings.kindOverride`. Wykonawcy z tytułu potwierdzani przez Last.fm, gatunki z tekstu.
@@ -79,5 +82,5 @@ na `master` nie wchodzimy.
 
 ## Niesprawdzone na żywo
 
-CORS Ticketmastera, Last.fm, Bandsintown i subskrypcji `.ics` w przeglądarce, eksport z Facebooka, wtyczka kalendarza na telefonie (środowisko nie ma dostępu do tych
+CORS Ticketmastera, Last.fm i subskrypcji `.ics` w przeglądarce, eksport z Facebooka, wtyczka kalendarza na telefonie (środowisko nie ma dostępu do tych
 hostów ani do `dl.google.com`). Pierwszy prawdziwy przebieg: workflow „Android APK” i próba na własnym telefonie.

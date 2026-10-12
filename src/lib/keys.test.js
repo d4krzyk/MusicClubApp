@@ -29,8 +29,8 @@ test('sprawdzenie: dziala, odrzucony, limit, siec', async () => {
   assert.equal(await checkKey('tm', TM, { fetchFn: odp({}, 429) }), 'limit');
   assert.equal(await checkKey('lfm', LFM, { fetchFn: odp({ error: 10, message: 'Invalid API key' }, 403) }), 'zly');
   assert.equal(await checkKey('lfm', LFM, { fetchFn: odp({ artists: {} }) }), 'ok');
-  assert.equal(await checkKey('bit', 'x', { fetchFn: odp({}, 403) }), 'zly');
-  assert.equal(await checkKey('bit', 'x', { fetchFn: async () => { throw new TypeError('Failed to fetch'); } }), 'siec');
+  assert.equal(await checkKey('tm', TM, { fetchFn: odp({}, 403) }), 'zly');
+  assert.equal(await checkKey('tm', TM, { fetchFn: async () => { throw new TypeError('Failed to fetch'); } }), 'siec');
   let adres;
   await checkKey('lfm', LFM, { fetchFn: async (u) => { adres = u; return { ok: true, status: 200, json: async () => ({}) }; } });
   assert.ok(adres.startsWith('https://ws.audioscrobbler.com/2.0/?method=chart.gettopartists') && adres.includes(`api_key=${LFM}`));

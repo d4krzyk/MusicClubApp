@@ -3,8 +3,8 @@ import { cityByName } from './location.js';
 import { normalizeTag } from './genres.js';
 
 // Wydarzenia z twoich kalendarzy (glownie Facebook) bywaja koncertami, ale tez protestami, spacerami, wystawami.
-// Tu zgadujemy: czy to koncert, kto gra (z tytulu) i jakie gatunki padaja w tekscie. Ticketmaster i Bandsintown
-// sa zawsze muzyczne - tego nie oceniamy.
+// Tu zgadujemy: czy to koncert, kto gra (z tytulu) i jakie gatunki padaja w tekscie. Wydarzenia
+// z Ticketmastera sa zawsze muzyczne - tego nie oceniamy.
 
 // Gatunki rozpoznawane w tytule i opisie: [wzorzec (poczatek slowa), jak pokazac, tagi do porownania z Last.fm].
 const GATUNKI = [

@@ -1,7 +1,7 @@
 import { nameKey, mentions } from './nameKeys.js';
 import { distanceKm } from './location.js';
 
-// Jeden koncert = jedna karta, choc wiemy o nim z kilku zrodel (Ticketmaster, Bandsintown, twoj kalendarz).
+// Jeden koncert = jedna karta, choc wiemy o nim z kilku zrodel (Ticketmaster, twoje kalendarze).
 // Port EventMerger z wersji serwerowej: ten sam dzien i kraj, to samo miejsce (sala do 500 m albo ta sama nazwa
 // sali w tym samym miescie) i ten sam wykonawca albo nazwa; dwie znane godziny rozne o > 3 h = dwa koncerty.
 
@@ -80,7 +80,7 @@ function wchlon(cel, x) {
   return wynik;
 }
 
-// primary: wydarzenia glownego zrodla (Ticketmaster), extras: reszta w kolejnosci waznosci (Bandsintown, kalendarze).
+// primary: wydarzenia glownego zrodla (Ticketmaster), extras: reszta w kolejnosci waznosci (kalendarze).
 // Zwraca jedna liste bez duplikatow. Dopasowanie liczone tylko w obrebie dnia - kilka tysiecy wydarzen to ulamek sekundy.
 export function mergeAll(primary, ...extras) {
   const wynik = [];

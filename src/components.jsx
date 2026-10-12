@@ -50,7 +50,7 @@ export function EventCard({ item, udzial, onToggleSave, index = 0 }) {
   const { t, lang } = useT();
   const { event: e, moreDates, match, km } = item;
   const d = dateParts(e.date, lang);
-  const zrodlo = e.source === 'bit' ? t('card.source.bit') : e.source === 'ics' ? t('card.source.ics') : null;
+  const zrodlo = e.source === 'bit' /* kopie zapisane w dawnych wersjach */ ? t('card.source.bit') : e.source === 'ics' ? t('card.source.ics') : null;
   return (
     <li className={`mc-event mc-card mc-wejscie${e.music === false ? ' mc-event-inne' : ''}`} style={{ '--i': Math.min(index, 10) }}>
       <a className="mc-event-link" href={`#/e/${encodeURIComponent(e.id)}`}>
@@ -99,8 +99,7 @@ export function SyncBar({ app }) {
   let tekst;
   if (status.running) {
     tekst = status.step === 'tags' ? t('sync.tags', status.done, status.total || '…')
-      : status.step === 'bit' ? t('sync.bit', status.done, status.total || '…')
-        : status.step === 'calendars' ? t('sync.calendars') : t('sync.events', status.done, status.total || '…');
+      : status.step === 'calendars' ? t('sync.calendars') : t('sync.events', status.done, status.total || '…');
   } else if (status.error) tekst = bladTekst(status.error, t);
   else if (status.message === 'sync.done') tekst = t('sync.done', status.count ?? data.events.length);
   else if (status.message) tekst = t(status.message);
@@ -131,7 +130,6 @@ export function bladTekst(err, t) {
 const JAK = {
   tm: [['key.tm.1', 'https://developer.ticketmaster.com/'], ['key.tm.2', 'https://developer-account.ticketmaster.com/'], ['key.tm.3', null]],
   lfm: [['key.lfm.1', 'https://www.last.fm/api/accounts'], ['key.lfm.2', 'https://www.last.fm/api/account/create'], ['key.lfm.3', null]],
-  bit: [['key.bit.1', 'https://help.artists.bandsintown.com/en/articles/9186477-api-documentation'], ['key.bit.2', null]],
 };
 
 export function KeyField({ rodzaj, label, value, onChange, blad }) {

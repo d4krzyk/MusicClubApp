@@ -178,7 +178,6 @@ export default function SettingsScreen({ app }) {
       <div className="mc-card mc-section mc-wejscie" style={{ '--i': 1 }}>
         <h2>{t('set.sources')}</h2>
         <p className="mc-hint">{t('set.sourcesIntro')}</p>
-        <KeyField rodzaj="bit" label={t('set.bitKey')} value={s.bitKey ?? ''} onChange={(v) => app.setSettings({ bitKey: v })} />
         <Kalendarze app={app} />
       </div>
 

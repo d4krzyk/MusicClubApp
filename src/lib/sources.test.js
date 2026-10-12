@@ -1,66 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readEvent, artistEvents, pathName, countryCode } from './bandsintown.js';
 import { mergeAll, score, sameVenue } from './merge.js';
 import { googleCalendarUrl, span, ics } from './calendar.js';
 import { match, buildTaste } from './match.js';
-import { syncBandsintown, addCalendarFile, addCalendarUrl, refreshCalendars, loadCalendars, removeCalendar } from './sync.js';
+import { addCalendarFile, addCalendarUrl, refreshCalendars, loadCalendars, removeCalendar } from './sync.js';
 import { dbClear } from './store.js';
 
 const odp = (json, status = 200) => ({ ok: status < 400, status, json: async () => json, text: async () => (typeof json === 'string' ? json : JSON.stringify(json)) });
-const BIT = { id: '1007', datetime: '2026-11-20T20:00:00', url: 'https://www.bandsintown.com/e/1007', title: '',
-  lineup: ['Kovacs', 'Support Duo'], offers: [{ type: 'Tickets', url: 'https://tix.example/1007' }],
-  venue: { name: 'Klub Progresja', city: 'Warszawa', country: 'Poland', latitude: '52.2323', longitude: '20.9364', street_address: 'Fort Wola 22' } };
+// ten sam koncert z drugiego zrodla (kalendarz klubu): inna nazwa sali, adres i wlasny link do biletow
+const INNE = { id: 'ics:klub:1007', source: 'ics', name: 'Kovacs + Support Duo', date: '2026-11-20', time: '20:00', startUtc: null, timezone: null,
+  status: 'SCHEDULED', description: null, ticketUrl: 'https://tix.example/1007', sourceUrl: 'https://klub.example/e/1007', imageUrl: null,
+  venueName: 'Klub Progresja', city: 'Warszawa', cityKey: 'warsaw', address: 'Fort Wola 22', lat: 52.2323, lon: 20.9364, country: 'PL',
+  performers: [{ id: null, name: 'Kovacs', links: {} }, { id: null, name: 'Support Duo', links: {} }],
+  sources: [{ kind: 'ICS', name: 'Klub', url: 'https://klub.example/e/1007' }] };
 const tm = (o) => ({ id: 'TM1', source: 'tm', name: 'Kovacs', date: '2026-11-20', time: '20:00', venueName: 'Progresja', cityKey: 'warsaw',
   city: 'Warszawa', lat: 52.2321, lon: 20.9361, country: 'PL', performers: [{ name: 'Kovacs' }], ticketUrl: 'https://tm/1', imageUrl: null,
   description: null, address: null, ...o });
 
-test('Bandsintown: wydarzenie, kraj z nazwy, sklad, bilety; polnoc = brak godziny', () => {
-  const e = readEvent(BIT, 'Kovacs');
-  assert.equal(e.id, 'bit:1007');
-  assert.equal(e.name, 'Kovacs + Support Duo');
-  assert.equal(e.time, '20:00');
-  assert.equal(e.country, 'PL');
-  assert.equal(e.cityKey, 'warsaw');
-  assert.equal(e.ticketUrl, 'https://tix.example/1007');
-  assert.equal(readEvent({ ...BIT, datetime: '2026-11-20T00:00:00' }, 'K').time, null);
-  assert.equal(readEvent({ id: 'x' }, 'K'), null);
-  assert.equal(countryCode('Czech Republic'), 'CZ');
-  assert.equal(countryCode('Germany'), 'DE');
-  assert.equal(pathName('AC/DC'), 'AC%252FDC');
-});
-
-test('Bandsintown: 404 = brak koncertow, 403 = zly klucz, klucz nie wycieka', async () => {
-  assert.deepEqual(await artistEvents('X', { appId: 'a', fetchFn: async () => odp({}, 404) }), []);
-  assert.deepEqual(await artistEvents('X', { appId: 'a', fetchFn: async () => odp({ errorMessage: '[NotFound]' }) }), []);
-  await assert.rejects(artistEvents('X', { appId: 'a', fetchFn: async () => odp({}, 403) }), (e) => e.kod === 'KLUCZ');
-  await assert.rejects(artistEvents('X', { appId: 'tajny', fetchFn: async (u) => { throw new Error(u); } }), (e) => !e.message.includes('tajny'));
-});
-
-test('laczenie: ten sam koncert z Bandsintown dopisany do Ticketmastera, braki uzupelnione', () => {
-  const bit = readEvent(BIT, 'Kovacs');
+test('laczenie: ten sam koncert z drugiego zrodla dopisany do Ticketmastera, braki uzupelnione', () => {
+  const inne = INNE;
   assert.ok(sameVenue('Klub Progresja', 'Progresja'));
   assert.ok(!sameVenue('Klub', 'Hala'));
-  assert.ok(score(tm(), bit) >= 9);
-  const [jeden, ...reszta] = mergeAll([tm({ address: null })], [bit]);
+  assert.ok(score(tm(), inne) >= 9);
+  const [jeden, ...reszta] = mergeAll([tm({ address: null })], [inne]);
   assert.equal(reszta.length, 0);
   assert.equal(jeden.id, 'TM1');
   assert.equal(jeden.address, 'Fort Wola 22');
   assert.equal(jeden.ticketUrl, 'https://tm/1', 'nie nadpisuje');
-  assert.deepEqual(jeden.sources.map((s) => s.kind), ['TICKETMASTER', 'BANDSINTOWN']);
+  assert.deepEqual(jeden.sources.map((s) => s.kind), ['TICKETMASTER', 'ICS']);
 });
 
 test('laczenie: inny dzien, inna sala, inny wykonawca, godziny o > 3 h = osobne karty', () => {
-  const bit = readEvent(BIT, 'Kovacs');
-  assert.equal(score(tm({ date: '2026-11-21' }), bit), 0);
-  assert.equal(score(tm({ venueName: 'Klub Studio', city: 'Kraków', cityKey: 'krakow', lat: 50.068, lon: 19.913 }), bit), 0);
+  const inne = INNE;
+  assert.equal(score(tm({ date: '2026-11-21' }), inne), 0);
+  assert.equal(score(tm({ venueName: 'Klub Studio', city: 'Kraków', cityKey: 'krakow', lat: 50.068, lon: 19.913 }), inne), 0);
   // ten sam wykonawca o tej samej godzinie w tym samym miescie, tylko sala nazwana inaczej - to ten sam koncert
-  assert.ok(score(tm({ venueName: 'Fort Wola', lat: 52.21, lon: 21.0 }), bit) > 0);
-  assert.equal(score(tm({ venueName: 'Stodoła', lat: 52.21, lon: 21.0, time: '17:30' }), bit), 0);
-  assert.equal(score(tm({ name: 'Ktoś inny', performers: [{ name: 'Ktoś inny' }] }), bit), 0);
-  assert.equal(score(tm({ time: '15:00' }), bit), 0);
-  assert.equal(score(tm({ country: 'DE' }), bit), 0);
-  assert.equal(mergeAll([tm({ date: '2026-11-21' })], [bit]).length, 2);
+  assert.ok(score(tm({ venueName: 'Fort Wola', lat: 52.21, lon: 21.0 }), inne) > 0);
+  assert.equal(score(tm({ venueName: 'Stodoła', lat: 52.21, lon: 21.0, time: '17:30' }), inne), 0);
+  assert.equal(score(tm({ name: 'Ktoś inny', performers: [{ name: 'Ktoś inny' }] }), inne), 0);
+  assert.equal(score(tm({ time: '15:00' }), inne), 0);
+  assert.equal(score(tm({ country: 'DE' }), inne), 0);
+  assert.equal(mergeAll([tm({ date: '2026-11-21' })], [inne]).length, 2);
 });
 
 test('wydarzenie z kalendarza (Facebook) laczy sie z Ticketmasterem i podnosi je w "Dla ciebie"', () => {
@@ -86,21 +66,6 @@ test('kalendarz: link Google z UTC, calodniowy, plik .ics', () => {
   assert.ok(plik.includes('DTSTART:20261120T190000Z') && plik.includes('GEO:52.2321;20.9361') && plik.includes('LOCATION:Progresja\\, Fort Wola 22\\, Warszawa'));
 });
 
-test('Bandsintown w synchronizacji: tylko wybrany kraj, blad wykonawcy nie przerywa, zly klucz przerywa', async () => {
-  await dbClear();
-  const pytania = [];
-  const f = async (u) => {
-    const a = decodeURIComponent(new URL(u).pathname.split('/')[2]);
-    pytania.push(a);
-    if (a === 'Awaria') return odp({}, 500);
-    return odp([BIT, { ...BIT, id: '2', venue: { ...BIT.venue, country: 'Germany', city: 'Berlin' } }]);
-  };
-  const d = await syncBandsintown(['Kovacs', 'Awaria', 'Hey'], { appId: 'a', country: 'PL', fetchFn: f, pauseMs: 0 });
-  assert.deepEqual(pytania, ['Kovacs', 'Awaria', 'Hey']);
-  assert.deepEqual(d.events.map((e) => e.id), ['bit:1007']);
-  await assert.rejects(syncBandsintown(['A', 'B'], { appId: 'x', fetchFn: async () => odp({}, 403), pauseMs: 0 }), (e) => e.kod === 'KLUCZ');
-});
-
 test('kalendarze: plik, subskrypcja, odswiezenie z bledem zostawia stare wydarzenia, usuniecie', async () => {
   await dbClear();
   const ICS = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:1\r\nDTSTART:20261120T190000Z\r\nSUMMARY:Kovacs\r\nEND:VEVENT\r\nEND:VCALENDAR';
@@ -118,12 +83,12 @@ test('kalendarze: plik, subskrypcja, odswiezenie z bledem zostawia stare wydarze
 });
 
 test('laczenie: punkty za godzine (do 1 h), krotka nazwa sali nie wystarcza, remis = pierwsze wydarzenie', () => {
-  const bit = readEvent(BIT, 'Kovacs');
-  assert.equal(score(tm(), bit), 12);
-  assert.equal(score(tm({ time: '21:30' }), bit), 11);
+  const inne = INNE;
+  assert.equal(score(tm(), inne), 12);
+  assert.equal(score(tm({ time: '21:30' }), inne), 11);
   assert.ok(!sameVenue('Sala B90', 'B90'));
   assert.ok(sameVenue('Klub Ucho', 'Ucho Live'));
-  const bezGodziny = { ...bit, time: null };
+  const bezGodziny = { ...inne, time: null };
   const [a, b] = mergeAll([tm({ id: 'A' }), tm({ id: 'B', time: '21:30' })], [bezGodziny]);
   assert.equal(a.sources.length, 2, 'remis - wygrywa pierwsze');
   assert.equal(b.sources.length, 1);
@@ -235,4 +200,15 @@ test('mapy Google: po nazwie i adresie, wspolrzedne tylko awaryjnie', async () =
   assert.ok(routeUrl(e).startsWith('https://www.google.com/maps/dir/?api=1&destination='));
   assert.equal(new URL(mapsUrl(tm({ venueName: 'Bar', address: null, city: null, lat: 52.1, lon: 21.2 }))).searchParams.get('query'), '52.1,21.2');
   assert.equal(mapsUrl({ venueName: null, address: null, city: null, lat: null, lon: null }), null);
+});
+
+test('dawny klucz Bandsintown znika z ustawien (zapis i odczyt), dane z IndexedDB mozna usunac', async () => {
+  const { saveSettings, loadSettings, dbSet, dbGet, dbDelete } = await import('./store.js');
+  saveSettings({ ...loadSettings(), tmKey: 'K', bitKey: 'stary-app-id' });
+  const s = loadSettings();
+  assert.equal(s.tmKey, 'K');
+  assert.equal('bitKey' in s, false);
+  await dbSet('bit', { events: [{ id: 'bit:1' }] });
+  await dbDelete('bit');
+  assert.equal(await dbGet('bit'), undefined);
 });

@@ -2,7 +2,6 @@ import { fetchCountry } from './ticketmaster.js';
 import * as lastfm from './lastfm.js';
 import { nameKey, cityKey } from './nameKeys.js';
 import { dbGet, dbSet } from './store.js';
-import { artistEvents } from './bandsintown.js';
 import { parseIcs, normalizeFeedUrl, calendarName, cityFromName } from './ics.js';
 
 export const WAZNOSC_TAGOW_MS = 60 * 24 * 3600 * 1000; // gatunki wykonawcy: 60 dni
@@ -77,39 +76,6 @@ export function performerNames(events, today) {
   const posortowane = [...events].filter((e) => e.date >= today).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   for (const e of posortowane) for (const p of e.performers) wynik.push(p.name);
   return wynik;
-}
-
-/* ---------- Bandsintown: koncerty ulubionych wykonawcow (wlasny app_id) ---------- */
-
-export async function loadBandsintown() {
-  return (await dbGet('bit')) ?? { events: [], syncedAt: null };
-}
-
-// Pyta o kazdego ulubionego wykonawce po kolei. Blad pojedynczego wykonawcy nie przerywa; zly klucz przerywa.
-// Przy awarii (nic sie nie udalo) zostaje stara kopia.
-export async function syncBandsintown(artists, { appId, country, fetchFn = fetch, signal, pauseMs = 150,
-  onProgress = () => {}, now = new Date() } = {}) {
-  if (!appId?.trim()) return loadBandsintown();
-  const wynik = new Map();
-  let udane = 0;
-  let i = 0;
-  for (const a of artists) {
-    if (i > 0) await pauza(pauseMs);
-    i++;
-    try {
-      for (const e of await artistEvents(a, { appId: appId.trim(), fetchFn, signal })) {
-        if (!country || !e.country || e.country === country) wynik.set(e.id, e);
-      }
-      udane++;
-    } catch (e) {
-      if (e?.name === 'AbortError' || e?.kod === 'KLUCZ') throw e;
-    }
-    onProgress({ done: i, total: artists.length });
-  }
-  if (artists.length && !udane) throw new Error('Bandsintown nie odpowiada');
-  const dane = { events: [...wynik.values()], syncedAt: now.toISOString() };
-  await dbSet('bit', dane);
-  return dane;
 }
 
 /* ---------- Twoje kalendarze (ICS): pliki i subskrypcje ---------- */

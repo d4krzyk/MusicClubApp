@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { loadSettings, saveSettings, dbClear } from './lib/store.js';
+import { loadSettings, saveSettings, dbClear, dbDelete } from './lib/store.js';
 import { loadEvents, loadTags, syncEvents, syncTags, importLastFm, performerNames, MIN_ODSWIEZANIA_MS, NA_PRZEBIEG,
-  loadBandsintown, syncBandsintown, loadCalendars, refreshCalendars, addCalendarFile, addCalendarUrl, removeCalendar } from './lib/sync.js';
+  loadCalendars, refreshCalendars, addCalendarFile, addCalendarUrl, removeCalendar } from './lib/sync.js';
 import { mergeAll } from './lib/merge.js';
 import { enrich, performerCandidates } from './lib/eventKind.js';
 import { applyEdit } from './lib/edycja.js';
@@ -16,7 +16,6 @@ export function useApp() {
   const [settings, setSettingsState] = useState(loadSettings);
   const [data, setData] = useState({ events: [], syncedAt: null });
   const [tags, setTags] = useState({});
-  const [bit, setBit] = useState({ events: [], syncedAt: null });
   const [calendars, setCalendars] = useState([]);
   const [status, setStatus] = useState({ running: false, step: null, done: 0, total: 0, error: null, message: null });
   const [ready, setReady] = useState(false);
@@ -36,10 +35,10 @@ export function useApp() {
 
   useEffect(() => {
     let zyje = true;
-    Promise.all([loadEvents(), loadTags(), loadBandsintown(), loadCalendars()]).then(([d, t, b, k]) => {
+    dbDelete('bit'); // koncerty z Bandsintown z dawnych wersji (zrodlo usuniete)
+    Promise.all([loadEvents(), loadTags(), loadCalendars()]).then(([d, t, k]) => {
       if (!zyje) return;
       setData(d);
-      setBit(b);
       setCalendars(k);
       setTags(Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.tags])));
       setReady(true);
@@ -61,12 +60,12 @@ export function useApp() {
   }, [settings.manualArtists, settings.lfmArtists]);
 
   const taste = useMemo(() => buildTaste(artistNames, tags), [artistNames, tags]);
-  // Jedna lista z trzech zrodel: Ticketmaster (glowne), Bandsintown, twoje kalendarze - ten sam koncert raz.
+  // Jedna lista z dwoch zrodel: Ticketmaster (glowne) i twoje kalendarze - ten sam koncert raz.
   // Wydarzenia z kalendarzy dostaja ocene "koncert czy nie", wykonawcow z tytulu i gatunki z tekstu - przed laczeniem,
   // zeby wykonawcy pomogli rozpoznac ten sam koncert z Ticketmastera.
-  const events = useMemo(() => mergeAll(data.events, bit.events,
+  const events = useMemo(() => mergeAll(data.events,
     calendars.flatMap((k) => k.events).map((e) => enrich(applyEdit(e, settings.edits?.[e.id]), tags, settings.kindOverride?.[e.id]))),
-  [data.events, bit.events, calendars, tags, settings.kindOverride, settings.edits]);
+  [data.events, calendars, tags, settings.kindOverride, settings.edits]);
   const origin = useMemo(() => {
     const c = settings.city ? cityByName(settings.city) : null;
     return c ? { lat: c.lat, lon: c.lon } : null;
@@ -101,18 +100,6 @@ export function useApp() {
         d = await syncEvents(s, { signal: ctl.signal, onProgress: (p) => setStatus((x) => ({ ...x, ...p })) });
         setData(d);
       }
-      let bladPoboczny = null;
-      if (s.bitKey?.trim()) {
-        setStatus({ running: true, step: 'bit', done: 0, total: 0, error: null, message: null });
-        try {
-          const fav = [...s.manualArtists, ...s.lfmArtists].slice(0, 200);
-          setBit(await syncBandsintown(fav, { appId: s.bitKey, country: s.country, signal: ctl.signal,
-            onProgress: (p) => setStatus((x) => ({ ...x, ...p })) }));
-        } catch (e) {
-          if (e?.name === 'AbortError') throw e;
-          bladPoboczny = { kod: e?.kod ?? 'ERR', tekst: e?.message };
-        }
-      }
       if (calendarsRef.current.some((k) => k.kind === 'url')) {
         setStatus({ running: true, step: 'calendars', done: 0, total: 0, error: null, message: null });
         setCalendars(await refreshCalendars({ signal: ctl.signal }));
@@ -126,7 +113,7 @@ export function useApp() {
         setStatus({ running: false, step: null, done: 0, total: 0, error: { kod: e?.kod ?? 'ERR', tekst: e?.message }, message: null });
         return;
       }
-      setStatus({ running: false, step: null, done: 0, total: 0, error: bladPoboczny, message: bladPoboczny ? null : 'sync.done', count: d.events.length });
+      setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: 'sync.done', count: d.events.length });
     } catch (e) {
       if (e?.name === 'AbortError') { setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: null }); return; }
       setStatus({ running: false, step: null, done: 0, total: 0, error: { kod: e?.kod ?? 'ERR', tekst: e?.message }, message: null });
@@ -171,7 +158,6 @@ export function useApp() {
     saveSettings(czyste);
     setSettingsState(czyste);
     setData({ events: [], syncedAt: null });
-    setBit({ events: [], syncedAt: null });
     setCalendars([]);
     setTags({});
     setStatus({ running: false, step: null, done: 0, total: 0, error: null, message: null });
